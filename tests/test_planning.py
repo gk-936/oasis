@@ -410,3 +410,12 @@ def test_model_errors_are_traced_without_keys_or_org_ids(tmp_path):
     errs = [t for t in res.trace if t["type"] == "model_error"]
     assert errs and all("SECRETKEY" not in json.dumps(t) and "org_01" not in json.dumps(t) and "abc.def" not in json.dumps(t) for t in errs)
     assert res.fell_back
+
+
+def test_planner_prompt_carries_validator_guidance_and_cap_is_raised():
+    from oasis.agent.planner import SYSTEM
+    from eval.planning import PER_PLAN_CAP
+    for needle in ("get_routes", "headroom", "rounding", "calendar year", "January", "rate_target_reserve", "exactly ONCE",
+                   "insufficient_cny", "insufficient_inr", "safe_quota_exceeded", "parent"):
+        assert needle in SYSTEM, needle
+    assert PER_PLAN_CAP >= 22_000

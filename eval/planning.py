@@ -20,7 +20,7 @@ from oasis.planning.scenarios import SCENARIOS, build_scenario_world
 
 REPORTS = Path(__file__).resolve().parent / "reports"
 DEFAULT_TOKEN_CAP = 60_000
-PER_PLAN_CAP = 14_000
+PER_PLAN_CAP = 22_000   # 4 proposals x ~2.5k tokens of tool results + 8 calls re-sending a growing context; 14-18k cut off 4 of 8 plans mid-revision
 
 
 def run_scenario(sid: str, planner) -> dict:
@@ -64,6 +64,43 @@ def summarize(rows: list[dict]) -> dict:
             "tokens": sum(r["tokens"] for r in ran), "model_calls": sum(r["model_calls"] for r in ran)}
 
 
+def render_repeats(d: dict, title: str) -> list[str]:
+    ran = [r for r in d["results"] if not r.get("skipped")]
+    sp = d.get("spread")
+    L = [f"## {title}", "", f"Planner: `{d['planner']}`; model `{d['model']}`, fallback `{d.get('fallback_model')}`; run {d['date']}; "
+         f"{d['repeats']} repeat(s) at temperature {d['temperature']} with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct "
+         f"sample; per-plan token cap {d['per_plan_cap']:,}. Repeats completed in full: {len(d.get('complete_repeats', []))} of {d['repeats']}.", ""]
+    L += ["| Repeat | Plans run | Valid without fallback | Final plan valid | Mean proposals to valid | Tokens |", "|---|---|---|---|---|---|"]
+    for k, s in enumerate(d["per_repeat"]):
+        L.append(f"| {k + 1} | {s['scenarios_run']} of {len(SCENARIOS)} | {s['valid_without_fallback']} | {s['valid_plan_rate']*100:.0f}% | "
+                 f"{s['mean_iterations_to_valid'] or '-'} | {s['tokens']:,} |")
+    if sp:
+        v = sp["valid_without_fallback"]
+        L += ["", f"Valid without fallback across completed repeats (min / mean / max): {v['min']} / {v['mean']} / {v['max']} of {len(SCENARIOS)} scenarios.", ""]
+    else:
+        L += ["", "Fewer than two repeats completed in full, so no min/mean/max across repeats is reported.", ""]
+    tot = sum(r["valid"] and not r["fell_back"] for r in ran)
+    L += [f"Pooled over every plan run: {tot} of {len(ran)} valid without fallback ({(tot / len(ran) * 100 if ran else 0):.0f}%); "
+          f"tokens {sum(r['tokens'] for r in ran):,}.", ""]
+    L += ["| Scenario | Valid without fallback | Proposals to valid (per repeat; fb = fell back) | Tokens (per repeat) | First validator errors (per repeat) |", "|---|---|---|---|---|"]
+    for sid in SCENARIOS:
+        rs = sorted((r for r in ran if r["scenario"] == sid), key=lambda r: r["rep"])
+        if not rs:
+            L.append(f"| {SCENARIOS[sid].title} | not run | | | |")
+            continue
+        ok = sum(r["valid"] and not r["fell_back"] for r in rs)
+        L.append(f"| {SCENARIOS[sid].title} | {ok} of {len(rs)} | {', '.join(str(r['iterations_to_valid'] or ('fb' if r['fell_back'] else '-')) for r in rs)} | "
+                 f"{', '.join(format(r['tokens'], ',') for r in rs)} | {'; '.join(','.join(r['first_errors']) or '-' for r in rs)} |")
+    skipped = [r for r in d["results"] if r.get("skipped")]
+    if skipped:
+        L += ["", f"Not run (token budget): {len(skipped)} plan(s): " + ", ".join(f"{r['title']} (repeat {r['rep'] + 1})" for r in skipped) + "."]
+    L.append("")
+    for note in d.get("notes", []):
+        L.append(f"- {note}")
+    L.append("")
+    return L
+
+
 def render(data: dict) -> str:
     L = ["# Plan-quality evaluation (agentic planning)", "",
          "Eight planning scenarios on MOCK data (`oasis/planning/scenarios.py`), scored by the deterministic plan validator "
@@ -72,10 +109,15 @@ def render(data: dict) -> str:
          "is respected per calendar year; the LRS limit holds; and INR needed by pending rate targets stays unconverted. "
          "TCS and LRS findings are surfaced as warnings. Fees are measured against the same INR sent through the typical bank route. "
          "Rates are quoted at today's mock rate; nothing is predicted.", ""]
-    for key, title in (("offline", "Offline (deterministic planner, no network)"), ("live", "Live (Groq native tool calling)")):
+    for key, title in (("offline", "Offline (deterministic planner, no network)"),
+                       ("live", "Live (Groq native tool calling), after the planner prompt change"),
+                       ("live_before", "Live, before planner prompt change (2026-10-10, 1 run)")):
         d = data.get(key)
         if not d:
             L += [f"## {title}", "", "_Not run._", ""]
+            continue
+        if d.get("repeats"):
+            L += render_repeats(d, title)
             continue
         s = d["summary"]
         L += [f"## {title}", "", f"Planner: `{d['planner']}`" + (f"; model `{d['model']}`, fallback `{d.get('fallback_model')}`" if d.get("model") else "")
@@ -100,10 +142,10 @@ def render(data: dict) -> str:
             L.append(f"- {note}")
         L.append("")
     L += ["## Caveats", "",
-          "- Eight hand-written scenarios, one run each; a pass here shows the planner and validator agree on these cases, not general optimality.",
+          "- Eight hand-written scenarios; a pass here shows the planner and validator agree on these cases, not general optimality.",
           "- The validator checks feasibility and the stated rules; it does not search for the globally cheapest plan. 'Fees vs bank' compares with the typical bank route only.",
           "- Corridor figures (SAFE quota, LRS, TCS) are researched, not officially confirmed; the SAFE quota is modelled as USD 50,000 equivalent per calendar year at a mock USD/INR of 88.",
-          "- Offline results are deterministic. A live result is one sample from one model at temperature 0 and is cached; it is not a robustness claim.", ""]
+          "- Offline results are deterministic. A live result is a small number of samples from one model (see the repeat counts above), cached on disk; it is not a robustness claim.", ""]
     return "\n".join(L)
 
 
@@ -120,10 +162,23 @@ def extra_notes(rows: list[dict], ids: list[str]) -> list[str]:
     return out
 
 
+LIVE_TEMPERATURE = 0.3      # repeats are distinct samples: temperature > 0 AND a repeat-specific cache salt (planrep<N>)
+
+
+def spread_of(per_rep: list[dict]) -> dict:
+    out = {}
+    for k in ("valid_without_fallback", "valid_plan_rate", "tokens", "mean_iterations_to_valid"):
+        vals = [x[k] for x in per_rep if x.get(k) is not None]
+        out[k] = {"min": min(vals), "mean": round(sum(vals) / len(vals), 2), "max": max(vals)} if vals else None
+    return out
+
+
 def main(argv=None) -> dict:
     ap = argparse.ArgumentParser()
     ap.add_argument("--llm", default="offline", choices=("offline", "groq"))
-    ap.add_argument("--token-cap", type=int, default=DEFAULT_TOKEN_CAP, help="stop starting new live scenarios once this many tokens were spent")
+    ap.add_argument("--repeats", type=int, default=1, help="live only: N independent samples per scenario (temperature "
+                    f"{LIVE_TEMPERATURE}, cache salt planrep<N>, so repeats are distinct and never cache hits of each other)")
+    ap.add_argument("--token-cap", type=int, default=DEFAULT_TOKEN_CAP, help="stop starting new live plans once this many NEW tokens were spent")
     ap.add_argument("--per-plan-cap", type=int, default=PER_PLAN_CAP, help="stop asking the model once one plan has used this many tokens")
     ap.add_argument("--only", help="comma-separated scenario ids")
     ap.add_argument("--ledger-baseline", type=int, default=None,
@@ -133,56 +188,74 @@ def main(argv=None) -> dict:
     REPORTS.mkdir(exist_ok=True)
     jf = REPORTS / "planning.json"
     data = json.loads(jf.read_text(encoding="utf-8")) if jf.exists() else {}
-    rows: list[dict] = []
     notes: list[str] = []
+    today = time.strftime("%Y-%m-%d")
     if args.llm == "groq":
         from oasis.agent.llm import GroqLLM
         if not config.GROQ_API_KEY:
             raise SystemExit("GROQ_API_KEY is not set")
-        llm = GroqLLM()
-        spent0 = llm.usage.day()["tokens"]
+        prev = data.get("live") or {}
+        if prev and not prev.get("repeats"):            # the pre-change single run is kept as its own section
+            data["live_before"] = data.pop("live")
+            prev = {}
+        old_rows = {(r["rep"], r["scenario"]): r for r in prev.get("results", []) if not r.get("skipped")}
+        rows: list[dict] = []
         spent = 0
-        for sid in ids:
-            if spent >= args.token_cap:
-                rows.append({"scenario": sid, "title": SCENARIOS[sid].title, "skipped": f"token cap {args.token_cap:,} reached"})
-                continue
-            planner = AgenticPlanner(llm, token_cap=min(args.per_plan_cap, args.token_cap - spent))
-            r = run_scenario(sid, planner)
-            r["run_date"], r["per_plan_cap"] = time.strftime("%Y-%m-%d"), min(args.per_plan_cap, args.token_cap - spent)
-            spent += r["tokens"]
-            rows.append(r)
-            print(f"{sid}: valid={r['valid']} fallback={r['fell_back']} proposals={r['proposals']} tokens={r['tokens']} (total {spent:,})")
-        notes.append(f"Tokens spent by this run: {spent:,} (cap {args.token_cap:,}); Groq daily ledger before: {spent0:,}, after: {llm.usage.day()['tokens']:,}.")
+
+        def flush() -> None:      # keep every finished plan on disk so an interrupted run loses nothing
+            allrows = {k: v for k, v in old_rows.items()}
+            allrows.update({(r["rep"], r["scenario"]): r for r in rows if not r.get("skipped")})
+            merged = sorted(allrows.values(), key=lambda r: (r["rep"], list(SCENARIOS).index(r["scenario"])))
+            reps_n = max(args.repeats, prev.get("repeats", 0))
+            per = [summarize([r for r in merged if r["rep"] == k]) for k in range(reps_n)]
+            comp = [k for k in range(reps_n) if len([r for r in merged if r["rep"] == k]) == len(SCENARIOS)]
+            data["live"] = {"date": today, "planner": "groq-tools", "model": llm0.model, "fallback_model": config.FALLBACK_MODEL,
+                            "repeats": reps_n, "temperature": LIVE_TEMPERATURE, "per_plan_cap": args.per_plan_cap,
+                            "complete_repeats": comp, "summary": summarize(merged), "per_repeat": per,
+                            "spread": spread_of([per[k] for k in comp]) if len(comp) > 1 else None,
+                            "results": merged, "notes": [n for n in prev.get("notes", []) if n.startswith(("Invocation", "Total Groq"))] + notes + extra_notes(merged, list(SCENARIOS))}
+            jf.write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
+
+        llm0 = GroqLLM(salt="planrep0", temperature=LIVE_TEMPERATURE)
+        spent0 = llm0.usage.day()["tokens"]
+        calls = hits = fbs = 0
+        for rep in range(args.repeats):
+            llm = GroqLLM(salt=f"planrep{rep}", temperature=LIVE_TEMPERATURE)
+            for sid in ids:
+                if spent >= args.token_cap:
+                    if (rep, sid) in old_rows:
+                        rows.append(old_rows[(rep, sid)])
+                    else:
+                        rows.append({"scenario": sid, "rep": rep, "title": SCENARIOS[sid].title, "skipped": f"token cap {args.token_cap:,} reached"})
+                    continue
+                cap = min(args.per_plan_cap, args.token_cap - spent)
+                r = run_scenario(sid, AgenticPlanner(llm, token_cap=cap))
+                r["rep"], r["run_date"], r["per_plan_cap"] = rep, today, cap
+                if r["tokens"] == 0 and (rep, sid) in old_rows:      # pure cache replay of a finished plan: keep its recorded cost
+                    r = old_rows[(rep, sid)]
+                else:
+                    spent += r["tokens"]
+                rows.append(r)
+                flush()
+                print(f"rep{rep} {sid}: valid={r['valid']} fallback={r['fell_back']} proposals={r['proposals']} tokens={r['tokens']} (total {spent:,})", flush=True)
+            calls, hits, fbs = calls + llm.calls, hits + llm.cache_hits, fbs + llm.fallbacks
+        notes.append(f"Invocation {today}: new tokens {spent:,} (cap {args.token_cap:,}); Groq daily ledger before {spent0:,}, "
+                     f"after {llm0.usage.day()['tokens']:,}. Live calls {calls}, cache hits {hits}, model fallbacks {fbs}.")
         if args.ledger_baseline is not None:
-            notes.append(f"Total Groq tokens spent on live planning today (incl. earlier debugging runs whose responses are now cached): "
-                         f"{llm.usage.day()['tokens'] - args.ledger_baseline:,} (ledger {args.ledger_baseline:,} -> {llm.usage.day()['tokens']:,}).")
-        notes.append(f"Live calls {llm.calls}, cache hits {llm.cache_hits}, model fallbacks {llm.fallbacks}.")
-        key, planner_name, model = "live", "groq-tools", llm.model
+            notes.append(f"Total Groq tokens spent on live planning in this session: {llm0.usage.day()['tokens'] - args.ledger_baseline:,}.")
+        flush()
     else:
         planner = DeterministicPlanner()
-        for sid in ids:
-            rows.append(run_scenario(sid, planner))
-        key, planner_name, model = "offline", "deterministic", None
+        rows = [run_scenario(sid, planner) for sid in ids]
         notes.append("The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; "
                      "that is why scenarios with a shortfall need two proposals.")
-    prev = data.get(key) or {}
-    if key == "live" and prev:
-        # merge: rows from earlier runs are kept (labelled with their date and cap) unless re-run now
-        old = [dict(r, run_date=r.get("run_date", prev.get("date")), per_plan_cap=r.get("per_plan_cap", PER_PLAN_CAP))
-               for r in prev.get("results", []) if not r.get("skipped") and r["scenario"] not in {x["scenario"] for x in rows if not x.get("skipped")}]
-        new_ids = {x["scenario"] for x in rows if not x.get("skipped")}
-        rows = [r for r in old] + [x for x in rows if not x.get("skipped")] + [x for x in rows if x.get("skipped") and x["scenario"] not in {o["scenario"] for o in old}]
-        order = list(SCENARIOS)
-        rows.sort(key=lambda r: order.index(r["scenario"]))
-        notes = [f"Run {time.strftime('%Y-%m-%d')} (scenarios {', '.join(sorted(new_ids))}): " + n for n in notes]             + [f"Earlier run {prev.get('date')}: " + n for n in prev.get("notes", []) if not n.startswith(("Not run live",)) and "fallback(s)" not in n]
-    for r in rows:
-        r.setdefault("run_date", time.strftime("%Y-%m-%d"))
-    notes += extra_notes(rows, ids) if key == "live" else []
-    data[key] = {"date": time.strftime("%Y-%m-%d"), "planner": planner_name, "model": model,
-                 "fallback_model": config.FALLBACK_MODEL if key == "live" else None, "summary": summarize(rows), "results": rows, "notes": notes}
+        for r in rows:
+            r.setdefault("run_date", today)
+        data["offline"] = {"date": today, "planner": "deterministic", "model": None, "fallback_model": None,
+                           "summary": summarize(rows), "results": rows, "notes": notes}
     jf.write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
     (REPORTS / "planning.md").write_text(render(data), encoding="utf-8")
-    print(json.dumps(data[key]["summary"], indent=1))
+    print(json.dumps(data["live" if args.llm == "groq" else "offline"]["summary"], indent=1))
     return data
 
 

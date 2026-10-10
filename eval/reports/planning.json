@@ -538,7 +538,7 @@
    "The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; that is why scenarios with a shortfall need two proposals."
   ]
  },
- "live": {
+ "live_before": {
   "date": "2026-10-10",
   "planner": "groq-tools",
   "model": "qwen/qwen3.8-27b",
@@ -1141,6 +1141,356 @@
    "Earlier run 2026-10-10: Observed live behaviour (earlier debugging runs included): qwen/qwen3.8-27b once emitted garbled argument keys in a propose_plan call (the validator rejected it) and hit its 7,000 input-tokens-per-minute limit, after which the adapter retried or used openai/gpt-oss-120b, which answered with the plan as plain JSON text; that text is parsed as a propose_plan call and validated like any other. Typical errors the validator caught: CNY a few yuan short because the model rounded INR down, INR above the student's balance, and wrong payment amounts.",
    "4 fallback(s) (SAFE-quota tuition; Parent remitter crossing TCS; Five obligations; Urgent deposit) were triggered by the per-plan token cap protecting the free-tier budget, not by a model that gave up: those plans were still being revised. The reported plan is then the deterministic one.",
    "Urgent deposit was cut by the remaining run budget, not the nominal 18,000 per-plan cap: it was the last scenario and only 7,094 of the 75,000-token run cap was left (per-plan cap 7,094), so its fallback reflects my budget, not the model. Earlier-run rows (shortfall, SAFE-quota tuition, parent TCS) used a per-plan cap of at most 14,000 (the effective cap was min(14,000, remaining run budget)); the 5 newer rows used 18,000."
+  ]
+ },
+ "live": {
+  "date": "2026-10-10",
+  "planner": "groq-tools",
+  "model": "qwen/qwen3.8-27b",
+  "fallback_model": "openai/gpt-oss-120b",
+  "repeats": 3,
+  "temperature": 0.3,
+  "per_plan_cap": 22000,
+  "complete_repeats": [],
+  "summary": {
+   "scenarios_run": 4,
+   "valid_plan_rate": 1.0,
+   "valid_without_fallback": 3,
+   "fallbacks": 1,
+   "mean_iterations_to_valid": 1.0,
+   "max_iterations_to_valid": 1,
+   "deadlines_met": 12,
+   "deadlines_total": 12,
+   "fees_cny": 1691.98,
+   "bank_fees_cny": 7591.94,
+   "fee_reduction_vs_bank_pct": 77.7,
+   "tokens": 29261,
+   "model_calls": 16
+  },
+  "per_repeat": [
+   {
+    "scenarios_run": 2,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 2,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.0,
+    "max_iterations_to_valid": 1,
+    "deadlines_met": 6,
+    "deadlines_total": 6,
+    "fees_cny": 854.94,
+    "bank_fees_cny": 3881.98,
+    "fee_reduction_vs_bank_pct": 78.0,
+    "tokens": 14015,
+    "model_calls": 7
+   },
+   {
+    "scenarios_run": 1,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 1,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.0,
+    "max_iterations_to_valid": 1,
+    "deadlines_met": 3,
+    "deadlines_total": 3,
+    "fees_cny": 527.88,
+    "bank_fees_cny": 1862.28,
+    "fee_reduction_vs_bank_pct": 71.7,
+    "tokens": 11405,
+    "model_calls": 6
+   },
+   {
+    "scenarios_run": 1,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 0,
+    "fallbacks": 1,
+    "mean_iterations_to_valid": null,
+    "max_iterations_to_valid": null,
+    "deadlines_met": 3,
+    "deadlines_total": 3,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "fee_reduction_vs_bank_pct": 83.3,
+    "tokens": 3841,
+    "model_calls": 3
+   }
+  ],
+  "spread": null,
+  "results": [
+   {
+    "scenario": "shortfall",
+    "title": "Arrival shortfall (the demo student)",
+    "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+    "planner": "groq-tools",
+    "model": "openai/gpt-oss-120b",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 610000.0,
+    "delivered_cny": 42132.87,
+    "fees_cny": 545.17,
+    "bank_fees_cny": 2030.25,
+    "saved_vs_bank_cny": 1485.08,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "parent_remitter",
+     "route_not_cheapest"
+    ],
+    "first_errors": [],
+    "proposals": 1,
+    "tokens": 8853,
+    "model_calls": 4,
+    "seconds": 29.2,
+    "steps": [
+     {
+      "action": "convert",
+      "date": "2026-10-22",
+      "send_inr": 500000,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "action": "convert",
+      "date": "2026-10-22",
+      "send_inr": 110000,
+      "route_id": "route_inr_cny_2",
+      "remitter": "parent"
+     },
+     {
+      "action": "pay",
+      "date": "2026-10-25",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-01",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-15",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "One fast digital route delivers all required CNY before the earliest due date, using student funds first and parent for the shortfall.",
+    "rep": 0,
+    "run_date": "2026-10-10",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "groq-tools",
+    "model": "openai/gpt-oss-120b",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 606200.0,
+    "delivered_cny": 42102.41,
+    "fees_cny": 309.77,
+    "bank_fees_cny": 1851.73,
+    "saved_vs_bank_cny": 1541.96,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "proposals": 1,
+    "tokens": 5162,
+    "model_calls": 3,
+    "seconds": 9.26,
+    "steps": [
+     {
+      "action": "convert",
+      "date": "2026-10-22",
+      "remitter": "student",
+      "route_id": "route_inr_cny_3",
+      "send_inr": 606200
+     },
+     {
+      "action": "pay",
+      "amount_cny": 6000,
+      "date": "2026-10-25",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "action": "pay",
+      "amount_cny": 6000,
+      "date": "2026-11-01",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "action": "pay",
+      "amount_cny": 30000,
+      "date": "2026-11-15",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "One conversion via cheapest fast route covers all CNY due; payments on due dates.",
+    "rep": 0,
+    "run_date": "2026-10-10",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "groq-tools",
+    "model": "openai/gpt-oss-120b",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 610000.0,
+    "delivered_cny": 42150.16,
+    "fees_cny": 527.88,
+    "bank_fees_cny": 1862.28,
+    "saved_vs_bank_cny": 1334.4,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "route_not_cheapest"
+    ],
+    "first_errors": [],
+    "proposals": 1,
+    "tokens": 11405,
+    "model_calls": 6,
+    "seconds": 46.48,
+    "steps": [
+     {
+      "action": "convert",
+      "date": "2026-10-12",
+      "send_inr": 610000,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "action": "pay",
+      "date": "2026-10-25",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-01",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-15",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "One fast cheap conversion covers all obligations; payments on due dates keep INR balance high.",
+    "rep": 1,
+    "run_date": "2026-10-10",
+    "per_plan_cap": 16838
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "deterministic (fallback)",
+    "model": "openai/gpt-oss-120b",
+    "valid": true,
+    "fell_back": true,
+    "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b']: Error code: 400 - {'error': {'message': 'Failed to parse tool call arguments as JSON', 'type': 'invalid_request_error', 'code': 'tool_u",
+    "iterations": 1,
+    "iterations_to_valid": null,
+    "model_valid_without_fallback": false,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "proposals": 1,
+    "tokens": 3841,
+    "model_calls": 3,
+    "seconds": 31.3,
+    "steps": [
+     {
+      "action": "convert",
+      "date": "2026-10-12",
+      "send_inr": 604742.0,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "action": "pay",
+      "date": "2026-10-23",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-10-30",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-13",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+    "rep": 2,
+    "run_date": "2026-10-10",
+    "per_plan_cap": 5433
+   }
+  ],
+  "notes": [
+   "Planner change in this section: the system prompt now carries the validator's error vocabulary (compute the INR from get_routes, add fee/rounding headroom, pay each obligation exactly once with its exact amount, keep the rate-target reserve, stage SAFE-quota conversions across calendar years, parent for the INR shortfall) and the per-plan cap rose from 14,000-18,000 to 22,000 tokens (4 proposals x ~2.5k tokens of tool results plus up to 8 calls that re-send a growing context; the old caps cut four of eight plans off mid-revision). The validator rules were not changed.",
+   "Sampling: temperature 0.3 with a repeat-specific cache salt (planrep0, planrep1, planrep2), so repeats are distinct samples and never cache hits of each other.",
+   "Coverage is PARTIAL because of the token budget (a live plan costs roughly 4,000-25,000 tokens; 24 plans would need about 300,000): measured here are Arrival shortfall (repeat 1 only) and Tight runway (3 repeats). No repeat covers all 8 scenarios, so no min/mean/max across full repeats is reported. Resume: `python -m eval.planning --llm groq --repeats 3 --token-cap 85000` (finished plans are kept in this file; re-running a finished plan is free only if its responses are still cached).",
+   "Which model answered: the model recorded on all four saved rows is openai/gpt-oss-120b, not the configured qwen/qwen3.8-27b; the adapter fails over when the primary hits its rate limit (qwen/qwen3.8-27b is limited to about 8k tokens per minute, which one planning round can exceed). So these live planning numbers describe the fallback model more than the configured one.",
+   "Tight runway repeat 3: the fallback model's tool call was rejected by the Groq API with HTTP 400 ('Failed to parse tool call arguments as JSON') before any proposal reached the validator, so the deterministic plan was used. That is an API-side tool-call formatting failure, not a plan the validator rejected.",
+   "An interrupted first attempt of this same run (killed by a command timeout, rows not saved) printed: Arrival shortfall repeat 1 -> fell back at the token cap after 22,610 tokens (2 proposals); Tight runway repeat 1 -> valid, no fallback, 1 proposal, 7,183 tokens; SAFE-quota tuition repeat 1 -> valid, no fallback, 3 proposals, 24,315 tokens. These came from the console log, not from saved rows, so they are not in the tables or counts above. They show that the same scenario at the same settings can fall back in one sample (Arrival shortfall, 22,610 tokens) and pass in the next (8,853 tokens, 1 proposal).",
+   "Tokens (Groq daily ledger, approximate): planning phase about 105,000 in total (including the interrupted attempt); the ledger entry for this session started at 178,687 tokens used under the previous key."
   ]
  }
 }

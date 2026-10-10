@@ -30,7 +30,40 @@ Planner: `deterministic`; run 2026-10-10.
 
 - The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; that is why scenarios with a shortfall need two proposals.
 
-## Live (Groq native tool calling)
+## Live (Groq native tool calling), after the planner prompt change
+
+Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`; run 2026-10-10; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 0 of 3.
+
+| Repeat | Plans run | Valid without fallback | Final plan valid | Mean proposals to valid | Tokens |
+|---|---|---|---|---|---|
+| 1 | 2 of 8 | 2 | 100% | 1.0 | 14,015 |
+| 2 | 1 of 8 | 1 | 100% | 1.0 | 11,405 |
+| 3 | 1 of 8 | 0 | 100% | - | 3,841 |
+
+Fewer than two repeats completed in full, so no min/mean/max across repeats is reported.
+
+Pooled over every plan run: 3 of 4 valid without fallback (75%); tokens 29,261.
+
+| Scenario | Valid without fallback | Proposals to valid (per repeat; fb = fell back) | Tokens (per repeat) | First validator errors (per repeat) |
+|---|---|---|---|---|
+| Arrival shortfall (the demo student) | 1 of 1 | 1 | 8,853 | - |
+| Tight runway | 2 of 3 | 1, 1, fb | 5,162, 11,405, 3,841 | -; -; - |
+| SAFE-quota tuition | not run | | | |
+| Late scholarship | not run | | | |
+| Parent remitter crossing TCS | not run | | | |
+| Rate target to protect | not run | | | |
+| Five obligations | not run | | | |
+| Urgent deposit | not run | | | |
+
+- Planner change in this section: the system prompt now carries the validator's error vocabulary (compute the INR from get_routes, add fee/rounding headroom, pay each obligation exactly once with its exact amount, keep the rate-target reserve, stage SAFE-quota conversions across calendar years, parent for the INR shortfall) and the per-plan cap rose from 14,000-18,000 to 22,000 tokens (4 proposals x ~2.5k tokens of tool results plus up to 8 calls that re-send a growing context; the old caps cut four of eight plans off mid-revision). The validator rules were not changed.
+- Sampling: temperature 0.3 with a repeat-specific cache salt (planrep0, planrep1, planrep2), so repeats are distinct samples and never cache hits of each other.
+- Coverage is PARTIAL because of the token budget (a live plan costs roughly 4,000-25,000 tokens; 24 plans would need about 300,000): measured here are Arrival shortfall (repeat 1 only) and Tight runway (3 repeats). No repeat covers all 8 scenarios, so no min/mean/max across full repeats is reported. Resume: `python -m eval.planning --llm groq --repeats 3 --token-cap 85000` (finished plans are kept in this file; re-running a finished plan is free only if its responses are still cached).
+- Which model answered: the model recorded on all four saved rows is openai/gpt-oss-120b, not the configured qwen/qwen3.8-27b; the adapter fails over when the primary hits its rate limit (qwen/qwen3.8-27b is limited to about 8k tokens per minute, which one planning round can exceed). So these live planning numbers describe the fallback model more than the configured one.
+- Tight runway repeat 3: the fallback model's tool call was rejected by the Groq API with HTTP 400 ('Failed to parse tool call arguments as JSON') before any proposal reached the validator, so the deterministic plan was used. That is an API-side tool-call formatting failure, not a plan the validator rejected.
+- An interrupted first attempt of this same run (killed by a command timeout, rows not saved) printed: Arrival shortfall repeat 1 -> fell back at the token cap after 22,610 tokens (2 proposals); Tight runway repeat 1 -> valid, no fallback, 1 proposal, 7,183 tokens; SAFE-quota tuition repeat 1 -> valid, no fallback, 3 proposals, 24,315 tokens. These came from the console log, not from saved rows, so they are not in the tables or counts above. They show that the same scenario at the same settings can fall back in one sample (Arrival shortfall, 22,610 tokens) and pass in the next (8,853 tokens, 1 proposal).
+- Tokens (Groq daily ledger, approximate): planning phase about 105,000 in total (including the interrupted attempt); the ledger entry for this session started at 178,687 tokens used under the previous key.
+
+## Live, before planner prompt change (2026-10-10, 1 run)
 
 Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`; run 2026-10-10.
 
@@ -67,7 +100,7 @@ Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`;
 
 ## Caveats
 
-- Eight hand-written scenarios, one run each; a pass here shows the planner and validator agree on these cases, not general optimality.
+- Eight hand-written scenarios; a pass here shows the planner and validator agree on these cases, not general optimality.
 - The validator checks feasibility and the stated rules; it does not search for the globally cheapest plan. 'Fees vs bank' compares with the typical bank route only.
 - Corridor figures (SAFE quota, LRS, TCS) are researched, not officially confirmed; the SAFE quota is modelled as USD 50,000 equivalent per calendar year at a mock USD/INR of 88.
-- Offline results are deterministic. A live result is one sample from one model at temperature 0 and is cached; it is not a robustness claim.
+- Offline results are deterministic. A live result is a small number of samples from one model (see the repeat counts above), cached on disk; it is not a robustness claim.
