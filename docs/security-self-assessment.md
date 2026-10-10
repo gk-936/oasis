@@ -44,7 +44,7 @@ The executor checks five things. New: every approval inside the intent must be a
 
 A forged request never changes the genuine recipient's record. The request is rejected and the real university or landlord stays verified, so an attacker can't cause a denial of service against legitimate payees.
 
-## Known risks and limitations
+## Detailed risk notes (the consolidated list is under "Known limitations" below)
 - **Canaries are an early-detection layer, not a blocking layer, and only see attacks that touch them.** In the benchmark they block 0 attacks beyond verification + signed intents + policy; they flag 3 attacks earlier (at Understand, before verification or execution) and give a freeze signal. Intents and verification cover everything canaries miss.
 - **Verification is only as good as the registry.** A compromised registry defeats step 3, and in this build the registry is a mock.
 - **Simulated humans.** The benchmark's student and parent approve only requests consistent with the Passport. A real student might approve a scam, which tier-2 approval can't fully prevent.
@@ -73,13 +73,6 @@ A forged request never changes the genuine recipient's record. The request is re
 - **Screenshots** may contain third parties' personal data. The vision path keeps only extracted text and does not store the image.
 
 
-## Honest limits
-
-- **Some 100% results are partly by construction.** The same team wrote the attacks and the defences. The simulated student declines using the risk evidence the system itself produced. Legitimate account changes succeed because the scenarios pre-register the new account in the registry. A 100% block rate on this suite is therefore not a claim about unseen attackers, and a 100% completion rate is not a claim about real landlords and universities.
-- **Approvals are signed, but the humans are still simulated in the benchmark.** In the API, an approval is an Ed25519 signature from the approver's browser-held device key. The device key is generated at first login and registered by whoever holds the role's passcode (trust on first use; a later login can rotate it). A phished passcode therefore lets an attacker register their own key. The benchmark and scripted demo use in-process simulated device keys.
-- **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
-- **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
-
 - **Adversarial judge review (2026-10-10), by design or too large to fix here.**
   - *Device-key takeover is trust-on-first-use.* Whoever holds a role's passcode can register a new Ed25519 key for that role, which retires the old one (and invalidates drafts the old key was about to sign). Passcodes are shared per role. Real deployment needs per-user accounts plus an out-of-band step (or WebAuthn) to enrol a device.
   - *The login throttle is per client address.* Ten wrong passcodes lock that address out for a minute, including the legitimate user behind it (a cheap denial of service against the login). The limiter is in memory and resets on restart.
@@ -91,6 +84,36 @@ A forged request never changes the genuine recipient's record. The request is re
   - *Interactive API docs (`/docs`, `/openapi.json`) are public* and list every endpoint. They contain no secrets.
   - *Only one request runs at a time.* Requests are serialised to protect the single-writer sandbox state (audit chain, ledger, nonces, pending approvals); a slow live-model call blocks the others. Fine for a demo, not a scaling design.
   - *Amount notation.* `1e5` is read as `1` (the parser reads digits only), which shows in the draft the student signs; it is never read as 100,000.
+
+## Known limitations
+
+1. **Authentication is demo-grade.** Roles use shared passcodes (one per role, public demo defaults unless `OASIS_PASS_*` is set), with no per-person accounts or MFA, and approver device keys are trust-on-first-use, so whoever holds a role's passcode can register a new key ([security self-assessment][sec]).
+2. **Key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.** The data key and trust signing key under `data/keys/` are only protected by OS permissions otherwise, so set the passphrase before any recorded demo so plaintext keys are never shown ([hardening][sec-hard]).
+3. **FISCO BCOS is a 4-node local test chain** (real FISCO BCOS 3.17.1, all nodes on a single host), opt-in via `OASIS_ANCHOR=fisco`; the labelled simulated chain is the default, and it shows the integration, not decentralised trust ([FISCO BCOS notes][fisco]). Oasis does NOT claim the on-chain challenge bonus: that bonus is for Topic F, and Oasis is Topic C.
+4. **PQ-TLS was tested only with an OpenSSL client** (OpenSSL 3.5.9 negotiated X25519MLKEM768 via Caddy); it was not tested in browsers, the certificate is classical, and the app itself still serves plain HTTP ([PQ-TLS evidence][pq]).
+5. **Much of the world is mock data.** Route spreads and fees, payment rails and the payee registry are mock; exchange rates can be live (`OASIS_RATES=live`) with a mock fallback ([real vs simulated][rvs]).
+6. **There is no API to real banks, and WeIdentity is not integrated.** The registry is made of WeIdentity-style demo credentials, and nothing is ever sent to a real bank ([real vs simulated][rvs]).
+7. **Money is stored as floats rounded to whole fen.** This is fine for a sandbox only; production would use `Decimal`, and corridor checks use one hard-coded USD/INR of 88.0.
+8. **Demo Run 2 catches the forged invoice at step 3 (Verify), not step 5.** The registry contradicts the account at Verify; the step 5 intent-mismatch catch is shown by the rewritten-payment-instructions attack ([technical documentation][tech]).
+9. **Humans in the benchmark are simulated, and the same team wrote the attacks and the defences.** The scripted student and parent approve only requests consistent with the Passport, so 100% results are partly by construction; the blind hidden set mitigates this partly and is now partly burned, because its failures were fixed afterwards ([hidden-set report][hidden]).
+10. **Live results are single runs.** The live planner was valid without fallback in 4 of 8 scenarios, and the live benchmark has 1 repeat at temperature 0 over six injection scenarios ([planning report][plan]). Placeholder: a `--repeats 3` live run has not been reported yet; a later update will replace this sentence with its results.
+11. **The risk scorer is heuristic and was tuned on the benchmark itself (in-sample).** An optional LLM scorer in live mode can only escalate, and neither scorer can see poisoned tool output (0/6), which only intent binding stops.
+12. **Regulatory figures are researched but not officially confirmed.** The TCS rate for non-education purposes is a marked placeholder, and the education purpose code is unconfirmed (`oasis/trust/rules/inr_cny.yaml`).
+13. **Rate limiting and tokens are per process.** The login throttle (per client address, in memory) and the session and executor token stores reset on restart and do not work across several workers, and one address can be locked out for a minute.
+14. **Requests are serialised.** One request runs at a time to protect the single-writer sandbox state, so a slow live-model call blocks the others; time is the simulated clock, not wall time.
+15. **The judge role can read the student's data.** It is read-only by design so a reviewer can inspect state, audit and plans, and it cannot call any state-changing student endpoint.
+16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (digits only, visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
+17. **Tamil and Hindi parent text is templated and has not been reviewed by native speakers.**
+18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
+
+[sec]: security-self-assessment.md
+[sec-hard]: security-self-assessment.md#hardening-added-2026-10-10
+[fisco]: fisco-bcos.md
+[pq]: ../eval/reports/pqtls.md
+[rvs]: real-vs-simulated.md
+[tech]: technical-documentation.md
+[hidden]: ../eval/reports/benchmark_hidden_prefix.md
+[plan]: ../eval/reports/planning.md
 
 ## Judge review 2026-10-10: defects found and fixed
 

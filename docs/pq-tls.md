@@ -1,8 +1,21 @@
 # Post-quantum hybrid TLS (X25519MLKEM768): tested with Caddy
 
-## Status: TESTED locally (2026-10-10)
+Status: tested with an OpenSSL client (2026-10-10)
 
-Caddy v2.11.7 (Apache-2.0, go1.26.8; Go >= 1.24 supports X25519MLKEM768) terminates TLS 1.3 in front of uvicorn, configured to offer only `x25519mlkem768`. An OpenSSL 3.5.9 client reported `Negotiated TLS1.3 group: X25519MLKEM768`, and a classical-only X25519 client was refused. Full command and output: `eval/reports/pqtls.md`.
+Caddy v2.11.7 (Apache-2.0, go1.26.8; Go >= 1.24 supports X25519MLKEM768) terminates TLS 1.3 in front of uvicorn, configured to offer only `x25519mlkem768`. An OpenSSL 3.5.9 client reported `Negotiated TLS1.3 group: X25519MLKEM768`, and a classical-only X25519 client was refused. Not tested in browsers; the certificate is classical. Evidence, copied verbatim from `eval/reports/pqtls.md` (filtered `openssl s_client` output):
+
+```
+=== groups=X25519MLKEM768
+Negotiated TLS1.3 group: X25519MLKEM768
+Verification: OK
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Protocol: TLSv1.3
+=== groups=X25519
+...ssl/tls alert handshake failure... SSL alert number 40
+Negotiated TLS1.3 group: <NULL>
+```
+
+Full command and output: `eval/reports/pqtls.md`.
 
 The demo app itself still serves plain HTTP unless you run the proxy; the Python process is unchanged.
 

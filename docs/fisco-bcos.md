@@ -1,7 +1,7 @@
-# FISCO BCOS anchoring (tested on a local 4-node chain)
+# FISCO BCOS anchoring (4-node local test chain)
 
 Only 32-byte intent digests are anchored (contract `OasisAnchor`, `tools/fisco/contracts/OasisAnchor.sol`); no payment data goes on-chain.
-Default remains the labelled local simulation; set `OASIS_ANCHOR=fisco` to use the real chain (falls back to local, labelled, if unreachable).
+The chain is a 4-node local test chain (real FISCO BCOS 3.17.1, single host). Oasis does not claim the on-chain challenge bonus (that is for Topic F; Oasis is Topic C). Default remains the labelled local simulation; set `OASIS_ANCHOR=fisco` to use the real chain (falls back to local, labelled, if unreachable).
 
 ## What was built (2026-10-10)
 

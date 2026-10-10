@@ -80,7 +80,9 @@ Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`,
 - **Live-replay**: qwen/qwen3.8-27b reads the documents (live-agent extraction), adds an escalate-only AI risk score and plans with native tool calling. Its answers were recorded once into the committed fixture `eval/fixtures/demo_cache/` (model name, response text and date only) and are replayed from it, so the demo repeats exactly with no network. Each step shows its mode and model, for example "Qwen qwen3.8-27b - replayed from recorded response 2026-10-10". If a response is missing from the fixture, that call falls back to the offline parser, heuristic scorer or deterministic planner and the step says so. **Status of the fixture: not recorded yet** (the free-tier daily token allowance was spent before the recording could run), so live-replay currently shows the labelled offline fallback on every step. Record it with `PYTHONPATH=. python -m eval.record_demo_fixture` (about 25k tokens; it refuses when fewer than 40k of the daily 200k would remain).
 
 - Run 1 (legitimate): Passport and forecast, agent plan with validator revision, tuition paid with a signed intent, parent co-approves a top-up (shown in Tamil/Hindi/English), landlord's genuine account change completes through the verification ramp, Tier-1 autonomy (rate target + recurring bill), proof packs and savings receipt.
-- Run 2 (attack): forged invoice stopped with a why-card, payment instructions rewritten at execution and stopped by the executor's intent check, hidden page injection reaches a canary, freeze and recovery plan, the student approves the recovery and the genuine payment completes.
+- Run 2 (attack): the forged invoice is caught at step 3 (Verify: the registry contradicts the account) and stopped with a why-card; payment instructions rewritten at execution (the second attack) are stopped at step 5 by the executor's intent check; hidden page injection reaches a canary, freeze and recovery plan, the student approves the recovery and the genuine payment completes.
+
+**Recording the demo:** set `OASIS_KEY_PASSPHRASE` before recording (for example `export OASIS_KEY_PASSPHRASE=...` before starting uvicorn) so the key files under `data/keys/` are passphrase-wrapped and plaintext keys are never shown on screen; use custom `OASIS_PASS_*` passcodes too, and start from a clean sandbox (`POST /api/reset`).
 
 `POST /api/reset` (or `/api/demo/reset`, or the "Reset sandbox" button) returns to a clean sandbox and wipes the SQLite state.
 
@@ -131,17 +133,39 @@ A proof pack embeds the public keys that signed it, so a pack alone proves nothi
 - Fingerprint of the scripted demo's public keys: `396bbb6e7a75c14fa88bf26bdbee0218a5aefdb48ca3ef9a0f9ff2de3dffdbdf` (anyone can forge with these keys, so never pin them outside the demo).
 - A real server's fingerprint is created on first start and printed by the endpoint; pin it out of band (for example in this README for your deployment).
 
-## Honest limits
+## Known limitations
 
-- **Some 100% results are partly by construction.** The same team wrote the attacks and the defences. The simulated student declines using the risk evidence the system itself produced. Legitimate account changes succeed because the scenarios pre-register the new account in the registry. A 100% block rate on this suite is therefore not a claim about unseen attackers, and a 100% completion rate is not a claim about real landlords and universities.
-- **Authentication is demo-grade.** Per-role passcodes (public demo defaults), no per-person accounts or MFA; device-key registration is trust on first use; key files are plaintext unless a passphrase is set. Details in `docs/security-self-assessment.md`.
-- **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
-- **The hidden set is now partly burned.** The 40 blind cases were run once; the failures they exposed were fixed as general capabilities (each with its own tests written from first principles) and the set was re-run. It can no longer serve as an unseen test for those fixes. The pre-fix report is kept unchanged ([`benchmark_hidden_prefix.md`](eval/reports/benchmark_hidden_prefix.md)). One request-type pattern (a bank-details message that says "send it ... instead", phrased as a chat) was widened after seeing that one case was still held only for low confidence; treat that single pattern as lightly tuned.
-- **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
+1. **Authentication is demo-grade.** Roles use shared passcodes (one per role, public demo defaults unless `OASIS_PASS_*` is set), with no per-person accounts or MFA, and approver device keys are trust-on-first-use, so whoever holds a role's passcode can register a new key ([security self-assessment][sec]).
+2. **Key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.** The data key and trust signing key under `data/keys/` are only protected by OS permissions otherwise, so set the passphrase before any recorded demo so plaintext keys are never shown ([hardening][sec-hard]).
+3. **FISCO BCOS is a 4-node local test chain** (real FISCO BCOS 3.17.1, all nodes on a single host), opt-in via `OASIS_ANCHOR=fisco`; the labelled simulated chain is the default, and it shows the integration, not decentralised trust ([FISCO BCOS notes][fisco]). Oasis does NOT claim the on-chain challenge bonus: that bonus is for Topic F, and Oasis is Topic C.
+4. **PQ-TLS was tested only with an OpenSSL client** (OpenSSL 3.5.9 negotiated X25519MLKEM768 via Caddy); it was not tested in browsers, the certificate is classical, and the app itself still serves plain HTTP ([PQ-TLS evidence][pq]).
+5. **Much of the world is mock data.** Route spreads and fees, payment rails and the payee registry are mock; exchange rates can be live (`OASIS_RATES=live`) with a mock fallback ([real vs simulated][rvs]).
+6. **There is no API to real banks, and WeIdentity is not integrated.** The registry is made of WeIdentity-style demo credentials, and nothing is ever sent to a real bank ([real vs simulated][rvs]).
+7. **Money is stored as floats rounded to whole fen.** This is fine for a sandbox only; production would use `Decimal`, and corridor checks use one hard-coded USD/INR of 88.0.
+8. **Demo Run 2 catches the forged invoice at step 3 (Verify), not step 5.** The registry contradicts the account at Verify; the step 5 intent-mismatch catch is shown by the rewritten-payment-instructions attack ([technical documentation][tech]).
+9. **Humans in the benchmark are simulated, and the same team wrote the attacks and the defences.** The scripted student and parent approve only requests consistent with the Passport, so 100% results are partly by construction; the blind hidden set mitigates this partly and is now partly burned, because its failures were fixed afterwards ([hidden-set report][hidden]).
+10. **Live results are single runs.** The live planner was valid without fallback in 4 of 8 scenarios, and the live benchmark has 1 repeat at temperature 0 over six injection scenarios ([planning report][plan]). Placeholder: a `--repeats 3` live run has not been reported yet; a later update will replace this sentence with its results.
+11. **The risk scorer is heuristic and was tuned on the benchmark itself (in-sample).** An optional LLM scorer in live mode can only escalate, and neither scorer can see poisoned tool output (0/6), which only intent binding stops.
+12. **Regulatory figures are researched but not officially confirmed.** The TCS rate for non-education purposes is a marked placeholder, and the education purpose code is unconfirmed (`oasis/trust/rules/inr_cny.yaml`).
+13. **Rate limiting and tokens are per process.** The login throttle (per client address, in memory) and the session and executor token stores reset on restart and do not work across several workers, and one address can be locked out for a minute.
+14. **Requests are serialised.** One request runs at a time to protect the single-writer sandbox state, so a slow live-model call blocks the others; time is the simulated clock, not wall time.
+15. **The judge role can read the student's data.** It is read-only by design so a reviewer can inspect state, audit and plans, and it cannot call any state-changing student endpoint.
+16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (digits only, visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
+17. **Tamil and Hindi parent text is templated and has not been reviewed by native speakers.**
+18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
+
+[sec]: docs/security-self-assessment.md
+[sec-hard]: docs/security-self-assessment.md#hardening-added-2026-10-10
+[fisco]: docs/fisco-bcos.md
+[pq]: eval/reports/pqtls.md
+[rvs]: docs/real-vs-simulated.md
+[tech]: docs/technical-documentation.md
+[hidden]: eval/reports/benchmark_hidden_prefix.md
+[plan]: eval/reports/planning.md
 
 ## What is real and what is simulated
 
-Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, the benchmark harness and the Groq adapter. Simulated (labelled MOCK): route spreads and fees (the INR→CNY mid-market rate is a mock snapshot of the real level by default, and the real ECB reference rate with `OASIS_RATES=live`, shown with a live / STALE / MOCK badge; Oasis never predicts rates; see [docs/live-rates.md](docs/live-rates.md)), routes, payment rails and balances, the payee registry (WeIdentity-style demo credentials), wallet spending, humans in the benchmark, the clock, and anchoring by default (a local hash-linked simulation; FISCO BCOS is real but local: a 4-node v3.17.1 Air chain on one host (WSL2), the `OasisAnchor` contract anchors only sha256 intent digests, and real transaction hashes are in [docs/fisco-bcos.md](docs/fisco-bcos.md). It is opt-in (`OASIS_ANCHOR=fisco`); the default, the tests, the benchmark and the scripted demo use the labelled local simulation). Post-quantum TLS: PQ-TLS is tested: Caddy 2.11.7 (go1.26.8) terminating TLS 1.3 with only `x25519mlkem768`, an OpenSSL 3.5.9 client negotiated X25519MLKEM768 and a classical-only client was refused (`eval/reports/pqtls.md`). Caveats: the certificate is classical (ECDSA from Caddy's internal CA), the test is local on one machine, and browsers were not tested. Full table: [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
+Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, the benchmark harness and the Groq adapter. Simulated (labelled MOCK): route spreads and fees (the INR→CNY mid-market rate is a mock snapshot of the real level by default, and the real ECB reference rate with `OASIS_RATES=live`, shown with a live / STALE / MOCK badge; Oasis never predicts rates; see [docs/live-rates.md](docs/live-rates.md)), routes, payment rails and balances, the payee registry (WeIdentity-style demo credentials), wallet spending, humans in the benchmark, the clock, and anchoring by default (a local hash-linked simulation; FISCO BCOS is a 4-node local test chain: real v3.17.1 Air, 4 nodes on one host (WSL2), the `OasisAnchor` contract anchors only sha256 intent digests, and real transaction hashes are in [docs/fisco-bcos.md](docs/fisco-bcos.md). It is opt-in (`OASIS_ANCHOR=fisco`); the default, the tests, the benchmark and the scripted demo use the labelled local simulation). Post-quantum TLS: PQ-TLS is tested: Caddy 2.11.7 (go1.26.8) terminating TLS 1.3 with only `x25519mlkem768`, an OpenSSL 3.5.9 client negotiated X25519MLKEM768 and a classical-only client was refused (`eval/reports/pqtls.md`). Caveats: the certificate is classical (ECDSA from Caddy's internal CA), the test is local on one machine, and browsers were not tested. Full table: [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
 
 ## AI as a Financial Participant
 
@@ -163,8 +187,8 @@ What the AI never does: hold the payment credential, approve a payment, change a
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) | what is working code and what is MOCK |
 | [docs/execution-evidence.md](docs/execution-evidence.md) | sandbox logs and reports, how to regenerate them |
-| [docs/pq-tls.md](docs/pq-tls.md) | post-quantum TLS recipe, tested locally with Caddy + OpenSSL 3.5 (evidence: [eval/reports/pqtls.md](eval/reports/pqtls.md)) |
-| [docs/fisco-bcos.md](docs/fisco-bcos.md) | FISCO BCOS anchoring on a local 4-node chain, real transaction hashes, how to run and verify |
+| [docs/pq-tls.md](docs/pq-tls.md) | post-quantum TLS recipe, tested with an OpenSSL 3.5 client against Caddy (evidence: [eval/reports/pqtls.md](eval/reports/pqtls.md)) |
+| [docs/fisco-bcos.md](docs/fisco-bcos.md) | FISCO BCOS anchoring on a 4-node local test chain, real transaction hashes, how to run and verify |
 | [PROGRESS.md](PROGRESS.md) | build ledger |
 
 ## LLM configuration and persistence
@@ -229,10 +253,10 @@ oasis/
   passport/     Student Financial Passport data model
   planning/     route comparison, forecast + triggers, spending categorisation (cold start -> own pattern),
                 tools.py (planner tool protocol), validator.py (deterministic plan validator), scenarios.py
-  trust/        crypto (Signer interface: Ed25519 + ML-DSA-65 hybrid by default; optional SM2/SM3 via gmssl; PQ-TLS tested locally with Caddy: docs/pq-tls.md), verification ramp, intents,
+  trust/        crypto (Signer interface: Ed25519 + ML-DSA-65 hybrid by default; optional SM2/SM3 via gmssl; PQ-TLS tested with an OpenSSL client against Caddy: docs/pq-tls.md), verification ramp, intents,
                 policy engine, corridor rules (rules/inr_cny.yaml), executor, canaries, audit chain
   proof/        proof packs + standalone verifier
-  chain/        anchoring interface: LocalAnchorChain (simulated, default); FiscoAnchor (real local FISCO BCOS chain, OASIS_ANCHOR=fisco)
+  chain/        anchoring interface: LocalAnchorChain (simulated, default); FiscoAnchor (4-node local test chain, real FISCO BCOS 3.17.1, OASIS_ANCHOR=fisco)
   mock/         rates/routes, sandbox ledger, payee registry (WeIdentity-style), wallet/QR fees
   storage.py    SQLite persistence
   demo.py       scripted demo runs (fixed seed, offline)

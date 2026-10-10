@@ -850,7 +850,7 @@ function Proof({ s, selected }) {
           {pack.decision && <p>Policy decision: <b>{pack.decision.action}</b> by <code>{pack.decision.rule}</code> (tier {pack.decision.tier})</p>}
           {pack.anchor && (/NOT FISCO/i.test(pack.anchor.network || "")
             ? <p>Anchor: <Hash value={pack.anchor.tx_hash} n={12} what="anchor transaction" /> on <b>{pack.anchor.network}</b> <Mock>SIMULATED CHAIN</Mock></p>
-            : <p>Anchor: tx <Hash value={pack.anchor.tx_hash} n={12} what="anchor transaction" />, block <b>{pack.anchor.block_number}</b> on <b>{pack.anchor.network}</b> <Mock>REAL CHAIN · LOCAL, 4 NODES ON ONE HOST</Mock></p>)}
+            : <p>Anchor: tx <Hash value={pack.anchor.tx_hash} n={12} what="anchor transaction" />, block <b>{pack.anchor.block_number}</b> on <b>{pack.anchor.network}</b> <Mock>4-NODE LOCAL TEST CHAIN (ONE HOST)</Mock></p>)}
           {pack.costs?.route && <p>Route {pack.costs.route}: saved <b>{cny(pack.costs.saved_cny, 2)}</b> vs a typical bank route <Mock /></p>}
           <h4>Independent checks</h4>
           <div className="tbl"><table aria-label="Independent checks"><tbody>{checks.map(([k, v]) => (
