@@ -207,14 +207,14 @@ class Session:
 
 def _request_to(r: Request) -> dict:
     return {"text": r.text, "source": r.source, "purpose_hint": r.purpose_hint, "remitter": r.remitter,
-            "recurring": r.recurring, "tool_poison": r.tool_poison, "draft": r.draft,
+            "recurring": r.recurring, "tool_poison": r.tool_poison, "draft": r.draft, "pay_again": r.pay_again,
             "signed_approvals": list(r.signed_approvals)}
 
 
 def _request_from(d: dict) -> Request:
     return Request(d["text"], source=d["source"], purpose_hint=d.get("purpose_hint"), remitter=d["remitter"],
                    recurring=d.get("recurring", False), tool_poison=d.get("tool_poison"), draft=d.get("draft"),
-                   signed_approvals=tuple(d.get("signed_approvals", [])))
+                   pay_again=bool(d.get("pay_again", False)), signed_approvals=tuple(d.get("signed_approvals", [])))
 
 
 S = Session()
@@ -263,14 +263,19 @@ def _pending_view(k: str, v: dict) -> dict:
     return {"id": k, "required": v["required"], "approvals": sorted(v["signed"]),
             "signed_by": {r: rec["key_id"] for r, rec in v["signed"].items()},
             "fields": v["outcome"]["fields"], "card": v["outcome"].get("card"),
+            "duplicate": v["outcome"].get("duplicate"), "pay_again": bool(v["request"].pay_again),
             "draft": {kk: d.get(kk) for kk in ("payee_id", "account_ref", "amount", "currency", "purpose", "route_id",
                                                 "not_after", "nonce", "canonical", "draft_hash")} if d else None}
+
+
+DUP_CONFIRM = "duplicate_confirmation"     # R17 hold: not an approver role, so /api/approve can never release it
 
 
 def _store_pending(req: Request, outcome: dict) -> str | None:
     d = outcome.get("decision") or {}
     req_roles = set(d.get("required_approvals") or [])
-    if outcome["status"] != "held" or not req_roles or not req_roles <= {"student", "parent"} or not outcome.get("draft"):
+    dup_hold = d.get("rule") == "R17_duplicate_payment" and req_roles == {DUP_CONFIRM}
+    if outcome["status"] != "held" or not req_roles or not (req_roles <= {"student", "parent"} or dup_hold) or not outcome.get("draft"):
         return None
     pid = f"pend_{secrets.token_hex(4)}"     # unique, never reused: a stale button can never hit a newer payment
     dr = outcome["draft"]
@@ -420,7 +425,11 @@ def logout(response: Response, p: Principal = Depends(ANY)):
 
 
 @app.get("/api/auth/me")
-def me(p: Principal = Depends(ANY)):
+def me(request: HttpRequest):
+    """Who am I? 200 {"role": null} when logged out (a probe, not an error); the role and device key otherwise."""
+    p = _principal(request)
+    if p is None:
+        return {"role": None}
     out = {"role": p.role, "expires_at": datetime.fromtimestamp(p.exp, timezone.utc).isoformat(timespec="seconds")}
     if p.role in ("student", "parent"):
         k = S.approvers.active(p.role)
@@ -539,7 +548,11 @@ def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT)):
     item = S.pending.get(body.pending_id)
     if not item:
         raise HTTPException(404, "unknown pending id")
-    if role not in item["required"]:
+    dismiss_dup = (not body.approve) and role == "student" and DUP_CONFIRM in item["required"]
+    if role not in item["required"] and not dismiss_dup:
+        if DUP_CONFIRM in item["required"]:
+            raise HTTPException(403, "this looks like a duplicate of a payment you already made: choose Pay again to "
+                                     "start a deliberate second payment; it cannot be approved directly")
         raise HTTPException(403, f"this payment does not need the {role}'s approval")
     na = (item["outcome"].get("draft") or {}).get("not_after")
     if body.approve and na and datetime.fromisoformat(S.world.now_iso()) > datetime.fromisoformat(na):
@@ -572,6 +585,30 @@ def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT)):
         return {"status": "waiting", "missing": sorted(missing), "signed_by": {r: x["key_id"] for r, x in item["signed"].items()}}
     req = item["request"]
     req.signed_approvals = tuple(item["signed"][r] for r in sorted(item["signed"]))
+    o = _out(S.agent.handle(req))
+    S.pending.pop(body.pending_id)
+    o["pending_id"] = _store_pending(req, o)
+    S.save()
+    return o
+
+
+class PayAgainIn(Strict):
+    pending_id: str
+
+
+@app.post("/api/pay-again")
+def pay_again(body: PayAgainIn, p: Principal = Depends(STUDENT)):
+    """The student's explicit "pay again" for a suspected duplicate (R17). It re-runs the held request with `pay_again`
+    set and a FRESH draft: the result is an ordinary held payment, with the duplicate warning attached, that must still
+    be signed with the student's device key. Nothing is paid here."""
+    item = S.pending.get(body.pending_id)
+    if not item:
+        raise HTTPException(404, "unknown pending id")
+    if DUP_CONFIRM not in item["required"]:
+        raise HTTPException(409, "this item is not a suspected duplicate")
+    req = item["request"]
+    req.pay_again, req.draft, req.signed_approvals = True, None, ()
+    S.world.audit.append("pay_again_requested", {"pending_id": body.pending_id, "duplicate": item["outcome"].get("duplicate")})
     o = _out(S.agent.handle(req))
     S.pending.pop(body.pending_id)
     o["pending_id"] = _store_pending(req, o)

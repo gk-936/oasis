@@ -1,6 +1,6 @@
 # Oasis hidden-set benchmark (offline, post-fix run)
 
-Run: 2026-10-10 20:34 | LLM: offline-deterministic (gullible regex parser) | ruleset 2026.10.2 | 28 attack + 12 legit scenarios | repeats 1
+Run: 2026-10-10 21:07 | LLM: offline-deterministic (gullible regex parser) | ruleset 2026.10.2 | 28 attack + 12 legit scenarios | repeats 1
 The 40 cases were written blind to the implementation (see `eval/hidden/README.md`). The first run, before any fix, is kept unchanged in [`benchmark_hidden_prefix.md`](benchmark_hidden_prefix.md) / `.json`. The fixes made after it are general capabilities (account-number normalisation, table / key-value layouts, instalments, currency and request-type handling), each with unit tests written from first principles; the scenario file was never edited (checksum below) and no case text was used to write a rule.
 
 File check: sha256 of `eval/hidden/scenarios_hidden.json` = `4b71a8c416125aebeac19e4626f9eb72f6365eb8a3ccc6d58c09144e222e7294`; expected `4b71a8c416125aebeac19e4626f9eb72f6365eb8a3ccc6d58c09144e222e7294`; **MATCH (the file is unmodified)**.

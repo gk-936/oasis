@@ -11,6 +11,7 @@ from typing import Protocol
 
 from .. import config
 from ..mock.ledger import InsufficientFunds
+from .duplicates import doc_hash, find_duplicate, invoice_ref
 from .llm import diverges_from_genuine
 from .request_types import LABELS, classify_request, needs_out_of_band
 from ..passport.models import Level, Obligation, Recipient
@@ -63,6 +64,7 @@ class Request:
     approvals: tuple[str, ...] = ()  # DEPRECATED role strings: carry no authority and are ignored (audited if present)
     signed_approvals: tuple[dict, ...] = ()   # Ed25519 approvals over the draft hash (trust/approvals.py); only these count
     draft: dict | None = None        # {"nonce","not_after"} fixed when the payment was first held, so approvers sign one draft
+    pay_again: bool = False          # the student explicitly confirmed paying a suspected duplicate a second time (R17)
     genuine: dict | None = None      # benchmark only: the document's genuine (pre-injection) fields, from the scenario
 
 
@@ -89,6 +91,7 @@ class Outcome:
     followed_injection: bool = False  # analysis-only ground truth
     draft: dict | None = None        # the exact payment draft approvers sign (fields + canonical string + draft_hash)
     rejected_approvals: list = field(default_factory=list)   # approvals that were presented but did not verify
+    duplicate: dict | None = None    # the earlier payment this request repeats (R17): date, proof id, why
     extraction: dict | None = None   # live-agent mode: per-field sources and whether the model followed an injection
 
     def to_dict(self) -> dict:
@@ -157,10 +160,12 @@ class OasisAgent:
 
     def _policy_input(self, *, rec: Recipient | None, payee_id: str, purpose: str, amount: float,
                       cor, risk: float, hits, approvals, recurring: bool, remitter: str, currency: str = "CNY",
-                      instalment: bool = False, remaining: float | None = None) -> PolicyInput:
+                      instalment: bool = False, remaining: float | None = None, duplicate: dict | None = None,
+                      pay_again: bool = False) -> PolicyInput:
         paid = sum(h["amount_cny"] for h in self.w.history if h["payee_id"] == payee_id)
         return PolicyInput(self.w.passport, rec, payee_id, purpose, amount, self._inr(amount), cor, list(hits),
-                           risk, tuple(approvals), recurring, remitter, paid, currency, instalment, remaining)
+                           risk, tuple(approvals), recurring, remitter, paid, currency, instalment, remaining,
+                           duplicate, pay_again)
 
     # --------------------------------------------------------------- test payment
     def _test_payment(self, rec: Recipient, out: Outcome) -> bool:
@@ -325,7 +330,7 @@ class OasisAgent:
 
         # 4. COMMIT + 5. EXECUTE
         if not f_.intents_policy:
-            return self._execute_direct(out, ob, exec_payload, from_ref, purpose, remitter, t0)
+            return self._execute_direct(out, ob, exec_payload, from_ref, purpose, remitter, t0, req)
 
         cor = corridor.check(p, payee_type=rec.payee_type if rec else "", purpose=purpose, amount_cny=amount,
                              amount_inr=self._inr(amount), remitter=remitter, history=w.history,
@@ -341,11 +346,18 @@ class OasisAgent:
         mismatch = ob is not None and not instalment and abs(ob.remaining - amount) > 0.5
         currency = (fields.get("currency") or "CNY").upper()
 
+        dup = find_duplicate(w, text=req.text, fields=fields, payee_id=payee_id, ob=ob, amount=amount, purpose=purpose,
+                             recurring=req.recurring)
+        out.duplicate = dup
+        if dup:
+            out.trace.append(f"Commit: possible duplicate payment - {dup['why']}")
+
         def policy(appr):
             return decide(self._policy_input(rec=rec, payee_id=payee_id, purpose=purpose, amount=amount, cor=cor,
                                              risk=risk.score, hits=hits, approvals=appr, recurring=req.recurring,
                                              remitter=remitter, currency=currency, instalment=instalment,
-                                             remaining=ob.remaining if ob else None))
+                                             remaining=ob.remaining if ob else None, duplicate=dup,
+                                             pay_again=req.pay_again))
         d = policy(approvals)
         out.trace.append(f"Commit: policy {d.action} ({d.rule}) {d.reasons}")
         while d.action == "hold" and approver and set(d.required_approvals) <= APPROVABLE:
@@ -394,10 +406,10 @@ class OasisAgent:
             out.card = self._card(out, fields.get("payee_name", payee_id), amount, "held", res.decision.rule, res.reasons)
             out.sim_minutes = w.sim_minutes - t0
             return out
-        return self._finish_paid(out, ob, rec, payee_id, amount, purpose, remitter, res.transfer, intent, d, t0)
+        return self._finish_paid(out, ob, rec, payee_id, amount, purpose, remitter, res.transfer, intent, d, t0, req)
 
     # ------------------------------------------------------------ unprotected execution
-    def _execute_direct(self, out, ob, payload, from_ref, purpose, remitter, t0) -> Outcome:
+    def _execute_direct(self, out, ob, payload, from_ref, purpose, remitter, t0, req=None) -> Outcome:
         w = self.w
         amount = payload["amount"]
         if from_ref == STUDENT_ACCT:
@@ -413,16 +425,20 @@ class OasisAgent:
             return out
         out.trace.append(f"Execute (agent holds credentials): paid {amount} to {payload['account_ref']}")
         rec = w.passport.recipients.get(payload["payee_id"])
-        return self._finish_paid(out, ob, rec, payload["payee_id"], amount, purpose, remitter, t, None, None, t0)
+        return self._finish_paid(out, ob, rec, payload["payee_id"], amount, purpose, remitter, t, None, None, t0, req)
 
     # ------------------------------------------------------------------ finishers
-    def _finish_paid(self, out, ob, rec, payee_id, amount, purpose, remitter, transfer, intent, d, t0) -> Outcome:
+    def _finish_paid(self, out, ob, rec, payee_id, amount, purpose, remitter, transfer, intent, d, t0, req=None) -> Outcome:
         w, p = self.w, self.w.passport
         w.sync_balances()
         out.status, out.paid_cny = "paid", amount
         out.transfer = transfer.__dict__
         out.sim_minutes = w.sim_minutes - t0
-        w.history.append({"payee_id": payee_id, "amount_cny": amount, "amount_inr": self._inr(amount), "ts": w.now.timestamp()})
+        w.history.append({"payee_id": payee_id, "amount_cny": amount, "amount_inr": self._inr(amount), "ts": w.now.timestamp(),
+                          "date": w.today.isoformat(), "purpose": purpose, "obligation_id": ob.id if ob else None,
+                          "proof_id": intent["intent_id"] if intent is not None else None,
+                          "doc_hash": doc_hash(req.text) if req is not None else None,
+                          "invoice_ref": invoice_ref(req.text) if req is not None else None})
         p.remitted_inr_fy[remitter] = p.remitted_inr_fy.get(remitter, 0.0) + self._inr(amount)
         if ob:
             if abs(ob.remaining - amount) < 0.5:

@@ -293,3 +293,9 @@ td.r, th.r, td .pill { white-space: nowrap; }
 .tbl table code { overflow-wrap: anywhere; word-break: break-all; }
 @media (max-width: 640px) { td, th { padding: 6px 5px; } table { font-size: .84rem; } }
 .tbl table[aria-label="Independent checks"] td:last-child { width: 96px; }
+
+/* duplicate-payment warning (R17) and review-only notes */
+.dupwarn button, .reviewnote button { margin-left: 4px; }
+.dupline { margin: 6px 0; color: var(--warn-fg); }
+.tbl td.acct .hashwrap { flex-wrap: nowrap; white-space: nowrap; }
+.tbl td.acct .hash { white-space: nowrap; }

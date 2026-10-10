@@ -16,7 +16,7 @@ flowchart LR
   end
   S2 --> S3
   subgraph T["TRUSTED: deterministic code, no LLM decides here"]
-    S3["3 Verify<br/>registry credential, test payment, limits"] --> S4["4 Commit<br/>corridor rules, policy R01-R16,<br/>approvals, signed intent, anchor"]
+    S3["3 Verify<br/>registry credential, test payment, limits"] --> S4["4 Commit<br/>corridor rules, policy R01-R17,<br/>approvals, signed intent, anchor"]
     S4 --> S5["5 Execute and watch<br/>executor: signature, exact match,<br/>nonce/expiry, policy re-check"]
     S5 --> S6["6 Prove<br/>audit hash chain, proof pack,<br/>why-card, savings receipt"]
   end
@@ -51,7 +51,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 378 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
+# 394 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json

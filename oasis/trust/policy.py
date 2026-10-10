@@ -32,6 +32,8 @@ class PolicyInput:
     currency: str = "CNY"                    # the currency the DOCUMENT demands (the rail only ever settles CNY)
     instalment: bool = False                 # a part payment below the obligation's remaining amount
     remaining_cny: float | None = None       # what is still owed on the matched obligation (instalments only)
+    duplicate: dict | None = None            # an earlier payment this request repeats (see agent/duplicates.py)
+    pay_again: bool = False                  # the student explicitly asked to pay a suspected duplicate a second time
 
 
 @dataclass
@@ -81,6 +83,19 @@ def decide(p: PolicyInput) -> Decision:
     if LEVEL_ORDER[level] < LEVEL_ORDER[Level.VERIFIED_LOW]:
         return Decision("hold", 2, "R05_unverified", ["Recipient is not verified; the verification ramp must complete first."],
                         ["verification"])
+    # R17 duplicate payment: the same invoice / obligation was already paid. The normal approve button cannot release it
+    # (no approver is offered); a deliberate second payment needs the student's explicit "pay again" request, then a
+    # signature like any approval.
+    if p.duplicate:
+        warn = p.duplicate.get("why") or "You already paid this."
+        if not p.pay_again:
+            return Decision("hold", 2, "R17_duplicate_payment",
+                            [warn, "Nothing was paid. If you really mean to pay it a second time, choose Pay again; "
+                                   "otherwise dismiss this."], ["duplicate_confirmation"])
+        if "student" not in p.approvals:
+            return Decision("hold", 2, "R17_duplicate_payment",
+                            [warn, "You asked to pay it again: this is a deliberate second payment and needs your signature."],
+                            ["student"])
     # R06 corridor holds
     if p.corridor.holds:
         # Splitting a family transfer to dodge parent co-approval needs the parent, not just the student.

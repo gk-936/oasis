@@ -18,6 +18,7 @@ Tiers: 1 = the agent may act alone within bounds, 2 = explicit human approval, 3
 | R15 | hold | the document demands a currency other than CNY (needs a corrected CNY invoice; no approval overrides it) |
 | R16 | hold | out-of-band verification required: a document asks to change an approver or approval limit, to refund or reverse, to pay an authority not in the Passport, or (unstructured) to change a payee's bank details; nothing is actioned (raised by the pipeline before any payment logic) |
 | R05 | hold | recipient not yet verified (the verification ramp must finish; no approval can override it) |
+| R17 | hold | duplicate payment: the same invoice reference, the identical document within 30 days, or an already-paid obligation; not approvable with the normal button, only through an explicit "pay again" that is signed like any approval (`oasis/agent/duplicates.py`) |
 | R06 | hold | corridor rule hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
 | R07 | hold | amount above the recipient's ramp limit (needs explicit student approval) |
 | R08 | hold | risk score ≥ 0.5 (no approval releases it: confirm out of band and re-submit) |
@@ -80,7 +81,6 @@ A forged request never changes the genuine recipient's record. The request is re
 - **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
 
 - **Adversarial judge review (2026-10-10), by design or too large to fix here.**
-  - *Duplicate invoice after payment.* Re-submitting an already-paid invoice is not paid automatically (the recipient's ramp limit holds it at R07 for explicit student approval), but nothing says "you already paid this". A student who signs that approval pays twice. There is no payment idempotency key outside the signed intent's nonce.
   - *Device-key takeover is trust-on-first-use.* Whoever holds a role's passcode can register a new Ed25519 key for that role, which retires the old one (and invalidates drafts the old key was about to sign). Passcodes are shared per role. Real deployment needs per-user accounts plus an out-of-band step (or WebAuthn) to enrol a device.
   - *The login throttle is per client address.* Ten wrong passcodes lock that address out for a minute, including the legitimate user behind it (a cheap denial of service against the login). The limiter is in memory and resets on restart.
   - *Time is simulated.* Draft expiry (`not_after`) and the executor check use the sandbox's simulated clock, not the wall clock. A pending approval therefore does not expire by itself as real days pass, only when the simulated clock moves past it (then it is retired with HTTP 410, see below). Session tokens do use the wall clock.
@@ -106,6 +106,7 @@ Found by attacking the running API over HTTP; each has a regression test in `tes
 | Approving a payment after its draft expired froze the genuine obligation and showed an attack-style card | Medium | Expired drafts are retired with HTTP 410 and an `approval_expired` audit entry; the obligation is untouched |
 | Proof verification could raise (500) on malformed packs (wrong types, surrogates) | Medium | `verify_proof_pack` never raises: any unreadable pack fails with `malformed` and `ok: false` |
 | A U+2028 in a red-team attempt split its log record when read with `splitlines()` (silent loss of the attempt); a flood of refused attempts was logged in full without limit | Medium | Attempts are written ASCII-only and read by `
+| Re-submitting an already-paid invoice was held only at R07 (recipient limit) and a signed approval paid it twice | High | New rule R17: duplicates (same invoice reference, identical document within 30 days, or an already-paid obligation) are held with "You already paid this on <date>, proof <id>"; the normal approve button cannot release it; a deliberate second payment needs the student's explicit Pay again and a signature on a draft that shows the warning; instalments are unaffected (`tests/test_duplicate_payment.py`) |
 `; refused attempts are shortened and logged at most 5 per minute; the file stops growing at 50 MB |
 | Intake text of ~200 KB took 12 s to parse (quadratic field regexes) while holding every other request | Medium | 20,000-character cap on intake and chat text (the regexes are not changed) |
 | Corrupt or empty key files gave raw `JSONDecodeError`/`KeyError`; a lost data key gave a bare "wrong key" | Low | `KeyFileError` / recovery hint: clear message, the file is never overwritten with a fresh key |

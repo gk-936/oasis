@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run_at": "2026-10-10 20:34",
+  "run_at": "2026-10-10 21:07",
   "llm": "offline-deterministic",
   "ruleset": "2026.10.2",
   "suite": "hidden",
@@ -3833,7 +3833,7 @@
    "money_lost": 0,
    "detected": true,
    "legit_completed": false,
-   "minutes": 15,
+   "minutes": 5,
    "risk_flagged": true,
    "max_risk": 0.55,
    "risk_first": true,
@@ -5055,7 +5055,7 @@
    "money_lost": 0,
    "detected": true,
    "legit_completed": false,
-   "minutes": 15,
+   "minutes": 5,
    "risk_flagged": true,
    "max_risk": 0.55,
    "risk_first": true,

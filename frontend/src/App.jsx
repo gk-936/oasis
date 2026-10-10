@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { deviceOf, lockDevice, signApproval, signConsent, unlockDevice } from "./crypto.js";
 import {
   Announcer, ApiError, Empty, ErrorBox, Hash, Loading, Mock, MiniTrail, PipelineTrail, Pill, Skeleton,
-  announce, cny, fmt, fmtDate, fmtDateTime, inr, label, pct,
+  announce, approvable, cny, fmt, fmtDate, fmtDateTime, formatDetail, inr, label, needsText, pct,
 } from "./ui.jsx";
 
 /* ------------------------------------------------------------------ API */
-let onUnauth = () => {};     // set by <App/>: a 401/403 from any call returns the user to the login screen
+let onUnauth = () => {};     // set by <App/>: a 401 (or a 403 about the ROLE) returns the user to the login screen
+let onExpired = () => {};    // set by <App/>: a 410 (draft expired) refreshes the pending list
+const ROLE_PROBLEM = /\brole may not do this\b/i;   // the server's wording for "your role may not call this endpoint"
 const api = async (path, body) => {
   let r;
   try {
@@ -19,11 +21,12 @@ const api = async (path, body) => {
   if (!r.ok) {
     let msg = await r.text().catch(() => "");
     try {
-      const j = JSON.parse(msg).detail ?? msg;
-      msg = Array.isArray(j) ? j.map((x) => x.msg || JSON.stringify(x)).join("; ") : j;
+      msg = formatDetail(JSON.parse(msg).detail ?? msg);
     } catch { /* plain text */ }
     if (typeof msg !== "string") msg = JSON.stringify(msg);
-    if ((r.status === 401 || r.status === 403) && !path.startsWith("/auth/login") && path !== "/auth/me") onUnauth(r.status);
+    const authPath = path.startsWith("/auth/login") || path === "/auth/me";
+    if (!authPath && (r.status === 401 || (r.status === 403 && ROLE_PROBLEM.test(msg)))) onUnauth(r.status);   // other 403s (bad signature, cross-origin) stay inline
+    if (r.status === 410) onExpired();
     throw new ApiError(r.status, msg || r.statusText, r.headers.get("Retry-After"));
   }
   try { return await r.json(); } catch { throw new ApiError(502, "The server sent a response that could not be read"); }
@@ -31,7 +34,6 @@ const api = async (path, body) => {
 
 // Signed approvals: the device key signs the exact draft; the server verifies against the role's registered public key.
 const signedApprove = (role, id, draft) => api("/approve", { pending_id: id, ...signApproval(role, draft) });
-const hadSession = () => { try { return localStorage.getItem("oasis.session") === "1"; } catch { return true; } };
 const markSession = (on) => { try { on ? localStorage.setItem("oasis.session", "1") : localStorage.removeItem("oasis.session"); } catch { /* storage blocked */ } };
 const short4 = (k) => (k ? `${k.slice(0, 4)}…` : "?");
 
@@ -103,11 +105,20 @@ function Signed({ approvals }) {
       ✔ signed by {a.role} device key <code>{short4(a.key_id)}</code></span>))}</p>;
 }
 
-function DraftBox({ d }) {
+function DuplicateWarning({ dup, onProof }) {
+  if (!dup) return null;
+  return (
+    <div className="notice warn dupwarn" role="alert"><div><b>Possible duplicate payment.</b> {dup.why}
+      {dup.proof_id && onProof && <> <button type="button" className="ghost" onClick={() => onProof(dup.proof_id)}>Open that proof</button></>}</div></div>
+  );
+}
+
+function DraftBox({ d, dup }) {
   if (!d) return null;
   return (
     <details className="draftbox" open>
       <summary>What you are signing</summary>
+      {dup && <p className="dupline"><b>Duplicate warning:</b> {dup.why} Signing makes this a deliberate second payment.</p>}
       <dl>
         <dt>Pay</dt><dd><b className="money">{cny(d.amount, 2)}</b></dd>
         <dt>To</dt><dd><code>{d.account_ref}</code> ({d.payee_id})</dd>
@@ -121,7 +132,29 @@ function DraftBox({ d }) {
   );
 }
 
-function Outcome({ o, onApprove, onRecovery, onProof }) {
+/** What can be done with a held payment: sign it, ask to pay a suspected duplicate again, or nothing here. */
+function ApprovalActions({ pid, draft, required, duplicate, busy, onApprove, onPayAgain, onDismiss, onProof }) {
+  if (!pid) return null;
+  if (required?.includes("duplicate_confirmation")) {
+    return (<>
+      <DuplicateWarning dup={duplicate} onProof={onProof} />
+      <p className="muted small">This cannot be approved directly. If you really mean to pay it a second time, choose Pay again: you will then be asked to sign a new draft that carries this warning.</p>
+      <div className="row">
+        {onPayAgain && <button disabled={busy} onClick={() => onPayAgain(pid)}>Pay again (deliberate second payment)</button>}
+        {onDismiss && <button className="ghost" disabled={busy} onClick={() => onDismiss(pid)}>Dismiss, it was already paid</button>}
+      </div>
+    </>);
+  }
+  if (!approvable(required) || !onApprove) return null;
+  return (<>
+    {duplicate && <DuplicateWarning dup={duplicate} onProof={onProof} />}
+    <DraftBox d={draft} dup={duplicate} />
+    <div className="row"><button disabled={busy} onClick={() => onApprove(pid, draft)}>
+      {duplicate ? "Pay again: sign with my device key" : "Approve and sign with my device key"}</button></div>
+  </>);
+}
+
+function Outcome({ o, onApprove, onRecovery, onProof, onPayAgain, onDismiss }) {
   const [busy, setBusy] = useState(false);
   if (!o) return null;
   const f = o.fields;
@@ -153,10 +186,15 @@ function Outcome({ o, onApprove, onRecovery, onProof }) {
           {onRecovery && o.status === "frozen" && <button disabled={busy} onClick={() => click(onRecovery, o)}>Approve recovery plan</button>}
         </div>
       )}
-      {o.pending_id && onApprove && (<>
-        <DraftBox d={o.draft} />
-        <div className="row"><button disabled={busy} onClick={() => click(onApprove, o.pending_id, o.draft)}>Approve and sign with my device key</button></div>
-      </>)}
+      {o.status === "held" && o.decision?.required_approvals?.length > 0 && !approvable(o.decision.required_approvals) && !o.decision.required_approvals.includes("duplicate_confirmation") && (
+        <div className="notice info reviewnote" role="note"><div><b>Needs {needsText(o.decision.required_approvals)}.</b>{" "}
+          {o.decision.required_approvals.includes("risk_review")
+            ? "Confirm with the payee through the registry-verified contact, then re-submit the genuine invoice. There is no Approve button: an approval cannot release this hold."
+            : "Nothing here can be approved. Complete that step outside this document, then re-submit."}</div></div>)}
+      {o.status === "held" && o.decision?.required_approvals?.includes("duplicate_confirmation") && !o.pending_id && <DuplicateWarning dup={o.duplicate} onProof={onProof} />}
+      <ApprovalActions pid={o.pending_id} draft={o.draft} required={o.decision?.required_approvals} duplicate={o.duplicate} busy={busy}
+        onApprove={onApprove && ((id, d) => click(onApprove, id, d))} onPayAgain={onPayAgain && ((id) => click(onPayAgain, id, o))}
+        onDismiss={onDismiss && ((id) => click(onDismiss, id, o))} onProof={onProof} />
       {o.status === "paid" && <Signed approvals={o.intent?.approvals} />}
       {o.proof_id && (
         <p>Proof pack <code>{o.proof_id}</code> ready.{" "}
@@ -307,7 +345,7 @@ function Demo({ refresh, openProof }) {
 }
 
 /* ------------------------------------------------------------------ Chat */
-function Chat({ refresh, openProof }) {
+function Chat({ refresh, openProof, s }) {
   const [log, setLog] = useState([{ role: "oasis", text: "Hi Arjun. Tell me what you need to pay, or forward an invoice and I'll check it before anything moves. You can also say: convert 2000 when the rate reaches 0.0700." }]);
   const [msg, setMsg] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -322,9 +360,23 @@ function Chat({ refresh, openProof }) {
     try { const r = await api("/chat", { message: text }); say({ role: "oasis", text: r.reply, outcome: r.outcome }); }
     finally { setThinking(false); refresh(); }
   });
+  const resolve = (id, draft) => setResolved((x) => new Set(x).add(`${id}:${draft?.draft_hash}`));
+  const payAgain = (id, o) => run(async () => {
+    const r = await api("/pay-again", { pending_id: id });
+    if (o) resolve(id, o.draft);
+    say({ role: "oasis", text: "Pay again requested. Nothing is paid yet: check the duplicate warning and sign the new draft if you really mean it.", outcome: r });
+    refresh();
+  });
+  const dismiss = (id, o) => run(async () => {
+    await api("/approve", { pending_id: id, approve: false });
+    if (o) resolve(id, o.draft);
+    say({ role: "oasis", text: "Dismissed. Nothing was paid." }); refresh();
+  });
   const approve = (id, draft) => run(async () => {
-    const r = await signedApprove("student", id, draft);
-    setResolved((x) => new Set(x).add(`${id}:${draft.draft_hash}`));
+    let r;
+    try { r = await signedApprove("student", id, draft); }
+    catch (e) { if (e.status === 410 || e.status === 404) resolve(id, draft); throw e; }   // expired or gone: the button must not stay
+    resolve(id, draft);
     const by = r.signed_by ? Object.entries(r.signed_by).map(([k, v]) => `${k} device key ${short4(v)}`).join(", ") : "";
     say({ role: "oasis", text: r.status === "waiting"
       ? `Signed by your device key. Still needs the parent's signature (${r.missing.join(", ")}): they open the Parent tab and co-sign. ${by && "Signed so far: " + by + "."}`
@@ -346,13 +398,29 @@ function Chat({ refresh, openProof }) {
         {log.map((m, i) => (
           <div key={i} className={`msg ${m.role}`}>
             <p>{m.text}</p>
-            {m.outcome && <Outcome o={m.outcome} onProof={openProof} onApprove={m.outcome.draft && resolved.has(`${m.outcome.pending_id}:${m.outcome.draft.draft_hash}`) ? null : approve} onRecovery={recover} />}
+            {m.outcome && <Outcome o={m.outcome} onProof={openProof} onRecovery={recover}
+              {...(m.outcome.draft && resolved.has(`${m.outcome.pending_id}:${m.outcome.draft.draft_hash}`) ? {} : { onApprove: approve, onPayAgain: payAgain, onDismiss: dismiss })} />}
           </div>
         ))}
         {thinking && <div className="msg oasis pending" role="status"><p>Oasis is checking the request through the pipeline…</p></div>}
         <div ref={end} />
       </div>
       <ErrorBox error={err} onDismiss={() => setErr(null)} />
+      {(() => {
+        const inLog = new Set(log.map((m) => m.outcome?.pending_id).filter(Boolean));
+        const waiting = (s?.pending || []).filter((p) => !inLog.has(p.id) && (p.required.includes("student") || p.required.includes("duplicate_confirmation")));
+        if (!waiting.length) return null;
+        return (
+          <div className="card" aria-label="Waiting for you"><h3 style={{ marginTop: 0 }}>Waiting for you</h3>
+            {waiting.map((p) => (
+              <div key={p.id} className="stack">
+                <p><b className="money">{cny(p.fields?.amount, 2)}</b> to {p.fields?.payee_name}{p.fields?.purpose ? `, ${p.fields.purpose}` : ""}</p>
+                <Card card={p.card} />
+                <ApprovalActions pid={p.id} draft={p.draft} required={p.required} duplicate={p.duplicate} busy={busy}
+                  onApprove={approve} onPayAgain={(id) => payAgain(id, null)} onDismiss={(id) => dismiss(id, null)} onProof={openProof} />
+              </div>))}
+          </div>);
+      })()}
       <label>Message to Oasis
         <textarea rows={6} value={msg} onChange={(e) => setMsg(e.target.value)}
           onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !busy) send(msg); }}
@@ -513,9 +581,9 @@ function PlanPanel({ plan, onAccept, onRun, pending, onApprove, busy }) {
               {c.signed_by ? <span className="sigtag">✔ signed by parent device key <code>{short4(c.signed_by)}</code></span>
                 : "waiting for the parent to sign in the Parent tab. A \"parent\" tick-box cannot stand in for the parent."}</p>))}
         </div>)}
-      {pending?.length > 0 && onApprove && (
+      {pending?.filter((p) => approvable(p.required)).length > 0 && onApprove && (
         <div className="card inner"><strong>Waiting for you</strong>
-          {pending.map((p) => <div className="row" key={p.id}><span>{p.fields?.purpose} <b className="money">{cny(p.fields?.amount)}</b> to {p.fields?.payee_name}</span>
+          {pending.filter((p) => approvable(p.required)).map((p) => <div className="row" key={p.id}><span>{p.fields?.purpose} <b className="money">{cny(p.fields?.amount)}</b> to {p.fields?.payee_name}</span>
             <button disabled={busy} onClick={() => onApprove(p)}>Approve and sign</button></div>)}</div>)}
     </div>
   );
@@ -584,7 +652,7 @@ function Passport({ s, refresh }) {
         <div className="hd"><h3>Verified recipients</h3><Mock>MOCK registry</Mock></div>
         <div className="tbl"><table aria-label="Verified recipients"><thead><tr><th>Payee</th><th>Account</th><th>Level</th><th className="r">Limit</th></tr></thead>
           <tbody>{Object.values(p.recipients).map((r) => (
-            <tr key={r.id}><td>{r.name}</td><td><code>{r.account_ref}</code></td><td><Pill status={r.verification.level} /></td>
+            <tr key={r.id}><td>{r.name}</td><td className="acct"><Hash value={r.account_ref} n={6} what="account number" /></td><td><Pill status={r.verification.level} /></td>
               <td className="r money">{cny(r.verification.limit_cny)}</td></tr>))}
           </tbody></table></div>
       </div>
@@ -953,12 +1021,15 @@ export default function App() {
     setAuth(null); setS(null);
     setNotice(status === 403 ? "That role is not allowed to do this. Log in with the right role to continue." : "Your session ended. Log in again to continue.");
   };
+  onExpired = () => { api("/state").then(setS).catch(() => {}); };
   const loadCfg = useCallback(() => { api("/auth/config").then((c) => { setCfg(c); setCfgErr(null); }).catch(setCfgErr); }, []);
   useEffect(() => {
     loadCfg();
-    // Only probe for an existing session when this browser has logged in before: a cold visit then makes no failing request.
-    if (!hadSession()) { setAuth(null); return; }
-    api("/auth/me").then((me) => { setAuth(me); setDev(deviceOf(me.role)); setTab(DEFAULT_TAB[me.role]); }).catch(() => { markSession(false); setAuth(null); });
+    // /auth/me answers 200 {"role": null} when logged out, so the probe is not an error and a cold visit logs nothing.
+    api("/auth/me").then((me) => {
+      if (!me?.role) { markSession(false); setAuth(null); return; }
+      setAuth(me); setDev(deviceOf(me.role)); setTab(DEFAULT_TAB[me.role]);
+    }).catch(() => { markSession(false); setAuth(null); });
   }, [loadCfg]);
   const refresh = useCallback(() => api("/state").then((x) => { setS(x); setErr(null); }).catch((e) => { if (e.status !== 401 && e.status !== 403) setErr(e); }), []);
   useEffect(() => { if (auth) refresh(); }, [refresh, tab, auth]);
@@ -995,7 +1066,7 @@ export default function App() {
             {needsKey && !dev && <Unlock role={auth.role} onUnlocked={setDev} />}
             <nav className="tabs" aria-label="Sections">{tabs.map((t) => <button key={t} type="button" aria-current={t === tab ? "page" : undefined} onClick={() => setTab(t)}>{t}</button>)}</nav>
             {tab === "Demo" && <Demo refresh={refresh} openProof={openProof} />}
-            {tab === "Chat" && <Chat refresh={refresh} openProof={openProof} />}
+            {tab === "Chat" && <Chat refresh={refresh} openProof={openProof} s={s} />}
             {tab === "Passport" && <Passport s={s} refresh={refresh} />}
             {tab === "Parent" && <Parent refresh={refresh} role={auth.role} />}
             {tab === "Red team" && <RedTeam />}

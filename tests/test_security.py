@@ -35,8 +35,8 @@ PUBLIC = [("get", "/api/health"), ("get", "/api/auth/config"), ("get", "/api/tru
 
 PROTECTED = [("get", "/api/state"), ("get", "/api/audit"), ("get", "/api/audit/verify"), ("get", "/api/proof/int_0001"),
              ("get", "/api/benchmark"), ("get", "/api/plans"), ("get", "/api/parent/pending"), ("get", "/api/redteam/log"),
-             ("get", "/api/demo/state"), ("get", "/api/auth/me"), ("get", "/api/approvers"),
-             ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/reset"),
+             ("get", "/api/demo/state"), ("get", "/api/approvers"),
+             ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
              ("post", "/api/redteam"), ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"),
              ("post", "/api/plan/plan_001/execute"), ("post", "/api/plan/plan_001/consent"), ("post", "/api/rate-target"),
              ("post", "/api/autonomy/tick"), ("post", "/api/spending/add"), ("post", "/api/demo/start"),
@@ -68,7 +68,7 @@ FORBIDDEN = {
                ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"), ("post", "/api/demo/run"),
                ("post", "/api/recovery/approve"), ("post", "/api/spending/add"),
                ("get", "/api/audit"), ("get", "/api/redteam/log"), ("get", "/api/plans"), ("get", "/api/benchmark")],
-    "judge": [("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/reset"),
+    "judge": [("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
               ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"), ("post", "/api/plan/plan_001/consent"),
               ("post", "/api/rate-target"), ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"),
               ("post", "/api/demo/run"), ("post", "/api/recovery/approve"), ("post", "/api/device/register"),
@@ -105,7 +105,7 @@ def test_login_failures_cookie_flags_and_logout(api_session):
     assert "httponly" in sc and "samesite=strict" in sc
     assert c.get("/api/auth/me").json()["role"] == "judge"
     assert c.post("/api/auth/logout").status_code == 200
-    assert c.get("/api/auth/me").status_code == 401                              # the revoked token no longer works
+    assert c.get("/api/auth/me").json() == {"role": None}                        # the revoked token no longer works (200 probe, no role)
 
 
 def test_student_passcode_does_not_log_in_as_parent(api_session):
@@ -138,7 +138,7 @@ def test_bearer_token_header_is_accepted(api_session):
     c = TestClient(api_session.app)
     tok = c.post("/api/auth/login?return_token=true", json={"role": "judge", "passcode": PASS["judge"]}).json()["token"]
     fresh = TestClient(api_session.app)
-    assert fresh.get("/api/auth/me").status_code == 401
+    assert fresh.get("/api/auth/me").json() == {"role": None}
     assert fresh.get("/api/auth/me", headers={"Authorization": f"Bearer {tok}"}).json()["role"] == "judge"
 
 
@@ -479,6 +479,9 @@ def test_executor_payment_cannot_be_replayed_with_the_same_intent():
     req = a.sim_approve(Request(tuition()), held, ["student"])
     assert a.handle(req).status == "paid"
     again = a.handle(req)                                                       # the same signed approvals + nonce again
+    assert again.status == "held" and again.decision["rule"] == "R17_duplicate_payment"   # first line of defence: duplicate hold
+    req.pay_again = True                                                        # bypass it: the executor's replay check still stops it
+    again = a.handle(req)
     assert again.status == "frozen" and any("replay" in t for t in again.trace)
     assert sum(1 for t in w.ledger.transfers if t.to_ref == "6228480000001234" and t.amount == 30000) == 1
 

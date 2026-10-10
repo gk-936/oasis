@@ -37,6 +37,7 @@ Frontend (React 18) ── FastAPI (oasis/api/main.py)
 | R04b / R04c | allow (1) / freeze (3) | verification test payment: up to CNY 10 and only to a registry-confirmed recipient / otherwise |
 | R15 | hold (2) | the document demands a currency other than CNY; Oasis settles CNY only and never pays it as if it were CNY (needs a corrected CNY invoice, no approval overrides it); evaluated before R05 |
 | R05 | hold (2) | recipient not yet verified; the ramp must finish, no approval overrides it |
+| R17 | hold (2) | duplicate payment: the same invoice reference, the identical document (30-day window) or an already-paid obligation was paid before (`oasis/agent/duplicates.py`). The why-card says "You already paid this on <date>, proof <id>". No approver is offered (`duplicate_confirmation`), so `/api/approve` refuses it; the student's explicit `POST /api/pay-again` starts a fresh draft that still needs the student's signature and carries the warning; instalments against an open obligation are not duplicates; evaluated after R05, before R06 |
 | R06 | hold (2) | corridor hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
 | R07 | hold (2) | amount above the recipient's ramp limit (explicit student approval) |
 | R08 | hold (2) | risk score >= 0.5 (no approval releases it) |
@@ -128,7 +129,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/health`, `/api/auth/config` | public: liveness; login screen config (never a passcode) |
-| POST | `/api/auth/login`, `/api/auth/logout`; GET `/api/auth/me` | role + passcode -> session cookie; revoke; who am I |
+| POST | `/api/auth/login`, `/api/auth/logout`; GET `/api/auth/me` | role + passcode -> session cookie; revoke; who am I (200 `{"role": null}` when logged out, so the UI probe is not an error) |
 | POST | `/api/device/register` | student/parent registers the public half of their Ed25519 device key |
 | GET | `/api/approvers` | registered approver public keys (any role) |
 | POST | `/api/plan/{plan_id}/consent` | parent only: signed consent to a parent-remitted conversion step |
@@ -137,6 +138,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | POST | `/api/intake` | run the six-step pipeline on pasted document text |
 | POST | `/api/intake/image` | same, for an invoice photo or screenshot (Groq vision; unreadable becomes a hold) |
 | POST | `/api/approve` | student or parent (the SESSION role) approves with a `signature` over the pending draft hash, or declines; no signature or a bad one is 403 |
+| POST | `/api/pay-again` | student only: turn a suspected-duplicate hold (R17) into a fresh, signable draft that carries the duplicate warning; pays nothing by itself |
 | POST | `/api/recovery/approve` | the 'ask' step after a freeze: approve the drafted recovery |
 | GET | `/api/parent/pending` | parent's view with explanation and facts (`?lang=en|hi|ta`) |
 | POST | `/api/chat` | plan summary, or invoice intake when the message looks like an invoice |

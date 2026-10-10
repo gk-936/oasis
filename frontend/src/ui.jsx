@@ -35,16 +35,43 @@ export function Announcer() {
 export class ApiError extends Error {
   constructor(status, detail, retryAfter) { super(`${status} ${detail}`); this.status = status; this.detail = detail; this.retryAfter = retryAfter; }
 }
+/** FastAPI/our 422 detail is an array of {loc,type,msg}: "text: Field required; amount: ..." instead of "[object Object]". */
+export function formatDetail(j) {
+  if (Array.isArray(j)) {
+    return j.map((x) => {
+      if (typeof x === "string") return x;
+      const where = (x?.loc || []).filter((l) => l !== "body" && l !== "query").join(".");
+      const msg = String(x?.msg ?? x?.type ?? JSON.stringify(x)).replace(/^Value error,\s*/i, "");
+      return where && !msg.startsWith(where) ? `${where}: ${msg}` : msg;
+    }).join("; ");
+  }
+  if (j && typeof j === "object") return j.msg ? String(j.msg) : JSON.stringify(j);
+  return String(j ?? "");
+}
+/** Plain words for approval requirements that are not an approver's signature. */
+export const REQ_LABEL = {
+  risk_review: "review outside this document",
+  out_of_band_verification: "confirmation outside this document",
+  duplicate_confirmation: "your explicit Pay again",
+  corrected_cny_invoice: "a corrected CNY invoice",
+  verification: "recipient verification",
+};
+export const APPROVER_ROLES = ["student", "parent"];
+export const approvable = (req) => (req || []).length > 0 && req.every((r) => APPROVER_ROLES.includes(r));
+export const needsText = (req) => (req || []).map((r) => REQ_LABEL[r] || r).join(" + ");
+
 export function describeError(e) {
   if (!e) return null;
   if (e instanceof ApiError) {
     const d = e.detail;
     if (e.status === 0) return { title: "Can't reach the Oasis API", text: "The server did not answer. Check that it is running (port 8000) and that you are online, then try again.", retry: true };
     if (e.status === 429) return { title: "Rate limit reached", text: `${d}${/[.!?]$/.test(d) ? "" : "."}${e.retryAfter ? ` Try again in about ${e.retryAfter} seconds.` : " Wait a moment, then try again."}`, tone: "warn" };
-    if (e.status === 401 || e.status === 403) return { title: "Not allowed", text: d };
+    if (e.status === 410) return { title: "Draft expired", text: "That draft expired \u2014 submit the invoice again." };
+    if (e.status === 401) return { title: "Not allowed", text: d };
+    if (e.status === 403) return { title: /signature|signed approval/i.test(d) ? "Approval not accepted" : /cross-origin/i.test(d) ? "Request refused" : "Not allowed", text: d };
     if (e.status >= 500) return { title: "The server hit an error", text: `${d} Nothing was paid. Try again, and check the API log if it repeats.`, retry: true };
     if (e.status === 413) return { title: "Input too large", text: d };
-    if (e.status === 422) return { title: "That input was not accepted", text: d };
+    if (e.status === 422) return { title: "That input was not accepted", text: typeof d === "string" ? d : formatDetail(d) };
     return { title: `Request refused (${e.status})`, text: d };
   }
   return { title: "Something went wrong", text: String(e.message || e) };
@@ -135,6 +162,7 @@ export function trailOf(o) {
     const m = /^(Understand|Plan|Verify|Commit|Execute|Prove)\b[^:]*:\s*(.*)$/.exec(t);
     if (m) (by[m[1]] ||= []).push(m[2]);
   });
+  if (!by.Plan && o.savings?.route) by.Plan = [`route selected: ${o.savings.route} (single payment)`];   // only when the outcome carries route info
   const present = KEYS.map((k) => !!by[k]);
   const lastPresent = present.lastIndexOf(true);
   const verifyBad = o.verification && (o.verification.account_changed || ["unverified", "needs_verification"].includes(o.verification.level));
@@ -145,9 +173,9 @@ export function trailOf(o) {
   const nice = {
     Understand: () => o.canary_hits?.length ? `Decoy touched: ${o.canary_hits.map((h) => h.kind).join(", ")}`
       : f ? `Read ${cny(f.amount)} to ${f.payee_name} as untrusted data${o.risk ? `, risk ${o.risk.score}` : ""}` : "",
-    Plan: () => (by.Plan?.[0] || "Single payment, no schedule change"),
+    Plan: () => (by.Plan?.[0] || (o.savings?.route ? `route selected: ${o.savings.route} (single payment)` : "Single payment, no schedule change")),
     Verify: () => ver ? `${label(ver.level)}${ver.account_changed ? ", account differs from registry" : ""}${ver.reasons?.[0] ? `: ${ver.reasons[0]}` : ""}` : "",
-    Commit: () => dec ? `${dec.action === "hold" ? "Held" : label(dec.action)} by ${dec.rule}${dec.required_approvals?.length ? `: needs ${dec.required_approvals.join(" + ")}` : ""}` : "",
+    Commit: () => dec ? `${dec.action === "hold" ? "Held" : label(dec.action)} by ${dec.rule}${dec.required_approvals?.length ? `: needs ${needsText(dec.required_approvals)}` : ""}` : "",
     Execute: () => by.Execute?.[0] || "",
     Prove: () => by.Prove?.[0] || "",
   };
@@ -164,7 +192,12 @@ export function trailOf(o) {
       return { ...base, state: "idle", text: "Not reached", detail: "" };
     }
     if (o.status === "held") {
-      if (k === "Commit") return { ...base, state: "warn", text: "Waiting for approval" };
+      if (k === "Commit") {
+        const req = o.decision?.required_approvals || [];
+        const text = req.includes("risk_review") ? "Needs review outside this document" : req.includes("duplicate_confirmation") ? "Possible duplicate"
+          : req.length && !approvable(req) ? "Held, needs action outside Oasis" : "Waiting for approval";
+        return { ...base, state: "warn", text };
+      }
       if (i < 3) return { ...base, state: present[i] ? "ok" : "off", text: present[i] ? "Passed" : "n/a" };
       return { ...base, state: "idle", text: "Not yet", detail: "" };
     }
