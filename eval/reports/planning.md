@@ -32,36 +32,39 @@ Planner: `deterministic`; run 2026-10-10.
 
 ## Live (Groq native tool calling), after the planner prompt change
 
-Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`; run 2026-10-10; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 0 of 3.
+Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`; run 2026-10-11; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 2 of 3.
 
 | Repeat | Plans run | Valid without fallback | Final plan valid | Mean proposals to valid | Tokens |
 |---|---|---|---|---|---|
-| 1 | 2 of 8 | 2 | 100% | 1.0 | 14,015 |
-| 2 | 1 of 8 | 1 | 100% | 1.0 | 11,405 |
+| 1 | 8 of 8 | 4 | 100% | 1.5 | 155,816 |
+| 2 | 8 of 8 | 2 | 100% | 2.0 | 144,790 |
 | 3 | 1 of 8 | 0 | 100% | - | 3,841 |
 
-Fewer than two repeats completed in full, so no min/mean/max across repeats is reported.
+Valid without fallback across completed repeats (min / mean / max): 2 / 3.0 / 4 of 8 scenarios.
 
-Pooled over every plan run: 3 of 4 valid without fallback (75%); tokens 29,261.
+Pooled over every plan run: 6 of 17 valid without fallback (35%); tokens 304,447.
 
 | Scenario | Valid without fallback | Proposals to valid (per repeat; fb = fell back) | Tokens (per repeat) | First validator errors (per repeat) |
 |---|---|---|---|---|
-| Arrival shortfall (the demo student) | 1 of 1 | 1 | 8,853 | - |
-| Tight runway | 2 of 3 | 1, 1, fb | 5,162, 11,405, 3,841 | -; -; - |
-| SAFE-quota tuition | not run | | | |
-| Late scholarship | not run | | | |
-| Parent remitter crossing TCS | not run | | | |
-| Rate target to protect | not run | | | |
-| Five obligations | not run | | | |
-| Urgent deposit | not run | | | |
+| Arrival shortfall (the demo student) | 1 of 2 | fb, 1 | 25,370, 7,424 | insufficient_inr; - |
+| Tight runway | 0 of 3 | fb, fb, fb | 25,567, 14,167, 3,841 | -; -; - |
+| SAFE-quota tuition | 0 of 2 | fb, fb | 23,711, 22,093 | safe_quota_exceeded; amount_mismatch,unknown_route |
+| Late scholarship | 1 of 2 | fb, 3 | 23,134, 25,249 | amount_mismatch,insufficient_inr; insufficient_cny |
+| Parent remitter crossing TCS | 1 of 2 | 2, fb | 16,837, 25,460 | amount_mismatch,insufficient_inr; insufficient_inr |
+| Rate target to protect | 1 of 2 | 1, fb | 13,692, 24,172 | -; amount_mismatch,unknown_route |
+| Five obligations | 1 of 2 | 2, fb | 16,571, 22,058 | amount_mismatch,unknown_route; amount_mismatch |
+| Urgent deposit | 1 of 2 | 1, fb | 10,934, 4,167 | -; - |
 
-- Planner change in this section: the system prompt now carries the validator's error vocabulary (compute the INR from get_routes, add fee/rounding headroom, pay each obligation exactly once with its exact amount, keep the rate-target reserve, stage SAFE-quota conversions across calendar years, parent for the INR shortfall) and the per-plan cap rose from 14,000-18,000 to 22,000 tokens (4 proposals x ~2.5k tokens of tool results plus up to 8 calls that re-send a growing context; the old caps cut four of eight plans off mid-revision). The validator rules were not changed.
+- Invocation 2026-10-11 (4 comma-separated keys, daily budget 180,000 tokens per key): new tokens 300,606 (cap 300,000); Groq daily ledger before 0, after 300,606. Live calls 89, cache hits 9, model fallbacks 15 (the last figure counts calls served by the fallback model).
+- Per-key tokens this invocation, by sha256 fingerprint: 499b1366: 181,449 (55 requests); d40d45b2: 119,157 (34 requests); the other two keys were not needed. Key rotations: 1 (the first key reached the local 180,000-token guard; no server-side daily limit was hit).
+- Planner change in this section: the system prompt carries the validator's error vocabulary (compute the INR from get_routes, add fee/rounding headroom, pay each obligation exactly once with its exact amount, keep the rate-target reserve, stage SAFE-quota conversions across calendar years, parent for the INR shortfall) and the per-plan cap is 22,000 tokens. The validator rules were not changed.
 - Sampling: temperature 0.3 with a repeat-specific cache salt (planrep0, planrep1, planrep2), so repeats are distinct samples and never cache hits of each other.
-- Coverage is PARTIAL because of the token budget (a live plan costs roughly 4,000-25,000 tokens; 24 plans would need about 300,000): measured here are Arrival shortfall (repeat 1 only) and Tight runway (3 repeats). No repeat covers all 8 scenarios, so no min/mean/max across full repeats is reported. Resume: `python -m eval.planning --llm groq --repeats 3 --token-cap 85000` (finished plans are kept in this file; re-running a finished plan is free only if its responses are still cached).
-- Which model answered: the model recorded on all four saved rows is openai/gpt-oss-120b, not the configured qwen/qwen3.8-27b; the adapter fails over when the primary hits its rate limit (qwen/qwen3.8-27b is limited to about 8k tokens per minute, which one planning round can exceed). So these live planning numbers describe the fallback model more than the configured one.
-- Tight runway repeat 3: the fallback model's tool call was rejected by the Groq API with HTTP 400 ('Failed to parse tool call arguments as JSON') before any proposal reached the validator, so the deterministic plan was used. That is an API-side tool-call formatting failure, not a plan the validator rejected.
-- An interrupted first attempt of this same run (killed by a command timeout, rows not saved) printed: Arrival shortfall repeat 1 -> fell back at the token cap after 22,610 tokens (2 proposals); Tight runway repeat 1 -> valid, no fallback, 1 proposal, 7,183 tokens; SAFE-quota tuition repeat 1 -> valid, no fallback, 3 proposals, 24,315 tokens. These came from the console log, not from saved rows, so they are not in the tables or counts above. They show that the same scenario at the same settings can fall back in one sample (Arrival shortfall, 22,610 tokens) and pass in the next (8,853 tokens, 1 proposal).
-- Tokens (Groq daily ledger, approximate): planning phase about 105,000 in total (including the interrupted attempt); the ledger entry for this session started at 178,687 tokens used under the previous key.
+- Coverage: 17 plans. Repeats 1 and 2 cover all 8 scenarios (run 2026-10-11, qwen/qwen3.8-27b first, with up to 8 rate-limit retries per call so the limiter waits instead of failing over). Repeat 3 was NOT run for lack of token budget (the ~300,000-token cap was reached); its only row is the Tight runway plan from 2026-10-10 (previous key), so the min/mean/max covers 2 repeats, not 3. Resume: `python -m eval.planning --llm groq --repeats 3 --token-cap 300000` (finished rows are kept; re-running a finished plan is free only if its responses are still cached).
+- Which model answered (the `model` of the final call in each row; a plan can mix both models): qwen/qwen3.8-27b served 12 of the 16 plans run on 2026-10-11 and openai/gpt-oss-120b 4 (Rate target and Urgent deposit in repeat 1; Arrival shortfall and Tight runway in repeat 2). Of the 6 plans valid without fallback, 3 ended on qwen (Parent TCS and Five obligations in repeat 1; Late scholarship in repeat 2) and 3 on gpt-oss-120b (Rate target and Urgent deposit in repeat 1; Arrival shortfall in repeat 2). So these numbers describe qwen/qwen3.8-27b for most plans, but not all.
+- Why 11 of 17 plans fell back to the deterministic plan: 6 hit the per-plan token cap while still revising (qwen spends ~3,000 tokens per call re-sending context, so a 4-proposal plan costs 22,000-25,000 tokens; the cap check runs after a call, so rows can exceed 22,000; Urgent deposit in repeat 2 was cut at 4,167 tokens because that was all that remained of the run's 300,000 cap); 4 ended with the model never proposing a plan inside the call budget (Arrival shortfall repeat 1, Tight runway repeats 1 and 2, Parent TCS repeat 2: mostly read-only tool calls); 1 (Tight runway repeat 3) was a Groq API HTTP 400 tool-call parse error on 2026-10-10. A budget stop or exhausted call count is not a plan the validator rejected, but it is a plan the model did not finish.
+- The final plan was valid in all 17 rows because a fallback is the deterministic planner's plan; 'valid without fallback' is the model's own result.
+- Superseded samples: the 2026-10-10 rows from the previous key for Arrival shortfall (repeat 1: valid without fallback on gpt-oss-120b, 1 proposal, 8,853 tokens) and Tight runway (repeats 1 and 2: valid without fallback, 5,162 and 11,405 tokens) were replaced when the plans were re-sampled on 2026-10-11, because their cached responses did not replay (the qwen calls had been rate-limited the first time, so the new samples diverged). Including them the pooled count would have been 7 of 18 valid without fallback.
+- Tokens (Groq daily ledger): 300,606 tokens on 2026-10-11 across two keys; the 2026-10-10 planning work is not included (about 105,000 under the previous key).
 
 ## Live, before planner prompt change (2026-10-10, 1 run)
 

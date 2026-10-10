@@ -191,7 +191,7 @@ def main(argv=None) -> dict:
     notes: list[str] = []
     today = time.strftime("%Y-%m-%d")
     if args.llm == "groq":
-        from oasis.agent.llm import GroqLLM
+        from oasis.agent.llm import GroqLLM, UsageLedger
         if not config.GROQ_API_KEY:
             raise SystemExit("GROQ_API_KEY is not set")
         prev = data.get("live") or {}
@@ -218,7 +218,8 @@ def main(argv=None) -> dict:
 
         llm0 = GroqLLM(salt="planrep0", temperature=LIVE_TEMPERATURE)
         spent0 = llm0.usage.day()["tokens"]
-        calls = hits = fbs = 0
+        keys0 = {k: dict(v) for k, v in llm0.usage.day().get("keys", {}).items()}
+        calls = hits = fbs = rots = 0
         for rep in range(args.repeats):
             llm = GroqLLM(salt=f"planrep{rep}", temperature=LIVE_TEMPERATURE)
             for sid in ids:
@@ -238,11 +239,17 @@ def main(argv=None) -> dict:
                 rows.append(r)
                 flush()
                 print(f"rep{rep} {sid}: valid={r['valid']} fallback={r['fell_back']} proposals={r['proposals']} tokens={r['tokens']} (total {spent:,})", flush=True)
-            calls, hits, fbs = calls + llm.calls, hits + llm.cache_hits, fbs + llm.fallbacks
+            calls, hits, fbs, rots = calls + llm.calls, hits + llm.cache_hits, fbs + llm.fallbacks, rots + llm.key_rotations
         notes.append(f"Invocation {today}: new tokens {spent:,} (cap {args.token_cap:,}); Groq daily ledger before {spent0:,}, "
-                     f"after {llm0.usage.day()['tokens']:,}. Live calls {calls}, cache hits {hits}, model fallbacks {fbs}.")
+                     f"after {UsageLedger(llm0.usage.path).day()['tokens']:,}. Live calls {calls}, cache hits {hits}, model fallbacks {fbs}.")
+        fresh = UsageLedger(llm0.usage.path)      # other GroqLLM instances (one per repeat) wrote the file; re-read it
+        keys1 = fresh.day().get("keys", {})
+        per_key = {k: keys1[k]["tokens"] - keys0.get(k, {}).get("tokens", 0) for k in keys1}
+        if len(llm0.fingerprints) > 1 or per_key:
+            notes.append(f"Per-key tokens this invocation ({len(llm0.fingerprints)} key(s), by sha256 fingerprint): "
+                         + ", ".join(f"{k}: {v:,}" for k, v in sorted(per_key.items())) + f"; key rotations {rots}.")
         if args.ledger_baseline is not None:
-            notes.append(f"Total Groq tokens spent on live planning in this session: {llm0.usage.day()['tokens'] - args.ledger_baseline:,}.")
+            notes.append(f"Total Groq tokens spent on live planning in this session: {UsageLedger(llm0.usage.path).day()['tokens'] - args.ledger_baseline:,}.")
         flush()
     else:
         planner = DeterministicPlanner()

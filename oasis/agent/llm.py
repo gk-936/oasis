@@ -473,7 +473,10 @@ class RateLimiter:
 
 
 class UsageLedger:
-    """Per-day token/request counters on disk, so a resumed benchmark respects the daily free-tier budget."""
+    """Per-day token/request counters on disk, so a resumed benchmark respects the daily free-tier budget.
+
+    `tokens`/`requests` are the day totals (unchanged format); with several keys `keys` adds the split per key
+    fingerprint ({"keys": {"ab12cd34": {"tokens", "requests"}}}). Fingerprints only, never key values."""
 
     def __init__(self, path: Path, today=lambda: time.strftime("%Y-%m-%d")):
         self.path, self.today = path, today
@@ -485,14 +488,30 @@ class UsageLedger:
     def day(self) -> dict:
         return self.data.setdefault(self.today(), {"tokens": 0, "requests": 0})
 
-    def add(self, tokens: int) -> None:
+    def key_day(self, fp: str) -> dict:
+        return self.day().setdefault("keys", {}).setdefault(fp, {"tokens": 0, "requests": 0})
+
+    def add(self, tokens: int, key: str | None = None) -> None:
+        try:                # several GroqLLM instances may share this file: re-read it so one never overwrites another
+            self.data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
         d = self.day()
         d["tokens"] += int(tokens or 0)
         d["requests"] += 1
+        if key:
+            k = self.key_day(key)
+            k["tokens"] += int(tokens or 0)
+            k["requests"] += 1
         try:
             self.path.write_text(json.dumps(self.data), encoding="utf-8")
         except OSError:
             pass
+
+
+def key_fingerprint(key: str) -> str:
+    """Eight hex chars of sha256(key): how a key is identified in ledgers and reports. Never the key itself."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
 
 
 def classify_error(e: Exception) -> str:
@@ -550,7 +569,7 @@ class GroqLLM(OfflineLLM):
                  client=None, sleep=time.sleep, clock=time.monotonic, rpm: float | None = None,
                  salt: str = "", temperature: float = 0.0, strict: bool = False,
                  fallback_model: str | None = None, max_retries: int | None = None, extract_mode: str | None = None,
-                 llm_risk: bool | None = None):
+                 llm_risk: bool | None = None, api_keys: list[str] | None = None):
         super().__init__(susceptible)
         # "deterministic" (default): regex parse is the floor, the model only fills empty fields.
         # "llm" (live agent): the model's JSON is primary; the regex parse is used only per field when the call
@@ -565,10 +584,24 @@ class GroqLLM(OfflineLLM):
         self.last_recorded: str | None = None
         self.model = model or config.AGENT_MODEL
         self.fallback_model = fallback_model or config.FALLBACK_MODEL
+        # One client per API key. `client` may be a single fake/real client or a list (tests); `api_keys` gives the key
+        # values behind them (used only for fingerprints and error redaction).
         if client is None:
             from groq import Groq
-            client = Groq(api_key=config.GROQ_API_KEY, max_retries=0)   # we do our own backoff
-        self.client = client
+            api_keys = api_keys or config.groq_keys()
+            clients = [Groq(api_key=k, max_retries=0) for k in api_keys]   # we do our own backoff
+        else:
+            clients = list(client) if isinstance(client, (list, tuple)) else [client]
+        self._keys = [k for k in (api_keys or []) if k]
+        self.clients = clients
+        self.fingerprints = ([key_fingerprint(k) for k in self._keys] if len(self._keys) == len(clients)
+                             else [f"key{i}" for i in range(len(clients))])
+        self.client = clients[0] if clients else None
+        self._cur = 0                       # key in use; moves on only when a key hits its daily limit
+        self._spent: set[tuple[str, str]] = set()   # (key fingerprint, model) pairs that reported a daily limit
+        self._bad_keys: set[int] = set()
+        self.key_rotations = 0
+        self.last_key: str | None = None
         self.cache_dir = cache_dir or (config.DATA_DIR / "llm_cache")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.sleep = sleep
@@ -584,6 +617,83 @@ class GroqLLM(OfflineLLM):
         self._dead: set[str] = set()
         self._auth_failed = False
 
+    # -- key selection, redaction and the shared request loop ------------------------------------
+    def _scrub(self, msg: str) -> str:
+        """Redact EVERY configured key value (any format) plus gsk_/org_/Bearer patterns."""
+        for k in sorted(self._keys, key=len, reverse=True):
+            msg = msg.replace(k, "[redacted]")
+        return _redact(msg)
+
+    def _key_budget_ok(self, i: int) -> bool:
+        kd = self.usage.key_day(self.fingerprints[i])
+        return kd["tokens"] < config.GROQ_DAILY_TOKEN_BUDGET and kd["requests"] < config.GROQ_DAILY_REQUEST_BUDGET
+
+    def _pick(self, model: str) -> int | None:
+        """The key to use for `model`: the current one if it still has budget, else the next that does."""
+        n = len(self.clients)
+        for off in range(n):
+            i = (self._cur + off) % n
+            if i in self._bad_keys or (self.fingerprints[i], model) in self._spent or not self._key_budget_ok(i):
+                continue
+            if off:
+                self.key_rotations += 1
+            self._cur = i
+            return i
+        return None
+
+    def _check_budget(self) -> None:
+        if self._auth_failed:
+            raise RuntimeError("Groq authentication failed earlier in this process")
+        if not any(i not in self._bad_keys and self._key_budget_ok(i) for i in range(len(self.clients))):
+            d = self.usage.day()
+            raise QuotaExhausted(f"daily Groq budget used on all {len(self.clients)} key(s) "
+                                 f"({d['tokens']} tokens, {d['requests']} requests in total)")
+
+    def _request(self, order: list[str], make_kwargs):
+        """Run one completion over `order` (models) and the configured keys. Per-minute 429s back off on the SAME key;
+        a daily limit moves to the next key (same model) and only when every key is spent on that model does the
+        next model get tried. Returns (response, model, key_index)."""
+        last: Exception | None = None
+        spent_models = 0
+        for m in order:
+            attempt = 0
+            while attempt <= self.max_retries:
+                i = self._pick(m)
+                if i is None:
+                    spent_models += 1
+                    break
+                fp = self.fingerprints[i]
+                self.limiter.wait()
+                try:
+                    r = self.clients[i].chat.completions.create(model=m, **make_kwargs(m))
+                except Exception as e:  # noqa: BLE001 - classified below
+                    last, kind = e, classify_error(e)
+                    self.errors.append({"model": m, "kind": kind, "key": fp, "message": self._scrub(str(e))[:300]})
+                    if kind == "rate_limit" and attempt < self.max_retries:
+                        self.sleep(_retry_after(e, attempt))
+                        attempt += 1
+                        continue
+                    if kind == "transient" and attempt < self.max_retries:
+                        self.sleep(min(2.0 * (2 ** attempt), 30.0))
+                        attempt += 1
+                        continue
+                    if kind == "auth":
+                        self._bad_keys.add(i)
+                        if len(self._bad_keys) >= len(self.clients):
+                            self._auth_failed = True
+                            raise RuntimeError(f"Groq authentication failed: {self._scrub(str(e))}") from None
+                        continue
+                    if kind == "daily_limit":
+                        self._spent.add((fp, m))
+                        continue                # next key, same model
+                    if kind == "model_gone":
+                        self._dead.add(m)       # retired / unknown model: skip it from now on
+                    break                       # try the next model
+                return r, m, i
+        if order and spent_models >= len(order):
+            raise QuotaExhausted(f"Groq daily limit reached on every key and model: {self._scrub(str(last)) if last else 'budget used'}")
+        raise RuntimeError(f"Groq unavailable on {order}: {self._scrub(str(last))}")
+
     # -- one chat call with cache, rate limit, backoff and model fallback -------------------------
     def _chat(self, system: str, user: str, model: str | None = None, json_mode: bool = False,
               image: tuple[bytes, str] | None = None) -> str:
@@ -598,11 +708,7 @@ class GroqLLM(OfflineLLM):
             cached = json.loads(path.read_text(encoding="utf-8"))
             self.last_model, self.last_recorded = cached.get("model"), cached.get("recorded")
             return cached["text"]
-        if self._auth_failed:
-            raise RuntimeError("Groq authentication failed earlier in this process")
-        d = self.usage.day()
-        if d["tokens"] >= config.GROQ_DAILY_TOKEN_BUDGET or d["requests"] >= config.GROQ_DAILY_REQUEST_BUDGET:
-            raise QuotaExhausted(f"daily Groq budget used ({d['tokens']} tokens, {d['requests']} requests)")
+        self._check_budget()
         kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}
         order = [m for m in dict.fromkeys([model] if image else [model, self.fallback_model]) if m not in self._dead]
         if image:
@@ -611,42 +717,16 @@ class GroqLLM(OfflineLLM):
                             {"type": "text", "text": user}]
         else:
             user_content = user
-        last: Exception | None = None
-        daily_hits = 0
-        for m in order:
-            for attempt in range(self.max_retries + 1):
-                self.limiter.wait()
-                try:
-                    r = self.client.chat.completions.create(
-                        model=m, temperature=self.temperature,
-                        messages=[{"role": "system", "content": system}, {"role": "user", "content": user_content}], **kwargs)
-                except Exception as e:  # noqa: BLE001 - classified below
-                    last, kind = e, classify_error(e)
-                    if kind == "rate_limit" and attempt < self.max_retries:
-                        self.sleep(_retry_after(e, attempt))
-                        continue
-                    if kind == "transient" and attempt < self.max_retries:
-                        self.sleep(min(2.0 * (2 ** attempt), 30.0))
-                        continue
-                    if kind == "auth":
-                        self._auth_failed = True
-                        raise RuntimeError(f"Groq authentication failed: {e}") from e
-                    if kind == "model_gone":
-                        self._dead.add(m)       # retired / unknown model: skip it from now on
-                    if kind == "daily_limit":
-                        daily_hits += 1
-                    break                       # try the next model
-                text = THINK_RE.sub("", r.choices[0].message.content or "").strip()
-                self.calls += 1
-                if m != model:
-                    self.fallbacks += 1
-                self.last_model = m
-                self.usage.add(getattr(getattr(r, "usage", None), "total_tokens", 0))
-                path.write_text(json.dumps({"model": m, "text": text, "recorded": time.strftime("%Y-%m-%d")}), encoding="utf-8")
-                return text
-        if daily_hits and daily_hits >= len(order):
-            raise QuotaExhausted(f"Groq daily limit reached on every configured model: {last}")
-        raise RuntimeError(f"Groq unavailable on {order}: {last}")
+        msgs = [{"role": "system", "content": system}, {"role": "user", "content": user_content}]
+        r, m, i = self._request(order, lambda _m: dict(temperature=self.temperature, messages=msgs, **kwargs))
+        text = THINK_RE.sub("", r.choices[0].message.content or "").strip()
+        self.calls += 1
+        if m != model:
+            self.fallbacks += 1
+        self.last_model, self.last_key = m, self.fingerprints[i]
+        self.usage.add(getattr(getattr(r, "usage", None), "total_tokens", 0), self.fingerprints[i])
+        path.write_text(json.dumps({"model": m, "text": text, "recorded": time.strftime("%Y-%m-%d")}), encoding="utf-8")
+        return text
 
     def _guard(self, e: Exception) -> None:
         if self.strict and isinstance(e, QuotaExhausted):
@@ -674,58 +754,27 @@ class GroqLLM(OfflineLLM):
             cached = json.loads(path.read_text(encoding="utf-8"))
             self.last_model, self.last_recorded = cached.get("model"), cached.get("recorded")
             return {**cached, "tokens": 0, "cached": True}
-        if self._auth_failed:
-            raise RuntimeError("Groq authentication failed earlier in this process")
-        d = self.usage.day()
-        if d["tokens"] >= config.GROQ_DAILY_TOKEN_BUDGET or d["requests"] >= config.GROQ_DAILY_REQUEST_BUDGET:
-            raise QuotaExhausted(f"daily Groq budget used ({d['tokens']} tokens, {d['requests']} requests)")
+        self._check_budget()
         order = [m for m in dict.fromkeys([model, self.fallback_model]) if m not in self._dead]
-        last: Exception | None = None
-        daily_hits = 0
-        for m in order:
-            for attempt in range(self.max_retries + 1):
-                self.limiter.wait()
-                try:
-                    r = self.client.chat.completions.create(
-                        model=m, temperature=self.temperature, messages=messages, tools=tools, tool_choice="auto",
-                        max_tokens=max_tokens, **self._extra_for(m))
-                except Exception as e:  # noqa: BLE001 - classified below
-                    last, kind = e, classify_error(e)
-                    self.errors.append({"model": m, "kind": kind, "message": _redact(str(e))[:300]})
-                    if kind == "rate_limit" and attempt < self.max_retries:
-                        self.sleep(_retry_after(e, attempt))
-                        continue
-                    if kind == "transient" and attempt < self.max_retries:
-                        self.sleep(min(2.0 * (2 ** attempt), 30.0))
-                        continue
-                    if kind == "auth":
-                        self._auth_failed = True
-                        raise RuntimeError(f"Groq authentication failed: {e}") from e
-                    if kind == "model_gone":
-                        self._dead.add(m)
-                    if kind == "daily_limit":
-                        daily_hits += 1
-                    break
-                msg = r.choices[0].message
-                calls = []
-                for tc in (getattr(msg, "tool_calls", None) or []):
-                    try:
-                        args = json.loads(tc.function.arguments or "{}")
-                    except ValueError:
-                        args = {}
-                    calls.append({"id": tc.id, "name": tc.function.name, "arguments": args if isinstance(args, dict) else {}})
-                out = {"content": THINK_RE.sub("", getattr(msg, "content", None) or "").strip(), "tool_calls": calls, "model": m}
-                tokens = int(getattr(getattr(r, "usage", None), "total_tokens", 0) or 0)
-                self.calls += 1
-                if m != model:
-                    self.fallbacks += 1
-                self.last_model = m
-                self.usage.add(tokens)
-                path.write_text(json.dumps({**out, "recorded": time.strftime("%Y-%m-%d")}), encoding="utf-8")
-                return {**out, "tokens": tokens, "cached": False}
-        if daily_hits and daily_hits >= len(order):
-            raise QuotaExhausted(f"Groq daily limit reached on every configured model: {last}")
-        raise RuntimeError(f"Groq unavailable on {order}: {last}")
+        r, m, i = self._request(order, lambda _m: dict(temperature=self.temperature, messages=messages, tools=tools,
+                                                       tool_choice="auto", max_tokens=max_tokens, **self._extra_for(_m)))
+        msg = r.choices[0].message
+        calls = []
+        for tc in (getattr(msg, "tool_calls", None) or []):
+            try:
+                args = json.loads(tc.function.arguments or "{}")
+            except ValueError:
+                args = {}
+            calls.append({"id": tc.id, "name": tc.function.name, "arguments": args if isinstance(args, dict) else {}})
+        out = {"content": THINK_RE.sub("", getattr(msg, "content", None) or "").strip(), "tool_calls": calls, "model": m}
+        tokens = int(getattr(getattr(r, "usage", None), "total_tokens", 0) or 0)
+        self.calls += 1
+        if m != model:
+            self.fallbacks += 1
+        self.last_model, self.last_key = m, self.fingerprints[i]
+        self.usage.add(tokens, self.fingerprints[i])
+        path.write_text(json.dumps({**out, "recorded": time.strftime("%Y-%m-%d")}), encoding="utf-8")
+        return {**out, "tokens": tokens, "cached": False}
 
     def draft_recovery(self, ctx: dict) -> str | None:
         try:
