@@ -34,3 +34,19 @@ data/keys/
 
 # red-team attempts store (every judge console attempt; input for the next work item)
 data/redteam_attempts.jsonl
+
+# local tooling (FISCO BCOS WSL distro, Caddy, downloads): scripts/Caddyfile stay tracked
+tools/fisco/.keepalive.pid
+tools/caddy/data/
+tools/caddy/*.exe
+tools/caddy/LICENSE
+tools/caddy/README.md
+tools/caddy/*.log
+tools/caddy/*.pem
+tools/dl/
+tools/tmp/
+*.rootfs.tar.gz
+
+# live exchange-rate cache (written when OASIS_RATES=live)
+data/rates_cache.json
+data/rates_cache.tmp

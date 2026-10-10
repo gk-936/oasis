@@ -1,52 +1,20 @@
-# Post-quantum hybrid TLS (X25519MLKEM768): deployment recipe
+# Post-quantum hybrid TLS (X25519MLKEM768): tested with Caddy
 
-## Status: NOT exercised in the demo build
+## Status: TESTED locally (2026-10-10)
 
-The demo serves plain HTTP from uvicorn on localhost. Nothing in this repository negotiates X25519MLKEM768, and nothing here has been tested end to end. This page is a recipe for a deployment, not a result.
+Caddy v2.11.7 (Apache-2.0, go1.26.8; Go >= 1.24 supports X25519MLKEM768) terminates TLS 1.3 in front of uvicorn, configured to offer only `x25519mlkem768`. An OpenSSL 3.5.9 client reported `Negotiated TLS1.3 group: X25519MLKEM768`, and a classical-only X25519 client was refused. Full command and output: `eval/reports/pqtls.md`.
 
-What was checked on the development machine (2026-10-10):
+The demo app itself still serves plain HTTP unless you run the proxy; the Python process is unchanged.
 
-| Component | Version | ML-KEM / X25519MLKEM768 support |
-|---|---|---|
-| `.venv` Python `ssl.OPENSSL_VERSION` | OpenSSL 1.1.1t (7 Feb 2023) | No |
-| Git-for-Windows `openssl` CLI | OpenSSL 3.2.3 | No (hybrid ML-KEM groups arrived in 3.5) |
-| Caddy, nginx | not installed | not testable here |
+## Run
 
-Because no available OpenSSL is 3.5 or later, the negotiation could not be tested locally. The signature side (ML-DSA-65, FIPS 204) is separate and is implemented and tested; see `oasis/trust/crypto.py`.
+1. Caddy lives at `D:\china_hackathon\tools\caddy\caddy.exe` (download the Windows amd64 zip from the Caddy GitHub releases; not committed).
+2. `uvicorn oasis.api.main:app --host 127.0.0.1 --port 8000`
+3. `tools\caddy\start.ps1` serves `https://localhost:8443`. It sets XDG_DATA_HOME, XDG_CONFIG_HOME, CADDY_DATA and TEMP to folders under `D:\china_hackathon\tools\caddy`, so nothing is written under the user profile. Do not run `caddy trust` if you want to avoid touching the OS trust store; use the CA root at `tools\caddy\data\pki\authorities\local\root.crt` explicitly.
+4. `tools\caddy\verify-pq.ps1` repeats the proof (needs OpenSSL 3.5+; here built in the `oasis-fisco` distro at `/opt/openssl35`).
 
-## Recipe: reverse proxy terminating TLS in front of uvicorn
+## Notes
 
-Python itself does not need to change. Terminate TLS in a proxy built against OpenSSL 3.5 or later (or any TLS stack with X25519MLKEM768, for example Go 1.24+ enables it by default), and keep uvicorn on loopback.
-
-1. Run the app on loopback only: `uvicorn oasis.api.main:app --host 127.0.0.1 --port 8000`.
-2. Caddy (built with Go 1.24 or later, where `X25519MLKEM768` is a default key-exchange group):
-   ```
-   oasis.example.com {
-       reverse_proxy 127.0.0.1:8000
-       tls {
-           curves x25519mlkem768 x25519 secp256r1
-       }
-   }
-   ```
-   nginx alternative, built against OpenSSL 3.5 or later:
-   ```
-   ssl_protocols TLSv1.3;
-   ssl_ecdh_curve X25519MLKEM768:X25519:prime256v1;
-   ```
-3. Keep classical groups in the list so older clients still connect (the key exchange is hybrid, so security holds if either X25519 or ML-KEM-768 holds).
-
-Note the scope: this protects confidentiality of traffic against "harvest now, decrypt later". Certificates are still classical (ECDSA or RSA) unless the CA ecosystem offers PQ certificates, which it does not yet widely.
-
-## Checking the negotiated group
-
-With an OpenSSL 3.5+ client:
-
-```
-openssl s_client -connect oasis.example.com:443 -groups X25519MLKEM768 -tls1_3 </dev/null 2>&1 | grep -i -E "Negotiated|group|Server Temp Key"
-```
-
-Expect a negotiated group of `X25519MLKEM768`. Forcing only that group means the handshake fails if the server does not support it, which is the useful test. Browsers: recent Chrome and Firefox offer X25519MLKEM768; the DevTools Security tab shows the key exchange group.
-
-## What would make this tested
-
-Install OpenSSL 3.5+ (or a Caddy build) on a Linux host or container, run the config above in front of the app, and record the `s_client` output. Until that is done this feature is documented-only.
+- `curves x25519mlkem768` is strict: clients without ML-KEM fail the handshake. For a public site remove it (Go's default prefers X25519MLKEM768 and keeps X25519/P-256 for older clients). nginx alternative with OpenSSL 3.5+: `ssl_ecdh_curve X25519MLKEM768:X25519:prime256v1;`.
+- Hybrid key exchange only protects confidentiality against harvest-now-decrypt-later. The certificate is classical (ECDSA from Caddy's internal CA). Signatures in Oasis (ML-DSA-65) are separate, see `oasis/trust/crypto.py`.
+- Client support: Chrome/Edge 131+ and Firefox offer X25519MLKEM768 by default (not tested here). Python's `ssl` here is OpenSSL 1.1.1 and cannot negotiate it; curl 8.22 (LibreSSL 4.3.3) connected but does not display the group.

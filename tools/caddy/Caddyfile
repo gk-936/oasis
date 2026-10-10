@@ -1,0 +1,19 @@
+# Post-quantum TLS front for Oasis: Caddy (Go >= 1.24 => hybrid X25519MLKEM768 key exchange) in front of uvicorn.
+# Local internal CA only; storage is redirected to D: by start.ps1 (XDG_DATA_HOME / CADDY_DATA).
+{
+	auto_https disable_redirects
+	local_certs
+	storage file_system {$CADDY_DATA:./data}
+	admin off
+}
+
+https://localhost:8443, https://127.0.0.1:8443 {
+	tls internal {
+		# Offer ONLY the post-quantum hybrid group: a client without ML-KEM support fails the handshake
+		# instead of silently downgrading to classical X25519. Remove this line to allow the Go default
+		# preference (X25519MLKEM768 first, then X25519/P-256) for older clients.
+		curves x25519mlkem768
+		protocols tls1.3 tls1.3
+	}
+	reverse_proxy 127.0.0.1:8000
+}
