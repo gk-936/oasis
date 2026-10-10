@@ -19,6 +19,7 @@ from oasis.proof.pack import verify_proof_pack
 from oasis.trust.audit import verify_chain
 from oasis.world import Features, World
 from demo_helpers import status, step
+from auth_helpers import Approver, login
 
 
 def _auto():
@@ -32,9 +33,10 @@ def test_session_survives_restart_and_reset_wipes(tmp_path):
     s1 = api.Session(db)
     api.S, saved = s1, api.S
     try:
-        c = TestClient(api.app)
+        c = login(TestClient(api.app), "student")
         o = c.post("/api/intake", json={"text": tuition()}).json()
-        r = c.post("/api/approve", json={"pending_id": o["pending_id"], "role": "student"}).json()
+        me = Approver(c, "student")
+        r = me.approve(o["pending_id"]).json()
         assert r["status"] == "paid"
         c.post("/api/intake", json={"text": tuition("6228480000009999")})       # a why-card
         head, bal = s1.world.audit.head(), s1.world.passport.balance("CNY")
@@ -42,9 +44,10 @@ def test_session_survives_restart_and_reset_wipes(tmp_path):
         assert s2.world.audit.head() == head and verify_chain(s2.world.audit.entries).ok
         assert s2.world.passport.obligation("obl_tuition_1").status == "paid"
         assert s2.world.passport.balance("CNY") == bal
-        assert r["proof_id"] in s2.world.proofs and verify_proof_pack(s2.world.proofs[r["proof_id"]], {s2.world.trust_fingerprint()}, s2.world.anchor)["ok"]
+        assert r["proof_id"] in s2.world.proofs and verify_proof_pack(s2.world.proofs[r["proof_id"]], {s2.world.trust_fingerprint()}, s2.world.anchor, s2.approvers.pinned_key_ids())["ok"]
         assert len(s2.world.cards) == len(s1.world.cards) >= 1
         assert s2.world.ledger.money_lost() == 0
+        assert s2.approvers.active("student")["key_id"] == me.key_id          # registered device keys survive the restart
         api.S = s2                                                                # restored session keeps working
         assert c.get("/api/audit/verify").json()["ok"]
         o2 = c.post("/api/intake", json={"text": tuition()}).json()                # already paid obligation -> new intent ids don't collide

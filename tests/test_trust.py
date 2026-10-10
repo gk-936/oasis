@@ -9,6 +9,7 @@ from oasis.trust import corridor
 from oasis.trust.audit import AuditLog, verify_chain
 from oasis.trust.canaries import Canaries
 from oasis.trust.crypto import Ed25519Signer, HybridSigner, MLDSA65Signer, canonical, verify_hybrid
+from oasis.trust.approvals import draft_hash
 from oasis.trust.intents import IntentBuilder, check_intent
 from oasis.trust.policy import PolicyInput, decide
 from oasis.trust.verification import LOW_LIMIT_CNY, Verifier
@@ -199,9 +200,12 @@ def test_policy_is_deterministic():
 # ---------------------------------------------------------------- intents + executor
 def _intent(w, **over):
     b = dict(student_id="stu_001", payee_id="payee_univ_x", account_ref=UNIV_ACCT, amount=100.0, currency="CNY",
-             purpose="tuition", route_id="r", not_after=(w.now + timedelta(hours=2)).isoformat(), tier=2,
-             approvals=[{"role": "student"}])
+             purpose="tuition", route_id="r", not_after=(w.now + timedelta(hours=2)).isoformat(), tier=2)
     b.update(over)
+    b.setdefault("nonce", w.builder.new_nonce())
+    if "approvals" not in b:      # the simulated student's device signs this exact draft (trust/approvals.py)
+        sig = w.sim_devices.sign("student", draft_hash(b))
+        b["approvals"] = [w.approvers.make_record("student", sig, w.now_iso())]
     return w.builder.build(**b)
 
 
@@ -224,7 +228,7 @@ def test_executor_refuses_replay_after_success():
     w.ledger.accounts["acct_student_cny"].balance = 1000
     it = _intent(w)
     payload = {k: it[k] for k in ("payee_id", "account_ref", "amount", "currency", "route_id")}
-    allow = lambda: decide(_pi(w, amount_cny=100, approvals=("student",)))
+    allow = lambda appr: decide(_pi(w, amount_cny=100, approvals=appr))
     assert w.executor.execute(it, payload, allow, "acct_student_cny").ok
     assert w.executor.execute(it, payload, allow, "acct_student_cny").status == "frozen"
     assert len(w.ledger.transfers) == 1
@@ -302,7 +306,7 @@ def test_executor_freezes_on_canary_in_payload_even_if_it_matches_the_intent():
     payload = _payload(it)
     assert check_intent(w.signer, it, payload, w.now_iso(), set()).ok
     called = []
-    res = w.executor.execute(it, payload, lambda: called.append(1) or decide(_pi(w, amount_cny=100, approvals=S)),
+    res = w.executor.execute(it, payload, lambda appr: called.append(1) or decide(_pi(w, amount_cny=100, approvals=S)),
                              "acct_student_cny")
     assert res.status == "frozen" and any("canary" in r for r in res.reasons)
     assert not called and w.ledger.transfers == [] and w.canaries.tripped
@@ -312,8 +316,8 @@ def test_executor_freezes_on_canary_in_payload_even_if_it_matches_the_intent():
 def test_executor_returns_held_when_policy_holds_and_moves_no_money():
     w = _world()
     w.ledger.accounts["acct_student_cny"].balance = 1000
-    it = _intent(w)
-    res = w.executor.execute(it, _payload(it), lambda: decide(_pi(w, amount_cny=100)), "acct_student_cny")   # no approvals
+    it = _intent(w, approvals=[])                                  # nobody has approved
+    res = w.executor.execute(it, _payload(it), lambda appr: decide(_pi(w, amount_cny=100, approvals=appr)), "acct_student_cny")
     assert res.status == "held" and res.decision.rule == "R11_approval_required" and not res.ok
     assert w.ledger.transfers == [] and it["nonce"] not in w.executor.used_nonces
 
@@ -358,8 +362,8 @@ def test_proof_pack_anchor_digest_must_match_intent_hash():
     from oasis.proof.pack import verify_proof_pack
     w = _world()
     fp = {w.trust_fingerprint()}
-    assert verify_proof_pack(_pack(w), fp)["ok"]
-    bad = verify_proof_pack(_pack(w, digest="0" * 64), fp)              # properly signed pack, wrong anchor
+    assert verify_proof_pack(_pack(w), fp, None, w.approvers.pinned_key_ids())["ok"]
+    bad = verify_proof_pack(_pack(w, digest="0" * 64), fp, None, w.approvers.pinned_key_ids())              # properly signed pack, wrong anchor
     assert bad["anchor_matches_intent"] is False and bad["pack_signature"] is True and not bad["ok"]
 
 

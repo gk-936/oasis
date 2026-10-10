@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from eval import runner
 from eval.approver import SimulatedHumans
 from eval.scenarios import all_scenarios, tuition
+from auth_helpers import Approver, login
 from oasis import config
 from oasis.agent import i18n
 from oasis.agent.llm import GroqLLM, OfflineLLM, heuristic_risk, regex_fields
@@ -56,7 +57,7 @@ def forge(pack: dict, **changes) -> dict:
 
 def test_genuine_pack_passes_with_pinned_fingerprint_and_chain():
     w, pack = _paid_world()
-    res = verify_proof_pack(pack, {w.trust_fingerprint()}, w.anchor)
+    res = verify_proof_pack(pack, {w.trust_fingerprint()}, w.anchor, w.approvers.pinned_key_ids())
     assert res["ok"] and res["key_pinned"] is True and res["anchor_on_chain"] is True and res["consistent"]
 
 
@@ -130,7 +131,7 @@ def test_default_key_path_is_git_ignored_and_env_configurable(monkeypatch, tmp_p
 
 def _pay(client):
     o = client.post("/api/intake", json={"text": tuition()}).json()
-    r = client.post("/api/approve", json={"pending_id": o["pending_id"], "role": "student"}).json()
+    r = Approver(client, "student").approve(o["pending_id"]).json()
     assert r["status"] == "paid"
     return r["proof_id"]
 
@@ -154,7 +155,7 @@ def test_pack_verifies_after_a_server_restart_with_persistent_keys(tmp_path):
     s1 = api.Session(db, key_path=keys)
     saved, api.S = api.S, s1
     try:
-        c = TestClient(api.app)
+        c = login(TestClient(api.app), "student")
         pid = _pay(c)
         fp1 = c.get("/api/trust/fingerprint").json()
         assert fp1["persistent"] and not fp1["demo_keys"]
@@ -573,7 +574,7 @@ def test_docs_carry_the_honest_limits_and_no_stale_counts():
     for name in ("README.md", "docs/security-self-assessment.md"):
         text = (config.ROOT / name).read_text(encoding="utf-8")
         assert "## Honest limits" in text and "partly by construction" in text
-        assert "Approvals are not authenticated" in text and "Live planning is weak" in text
+        assert "Authentication is demo-grade" in text and "Live planning is weak" in text
     readme = (config.ROOT / "README.md").read_text(encoding="utf-8")
     assert "a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate" in readme
     for name in ("README.md", "docs/execution-evidence.md"):

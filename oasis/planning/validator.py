@@ -86,12 +86,17 @@ def required_obligations(passport) -> list:
                   key=lambda o: o.due)
 
 
-def _tcs(already: float, amount: float, rules: dict, loan_funded: bool) -> float:
+def _tcs(already: float, amount: float, rules: dict, loan_funded: bool, rate: float | None = None) -> float:
     if loan_funded:
         return 0.0
     t = rules["rules"]["tcs_threshold_inr"]
     over = max(0.0, already + amount - t["value"]) - max(0.0, already - t["value"])
-    return round(over * t["rate_above"], 2)
+    return round(over * (t["rate_above"] if rate is None else rate), 2)
+
+
+def _lakh(inr: float) -> str:
+    n = inr / 100000
+    return f"INR {n:g} lakh"
 
 
 def _parse_date(v) -> date | None:
@@ -209,6 +214,8 @@ def validate_plan(world, steps) -> Validation:
     sched: list[dict] = []
     pay_ok: dict[int, bool] = {}
     total_send = total_deliv = total_bank = tcs_total = 0.0
+    pay_types = [e["ob"].type for e in parsed if e["action"] == "pay"]
+    tr = corridor.tcs_rate(p, "tuition" if "tuition" in pay_types or not pay_types else pay_types[0], rules)   # data-driven rate (corridor)
     sim_inr_after = inr
     events = sorted(parsed, key=lambda e: (e["date"], 0 if e["action"] == "convert" else 1, e["i"]))
     pay_dates = sorted(e["date"] for e in events if e["action"] == "pay")
@@ -245,13 +252,16 @@ def validate_plan(world, steps) -> Validation:
                 errors.append(Issue("lrs_exceeded", f"Step {i}: the {rem} remitter's LRS limit (INR {lrs:,.0f}) would be exceeded this "
                                     f"financial year.", i, "Use the other remitter or reduce the amount.",
                                     {"used_inr": round(used_by[rem], 2), "limit_inr": round(lrs, 2)}))
-            tcs = _tcs(used_by[rem], send, rules, loan)
+            tcs = _tcs(used_by[rem], send, rules, loan, tr["rate"])
             if tcs > 0:
                 tcs_total += tcs
+                unconf = (" The rate for this purpose is UNCONFIRMED (a placeholder): check it with the authorised dealer bank."
+                          if tr["status"] == "unconfirmed" else "")
                 warns.append(Issue("tcs", f"Step {i}: TCS of INR {tcs:,.0f} would be collected from the {rem} remitter "
-                                   f"(2% above INR 10 lakh; recoverable as a tax credit, not a fee).", i, "", {"tcs_inr": tcs, "remitter": rem}))
-            elif not loan and used_by[rem] + send > 0.8 * r_["tcs_threshold_inr"]["value"]:
-                warns.append(Issue("tcs_near", f"Step {i}: the {rem} remitter is approaching the INR 10 lakh TCS threshold.", i))
+                                   f"({tr['rate']:.0%} above {_lakh(tr['threshold_inr'])}; recoverable as a tax credit, not a fee).{unconf}",
+                                   i, "", {"tcs_inr": tcs, "remitter": rem, "rate": tr["rate"], "rate_status": tr["status"]}))
+            elif not loan and used_by[rem] + send > 0.8 * tr["threshold_inr"]:
+                warns.append(Issue("tcs_near", f"Step {i}: the {rem} remitter is approaching the {_lakh(tr['threshold_inr'])} TCS threshold.", i))
             used_by[rem] += send
             if rem == "parent":
                 warns.append(Issue("parent_remitter", f"Step {i}: INR {send:,.0f} would be sent by the parent; it needs the "

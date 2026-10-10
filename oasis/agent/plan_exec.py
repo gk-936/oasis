@@ -7,13 +7,16 @@ changes nothing about the trust model:
   policy says so); a frozen or rejected payment is reported, not forced.
 - every `convert` step moves the student's own money between her own accounts, so it is decided by
   `policy.decide_conversion` (canary tripped -> freeze; above the auto limit -> student approval, which accepting the
-  plan supplies). A parent-remitted conversion additionally needs the parent's consent, which must be given explicitly.
+  plan supplies: accepting is an authenticated student action on the student's own money). A parent-remitted conversion
+  additionally needs the parent's consent, which must be a SIGNATURE by the parent's registered device key over the exact
+  conversion step (`conversion_draft`); a "parent" string, or a student claiming it, grants nothing.
 - the plan is re-validated at acceptance and at execution, against the Passport as it is then.
 """
 from __future__ import annotations
 from datetime import date
 
 from ..planning.validator import validate_plan
+from ..trust.crypto import canonical, sha256_hex
 from ..trust.policy import decide_conversion
 from .pipeline import OasisAgent, Request
 
@@ -59,7 +62,56 @@ def _bill_text(world, ob) -> str:
             f"Payee ID: {rec.id}\nAccount: {rec.account_ref}\nAmount: CNY {ob.amount:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
 
 
-def execute_due(agent: OasisAgent, plan_id: str, approvals: tuple[str, ...] = (), approver=None) -> dict:
+def conversion_draft(plan_id: str, i: int, s: dict) -> dict:
+    """What a parent signs to consent to one parent-remitted conversion step."""
+    d = {"kind": "plan_conversion", "plan_id": plan_id, "step": i, "date": s["date"], "send_inr": float(s["send_inr"]),
+         "route_id": s["route_id"], "remitter": s.get("remitter", "student")}
+    d["canonical"] = canonical({k: v for k, v in d.items()}).decode()
+    d["draft_hash"] = sha256_hex(d["canonical"])
+    return d
+
+
+def parent_consents_needed(plan: dict) -> list[dict]:
+    return [conversion_draft(plan["id"], i, s) for i, s in enumerate(plan["steps"])
+            if s["action"] == "convert" and s.get("remitter") == "parent"]
+
+
+def record_parent_consent(agent: OasisAgent, plan_id: str, step: int, signature: str) -> dict:
+    """The parent's signed consent for one conversion step. Verified against the parent's registered device key."""
+    w = agent.w
+    plan = get_plan(w, plan_id)
+    if plan is None:
+        return {"error": "no such plan"}
+    need = {d["step"]: d for d in parent_consents_needed(plan)}
+    if step not in need:
+        return {"error": "that step does not need the parent's consent"}
+    dh = need[step]["draft_hash"]
+    if w.approvers.verify("parent", dh, signature) is None:
+        w.audit.append("approval_rejected", {"role": "parent", "draft_hash": dh, "reason": "consent signature invalid"})
+        return {"error": "consent signature does not verify for this conversion"}
+    rec = w.approvers.make_record("parent", signature, w.now_iso())
+    plan.setdefault("consents", {})[str(step)] = rec
+    w.audit.append("plan_consent", {"plan_id": plan_id, "step": step, "draft_hash": dh, "key_id": rec["key_id"]})
+    return {"plan_id": plan_id, "step": step, "key_id": rec["key_id"]}
+
+
+def sim_parent_consent(agent: OasisAgent, plan_id: str) -> int:
+    """Harness helper: the SIMULATED parent's device signs every conversion step that needs consent."""
+    w = agent.w
+    plan = get_plan(w, plan_id)
+    n = 0
+    for d in parent_consents_needed(plan):
+        res = record_parent_consent(agent, plan_id, d["step"], w.sim_devices.sign("parent", d["draft_hash"]))
+        n += "error" not in res
+    return n
+
+
+def _consent_ok(w, plan: dict, i: int, s: dict) -> bool:
+    rec = (plan.get("consents") or {}).get(str(i))
+    return bool(rec) and w.approvers.verify_record(rec, conversion_draft(plan["id"], i, s)["draft_hash"])
+
+
+def execute_due(agent: OasisAgent, plan_id: str, approver=None) -> dict:
     """Run every step dated today or earlier that is not done yet. Later steps stay scheduled."""
     w = agent.w
     plan = get_plan(w, plan_id)
@@ -76,7 +128,7 @@ def execute_due(agent: OasisAgent, plan_id: str, approvals: tuple[str, ...] = ()
         if date.fromisoformat(s["date"]) > w.today or i in done_steps:
             continue
         if s["action"] == "convert":
-            res = _run_convert(agent, plan, i, s, approvals)
+            res = _run_convert(agent, plan, i, s)
         else:
             res = _run_pay(agent, plan, i, s, approver, held)
         if res:
@@ -92,10 +144,10 @@ def _record(plan: dict, i: int, status: str, note: str = "") -> dict:
     return {"step": i, "status": status, "note": note}
 
 
-def _run_convert(agent, plan, i, s, approvals) -> dict:
+def _run_convert(agent, plan, i, s) -> dict:
     w = agent.w
-    if s.get("remitter") == "parent" and "parent" not in approvals:
-        return _record(plan, i, "awaiting_parent_consent", "A parent-remitted conversion needs the parent's consent.")
+    if s.get("remitter") == "parent" and not _consent_ok(w, plan, i, s):
+        return _record(plan, i, "awaiting_parent_consent", "A parent-remitted conversion needs the parent's signed consent.")
     from ..mock.rates import ROUTES, delivered_amount
     route = next(r for r in ROUTES if r.id == s["route_id"])
     cny = delivered_amount(s["send_inr"], route, w.rates.mid(w.day_index))

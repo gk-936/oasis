@@ -99,6 +99,11 @@ Other persisted objects: **payment intent** (payee, account, amount, currency, r
 - **Escalate-only AI.** Risk scoring is a heuristic scorer, plus an optional LLM scorer in live mode (`OASIS_LLM_RISK=1` with `OASIS_EXTRACT=llm`) that can only escalate: the two are combined as max(heuristic, llm), a failed LLM call falls back to the heuristic and is recorded, and responses are cached. The risk score can raise a decision to hold (0.5) or freeze (0.85), never lower it. LLM text for the parent view must keep every number unchanged or it is discarded. Recovery drafts are validated against the suspicious request.
 - **Tamper evidence.** Hash-chained audit log, hybrid-signed proof packs verifiable without secrets, intent hashes anchored (locally simulated).
 - **Crypto-agility and post-quantum.** Hybrid Ed25519 + ML-DSA-65 by default; optional SM2/SM3. TLS with hybrid ML-KEM is a deployment recipe only (`pq-tls.md`).
+- **Access control.** Roles student/parent/judge with HMAC-signed 1-hour session tokens in HttpOnly SameSite=Strict cookies (`oasis/api/auth.py`); every endpoint declares its allowed roles (401/403).
+- **Signed approvals.** An approval is an Ed25519 signature over `oasis-approval-v1|role|draft_hash` (draft = payee, account, amount, currency, purpose, route, not_after, nonce). Private keys are generated in the approver's browser (`frontend/src/crypto.js`); the server's `ApproverRegistry` holds public keys. The pipeline, policy engine input and executor accept only roles with a verified signature; the intent stores the approval records; `verify_proof_pack(..., approver_key_ids)` re-checks them offline. Sandbox worlds (benchmark, demo, red team, tests) use in-process simulated device keys (`SimDevices`).
+- **Encryption at rest.** `oasis/storage.py` AES-256-GCM per payload column with row-bound associated data; data key in `data/keys/data_key.json` (`OASIS_DATA_KEY`), optional scrypt passphrase wrapping (`OASIS_KEY_PASSPHRASE`, `oasis/trust/keyfile.py`); plaintext DBs are migrated once, wrong keys and injected plaintext rows refused.
+- **Tool tokens.** `SandboxLedger.mint_tool_token` issues a 30 s, single-use token bound to intent id, accounts, amount and currency; the executor mints one per execution and the agent never sees it.
+- **Red-team console.** Judge only, separate world, 20 attempts/min/client, size limits, every attempt appended to `data/redteam_attempts.jsonl`.
 - Threat model, permission tiers and known risks: `security-self-assessment.md`.
 
 ## 5. Evaluation
@@ -115,11 +120,16 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/state` | Passport, routes, forecast triggers, why-cards, pending items, security feed |
+| GET | `/api/health`, `/api/auth/config` | public: liveness; login screen config (never a passcode) |
+| POST | `/api/auth/login`, `/api/auth/logout`; GET `/api/auth/me` | role + passcode -> session cookie; revoke; who am I |
+| POST | `/api/device/register` | student/parent registers the public half of their Ed25519 device key |
+| GET | `/api/approvers` | registered approver public keys (any role) |
+| POST | `/api/plan/{plan_id}/consent` | parent only: signed consent to a parent-remitted conversion step |
+| GET | `/api/state` | student/judge: Passport, routes, forecast triggers, why-cards, pending items (with signable drafts), security feed; parent: only their pending items and proofs |
 | POST | `/api/reset` | clean sandbox; wipes SQLite state |
 | POST | `/api/intake` | run the six-step pipeline on pasted document text |
 | POST | `/api/intake/image` | same, for an invoice photo or screenshot (Groq vision; unreadable becomes a hold) |
-| POST | `/api/approve` | student or parent approves or declines a pending payment |
+| POST | `/api/approve` | student or parent (the SESSION role) approves with a `signature` over the pending draft hash, or declines; no signature or a bad one is 403 |
 | POST | `/api/recovery/approve` | the 'ask' step after a freeze: approve the drafted recovery |
 | GET | `/api/parent/pending` | parent's view with explanation and facts (`?lang=en|hi|ta`) |
 | POST | `/api/chat` | plan summary, or invoice intake when the message looks like an invoice |
@@ -128,13 +138,13 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/plans` | plans with tool-call trace, validator feedback, why-this-plan |
 | GET | `/api/plan/{plan_id}` | one plan with live step status |
 | POST | `/api/plan/{plan_id}/accept` | student accepts (re-validated) |
-| POST | `/api/plan/{plan_id}/execute` | run the steps due today through the normal pipeline (`approvals: ["parent"]` supplies the parent's consent) |
+| POST | `/api/plan/{plan_id}/execute` | run the steps due today through the normal pipeline (a parent-remitted conversion waits for the parent's signed consent) |
 | POST | `/api/rate-target` | student sets a rate target |
 | POST | `/api/rate-target/approve` | student approves a conversion above the auto limit |
 | POST | `/api/autonomy/tick` | the agent's Tier-1 work (rate targets, recurring bills) |
 | POST | `/api/spending/simulate` | import mock wallet spending |
 | POST | `/api/spending/add` | add and categorise a transaction |
-| POST | `/api/redteam` | judges' red-team console (separate sandbox world, never persisted) |
+| POST | `/api/redteam` | judge only: red-team console (separate sandbox world, never persisted; 20/min, 4,000 bytes, 429/413) |
 | GET | `/api/redteam/log` | red-team attempts and outcomes |
 | GET | `/api/proof/{intent_id}` | proof pack |
 | GET | `/api/proof/{intent_id}/verify` | independent checks of that pack, pinned to this server's key fingerprint and chain |

@@ -8,11 +8,11 @@ OASIS_TRUST_KEY). Tests pass an explicit tmp path or use in-memory keys; the scr
 demo keys (see `crypto.demo_signer`) and is never trusted by a real server.
 """
 from __future__ import annotations
-import json
 import os
 from pathlib import Path
 
 from .. import config
+from .keyfile import read_secret_json, write_secret_json
 from .crypto import Ed25519Signer, HybridSigner, MLDSA65Signer, b64, canonical, sha256_hex, unb64
 
 KEY_ID = "oasis-trust-key-1"
@@ -31,11 +31,11 @@ def fingerprint(public_keys: dict[str, str]) -> str:
 def load_or_create_signer(path: Path | str | None = None, key_id: str = KEY_ID) -> HybridSigner:
     """The server's hybrid (Ed25519 + ML-DSA-65) signer, created on first use and reloaded afterwards.
 
-    The file holds private seeds: it is git-ignored, written owner-only where the OS supports it, and must never be
-    committed or logged."""
+    The file holds private seeds: it is git-ignored, written owner-only where the OS supports it, optionally wrapped with
+    OASIS_KEY_PASSPHRASE (see keyfile.py for the honest limits), and must never be committed or logged."""
     p = Path(path) if path else default_key_path()
     if p.exists():
-        d = json.loads(p.read_text(encoding="utf-8"))
+        d = read_secret_json(p)      # unwraps a passphrase-wrapped file; wraps a plaintext one if OASIS_KEY_PASSPHRASE is set
         signer = HybridSigner([Ed25519Signer(seed=unb64(d["ed25519_seed"])),
                                MLDSA65Signer(seed=unb64(d["ml-dsa-65_seed"]))], key_id=d.get("key_id", key_id))
         if "fingerprint" in d and d["fingerprint"] != fingerprint(signer.public_keys()):
@@ -43,11 +43,6 @@ def load_or_create_signer(path: Path | str | None = None, key_id: str = KEY_ID) 
         return signer
     ed_seed, pq_seed = os.urandom(32), os.urandom(32)
     signer = HybridSigner([Ed25519Signer(seed=ed_seed), MLDSA65Signer(seed=pq_seed)], key_id=key_id)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps({"key_id": key_id, "ed25519_seed": b64(ed_seed), "ml-dsa-65_seed": b64(pq_seed),
-                             "fingerprint": fingerprint(signer.public_keys())}, indent=1), encoding="utf-8")
-    try:
-        os.chmod(p, 0o600)
-    except OSError:
-        pass
+    write_secret_json(p, {"key_id": key_id, "ed25519_seed": b64(ed_seed), "ml-dsa-65_seed": b64(pq_seed),
+                          "fingerprint": fingerprint(signer.public_keys())})
     return signer

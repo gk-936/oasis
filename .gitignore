@@ -31,3 +31,6 @@ Thumbs.db
 
 # persistent trust signing keys (private seeds)
 data/keys/
+
+# red-team attempts store (every judge console attempt; input for the next work item)
+data/redteam_attempts.jsonl

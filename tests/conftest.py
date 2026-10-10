@@ -12,6 +12,10 @@ import pytest
 os.environ["OASIS_DB"] = ":memory:"          # never touch the real SQLite file
 os.environ["OASIS_LLM"] = "offline"
 os.environ["OASIS_EXTRACT"] = "deterministic"
+os.environ["OASIS_PASS_STUDENT"] = "student-demo"      # a developer .env must not change the test passcodes
+os.environ["OASIS_PASS_PARENT"] = "parent-demo"
+os.environ["OASIS_PASS_JUDGE"] = "judge-demo"
+os.environ.pop("OASIS_KEY_PASSPHRASE", None)
 os.environ["GROQ_API_KEY"] = ""              # empty but present: .env's setdefault cannot fill it in
 
 from oasis import config  # noqa: E402  (must come after the environment is pinned)
@@ -69,13 +73,27 @@ def _no_outbound_network(monkeypatch):
 
 
 @pytest.fixture
-def api_client():
-    """TestClient on the real app with a fresh in-memory Session installed for this test only (restored after)."""
-    from fastapi.testclient import TestClient
+def api_session():
+    """The real app with a fresh in-memory Session installed for this test only (restored after). Yields the api module."""
     from oasis.api import main as api
     saved = api.S
     api.S = api.Session(":memory:")
     try:
-        yield TestClient(api.app)
+        yield api
     finally:
         api.S = saved
+
+
+@pytest.fixture
+def api_client(api_session):
+    """TestClient logged in as the STUDENT (the role that runs intake, plans, the demo ...). Use `as_role` for others."""
+    from fastapi.testclient import TestClient
+    from auth_helpers import login
+    return login(TestClient(api_session.app), "student")
+
+
+@pytest.fixture
+def as_role(api_session):
+    """Factory: a separate TestClient (own cookie jar) logged in as the given role, on the same Session."""
+    from auth_helpers import new_client
+    return new_client

@@ -13,6 +13,7 @@ from .llm import diverges_from_genuine
 from ..passport.models import Level, Obligation, Recipient
 from ..proof.pack import build_proof_pack
 from ..trust import corridor
+from ..trust.approvals import make_draft
 from ..trust.crypto import canonical, sha256_hex
 from ..trust.intents import strip_sigs
 from ..trust.policy import Decision, PolicyInput, decide
@@ -37,7 +38,9 @@ class Request:
     remitter: str = "student"        # student | parent
     recurring: bool = False
     tool_poison: dict | None = None  # poisoned tool output that rewrites payment instructions at execute time
-    approvals: tuple[str, ...] = ()  # approvals supplied interactively (API / UI)
+    approvals: tuple[str, ...] = ()  # DEPRECATED role strings: carry no authority and are ignored (audited if present)
+    signed_approvals: tuple[dict, ...] = ()   # Ed25519 approvals over the draft hash (trust/approvals.py); only these count
+    draft: dict | None = None        # {"nonce","not_after"} fixed when the payment was first held, so approvers sign one draft
     genuine: dict | None = None      # benchmark only: the document's genuine (pre-injection) fields, from the scenario
 
 
@@ -62,6 +65,8 @@ class Outcome:
     recovery: dict | None = None
     detected: bool = False           # an alert/hold/freeze/rejection fired (attack detection)
     followed_injection: bool = False  # analysis-only ground truth
+    draft: dict | None = None        # the exact payment draft approvers sign (fields + canonical string + draft_hash)
+    rejected_approvals: list = field(default_factory=list)   # approvals that were presented but did not verify
     extraction: dict | None = None   # live-agent mode: per-field sources and whether the model followed an injection
 
     def to_dict(self) -> dict:
@@ -145,7 +150,7 @@ class OasisAgent:
             intent = w.builder.build(student_id=w.passport.student.id, purpose="verification_test", tier=1,
                                      not_after=(w.now.replace(hour=23, minute=59)).isoformat(), approvals=[],
                                      **payload)
-            pi = lambda: decide(self._policy_input(rec=rec, payee_id=rec.id, purpose="verification_test", amount=1.0,
+            pi = lambda appr: decide(self._policy_input(rec=rec, payee_id=rec.id, purpose="verification_test", amount=1.0,
                                                    cor=corridor.CorridorResult(), risk=0.0, hits=[], approvals=(),
                                                    recurring=False, remitter="student"))
             res = w.executor.execute(intent, payload, pi, STUDENT_ACCT)
@@ -159,6 +164,42 @@ class OasisAgent:
             w.audit.append("verification_ramp", {"payee_id": rec.id, "level": vo.level.value})
             out.trace.append(f"Verify: test payment confirmed -> {vo.level.value}")
         return ok
+
+    # ------------------------------------------------------------ signed approvals
+    def _verified_approvals(self, req: Request, dhash: str, out: Outcome) -> dict[str, dict]:
+        """Keep only approvals whose signature verifies, for THIS draft, against the role's registered device key."""
+        w, signed = self.w, {}
+        for rec in req.signed_approvals:
+            role = rec.get("role") if isinstance(rec, dict) else None
+            if role in APPROVABLE and w.approvers.verify_record(rec, dhash):
+                signed[role] = w.approvers.make_record(role, rec["signature"], rec.get("at") or w.now_iso())
+            else:
+                out.rejected_approvals.append({"role": role, "reason": "signature does not verify for this exact payment"})
+                w.audit.append("approval_rejected", {"role": role, "draft_hash": dhash,
+                                                     "reason": "signature does not verify for this exact payment"})
+        if req.approvals:
+            w.audit.append("unsigned_approval_ignored", {"roles": sorted(req.approvals), "draft_hash": dhash})
+        return signed
+
+    def _sim_sign(self, role: str, dhash: str, signed: dict[str, dict]) -> None:
+        """A SIMULATED human approves: their in-process device key signs the draft (sandbox worlds only)."""
+        w = self.w
+        if w.sim_devices is None or role not in APPROVABLE:
+            return
+        sig = w.sim_devices.sign(role, dhash)
+        if w.approvers.verify(role, dhash, sig):
+            signed[role] = w.approvers.make_record(role, sig, w.now_iso())
+
+    def sim_approve(self, req: Request, out: Outcome, roles) -> Request:
+        """Harness/test helper: have the simulated devices of `roles` sign the held outcome's draft and attach the
+        signatures to `req`, ready to be handled again. Not available on a world without sim devices."""
+        d = out.draft
+        signed = {r["role"]: r for r in req.signed_approvals}
+        for role in roles:
+            self._sim_sign(role, d["draft_hash"], signed)
+        req.draft = {"nonce": d["nonce"], "not_after": d["not_after"]}
+        req.signed_approvals = tuple(signed.values())
+        return req
 
     # ---------------------------------------------------------------- main flow
     def handle(self, req: Request, approver: ApprovalProvider | None = None) -> Outcome:
@@ -257,7 +298,12 @@ class OasisAgent:
                              payee_id=payee_id, now_ts=w.now.timestamp(), year=w.today.year)
         out.corridor = cor.to_dict()
         hits = w.canaries.hits if w.canaries else []
-        approvals = set(req.approvals)
+        draft = make_draft(**proposal, purpose=purpose,
+                           not_after=(req.draft or {}).get("not_after") or w.now.replace(hour=23, minute=59).isoformat(),
+                           nonce=(req.draft or {}).get("nonce") or w.builder.new_nonce())
+        out.draft, dh = draft, draft["draft_hash"]
+        signed = self._verified_approvals(req, dh, out)       # role -> approval record; ONLY verified signatures count
+        approvals = set(signed)
         mismatch = ob is not None and abs(ob.amount - amount) > 0.5
 
         def policy(appr):
@@ -272,10 +318,12 @@ class OasisAgent:
                                               "label": out.label, "remitter": remitter, "purpose": purpose,
                                               "amount": amount, "required": list(d.required_approvals)})
             w.advance(minutes)
-            new = roles - approvals
+            for r in roles - approvals:
+                self._sim_sign(r, dh, signed)                 # simulated humans only; a real world has no sim devices
+            new = set(signed) - approvals
             if not new:
                 break
-            approvals |= roles
+            approvals |= new
             d = policy(approvals)
             out.trace.append(f"Commit: approvals {sorted(approvals)} -> {d.action} ({d.rule})")
         out.decision = d.to_dict()
@@ -293,13 +341,13 @@ class OasisAgent:
             if conv and "error" not in conv:
                 out.savings = conv
         intent = w.builder.build(student_id=p.student.id, purpose=purpose, tier=d.tier, obligation_id=ob.id if ob else None,
-                                 not_after=w.now.replace(hour=23, minute=59).isoformat(),
-                                 approvals=[{"role": r, "at": w.now_iso()} for r in sorted(approvals)], **proposal)
+                                 not_after=draft["not_after"], nonce=draft["nonce"],
+                                 approvals=[signed[r] for r in sorted(approvals)], **proposal)
         out.intent = {k: v for k, v in intent.items() if k != "signatures"} | {"signature_algorithms": sorted(intent["signatures"])}
         w.audit.append("intent_signed", {"intent_id": intent["intent_id"], "intent_hash": w.builder.intent_hash(intent)})
         w.anchor_block = w.anchor.anchor(w.builder.intent_hash(intent))
         try:
-            res = w.executor.execute(intent, exec_payload, lambda: policy(approvals), from_ref)
+            res = w.executor.execute(intent, exec_payload, policy, from_ref)
         except InsufficientFunds as e:
             return self._finish_stop(out, ob, fields, [str(e)], "insufficient_funds", "held", t0, amount)
         out.trace.append(f"Execute: {res.status} {res.reasons}")

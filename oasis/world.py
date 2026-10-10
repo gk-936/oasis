@@ -10,6 +10,7 @@ from .mock.ledger import Account, SandboxLedger, Transfer
 from .mock.rates import MockRates
 from .mock.registry import VerifiedPayeeRegistry
 from .passport.models import (Approver, Balance, Level, Obligation, Passport, Recipient, Rules, Student)
+from .trust.approvals import ApproverRegistry, SimDevices
 from .trust.audit import AuditLog
 from .trust.canaries import CanaryHit, Canaries
 from .trust.crypto import HybridSigner, demo_signer
@@ -59,11 +60,15 @@ class Features:
 class World:
     def __init__(self, features: Features | None = None, llm: LLM | None = None, seed: int = 7,
                  inr: float = 400000, persona: str = "arjun", audit_path=None, deterministic: bool = False,
-                 store=None, autonomy: bool = False, signer: HybridSigner | None = None):
+                 store=None, autonomy: bool = False, signer: HybridSigner | None = None,
+                 approvers: ApproverRegistry | None = None, sim_devices: bool = True):
         """`deterministic=True` (scripted demo only): seeded demo keys and nonces, simulated-clock anchor
         timestamps, so a run reproduces the same audit-chain head every time. `store` is an optional SqliteStore.
         `signer` supplies the trust signing keys (the API passes the persistent server keys, see trust/keystore.py);
-        by default a fresh in-memory key set is generated (demo keys when deterministic)."""
+        by default a fresh in-memory key set is generated (demo keys when deterministic).
+        Approvals are signatures by per-role device keys (trust/approvals.py). `approvers` is the registry of their public
+        keys. `sim_devices=True` (sandbox worlds: benchmark, scripted demo, red team, tests) adds in-process device keys
+        for the SIMULATED humans; the API's real world passes `sim_devices=False`, so only real devices can approve."""
         self.features = features or Features.full()
         self.llm = llm or make_llm()
         self.rates = MockRates(seed)
@@ -75,7 +80,7 @@ class World:
         self.now = self.start
         self.day_index = 0
         self.registry = VerifiedPayeeRegistry(deterministic=deterministic)
-        self.ledger = SandboxLedger()
+        self.ledger = SandboxLedger(static_credential=not self.features.intents_policy)
         self.audit = AuditLog(audit_path, clock=lambda: self.now.timestamp(),
                               on_append=store.append_audit if store else None)
         self.canaries = Canaries.plant(f"{seed:02d}") if self.features.canaries else None
@@ -83,7 +88,9 @@ class World:
         self.builder = IntentBuilder(self.signer, seed=seed if deterministic else None)
         self.verifier = Verifier(self.registry)
         self.anchor: Anchor = LocalAnchorChain(clock=(lambda: self.now.timestamp()) if deterministic else time.time)
-        self.executor = Executor(self.ledger, self.signer, self.audit, self.canaries, self.now_iso)
+        self.approvers = approvers if approvers is not None else ApproverRegistry()
+        self.sim_devices = SimDevices(self.approvers, seed=b"oasis-demo-devices" if deterministic else None) if sim_devices else None
+        self.executor = Executor(self.ledger, self.signer, self.audit, self.canaries, self.now_iso, self.approvers)
         self.history: list[dict] = []
         self.proofs: dict[str, dict] = {}
         self.cards: list[dict] = []     # "Why was I stopped?" cards

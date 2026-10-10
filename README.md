@@ -39,7 +39,7 @@ cd frontend && npm ci && npm run build && cd ..
 
 # run the API; it also serves the built UI at /
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
-# open http://localhost:8000  (API docs at /docs); start with the Demo tab
+# open http://localhost:8000 and log in (see "Login and roles" below); API docs at /docs
 ```
 
 Frontend development mode (proxies `/api` to :8000): `cd frontend && npm ci && npm run dev`.
@@ -51,7 +51,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 221 tests, no network, no database file
+# 298 tests, no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json
@@ -106,9 +106,25 @@ Honest caveats:
 - The **risk scorer** is a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate (combined as max(heuristic, llm); not part of the committed live benchmark, which used the heuristic alone). The heuristic's features were chosen after seeing the benchmark (in-sample): it flags 81% of attacks and 0% of legitimate changes; it cannot see poisoned-tool attacks (0/6). A small held-out set is in `tests/test_pipeline.py`.
 - The simulated student and parent are not oracles; real people could approve a scam. Savings come from mock fees. Corridor figures (SAFE, LRS, TCS) are researched, not officially confirmed.
 
+## Login and roles
+
+Every API endpoint except `/api/health`, `/api/trust/fingerprint`, proof verification and login needs a session. The login screen offers three roles; the **demo passcodes** (public, from `.env.example`) are:
+
+| Role | Passcode | May do |
+|---|---|---|
+| student | `student-demo` | intake, chat, plans, rate targets, approve as student (signed), the scripted demo, reset |
+| parent | `parent-demo` | approve as parent (signed), consent to parent-remitted conversions, see only their own pending items and proofs |
+| judge | `judge-demo` | red-team console (rate-limited, own sandbox ledger) and read-only views |
+
+Set `OASIS_PASS_STUDENT` / `OASIS_PASS_PARENT` / `OASIS_PASS_JUDGE` in `.env` for anything real (`OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults). Wrong role gives 403, no session 401. The scripted demo is a student action because it replaces the persisted sandbox.
+
+**Signed approvals.** On first login a student or parent gets an Ed25519 device key made in the browser (private half never leaves it, wrapped with the passcode). Approving a payment signs its exact draft (payee, account, amount, currency, purpose, route, expiry, nonce); the policy engine and executor accept a role's approval only if that signature verifies against the role's registered public key, and the proof pack shows "signed by parent device key ab12...". To try the two-person flow, open two browsers: student (Chat tab, "Simulate a family top-up request", approve) then parent (Parent tab, approve).
+
+**Security features:** role-based access, signed approvals, encryption at rest, short-lived single-use executor tokens, a rate-limited and size-limited judge console whose every attempt is logged to `data/redteam_attempts.jsonl` (git-ignored).
+
 ## Verifying a proof pack
 
-A proof pack embeds the public keys that signed it, so a pack alone proves nothing: anyone could change the amount, sign with fresh keys and embed those. `verify_proof_pack(pack, trusted_fingerprints=..., chain=...)` therefore only reports `ok` when the fingerprint of the embedded keys (sha256 over the canonical public keys) is one you pinned. The API pins its own: `GET /api/trust/fingerprint` (shown at the top of the Proof tab), and `/api/proof/.../verify` and `POST /api/proof/verify` check against it. With a chain available the verifier also checks that the anchor block exists with the intent hash as digest and the chain is intact; standalone verification reports the anchor as "not checked" (and `ok` stays false without a pinned fingerprint).
+A proof pack embeds the public keys that signed it, so a pack alone proves nothing: anyone could change the amount, sign with fresh keys and embed those. `verify_proof_pack(pack, trusted_fingerprints=..., chain=...)` therefore only reports `ok` when the fingerprint of the embedded keys (sha256 over the canonical public keys) is one you pinned. The API pins its own: `GET /api/trust/fingerprint` (shown at the top of the Proof tab), and `/api/proof/.../verify` and `POST /api/proof/verify` check against it. Approvals inside the pack are Ed25519 signatures over the exact payment and must come from pinned approver device keys (`approvals_signed`, `approver_keys_pinned`). With a chain available the verifier also checks that the anchor block exists with the intent hash as digest and the chain is intact; standalone verification reports the anchor as "not checked" (and `ok` stays false without a pinned fingerprint).
 
 - Fingerprint of the scripted demo's public keys: `396bbb6e7a75c14fa88bf26bdbee0218a5aefdb48ca3ef9a0f9ff2de3dffdbdf` (anyone can forge with these keys, so never pin them outside the demo).
 - A real server's fingerprint is created on first start and printed by the endpoint; pin it out of band (for example in this README for your deployment).
@@ -116,7 +132,7 @@ A proof pack embeds the public keys that signed it, so a pack alone proves nothi
 ## Honest limits
 
 - **Some 100% results are partly by construction.** The same team wrote the attacks and the defences. The simulated student declines using the risk evidence the system itself produced. Legitimate account changes succeed because the scenarios pre-register the new account in the registry. A 100% block rate on this suite is therefore not a claim about unseen attackers, and a 100% completion rate is not a claim about real landlords and universities.
-- **Approvals are not authenticated.** Roles ("student", "parent") are plain strings in the request; any API caller can approve as the parent. The two-person rule is enforced in the policy engine, not by identity. A real deployment needs authentication and per-user sessions.
+- **Authentication is demo-grade.** Per-role passcodes (public demo defaults), no per-person accounts or MFA; device-key registration is trust on first use; key files are plaintext unless a passphrase is set. Details in `docs/security-self-assessment.md`.
 - **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
 - **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
 
@@ -151,7 +167,7 @@ What the AI never does: hold the payment credential, approve a payment, change a
 
 ### Persistence
 
-The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approvals and clock in SQLite (`data/oasis.db`, override with `OASIS_DB`; `OASIS_DB=:memory:` disables it) so state survives an API restart. Tests and the benchmark are in-memory. The trust signing keys are generated once and kept in a git-ignored file (`data/keys/trust_key.json`, override with `OASIS_TRUST_KEY`; plain file, not a vault), so the key fingerprint and old proof packs stay valid across restarts. Tests and the benchmark use in-memory keys; the scripted demo uses seeded public demo keys. The red-team sandbox is never persisted.
+The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approvals and clock in SQLite (`data/oasis.db`, override with `OASIS_DB`; `OASIS_DB=:memory:` disables it) so state survives an API restart. Tests and the benchmark are in-memory. The database is **encrypted at rest** (AES-256-GCM on every payload column; an old plaintext DB is migrated on first start). The data key lives in `data/keys/data_key.json` (override `OASIS_DATA_KEY`). The trust signing keys are generated once and kept in a git-ignored file (`data/keys/trust_key.json`, override with `OASIS_TRUST_KEY`). All key files are plaintext protected by OS permissions unless you set `OASIS_KEY_PASSPHRASE` (then they are scrypt+AES-GCM wrapped); see the honest limits in the security self-assessment, so the key fingerprint and old proof packs stay valid across restarts. Tests and the benchmark use in-memory keys; the scripted demo uses seeded public demo keys. The red-team sandbox is never persisted.
 
 ### LLM configuration
 

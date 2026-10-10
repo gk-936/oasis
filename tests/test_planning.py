@@ -282,7 +282,8 @@ def test_plan_needs_acceptance_and_payments_still_need_approval():
     res = plan_exec.execute_due(a, rec["id"])                                      # parent conversion lacks consent
     st = {r["step"]: r["status"] for r in res["ran"]}
     assert "awaiting_parent_consent" in st.values() and w.ledger.money_lost() == 0
-    res = plan_exec.execute_due(a, rec["id"], approvals=("parent",))
+    assert plan_exec.sim_parent_consent(a, rec["id"]) >= 1                         # the (simulated) parent signs their consent
+    res = plan_exec.execute_due(a, rec["id"])
     assert all(r["status"] != "blocked" for r in res["ran"])
     assert any(r["status"] == "done" and "->" in r["note"] for r in res["ran"])         # conversions ran
     assert w.passport.obligation("obl_deposit_1").status != "paid"                       # payments are not due yet
@@ -293,13 +294,14 @@ def test_executed_plan_payments_go_through_signed_intents_and_wait_for_approval(
     a = OasisAgent(w)
     rec = propose(w, DeterministicPlanner())
     plan_exec.accept_plan(a, rec["id"])
-    plan_exec.execute_due(a, rec["id"], approvals=("parent",))                       # conversions due today
+    plan_exec.sim_parent_consent(a, rec["id"])
+    plan_exec.execute_due(a, rec["id"])                                              # conversions due today
     w.advance(days=11)                                                                # 2026-10-23: the deposit step is due
-    res = plan_exec.execute_due(a, rec["id"], approvals=("parent",))
+    res = plan_exec.execute_due(a, rec["id"])
     held = res["held"]
     assert held and held[0][1].status == "held" and w.passport.obligation("obl_deposit_1").status != "paid"
     req = held[0][0]
-    req.approvals = ("student",)
+    a.sim_approve(req, held[0][1], ["student"])                                      # the simulated student's device signs the draft
     out = a.handle(req)                                                              # the student approves; full pipeline
     assert out.status == "paid" and out.intent and out.proof_id and out.verification
     assert plan_exec.step_statuses(w, rec)[2]["status"] == "done"
@@ -315,8 +317,9 @@ def test_api_plan_flow(api_client):
     assert p["valid"] and p["status"] == "proposed" and p["trace"] and p["why"] and p["step_status"]
     assert c.post("/api/plan/plan_001/execute", json={}).status_code == 409             # not accepted yet
     assert c.post(f"/api/plan/{p['id']}/accept").json()["status"] == "accepted"
-    ex = c.post(f"/api/plan/{p['id']}/execute", json={"approvals": ["parent"]}).json()
+    ex = c.post(f"/api/plan/{p['id']}/execute").json()
     assert ex["ran"] and ex["plan_status"] == "executing"
+    assert any(r["status"] == "awaiting_parent_consent" for r in ex["ran"])           # a "parent" string cannot stand in for the parent
     assert c.get("/api/audit/verify").json()["ok"]
     assert c.post("/api/plan", json={"scenario": "nope"}).status_code == 400
 
