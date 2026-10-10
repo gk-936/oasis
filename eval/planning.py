@@ -178,6 +178,8 @@ def main(argv=None) -> dict:
     ap.add_argument("--llm", default="offline", choices=("offline", "groq"))
     ap.add_argument("--repeats", type=int, default=1, help="live only: N independent samples per scenario (temperature "
                     f"{LIVE_TEMPERATURE}, cache salt planrep<N>, so repeats are distinct and never cache hits of each other)")
+    ap.add_argument("--repeat-index", "--only-repeat", dest="repeat_index", type=int, default=None,
+                    help="live only: run just this 1-based repeat (e.g. 3) with its own cache salt planrep<N-1>; finished rows of the other repeats are kept")
     ap.add_argument("--token-cap", type=int, default=DEFAULT_TOKEN_CAP, help="stop starting new live plans once this many NEW tokens were spent")
     ap.add_argument("--per-plan-cap", type=int, default=PER_PLAN_CAP, help="stop asking the model once one plan has used this many tokens")
     ap.add_argument("--only", help="comma-separated scenario ids")
@@ -220,7 +222,11 @@ def main(argv=None) -> dict:
         spent0 = llm0.usage.day()["tokens"]
         keys0 = {k: dict(v) for k, v in llm0.usage.day().get("keys", {}).items()}
         calls = hits = fbs = rots = 0
+        if args.repeat_index is not None and not 1 <= args.repeat_index <= args.repeats:
+            raise SystemExit(f"--repeat-index must be between 1 and --repeats ({args.repeats})")
         for rep in range(args.repeats):
+            if args.repeat_index is not None and rep != args.repeat_index - 1:
+                continue
             llm = GroqLLM(salt=f"planrep{rep}", temperature=LIVE_TEMPERATURE)
             for sid in ids:
                 if spent >= args.token_cap:

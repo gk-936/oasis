@@ -419,3 +419,46 @@ def test_planner_prompt_carries_validator_guidance_and_cap_is_raised():
                    "insufficient_cny", "insufficient_inr", "safe_quota_exceeded", "parent"):
         assert needle in SYSTEM, needle
     assert PER_PLAN_CAP >= 22_000
+
+
+def test_only_repeat_runs_one_repeat_and_replaces_its_row(tmp_path, monkeypatch):
+    import eval.planning as ep
+    import oasis.agent.llm as llm_mod
+
+    class FakeUsage:
+        path = tmp_path / "usage.json"
+        def day(self): return {"tokens": 0, "keys": {}}
+
+    class FakeLLM:
+        model = "fake"
+        fingerprints = ["aaaa"]
+        calls = cache_hits = fallbacks = key_rotations = 0
+        def __init__(self, salt="", temperature=0): self.salt, self.usage = salt, FakeUsage()
+
+    class FakeLedger:
+        def __init__(self, path): pass
+        def day(self): return {"tokens": 0, "keys": {}}
+
+    seen = []
+    def fake_run(sid, planner):
+        seen.append(sid)
+        return {"scenario": sid, "title": sid, "valid": True, "fell_back": False, "model_valid_without_fallback": True, "iterations_to_valid": 1,
+                "deadlines_met": 1, "obligations": 1, "fees_cny": 1, "bank_fees_cny": 2, "tokens": 10, "model_calls": 1, "first_errors": [], "proposals": 1}
+
+    old = {"scenario": "tight_runway", "rep": 2, "title": "Tight runway", "valid": True, "fell_back": True, "model_valid_without_fallback": False,
+           "iterations_to_valid": None, "deadlines_met": 1, "obligations": 1, "fees_cny": 1, "bank_fees_cny": 2, "tokens": 5, "model_calls": 1,
+           "first_errors": [], "run_date": "2026-10-10"}
+    keep = dict(old, scenario="urgent_deadline", rep=0, tokens=7)
+    (tmp_path / "planning.json").write_text(json.dumps({"live": {"repeats": 3, "results": [keep, old], "notes": []}}), encoding="utf-8")
+    monkeypatch.setattr(ep, "REPORTS", tmp_path)
+    monkeypatch.setattr(ep, "run_scenario", fake_run)
+    monkeypatch.setattr(ep.config, "GROQ_API_KEY", "x")
+    monkeypatch.setattr(llm_mod, "GroqLLM", FakeLLM)
+    monkeypatch.setattr(llm_mod, "UsageLedger", FakeLedger)
+    data = ep.main(["--llm", "groq", "--repeats", "3", "--repeat-index", "3", "--token-cap", "1000"])
+    rows = data["live"]["results"]
+    assert len(seen) == len(SCENARIOS)
+    r3 = [r for r in rows if r["rep"] == 2]
+    assert len(r3) == len(SCENARIOS) and all(r["tokens"] == 10 for r in r3)       # old repeat-3 row replaced
+    assert any(r["rep"] == 0 and r["tokens"] == 7 for r in rows)                   # other repeats untouched
+    assert not any(r["rep"] == 1 for r in rows)
