@@ -39,7 +39,7 @@ Frontend (React 18) ── FastAPI (oasis/api/main.py)
 | R05 | hold (2) | recipient not yet verified; the ramp must finish, no approval overrides it |
 | R06 | hold (2) | corridor hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
 | R07 | hold (2) | amount above the recipient's ramp limit (explicit student approval) |
-| R08 | hold (2) | risk score >= 0.5 |
+| R08 | hold (2) | risk score >= 0.5 (no approval releases it) |
 | R09 | (sets approvers) | family-support transfer above INR 50,000 requires student and parent; shows up as R11 until both approve |
 | R10 | allow (1) | recurring payment up to the Tier-1 limit (CNY 500) to a Verified_Full recipient, not family support |
 | R11 | hold (2) | required approvals missing; a part payment (instalment, below the obligation's remaining amount) is never automatic and always lands here for the student |

@@ -44,7 +44,7 @@ def classify(text: str, tool_poison) -> str:
 
 def load_attempts(path: Path) -> list[dict]:
     out = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
+    for line in Path(path).read_text(encoding="utf-8").split(chr(10)):    # not splitlines(): U+2028 inside a record is not a line break
         if line.strip():
             try:
                 out.append(json.loads(line))

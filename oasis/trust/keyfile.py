@@ -19,6 +19,11 @@ from .. import config
 from .crypto import b64, unb64
 
 
+class KeyFileError(ValueError):
+    """A key file exists but cannot be used (corrupt, truncated, wrong shape). Never replaced silently: a fresh key would
+    make the encrypted database and every earlier signature unreadable, so the operator restores the file from backup."""
+
+
 def passphrase() -> str | None:
     return os.environ.get("OASIS_KEY_PASSPHRASE") or None
 
@@ -49,7 +54,13 @@ def write_private(p: Path, obj: dict) -> None:
 
 def read_secret_json(p: Path) -> dict:
     """Read a key file's JSON body, unwrapping it if it is wrapped. Upgrades a plaintext file when a passphrase is set."""
-    d = json.loads(p.read_text(encoding="utf-8"))
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(d, dict):
+            raise ValueError("not a JSON object")
+    except (ValueError, OSError) as e:      # JSONDecodeError and UnicodeDecodeError are ValueErrors
+        raise KeyFileError(f"key file {p} is unreadable or corrupt ({type(e).__name__}); restore it from a backup. "
+                           "Oasis will not generate a replacement over an existing file.") from e
     pw = passphrase()
     if "wrapped" in d:
         if not pw:
@@ -67,7 +78,12 @@ def write_secret_json(p: Path, body: dict) -> None:
 
 def load_or_create_secret(p: Path, nbytes: int = 32) -> bytes:
     if p.exists():
-        return unb64(read_secret_json(p)["key"])
+        try:
+            return unb64(read_secret_json(p)["key"])
+        except (KeyError, TypeError, ValueError) as e:
+            if isinstance(e, KeyFileError) or "OASIS_KEY_PASSPHRASE" in str(e):
+                raise
+            raise KeyFileError(f"key file {p} has no usable key ({type(e).__name__}); restore it from a backup.") from e
     key = os.urandom(nbytes)
     write_secret_json(p, {"version": 1, "key": b64(key)})
     return key

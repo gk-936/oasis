@@ -62,7 +62,9 @@ class Cipher:
         try:
             return self._aes.decrypt(raw[:12], raw[12:], f"{table}|{rowid}".encode()).decode()
         except InvalidTag as e:
-            raise StoreError(f"cannot decrypt {table} row {rowid!r}: wrong data key, or the row was altered") from e
+            raise StoreError(f"cannot decrypt {table} row {rowid!r}: wrong data key, or the row was altered. If the data key "
+                             "file (data/keys/data_key.json or OASIS_DATA_KEY) was lost, the data cannot be recovered: "
+                             "restore the key from a backup") from e
 
 
 class SqliteStore:

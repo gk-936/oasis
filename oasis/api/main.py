@@ -16,18 +16,23 @@ generated and kept in the approver's browser); the role of the SESSION decides w
 Unauthenticated -> 401, wrong role -> 403.
 """
 from __future__ import annotations
+import asyncio
 import hashlib
 import json
+import math
 import re
 import secrets
+import threading
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request as HttpRequest, Response, UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from .. import config
 from ..agent.i18n import LANGS
@@ -67,6 +72,54 @@ LOGIN_FAILS_PER_MINUTE = 10
 app = FastAPI(title="Oasis API", version="0.3.0")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+CORS_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
+MAX_BODY = 2_000_000             # bytes of JSON per request
+MAX_UPLOAD = 12_000_000          # bytes for the image upload
+_STATE_LOCK = threading.Lock()   # a thread lock (not asyncio): it also serialises requests served from different event loops
+
+
+@app.middleware("http")
+async def guard(request: HttpRequest, call_next):
+    """Cross-cutting protections for every request.
+
+    - CSRF: SameSite=Strict treats http://localhost:ANY_PORT as same-site, so another page on localhost could still send a
+      cookie-carrying POST. A state-changing request whose Origin is neither this host nor the dev UI origin is refused.
+    - Size: bodies above MAX_BODY (MAX_UPLOAD for the image upload) are refused before parsing.
+    - Serialisation: the sandbox is single-writer state (audit chain, ledger, nonces, pending approvals). Requests run one at
+      a time, so two simultaneous approvals can never both pass the replay check and the audit chain cannot fork.
+    """
+    path = request.url.path
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        origin = request.headers.get("origin")
+        if origin and origin != "null" and origin not in CORS_ORIGINS and origin.split("://", 1)[-1] != request.headers.get("host"):
+            return JSONResponse({"detail": "cross-origin request refused"}, status_code=403)
+        if origin == "null":
+            return JSONResponse({"detail": "cross-origin request refused"}, status_code=403)
+        try:
+            n = int(request.headers.get("content-length") or 0)
+        except ValueError:
+            n = MAX_UPLOAD + 1
+        if n > (MAX_UPLOAD if path == "/api/intake/image" else MAX_BODY):
+            return JSONResponse({"detail": "request body too large"}, status_code=413)
+    if path == "/api/health" or not path.startswith("/api/"):
+        return await call_next(request)
+    while not _STATE_LOCK.acquire(blocking=False):       # polling keeps the worker threads free for the handler that holds it
+        await asyncio.sleep(0.002)
+    try:
+        response = await call_next(request)
+    finally:
+        _STATE_LOCK.release()
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(request: HttpRequest, exc: RequestValidationError):
+    """422 without echoing the offending input: it may hold NaN or an unpaired surrogate, which cannot be rendered as JSON
+    (that used to turn a validation error into a 500), and echoing request text back helps nobody."""
+    errs = [{"loc": [str(x) for x in e.get("loc", ())], "type": e.get("type"), "msg": str(e.get("msg"))} for e in exc.errors()]
+    return JSONResponse({"detail": errs}, status_code=422)
 
 
 class Session:
@@ -88,6 +141,7 @@ class Session:
         self.attempts_path = Path(attempts_path) if attempts_path else config.DATA_DIR / "redteam_attempts.jsonl"
         self.redteam_limiter = RateLimiter(REDTEAM_PER_MINUTE, 60.0)
         self.login_limiter = RateLimiter(LOGIN_FAILS_PER_MINUTE, 60.0)
+        self.redteam_log_limiter = RateLimiter(5, 60.0)
         self.pending: dict[str, dict] = {}   # pending_id -> {"request","signed","required","outcome"}
         self.demo: DemoRunner | None = None
         self.redteam_log: list[dict] = []
@@ -227,75 +281,102 @@ def _store_pending(req: Request, outcome: dict) -> str | None:
 
 
 # ------------------------------------------------------------------ models
-class IntakeIn(BaseModel):
-    text: str
+def _check_clean(v, path="body"):
+    """Reject what breaks canonical JSON, hashing, the encrypted store or the JSON response: lone surrogates, NaN, infinity."""
+    if isinstance(v, str):
+        try:
+            v.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError(f"{path}: text contains an unpaired surrogate (invalid Unicode)")
+    elif isinstance(v, float):
+        if not math.isfinite(v):
+            raise ValueError(f"{path}: NaN and infinity are not allowed")
+    elif isinstance(v, dict):
+        for k, x in v.items():
+            _check_clean(k, path)
+            _check_clean(x, f"{path}.{k}")
+    elif isinstance(v, (list, tuple)):
+        for x in v:
+            _check_clean(x, path)
+
+
+class Strict(BaseModel):
+    """Base of every request body: invalid Unicode and non-finite numbers are a 422, never a 500 or poisoned state."""
+    @model_validator(mode="after")
+    def _clean(self):
+        _check_clean(self.__dict__)
+        return self
+
+
+class IntakeIn(Strict):
+    text: str = Field(max_length=20000)    # an invoice is a page, not a book; the field parsers are not linear on adversarial text
     remitter: str = "student"
     source: str = "invoice"
 
 
-class ChatIn(BaseModel):
-    message: str
+class ChatIn(Strict):
+    message: str = Field(max_length=20000)
 
 
-class ApproveIn(BaseModel):
+class ApproveIn(Strict):
     pending_id: str
     approve: bool = True
     signature: str | None = None    # base64 Ed25519 signature over approval_message(role, draft_hash); required to approve
     key_id: str | None = None       # the device key that signed (checked against the role's active key)
 
 
-class LoginIn(BaseModel):
+class LoginIn(Strict):
     role: str
     passcode: str
 
 
-class DeviceIn(BaseModel):
+class DeviceIn(Strict):
     public_key: str                 # base64 Ed25519 public key; the private key never leaves the browser
 
 
-class ConsentIn(BaseModel):
+class ConsentIn(Strict):
     step: int
     signature: str
 
 
-class RedTeamIn(BaseModel):
+class RedTeamIn(Strict):
     text: str
     tool_poison: dict | None = None
 
 
-class DemoIn(BaseModel):
+class DemoIn(Strict):
     run: str = "legit"   # legit | attack
     mode: str = "offline"   # offline | live (live = recorded model responses replayed from the fixture; no network)
 
 
-class RateTargetIn(BaseModel):
+class RateTargetIn(Strict):
     rate: float
     convert_cny: float
 
 
-class TargetIdIn(BaseModel):
+class TargetIdIn(Strict):
     target_id: str
 
 
-class TickIn(BaseModel):
-    days: int = 1
+class TickIn(Strict):
+    days: int = Field(default=1, ge=-10**6, le=10**6)
 
 
-class SpendSimIn(BaseModel):
-    days: int = 21
+class SpendSimIn(Strict):
+    days: int = Field(default=21, ge=-10**6, le=10**6)
 
 
-class SpendAddIn(BaseModel):
-    desc: str
-    amount_cny: float
+class SpendAddIn(Strict):
+    desc: str = Field(max_length=200)
+    amount_cny: float = Field(gt=0, le=1e7)
 
 
-class RecoveryIn(BaseModel):
+class RecoveryIn(Strict):
     obligation: str | None = None
 
 
-class PlanIn(BaseModel):
-    goal: str = ""
+class PlanIn(Strict):
+    goal: str = Field(default="", max_length=2000)
     scenario: str | None = None      # plan on a throwaway MOCK world from oasis/planning/scenarios.py instead of the session
     live: bool = False               # use the live tool-calling model when one is configured (otherwise deterministic, offline)
 
@@ -460,6 +541,14 @@ def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT)):
         raise HTTPException(404, "unknown pending id")
     if role not in item["required"]:
         raise HTTPException(403, f"this payment does not need the {role}'s approval")
+    na = (item["outcome"].get("draft") or {}).get("not_after")
+    if body.approve and na and datetime.fromisoformat(S.world.now_iso()) > datetime.fromisoformat(na):
+        # The signed draft has an expiry. Running it now would make the executor freeze the genuine obligation and show a
+        # "Why was I stopped?" card for what is only a stale approval, so retire it cleanly and ask for a fresh request.
+        S.world.audit.append("approval_expired", {"pending_id": body.pending_id, "role": role, "not_after": na})
+        S.pending.pop(body.pending_id)
+        S.save()
+        raise HTTPException(410, f"this payment draft expired at {na}; submit the invoice again to get a fresh one to approve")
     if not body.approve:
         S.world.audit.append("declined", {"pending_id": body.pending_id, "role": role})
         S.pending.pop(body.pending_id)
@@ -648,6 +737,8 @@ def plan_execute(plan_id: str, p: Principal = Depends(STUDENT)):
 def rate_target(body: RateTargetIn, p: Principal = Depends(STUDENT)):
     if body.rate <= 0 or body.convert_cny <= 0:
         raise HTTPException(400, "rate and convert_cny must be positive")
+    if body.rate >= 10 or body.convert_cny > 1e7:
+        raise HTTPException(400, "rate must be below 10 and convert_cny at most 10,000,000")
     t = S.agent.set_rate_target(body.rate, body.convert_cny)
     S.save()
     return t
@@ -695,13 +786,19 @@ def spending_add(body: SpendAddIn, p: Principal = Depends(STUDENT)):
 
 
 # ------------------------------------------------------------------ red team (judge only, separate sandbox)
+ATTEMPTS_MAX_BYTES = 50_000_000      # stop appending (never block the console) once the attempts file is this big
+
+
 def _log_attempt(rec: dict) -> None:
     """Append one red-team attempt to the attempts store (data/redteam_attempts.jsonl, git-ignored). Failure to write
-    never blocks the console."""
+    never blocks the console. One JSON object per line (json.dumps escapes newlines, so an attempt text cannot forge a
+    second record); the file is size-capped so a flood of refused attempts cannot fill the disk."""
     try:
+        if S.attempts_path.exists() and S.attempts_path.stat().st_size > ATTEMPTS_MAX_BYTES:
+            return
         S.attempts_path.parent.mkdir(parents=True, exist_ok=True)
         with S.attempts_path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(rec, sort_keys=True, ensure_ascii=False, default=str) + "\n")
+            f.write(json.dumps(rec, sort_keys=True, ensure_ascii=True, default=str) + "\n")   # ASCII on disk: U+2028 / U+0085 cannot split a record
     except OSError:
         pass
 
@@ -721,7 +818,9 @@ def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE)
     if not body.text.strip():
         raise HTTPException(400, "empty attempt")
     if not S.redteam_limiter.allow(client):
-        _log_attempt({**base, "text": body.text, "tool_poison": body.tool_poison, "outcome": "rate_limited"})
+        if S.redteam_log_limiter.allow(client):       # a flood of refused attempts is logged at 5/min, shortened
+            _log_attempt({**base, "text": body.text[:200], "text_sha256": hashlib.sha256(body.text.encode()).hexdigest(),
+                          "tool_poison": None, "outcome": "rate_limited"})
         raise HTTPException(429, f"rate limit: at most {REDTEAM_PER_MINUTE} attempts per minute",
                             headers={"Retry-After": str(S.redteam_limiter.retry_after(client))})
     w = S.redteam_world

@@ -96,7 +96,12 @@ def decide(p: PolicyInput) -> Decision:
                         [f"Amount would exceed this recipient's verified limit of CNY {limit:,.0f}."], ["student"])
     # R08 risk hold
     if p.risk_score >= RISK_HOLD:
-        return Decision("hold", 2, "R08_risk_hold", [f"Risk score {p.risk_score:.2f} requires explicit review."], ["student"])
+        # No approval releases a risk hold (a signed approval re-runs the same score and holds again), so no approver is
+        # offered: the student confirms through a registry-verified channel and re-submits the genuine request.
+        return Decision("hold", 2, "R08_risk_hold",
+                        [f"Risk score {p.risk_score:.2f} requires review outside this document: confirm with the payee through "
+                         "the registry-verified contact, then re-submit the genuine invoice. An approval cannot release this hold."],
+                        ["risk_review"])
 
     need = ["student"]
     # R09 parent co-approval for large family transfers

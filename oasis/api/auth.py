@@ -65,8 +65,8 @@ class Auth:
     def login(self, role: str, passcode: str) -> tuple[str, Principal] | None:
         if role not in ROLES:
             return None
-        ok = hmac.compare_digest(hashlib.sha256(str(passcode).encode()).digest(),
-                                 hashlib.sha256(self._pass[role].encode()).digest())
+        ok = hmac.compare_digest(hashlib.sha256(str(passcode).encode("utf-8", "surrogatepass")).digest(),
+                                 hashlib.sha256(self._pass[role].encode("utf-8", "surrogatepass")).digest())
         if not ok:
             return None
         now = self._clock()

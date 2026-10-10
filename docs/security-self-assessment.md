@@ -20,7 +20,7 @@ Tiers: 1 = the agent may act alone within bounds, 2 = explicit human approval, 3
 | R05 | hold | recipient not yet verified (the verification ramp must finish; no approval can override it) |
 | R06 | hold | corridor rule hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
 | R07 | hold | amount above the recipient's ramp limit (needs explicit student approval) |
-| R08 | hold | risk score ≥ 0.5 |
+| R08 | hold | risk score ≥ 0.5 (no approval releases it: confirm out of band and re-submit) |
 | R09 | (sets approvers) | family-support transfer above INR 50,000 requires student **and** parent (appears as R11 until both approve) |
 | R10 | allow (tier 1) | recurring payment up to CNY 500 to a Verified_Full recipient (not family support) |
 | R13/R14 | allow (tier 1) / hold | conversion into the student's own balance at a student-set rate target: within the auto limit / above it (needs the student) |
@@ -78,6 +78,39 @@ A forged request never changes the genuine recipient's record. The request is re
 - **Approvals are signed, but the humans are still simulated in the benchmark.** In the API, an approval is an Ed25519 signature from the approver's browser-held device key. The device key is generated at first login and registered by whoever holds the role's passcode (trust on first use; a later login can rotate it). A phished passcode therefore lets an attacker register their own key. The benchmark and scripted demo use in-process simulated device keys.
 - **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
 - **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
+
+- **Adversarial judge review (2026-10-10), by design or too large to fix here.**
+  - *Duplicate invoice after payment.* Re-submitting an already-paid invoice is not paid automatically (the recipient's ramp limit holds it at R07 for explicit student approval), but nothing says "you already paid this". A student who signs that approval pays twice. There is no payment idempotency key outside the signed intent's nonce.
+  - *Device-key takeover is trust-on-first-use.* Whoever holds a role's passcode can register a new Ed25519 key for that role, which retires the old one (and invalidates drafts the old key was about to sign). Passcodes are shared per role. Real deployment needs per-user accounts plus an out-of-band step (or WebAuthn) to enrol a device.
+  - *The login throttle is per client address.* Ten wrong passcodes lock that address out for a minute, including the legitimate user behind it (a cheap denial of service against the login). The limiter is in memory and resets on restart.
+  - *Time is simulated.* Draft expiry (`not_after`) and the executor check use the sandbox's simulated clock, not the wall clock. A pending approval therefore does not expire by itself as real days pass, only when the simulated clock moves past it (then it is retired with HTTP 410, see below). Session tokens do use the wall clock.
+  - *Floating-point money.* Amounts are Python floats. Input is limited to finite, non-negative values with at most two decimals and at most CNY 10^10, and ledger balances are rounded to whole fen after each transfer, but there is no `Decimal` ledger, so very long histories could still accumulate sub-fen error elsewhere (rates, savings).
+  - *Corridor limits use one hard-coded USD/INR of 88.0* (`corridor.USD_INR`), independent of the INR/CNY rate source, so LRS and SAFE headroom is approximate if the real USD/INR moves. Units are consistent inside each check (INR for LRS/TCS, USD converted to INR for SAFE, CNY for payments).
+  - *A judge can read the student's data.* The judge role is read-only for state, audit and plans by design (so a reviewer can inspect the system); it cannot call any state-changing student endpoint and the red-team console runs on its own sandbox ledger.
+  - *The scripted demo's keys are public and seeded.* While a demo world is active the server pins its fingerprint, so a pack forged with the public demo seeds would verify during the demo. `GET /api/trust/fingerprint` reports `demo_keys: true` then. Do not treat verification during a demo as authenticity.
+  - *Interactive API docs (`/docs`, `/openapi.json`) are public* and list every endpoint. They contain no secrets.
+  - *Only one request runs at a time.* Requests are serialised to protect the single-writer sandbox state (audit chain, ledger, nonces, pending approvals); a slow live-model call blocks the others. Fine for a demo, not a scaling design.
+  - *Amount notation.* `1e5` is read as `1` (the parser reads digits only), which shows in the draft the student signs; it is never read as 100,000.
+
+## Judge review 2026-10-10: defects found and fixed
+
+Found by attacking the running API over HTTP; each has a regression test in `tests/test_judge_attacks.py`.
+
+| Finding | Severity | Fix |
+|---|---|---|
+| Two simultaneous approvals of one pending payment gave 500s (and a race window on the replay check); audit appends were not atomic | High | Requests run one at a time; `AuditLog.append` takes a lock; the loser gets 404 |
+| Amounts of NaN/infinity/400 digits, or with fractions of a fen (`30000.004`), reached the pipeline; infinity poisoned the audit log and made `/api/state` return 500 until a reset | High | `unreadable_amount`: such amounts are dropped and the request is held as a low-confidence extraction; the ledger refuses non-positive or non-finite transfers and keeps balances on whole fen |
+| Unpaired surrogate or NaN in any JSON field gave 500 (and a 422 echoing the input also crashed) | Medium | Strict request models (422), no echo of input in validation errors, text length caps, spending/rate-target bounds |
+| Cross-origin POSTs: SameSite=Strict still sends the cookie from another page on `localhost` (any port) | Medium | Origin check on every state-changing request (same host or the dev UI only); 2 MB body cap; `Cache-Control: no-store` and `nosniff` on API responses |
+| R08 risk hold offered an Approve that could never release it (each signed approval re-held with a new pending id, forever) | Medium | R08 now names `risk_review` instead of an approver, so no approval is offered; the card says to confirm out of band and re-submit |
+| Approving a payment after its draft expired froze the genuine obligation and showed an attack-style card | Medium | Expired drafts are retired with HTTP 410 and an `approval_expired` audit entry; the obligation is untouched |
+| Proof verification could raise (500) on malformed packs (wrong types, surrogates) | Medium | `verify_proof_pack` never raises: any unreadable pack fails with `malformed` and `ok: false` |
+| A U+2028 in a red-team attempt split its log record when read with `splitlines()` (silent loss of the attempt); a flood of refused attempts was logged in full without limit | Medium | Attempts are written ASCII-only and read by `
+`; refused attempts are shortened and logged at most 5 per minute; the file stops growing at 50 MB |
+| Intake text of ~200 KB took 12 s to parse (quadratic field regexes) while holding every other request | Medium | 20,000-character cap on intake and chat text (the regexes are not changed) |
+| Corrupt or empty key files gave raw `JSONDecodeError`/`KeyError`; a lost data key gave a bare "wrong key" | Low | `KeyFileError` / recovery hint: clear message, the file is never overwritten with a fresh key |
+
+Checked and held: no or forged or tampered or expired or revoked session token (401); parent/judge on student endpoints and student on the judge console (403); role-string or foreign-role signatures; signature replay on another draft or after a changed amount; unregistered or rotated device key; register-for-another-role (the session role decides); forged, stripped or mixed-key proof packs; login brute force (429 after 10); CORS limited to the two dev origins; no stack traces, tokens, passcodes or key material in responses, audit entries or proofs; tampered database rows and wrong data key refused. `pip-audit` of `requirements.txt`: no known vulnerabilities (the venv's own `setuptools` 65.5.0 build tool has advisories; it is not a runtime dependency). `npm audit --omit=dev`: 0 vulnerabilities.
 
 ## Out of scope
 Compromise of the host machine or signing keys; compromise of the registry itself; real banking integration; production key management (vault/HSM); denial of service; the correctness of regulatory figures beyond the stated research.

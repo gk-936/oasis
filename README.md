@@ -51,7 +51,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 346 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
+# 378 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json

@@ -5,6 +5,7 @@ decide what money moves. Features can be switched off layer by layer so the benc
 with every layer off this is the unprotected baseline agent (same LLM, same tools).
 """
 from __future__ import annotations
+import math
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -25,6 +26,25 @@ PARENT_ACCT = "acct_parent"
 APPROVABLE = {"student", "parent"}
 STUDENT_LATENCY_MIN = 10
 PARENT_LATENCY_MIN = 60
+
+
+MAX_AMOUNT_CNY = 1e10     # no real payment is this large; anything above is an unreadable or hostile number
+
+
+def unreadable_amount(raw) -> str | None:
+    """Why `raw` cannot be a payment amount (None = it can). Money is CNY with at most 2 decimals (fen): NaN, infinity,
+    a negative or absurd figure, or a sub-fen fraction such as 30000.004 is never rounded or guessed into a payment."""
+    try:
+        a = float(raw)
+    except (TypeError, ValueError, OverflowError):
+        return "the amount is not a number"
+    if not math.isfinite(a):
+        return "the amount is not a finite number"
+    if a < 0 or a > MAX_AMOUNT_CNY:
+        return "the amount is outside any plausible payment range"
+    if abs(a * 100 - round(a * 100)) > 1e-6 * max(1.0, a):
+        return "the amount has fractions of a fen (more than 2 decimals)"
+    return None
 
 
 class ApprovalProvider(Protocol):
@@ -216,6 +236,9 @@ class OasisAgent:
         tool_ctx = w.canaries.tool_context() if w.canaries else {}
         ext = w.llm.extract(req.text, tool_ctx)
         fields = dict(ext.fields)
+        bad_amount = unreadable_amount(fields["amount"]) if fields.get("amount") is not None else None
+        if bad_amount:
+            fields.pop("amount")          # never pay, round or audit an amount that is not valid money; ask the student instead
         out.fields, out.followed_injection = fields, ext.followed_injection
         if ext.mode == "llm":
             # Honest live-mode ground truth: compare what the model returned with the scenario's genuine fields.
@@ -228,6 +251,8 @@ class OasisAgent:
                               "served_model": ext.served_model, "from_cache": ext.from_cache}
         out.trace.append(f"Understand: extracted payee={fields.get('payee_name')!r} amount={fields.get('amount')} "
                          f"purpose={fields.get('purpose')} (untrusted)")
+        if bad_amount:
+            out.trace.append(f"Understand: amount rejected - {bad_amount}")
         if w.canaries:
             hits = w.canaries.scan({"fields": fields, "tool_calls": ext.used_tokens}, "understand")
             if hits:
@@ -260,7 +285,7 @@ class OasisAgent:
             out.status = "held"
             out.trace.append("Understand: low-confidence extraction - asking the student to confirm fields")
             out.card = self._card(out, fields.get("payee_name", "?"), amount, "held", "extract_low_confidence",
-                                  ["Required payment fields could not be read confidently."], "Please confirm the details.")
+                                  ["Required payment fields could not be read confidently."] + ([f"Amount rejected: {bad_amount}."] if bad_amount else []), "Please confirm the details.")
             out.detected = True
             out.sim_minutes = w.sim_minutes - t0
             return out

@@ -26,6 +26,16 @@ def build_proof_pack(*, signer: HybridSigner, intent: dict, verification: dict, 
 
 
 def verify_proof_pack(pack: dict, trusted_fingerprints=None, chain=None, approver_key_ids=None) -> dict:
+    """Verify a pack. A pack is untrusted input: whatever shape or content it has, the answer is a dict of check results
+    (never an exception), and a pack that cannot even be read fails with `malformed` False and `ok` False."""
+    try:
+        return _verify_proof_pack(pack, trusted_fingerprints, chain, approver_key_ids)
+    except Exception:
+        return {"malformed": False, "consistent": False, "ok": False, "key_pinned": False if trusted_fingerprints is not None else None,
+                "approver_keys_pinned": None, "anchor_on_chain": None, "pack_signature": False}
+
+
+def _verify_proof_pack(pack: dict, trusted_fingerprints=None, chain=None, approver_key_ids=None) -> dict:
     """Anyone can run this; it needs no secrets. Returns per-check results.
 
     A pack carries the public keys that signed it, so those keys prove nothing by themselves: a forger signs a
@@ -66,7 +76,7 @@ def verify_proof_pack(pack: dict, trusted_fingerprints=None, chain=None, approve
         anchor = pack.get("anchor")
         if anchor:
             checks["anchor_matches_intent"] = anchor["digest"] == pack["intent_hash"]
-    except (KeyError, TypeError, AttributeError):
+    except Exception:       # any shape or content the verifier cannot read is a failed check, never a crash
         checks["malformed"] = False
         keys, anchor = {}, None
     if trusted_fingerprints is None:

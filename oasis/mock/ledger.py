@@ -9,6 +9,7 @@ purpose: that is the thing the benchmark measures the protections against.
 """
 from __future__ import annotations
 import hashlib
+import math
 import secrets
 import time
 from dataclasses import dataclass, field
@@ -61,13 +62,15 @@ class SandboxLedger:
 
     def transfer(self, credential: str, from_ref: str, to_ref: str, amount: float,
                  currency: str = "CNY", memo: str = "", intent_id: str | None = None) -> Transfer:
+        if not isinstance(amount, (int, float)) or isinstance(amount, bool) or not math.isfinite(amount) or amount <= 0:
+            raise ValueError(f"transfer amount must be a positive finite number, got {amount!r}")   # a negative amount would move money backwards
         self._authorise(credential, from_ref, to_ref, amount, currency, intent_id)
         src = self.accounts[from_ref]
         if src.balance < amount:
             raise InsufficientFunds(f"{from_ref} has {src.balance}, needs {amount}")
         dst = self.accounts.get(to_ref) or self.open(to_ref, "unknown", currency)
-        src.balance -= amount
-        dst.balance += amount
+        src.balance = round(src.balance - amount, 2)       # float money: keep balances on whole fen so error cannot accumulate
+        dst.balance = round(dst.balance + amount, 2)
         t = Transfer(f"tx_{len(self.transfers)+1:04d}", from_ref, to_ref, amount, currency, memo, intent_id)
         self.transfers.append(t)
         return t

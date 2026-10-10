@@ -2,6 +2,7 @@
 from __future__ import annotations
 import copy
 import json
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,10 +30,15 @@ class AuditLog:
         self.path = path
         self.clock = clock
         self.on_append = on_append      # persistence hook (SQLite store)
+        self._lock = threading.Lock()   # index + prev hash + append are one step: concurrent writers must not fork the chain
         if path and path.exists():
             self.entries = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
 
     def append(self, kind: str, data: dict) -> dict:
+        with self._lock:
+            return self._append(kind, data)
+
+    def _append(self, kind: str, data: dict) -> dict:
         i = len(self.entries)
         prev = self.entries[-1]["hash"] if self.entries else GENESIS
         data = copy.deepcopy(data)       # entries are immutable once written; callers may keep mutating their dicts

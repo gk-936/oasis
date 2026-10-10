@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 from .. import config
-from .keyfile import read_secret_json, write_secret_json
+from .keyfile import KeyFileError, read_secret_json, write_secret_json
 from .crypto import Ed25519Signer, HybridSigner, MLDSA65Signer, b64, canonical, sha256_hex, unb64
 
 KEY_ID = "oasis-trust-key-1"
@@ -36,8 +36,12 @@ def load_or_create_signer(path: Path | str | None = None, key_id: str = KEY_ID) 
     p = Path(path) if path else default_key_path()
     if p.exists():
         d = read_secret_json(p)      # unwraps a passphrase-wrapped file; wraps a plaintext one if OASIS_KEY_PASSPHRASE is set
-        signer = HybridSigner([Ed25519Signer(seed=unb64(d["ed25519_seed"])),
-                               MLDSA65Signer(seed=unb64(d["ml-dsa-65_seed"]))], key_id=d.get("key_id", key_id))
+        try:
+            signer = HybridSigner([Ed25519Signer(seed=unb64(d["ed25519_seed"])),
+                                   MLDSA65Signer(seed=unb64(d["ml-dsa-65_seed"]))], key_id=d.get("key_id", key_id))
+        except (KeyError, TypeError, ValueError) as e:
+            raise KeyFileError(f"trust key file {p} has no usable signing seeds ({type(e).__name__}); restore it from a backup. "
+                               "Oasis will not generate a replacement: every earlier proof pack is pinned to these keys.") from e
         if "fingerprint" in d and d["fingerprint"] != fingerprint(signer.public_keys()):
             raise ValueError(f"trust key file {p} is inconsistent (fingerprint mismatch)")
         return signer
