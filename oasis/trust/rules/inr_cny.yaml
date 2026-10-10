@@ -1,0 +1,43 @@
+# INR -> CNY corridor rules. Data, not code. Every row has a source and "as of" date.
+# status: "researched" = from secondary sources; confirm against the official source before quoting.
+corridor: INR-CNY
+version: "2026.10.1"
+as_of: "2026-10"
+rules:
+  lrs_annual_limit_usd:
+    value: 250000
+    action: hold
+    status: researched
+    source: RBI LRS framework (secondary sources); confirm against RBI Master Direction
+  tcs_threshold_inr:
+    value: 1000000
+    rate_above: 0.02
+    loan_funded_rate: 0.0
+    status: researched
+    source: Finance Act 2026 changes (Flywire etc.); confirm against Income-tax Act 2025 / CBDT
+  purpose_code_education:
+    value: S0305
+    status: unconfirmed
+    source: secondary sources; confirm code with an authorised dealer bank
+  safe_quota_usd:
+    value: 50000
+    action: plan_staged_conversion
+    status: researched
+    source: SAFE circular + HSBC China individual FX guide; confirm with receiving bank
+  wallet_foreign_card_fee:
+    rate: 0.03
+    applies_over_cny: 200
+    status: researched
+    source: Alipay in-app customer service per May 2026 report; check in app
+  split_pattern:
+    window_hours: 72
+    min_payments: 2
+    near_limit_ratio: 0.9
+    status: policy
+    source: Oasis policy
+purpose_payee_types:
+  tuition: [university]
+  rent: [landlord]
+  deposit: [landlord]
+  living: [merchant, landlord, wallet]
+  family_support: [family, student]

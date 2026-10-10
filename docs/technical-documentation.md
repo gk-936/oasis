@@ -1,0 +1,150 @@
+# Oasis: technical documentation
+
+## 1. Architecture
+
+```
+Frontend (React 18) ── FastAPI (oasis/api/main.py)
+                          │
+                    OasisAgent (oasis/agent/pipeline.py)
+   1 Understand ── LLM extraction (untrusted) + canary scan (early detection) + risk score (registry-aware, an input only)
+   2 Plan       ── route ranking, conversion, forecast triggers, corridor costs
+   3 Verify     ── Verifier (registry credential → test payment → limits)
+   4 Commit     ── corridor check → policy engine → approvals → signed intent → anchor
+   5 Execute    ── Executor: signature + exact match + nonce/expiry + policy re-check → sandbox ledger
+   6 Prove      ── proof pack, audit chain, savings receipt, reputation, "Why was I stopped?" card
+```
+
+`World` (`oasis/world.py`) wires one student's Passport, mock layer and trust modules together. `Features` switches layers on and off: `baseline` (all off; the agent holds the credential and pays what it extracted), `+verification`, `+intents+policy`, and `full` (adds canaries). The baseline is the same pipeline with the same LLM and tools.
+
+## 2. Core algorithms
+
+**Route scoring.** `delivered = (send − fixed_fee) × mid × (1 − spread) × (1 − pct_fee)`. Routes that would miss the due date are excluded. The rest are ranked by delivered amount, then speed, then reliability. Savings are reported against the typical bank route. The amount to send is found by binary search on the same formula. Conversions are at least CNY 500 because fixed fees make tiny conversions wasteful.
+
+**Agentic planning** (`oasis/agent/planner.py`, `oasis/planning/tools.py`, `oasis/planning/validator.py`). The planner is a tool-using agent whose only outputs are proposals. Tools (JSON-schema function tools): `read_passport`, `list_obligations`, `get_rates`, `get_routes(send_inr, due)`, `check_corridor(amount_inr, purpose, remitter)`, `forecast_runway` (all read-only) and `propose_plan(steps, rationale)` (proposal only). No tool moves money, signs, or edits the Passport (`tests/test_planning.py::test_tools_are_read_only_or_proposal_only`). A plan is a list of `convert` steps (date, INR, route, remitter student or parent) and `pay` steps (date, obligation, payee, CNY). `validate_plan` simulates the plan chronologically and returns errors with hints: unknown obligation, payee or route; wrong payee or amount; late payment; unfunded or duplicated obligation; INR going negative; CNY not yet arrived when spent (route too slow); SAFE quota exceeded (USD 50,000 equivalent per calendar year, counted over all conversions, which is why a very large tuition is split across December and January); LRS exceeded; INR needed by a pending rate target no longer unconverted; frozen obligations. Warnings never block: TCS with the amount (per remitter, cumulative), approaching TCS or SAFE limits, parent-remitted conversions (need the parent's consent), conversions that fall below CNY 500, a cheaper route that would also arrive on time, low runway after the plan, income that has not arrived (never counted), and that payments above the Tier-1 limit will wait for the student. Rates are quoted at today's mock rate for the whole horizon: a quote, not a forecast. The loop allows 4 proposals; the validator's errors go back to the model as tool results. `DeterministicPlanner` (offline) uses the same tools: it drafts a student-funded plan staged by calendar-year SAFE room, and revises from the validator's errors (for example, a shortfall adds a parent-remitted conversion). `AgenticPlanner` (Groq) calls `GroqLLM.chat_tools`, which has native tool calling with the adapter's cache, rate limiter, 429 backoff, daily budget and model fallback (a plan written as plain JSON text is parsed as a `propose_plan` call and validated the same way). If the model cannot produce a valid plan inside the loop, hits its token cap, or the API fails, the deterministic plan is used and `fell_back` / `fallback_reason` are recorded in the plan and the trace. A plan is stored as a proposal. `plan_exec.accept_plan` re-validates and records the student's acceptance; `execute_due` then runs the steps due today: every `pay` step becomes an ordinary request built from the Passport and registry and goes through the full pipeline (so it waits for approval above the Tier-1 limit), and every `convert` step is decided by `decide_conversion` (a parent-remitted one also needs the parent's consent). Later steps stay scheduled.
+
+**Forecast triggers.** These are shortfall (within 21 days), rate move (±1% over 7 days), low runway, late income and student-set rate targets. The agent never predicts rates. Burn rate starts from the student's budget plus labelled reference costs (cold start). Transactions are categorised by keyword rules (`oasis/planning/spending.py`); once there are at least 14 days and 15 transactions the forecast switches to the student's own per-category daily average x 30 with a damped, clamped trend, and the dashboard shows which basis is in use and a backtest error (forecast the last 7 days from the earlier data). Wallet spending in the demo is imported mock data.
+
+**Verification ramp (state machine).** `UNVERIFIED -> REGISTRY_CHECKED -> (CNY 1 test payment) -> VERIFIED_LOW (limit CNY 5,000) -> VERIFIED_FULL (after 2 successful payments)`; any contradiction by the registry gives `REJECTED` without touching the genuine record. The registry is looked up by payee ID, falling back to an exact name match. If the account on the request differs from the credential, the request is REJECTED and the genuine record is untouched. A match with a changed account resets the recipient to unverified, then REGISTRY_CHECKED, then a CNY 1 test payment, then VERIFIED_LOW (CNY 5,000 limit), then VERIFIED_FULL after 2 successful payments. Only the registry-confirmed account is ever used for payment; the account on the request is not.
+
+**Policy engine** (`oasis/trust/policy.py`, ruleset 2026.10.2, rules evaluated in this fixed order; the first match decides; every decision records its rule ID):
+
+| Rule | Decision (tier) | Condition |
+|---|---|---|
+| R01 | freeze (3) | a canary fired |
+| R02 | freeze (3) | amount above the hard limit (CNY 200,000 default) |
+| R03 | freeze (3) | the registry contradicts the recipient |
+| R04 | freeze (3) | risk score >= 0.85 (escalation only) |
+| R04b / R04c | allow (1) / freeze (3) | verification test payment: up to CNY 10 and only to a registry-confirmed recipient / otherwise |
+| R05 | hold (2) | recipient not yet verified; the ramp must finish, no approval overrides it |
+| R06 | hold (2) | corridor hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
+| R07 | hold (2) | amount above the recipient's ramp limit (explicit student approval) |
+| R08 | hold (2) | risk score >= 0.5 |
+| R09 | (sets approvers) | family-support transfer above INR 50,000 requires student and parent; shows up as R11 until both approve |
+| R10 | allow (1) | recurring payment up to the Tier-1 limit (CNY 500) to a Verified_Full recipient, not family support |
+| R11 | hold (2) | required approvals missing |
+| R12 | allow (2) | all required approvals present, recipient verified, within limits |
+| R13 | allow (1) | conversion into the student's own balance at a student-set rate target, within the auto limit (CNY 5,000) |
+| R14 | allow (2) / hold (2) | conversion above the auto limit: approved by the student / waiting for the student |
+
+Tiers: 1 = the agent may act alone within bounds, 2 = needs explicit human approval, 3 = never (freeze).
+
+**Signed intents.** The canonical JSON is the intent minus its signatures, with sorted keys and no whitespace. It is signed with Ed25519 and ML-DSA-65, and both must verify. Each intent carries a nonce, a `not_after` timestamp and the approvals with their timestamps. The SHA-256 hash of the intent is anchored.
+
+**Crypto-agility.** All signing goes through the `Signer` interface (`Ed25519Signer`, `MLDSA65Signer`, `SM2Signer`). The default `HybridSigner` is Ed25519 + ML-DSA-65 and both must verify. `SM2Signer` (GB/T 32918 with SM3, default ID `1234567812345678`) is implemented and optional, on the `gmssl` 3.2.2 package; `sm2_hybrid_signer` builds a hybrid that includes it. The implementation reproduces the standard Fp-256 SM2 test vector (`tests/test_sm2.py`; the vector values were entered from memory, and the exact match authenticates them). It is pure Python, not constant-time and unaudited, so it is a crypto-agility demonstration, not production key handling; interoperability with other SM2 libraries is untested. Signatures are keyed by algorithm name, so an algorithm can be swapped (for example, to a future ICCS NGCC standard) without touching callers. ML-DSA-65 signatures are about 3.3 KB, so only hashes are anchored.
+
+**Canaries.** There are three decoys: a fake bank token in the agent's tool context, a decoy payee record in the Passport, and a decoy account number. Extracted fields, tool calls and the executor payload are all scanned, and any hit freezes the payment. In the benchmark canaries are an early-detection layer, not an extra blocking layer: 0 additional attacks blocked over signed intents + policy; 3 flagged earlier, at Understand, before verification or execution.
+
+**Audit chain.** Each entry stores `hash = SHA-256(canonical{i, ts, kind, data, prev})`. `verify_chain` recomputes the chain and reports the first broken link.
+
+**Proof pack.** A proof pack contains the intent, intent hash, verification state, costs, policy decision, audit entry and anchor block, plus the trust public keys. It is hybrid-signed. `verify_proof_pack` needs no secrets.
+
+**Corridor rules** (`oasis/trust/rules/inr_cny.yaml`, data rather than code):
+
+| Rule | Value | Action |
+|---|---|---|
+| LRS | USD 250k per remitter per financial year | hold |
+| TCS | 2% above INR 10 lakh (self-funded), nil for loan-funded | warn, with the amount |
+| Education purpose code | S0305 (unconfirmed) | shown |
+| SAFE quota | USD 50k per person per year | warn and stage |
+| Wallet foreign-card fee | 3% over CNY 200 | added to route cost |
+| Split payments | 2 or more payments to the same payee within 72 hours, each just under an approval threshold | hold |
+
+**Risk scorer.** `heuristic_risk` (offline) scores urgency language, instructions addressed to the assistant, lookalike and partly matching payee names, an account the independent registry contradicts (a changed account the registry confirms is not flagged), unknown payees, amount mismatch, and amounts just under an approval threshold repeated to the same payee. Its score can only escalate a decision (hold at 0.5, freeze at 0.85). With a live model the same interface is used, and the score is still only an input.
+
+**Autonomous recovery** (`oasis/agent/recovery.py`). After a freeze or rejection the agent builds the recovery plan from the registry's verified channel for the legitimate payee (`registry.contact`, MOCK) and the Passport obligation only. With a live model, `GroqLLM.draft_recovery` writes the message; the model is never shown the suspicious request. `validate_draft` then rejects any draft that contains an account number, phone number, email, link or handle found in the suspicious request, any contact other than the registry's own, or any long digit string; a rejected draft is replaced by the template and the rejection is shown. Offline always uses the template. Nothing is sent: the student approves first.
+
+**Tier-1 autonomy** (`oasis/agent/autonomy.py`, rules R10 and R13 in `policy.py`). A student sets a rate target ("convert CNY 2,000 if the rate reaches 0.0855"); the agent watches the mock rate, never predicts it, and `decide_conversion` allows a conversion up to the student's auto limit (CNY 5,000), holds a larger one for the student, and freezes if a canary tripped. Recurring bills (a mock mobile plan) are paid through the full pipeline, taking the recipient's account from the Passport, and are automatic only for a Verified_Full recipient within the CNY 500 Tier-1 limit (R10); otherwise they are held. Every action is in the Passport's autonomy log and the audit chain.
+
+**Persistence** (`oasis/storage.py`). SQLite via the standard library. The audit log is written entry by entry; the Passport, ledger, proofs, cards, pending approvals, clock and registry facts are saved as a snapshot after each state-changing request, and restored on start. Keys are not stored.
+
+**Scripted demo** (`oasis/demo.py`). Fixed seed, fixed mock data, offline model, seeded demo keys/nonces and the simulated clock, so each run reproduces the same audit-chain head. Run 2 catches the forged invoice at Verify (the registry contradicts the account); the step-5 intent-mismatch catch is shown by the second attack (rewritten payment instructions).
+
+**Parent view.** Explanations in English, Tamil and Hindi are templated (`oasis/agent/i18n.py`); a live model may rewrite them, but the rewrite is accepted only if every number survives unchanged. The wording has not been reviewed by a native speaker.
+
+**Groq adapter.** Primary `qwen/qwen3.8-27b`, automatic fallback to `openai/gpt-oss-120b` on retired-model/404 or daily-limit errors (a gone model is skipped for the rest of the process), client-side rate limit, backoff honouring `retry-after` on 429, a daily token/request budget kept on disk, a response cache, `<think>` stripping. Image intake uses the primary model only (the fallback has no vision); failure becomes a low-confidence hold. Covered by tests with a fake client and exercised against the live API (smoke test and benchmark runs, 2026-10-10).
+
+**Two extraction modes.** (1) *Deterministic* (default for the demo, tests and offline benchmark): a regex parse is the floor; the offline parser deliberately follows embedded instructions to model a gullible agent; a Groq model, if present, only fills fields the regex left empty. A live run in this mode is therefore numerically identical to the offline run and does not test the model. (2) *Live agent* (`OASIS_EXTRACT=llm`, `eval.runner --llm groq --extract llm`): the model's JSON is the primary extraction. The regex parse (which does not follow instructions) is used only when the call fails or is unparseable (all fields), or per field when payee_name / account_ref / amount is missing; `Extraction.sources` records `model` / `regex` / `none` per field. The model is never asked whether it followed an injection: the benchmark derives the document's genuine fields from the scenario text before the embedded instruction and marks the model as having followed it if its account, amount or payee id differ. The risk scorer, verification, policy, intents and executor are identical in both modes. In both modes a deterministic normaliser maps free-text purposes (including Chinese: 学费, 房租, 押金, 生活费) to tuition / rent / deposit / living / family_support; unknown purposes are kept unchanged.
+
+## 3. Data model
+
+The **Student Financial Passport** (`oasis/passport/models.py`, Pydantic v2) holds: `student` (id, name, home/host currency INR/CNY, language, monthly budget); `balances` per currency; `obligations` (id, type tuition/rent/deposit/living/family_support, payee_id, amount, currency, due date, status pending/planned/paid/frozen, recurrence); `recipients` (id, name, type, account reference, and a `Verification` of method, level, limit, successful payments, notes); `rules` (Tier-1 auto limit, parent co-approval threshold INR 50,000, hard limit, runway alert, rate targets); `approvers` (role, name, language); `remitted_inr_fy` (per remitter, for LRS/TCS); `safe_used_inr` (per calendar year, for the SAFE quota); `funding_source` (self / education loan); `expected_income`; `transactions` (categorised wallet spending); `autonomy_log` (Tier-1 actions); and `reputation` (on-time verified payments, proof references). Verification levels: UNVERIFIED, REGISTRY_CHECKED, VERIFIED_LOW, VERIFIED_FULL, REJECTED.
+
+Other persisted objects: **payment intent** (payee, account, amount, currency, route, nonce, `not_after`, approvals, signatures per algorithm), **audit entry** (`i, ts, kind, data, prev, hash`), **proof pack**, **why-card** (plain-language reason a payment was stopped), **plan** (steps, rationale, tool-call trace, validator feedback, fallback flag, per-step status), and **ledger** entries (sandbox). SQLite persistence is in `oasis/storage.py` (audit log per entry; the rest as a snapshot per state-changing request).
+
+## 4. Security design
+
+- **Trust boundary.** Documents, screenshots, web pages, tool output and every LLM output are untrusted. The policy engine, intent builder/signer, executor, verification ramp, registry interface and audit log are deterministic code. Only the `Executor` holds the (sandbox) payment credential.
+- **Signed intents bind approval to execution.** The executor pays only if both signatures verify, the payload equals the intent exactly (payee, account, amount, currency, route), the intent is unexpired and its nonce unused, and the policy, re-evaluated at execution time, still says `allow`. Any failure freezes the payment. This is what stops poisoned-tool rewrites and replays.
+- **Registry, not request, is the source of the account.** The account on a request is treated as forgeable; the registry-confirmed account is the only one paid.
+- **Escalate-only AI.** The risk score can raise a decision to hold (0.5) or freeze (0.85), never lower it. LLM text for the parent view must keep every number unchanged or it is discarded. Recovery drafts are validated against the suspicious request.
+- **Tamper evidence.** Hash-chained audit log, hybrid-signed proof packs verifiable without secrets, intent hashes anchored (locally simulated).
+- **Crypto-agility and post-quantum.** Hybrid Ed25519 + ML-DSA-65 by default; optional SM2/SM3. TLS with hybrid ML-KEM is a deployment recipe only (`pq-tls.md`).
+- Threat model, permission tiers and known risks: `security-self-assessment.md`.
+
+## 5. Evaluation
+- `eval/planning.py`: eight planning scenarios (shortfall, tight runway, SAFE-quota tuition, late scholarship, parent remitter crossing TCS, rate target, five obligations, urgent deposit) scored by the validator: valid-plan rate, proposals to first valid plan, fallbacks, deadlines met, conversion fees against the same INR through a typical bank route. Offline: 8 of 8 valid, 1.5 proposals on average, 20 of 20 deadlines, fees 82.8% lower than the bank route (MOCK rates). Live (Groq, one run, 3 of 8 scenarios because of the token budget): see `eval/reports/planning.md`; 1 of 3 valid without fallback, the other 2 hit the per-plan token cap while the model was still revising.
+- `eval/scenarios.py`: 32 attacks in 6 categories and 12 legitimate changes in 3 categories, published as data.
+- `eval/approver.py`: simulated student and parent. They aren't oracles and never see the scenario label.
+- `eval/runner.py`: runs every scenario in a fresh world for each of the four configurations. It reports attack block rate, money lost, detection rate, canary early detections and extra blocks, legitimate completion rate, false-block rate, minutes to resolve and risk-scorer accuracy (flag rates, precision, recall, per category). `--llm groq --repeats N` is resumable (checkpoint in `data/bench_cache/`, keyed by provider, model, ruleset and extraction mode so live-agent and deterministic runs never mix), rate-limited, and reports min / mean / max across repeats. With `--extract llm` it writes `benchmark_live.md/json` (model-followed-injection counts, per-field extraction provenance, and a deterministic reference table on the same scenarios); the default run writes `benchmark.md/json`. Caveats of the live result: one repeat, temperature 0, six injection-bearing scenarios, and within a repeat identical documents reuse one cached model response across the four configurations. AI red-team variants are reported separately.
+- `eval/simulator.py`: 5 personas over 90 days, Oasis against a manually paying student, under the assumptions stated in the file. Scam and legitimate-change events run through the real pipeline.
+- Pre-set targets, enforced in `tests/test_pipeline.py`: zero money lost on the attack suite in the full configuration, and every legitimate change completes.
+
+## 6. API
+
+Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `frontend/dist` exists it is mounted at `/`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/state` | Passport, routes, forecast triggers, why-cards, pending items, security feed |
+| POST | `/api/reset` | clean sandbox; wipes SQLite state |
+| POST | `/api/intake` | run the six-step pipeline on pasted document text |
+| POST | `/api/intake/image` | same, for an invoice photo or screenshot (Groq vision; unreadable becomes a hold) |
+| POST | `/api/approve` | student or parent approves or declines a pending payment |
+| POST | `/api/recovery/approve` | the 'ask' step after a freeze: approve the drafted recovery |
+| GET | `/api/parent/pending` | parent's view with explanation and facts (`?lang=en|hi|ta`) |
+| POST | `/api/chat` | plan summary, or invoice intake when the message looks like an invoice |
+| GET | `/api/plan/scenarios` | the eight planning scenarios (MOCK) |
+| POST | `/api/plan` | the agent proposes a plan (`goal`; `scenario` for a throwaway MOCK world; `live` to use the tool-calling model when configured) |
+| GET | `/api/plans` | plans with tool-call trace, validator feedback, why-this-plan |
+| GET | `/api/plan/{plan_id}` | one plan with live step status |
+| POST | `/api/plan/{plan_id}/accept` | student accepts (re-validated) |
+| POST | `/api/plan/{plan_id}/execute` | run the steps due today through the normal pipeline (`approvals: ["parent"]` supplies the parent's consent) |
+| POST | `/api/rate-target` | student sets a rate target |
+| POST | `/api/rate-target/approve` | student approves a conversion above the auto limit |
+| POST | `/api/autonomy/tick` | the agent's Tier-1 work (rate targets, recurring bills) |
+| POST | `/api/spending/simulate` | import mock wallet spending |
+| POST | `/api/spending/add` | add and categorise a transaction |
+| POST | `/api/redteam` | judges' red-team console (separate sandbox world, never persisted) |
+| GET | `/api/redteam/log` | red-team attempts and outcomes |
+| GET | `/api/proof/{intent_id}` | proof pack |
+| GET | `/api/proof/{intent_id}/verify` | independent checks of that pack |
+| POST | `/api/proof/verify` | verify a pasted proof pack (needs no secrets) |
+| GET | `/api/audit` | audit chain |
+| GET | `/api/audit/verify` | recompute the chain; first broken link if any |
+| GET | `/api/benchmark` | benchmark and simulation reports |
+| POST | `/api/demo/start` | start a scripted run (`{"run": "legit" or "attack"}`) |
+| POST | `/api/demo/next` | play the next step |
+| GET | `/api/demo/state` | current demo state |
+| POST | `/api/demo/run` | play a whole run in one call |
+| POST | `/api/demo/reset` | reset the demo |
+| GET | `/api/explain/savings` | conversions and total saved versus a typical bank route |

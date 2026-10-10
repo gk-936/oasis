@@ -1,0 +1,30 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+
+# runtime data: SQLite state, LLM response cache, benchmark checkpoints, token-usage ledger
+data/*.db
+data/*.db-*
+data/llm_cache/
+data/bench_cache/
+usage.json
+**/usage.json
+
+# frontend/dist is deliberately COMMITTED (about 190 KB): the API serves it, so the UI works
+# after `pip install` + uvicorn with no Node toolchain. Rebuild with `npm run build` after UI changes.
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

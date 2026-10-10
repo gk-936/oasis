@@ -1,0 +1,127 @@
+[
+ {
+  "persona": "Arjun",
+  "note": "tight runway",
+  "manual": {
+   "fees_cny": 3493.07,
+   "late_payment_days": 3,
+   "end_cny": -1760.0,
+   "end_inr": 39621.82,
+   "route": "Typical bank SWIFT transfer"
+  },
+  "oasis": {
+   "fees_cny": 518.1,
+   "late_payment_days": 3,
+   "end_cny": 720.0,
+   "end_inr": 37695.04,
+   "route": "Education payment specialist"
+  },
+  "fees_saved_cny": 2974.97,
+  "late_days_avoided": 0,
+  "scams_stopped": 0,
+  "events": []
+ },
+ {
+  "persona": "Meera",
+  "note": "scholarship arrives 21 days late",
+  "manual": {
+   "fees_cny": 2280.57,
+   "late_payment_days": 1,
+   "end_cny": 6665.58,
+   "end_inr": 0.0,
+   "route": "Typical bank SWIFT transfer"
+  },
+  "oasis": {
+   "fees_cny": 449.43,
+   "late_payment_days": 0,
+   "end_cny": 5706.67,
+   "end_inr": 28410.45,
+   "route": "Education payment specialist"
+  },
+  "fees_saved_cny": 1831.14,
+  "late_days_avoided": 1,
+  "scams_stopped": 0,
+  "events": []
+ },
+ {
+  "persona": "Kiran",
+  "note": "monthly family top-ups",
+  "manual": {
+   "fees_cny": 2005.08,
+   "late_payment_days": 0,
+   "end_cny": 5011.28,
+   "end_inr": 0.0,
+   "route": "Typical bank SWIFT transfer"
+  },
+  "oasis": {
+   "fees_cny": 329.04,
+   "late_payment_days": 0,
+   "end_cny": 3666.67,
+   "end_inr": 30625.15,
+   "route": "Education payment specialist"
+  },
+  "fees_saved_cny": 1676.04,
+  "late_days_avoided": 0,
+  "scams_stopped": 0,
+  "events": []
+ },
+ {
+  "persona": "Sana",
+  "note": "landlord changes bank account mid-semester",
+  "manual": {
+   "fees_cny": 4089.94,
+   "late_payment_days": 0,
+   "end_cny": -1906.67,
+   "end_inr": 40458.55,
+   "route": "Typical bank SWIFT transfer"
+  },
+  "oasis": {
+   "fees_cny": 739.1,
+   "late_payment_days": 0,
+   "end_cny": -1560.0,
+   "end_inr": 65520.14,
+   "route": "Education payment specialist"
+  },
+  "fees_saved_cny": 3350.84,
+  "late_days_avoided": 0,
+  "scams_stopped": 0,
+  "events": [
+   {
+    "event": "landlord_change",
+    "oasis_status": "paid",
+    "completed": true,
+    "minutes": 45
+   }
+  ]
+ },
+ {
+  "persona": "Rahul",
+  "note": "receives a forged finance-office invoice",
+  "manual": {
+   "fees_cny": 3376.43,
+   "late_payment_days": 3,
+   "end_cny": -1833.33,
+   "end_inr": 115479.49,
+   "route": "Typical bank SWIFT transfer"
+  },
+  "oasis": {
+   "fees_cny": 731.15,
+   "late_payment_days": 0,
+   "end_cny": -1500.0,
+   "end_inr": 78538.61,
+   "route": "Education payment specialist"
+  },
+  "fees_saved_cny": 2645.28,
+  "late_days_avoided": 3,
+  "scams_stopped": 1,
+  "events": [
+   {
+    "event": "forged_invoice",
+    "oasis_status": "rejected",
+    "manual_assumed": "paid attacker",
+    "scam_stopped": true,
+    "money_saved_cny": 30000
+   }
+  ]
+ }
+]
