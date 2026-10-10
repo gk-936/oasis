@@ -27,7 +27,7 @@ Status key: ✅ done · 🟡 partial / stub · ⬜ not started · ❌ blocked
 | Purpose normaliser | Deterministic mapping of free text (English/Chinese) to tuition/rent/deposit/living/family_support, applied to regex and LLM output | ✅ | Unknown purposes are kept as-is, never guessed |
 | Offline path | Deterministic regex extractor + heuristic risk scorer + templated explainer | ✅ | Deliberately follows injections (models a gullible agent). Local model (Qwen3-4B) and PaddleOCR dropped |
 | Frontend | React 18 + Vite | ✅ | All 7 tabs browser-checked 2026-10-10 (Playwright), favicon added, MOCK labels. Agentic plan panel (plan, schedule, tool-call trace, validator feedback, why-this-plan, accept/run) in the Passport tab and demo Run 1. Re-checked at 375px and 1280px after adding it: no horizontal page scroll on any tab, 16px side gutter; fixed grid and Numbers-table overflow |
-| Tests | pytest | ✅ | 142 passing (2026-10-10; includes the planning/recovery and SM2 tests) |
+| Tests | pytest | ✅ | 175 passing, hermetic (offline forced, outbound sockets blocked) (2026-10-10) |
 | TLS (hybrid ML-KEM) | — | ⬜ | Not implemented; documented |
 
 ## Pipeline steps
@@ -64,7 +64,7 @@ Status key: ✅ done · 🟡 partial / stub · ⬜ not started · ❌ blocked
 | 1 | Technical documentation | ✅ `docs/technical-documentation.md` (architecture, algorithms, R01-R14, security design, data model, 33-endpoint API list, evaluation method), final pass 2026-10-10 |
 | 2 | Presentation deck (≤10 min) | ⬜ |
 | 3 | Demo video (≤5 min) | ⬜ |
-| 4 | Source code (GitHub, README, tests) | 🟡 README, MIT `LICENSE`, `.gitignore` and licence table ready; no git repo yet (first commit to a private repo still to do) |
+| 4 | Source code (GitHub, README, tests) | ✅ pushed to github.com/gk-936/oasis (private) |
 | 5 | Security self-assessment | ✅ `docs/security-self-assessment.md` (tiers, threat model, known risks incl. live findings, out of scope), final pass 2026-10-10 |
 | 6 | Execution evidence (sandbox logs) | ✅ `docs/execution-evidence.md` + `eval/reports/` (offline and live benchmark, planning, simulation, demo log with audit heads). No on-chain hashes (anchoring is simulated) |
 
@@ -91,3 +91,4 @@ Status key: ✅ done · 🟡 partial / stub · ⬜ not started · ❌ blocked
 | 2026-10-10 | Live-agent extraction mode (model primary, regex per-field fallback, honest followed_injection from scenario ground truth), purpose normaliser (English/Chinese), mode-keyed checkpoints, `benchmark_live.md` with provenance and deterministic reference; live run repeats 1 (~1.4k new tokens, nearly all responses cached from the earlier run; ~37.4k of 200k used today); offline `benchmark.md` regenerated; 97 tests pass |
 | 2026-10-10 | Agentic planning and autonomous recovery: tool protocol + deterministic plan validator (SAFE per calendar year, LRS/TCS, deadlines, funds, rate-target reserve), offline `DeterministicPlanner`, Groq `AgenticPlanner` via `chat_tools` with recorded fallback, plan accept/execute through the normal pipeline, registry contact channels and validated recovery drafts; API `/api/plan*`; Passport-tab plan panel and demo Run 1 integration; `eval/planning.py` (8 scenarios: offline 8/8 valid; live 3 scenarios, 61.6k tokens); responsive fixes; 142 tests pass |
 | 2026-10-10 | Final documentation pass: README rewritten (pitch, mermaid architecture, quick start, results with caveats, AI-as-participant, deployment, licences); technical documentation gained policy table, data model, security design, full API list; SM2 no longer described as a stub; security self-assessment updated with live findings; `docs/execution-evidence.md` and `eval/demo_log.py` (+ `eval/reports/demo.*`) added; MIT `LICENSE`; `.gitignore` hardened (frontend/dist deliberately committed); unused `openai` removed from requirements.txt; secret scan clean except the git-ignored `.env`; 142 tests pass |
+| 2026-10-10 | Test-suite review and fixes: closed a network leak (tests could call Groq live when OASIS_LLM=groq was set), forced offline + socket guard, per-test API sessions, policy/corridor tests split per rule, new coverage (R03, R04b/c, R06 routing, R07, R08, executor canary/held paths, SAFE warning, file-backed audit tamper, proof anchor mismatch, hybrid edge cases), public SM2 known-answer hook, demo steps looked up by title, httpx deprecation removed (httpx2); 175 tests pass; committed and pushed to github.com/gk-936/oasis (private) |
