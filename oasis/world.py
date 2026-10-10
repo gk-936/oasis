@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 
 from .agent.llm import LLM, make_llm
-from .chain.anchor import Anchor, LocalAnchorChain
+from .chain.anchor import Anchor, LocalAnchorChain, make_anchor
 from .mock.ledger import Account, SandboxLedger, Transfer
 from .market import make_rates
 from .mock.rates import MockRates
@@ -91,7 +91,9 @@ class World:
         self.signer = signer or (demo_signer("trust", "oasis-demo-key-1") if deterministic else HybridSigner())
         self.builder = IntentBuilder(self.signer, seed=seed if deterministic else None)
         self.verifier = Verifier(self.registry)
-        self.anchor: Anchor = LocalAnchorChain(clock=(lambda: self.now.timestamp()) if deterministic else time.time)
+        # Deterministic worlds (scripted demo, tests) always use the local simulated chain. Otherwise OASIS_ANCHOR picks it:
+        # local (default) or fisco (a real local FISCO BCOS 3.x chain, labelled fallback to local if it is unreachable).
+        self.anchor: Anchor = (LocalAnchorChain(clock=lambda: self.now.timestamp()) if deterministic else make_anchor())
         self.approvers = approvers if approvers is not None else ApproverRegistry()
         self.sim_devices = SimDevices(self.approvers, seed=b"oasis-demo-devices" if deterministic else None) if sim_devices else None
         self.executor = Executor(self.ledger, self.signer, self.audit, self.canaries, self.now_iso, self.approvers)

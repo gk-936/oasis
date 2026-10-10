@@ -1,9 +1,11 @@
 # Execution evidence (sandbox logs and reports)
 
-Everything below ran on the simulated sandbox (MOCK rates, rails, registry and balances). Nothing was sent to a real bank or blockchain. There are no on-chain transaction hashes: anchoring is a local hash-linked simulation (`LocalAnchorChain`), not FISCO BCOS. The audit-chain head hash in the demo log plays the equivalent role for tamper evidence.
+Everything below ran on the simulated sandbox (MOCK rates, rails, registry and balances). Nothing was sent to a real bank or blockchain. The benchmark, demo and simulation reports contain no on-chain transaction hashes: they anchor on the local hash-linked simulation (`LocalAnchorChain`) by design. The real FISCO BCOS transaction hashes (local 4-node chain) are in [`fisco-bcos.md`](fisco-bcos.md) and the post-quantum TLS handshake evidence is `eval/reports/pqtls.md`. The audit-chain head hash in the demo log plays the equivalent role for tamper evidence.
 
 | Evidence | Files (in `eval/reports/`) | What it shows | Produced by |
 |---|---|---|---|
+| Hidden test set, pre-fix and post-fix | `benchmark_hidden_prefix.md/.json` (first run, kept unchanged), `benchmark_hidden.md/.json` (after the general fixes, with pre/post table and why each case passes) | 40 blind cases, sha256-verified, strict criteria | `python -m eval.runner --suite hidden` |
+| Post-quantum TLS handshake | `pqtls.md` | Caddy 2.11.7 + OpenSSL 3.5.9 negotiated X25519MLKEM768; classical-only client refused | `tools/caddy/verify-pq.ps1` |
 | Offline benchmark (deterministic extraction) | `benchmark.md`, `benchmark.json` | 4 configurations x (32 attacks + 12 legitimate changes) + 4 AI red-team variants: block rate, money lost, detection, legit completion, false blocks, canary early detections, risk-scorer accuracy | `python -m eval.runner` |
 | Live benchmark (Groq, live-agent extraction) | `benchmark_live.md`, `benchmark_live.json` | Same suite with a live model extracting (qwen/qwen3.8-27b configured as primary; which model served each extraction was not recorded in this run and is labelled "model not recorded (pre-fix run)"; newer runs record it per extraction), 9 AI red-team variants, per-field extraction provenance, "model followed injection" counts, deterministic reference table. One repeat, 2026-10-10 | `python -m eval.runner --llm groq --extract llm --repeats 1` |
 | Planning evaluation | `planning.md`, `planning.json` | 8 planning scenarios scored by the deterministic validator: offline 8/8 valid; live run on 3 of 8 (token budget) with fallbacks recorded | `python -m eval.planning` (live section: `--llm groq --token-cap 60000`) |
@@ -21,7 +23,8 @@ If the code or ruleset changes, these hashes change; regenerate with `python -m 
 
 ```bash
 # from the repository root, with the venv active (all offline unless stated)
-PYTHONPATH=. python -m eval.runner                     # benchmark.md/.json
+PYTHONPATH=. python -m eval.runner --llm offline        # benchmark.md/.json
+PYTHONPATH=. python -m eval.runner --suite hidden       # benchmark_hidden.md/.json (offline)
 PYTHONPATH=. python -m eval.simulator                  # simulation.md/.json
 PYTHONPATH=. python -m eval.planning                   # planning.md/.json (offline section)
 PYTHONPATH=. python -m eval.demo_log                   # demo.md/.json

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run_at": "2026-10-10 20:22",
+  "run_at": "2026-10-10 20:34",
   "llm": "offline-deterministic",
   "ruleset": "2026.10.2",
   "suite": "attempts",

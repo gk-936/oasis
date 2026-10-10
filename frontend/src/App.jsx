@@ -664,12 +664,14 @@ function Proof({ s, selected }) {
           <Signed approvals={pack.intent.approvals} />
           <p>Signatures: {Object.keys(pack.intent.signatures).join(" + ")} (hybrid; both must verify)</p>
           {pack.decision && <p>Policy decision: {pack.decision.action} by <code>{pack.decision.rule}</code> (tier {pack.decision.tier})</p>}
-          {pack.anchor && <p>Anchor: <code>{pack.anchor.tx_hash.slice(0, 20)}…</code> on <b>{pack.anchor.network}</b> <Mock>SIMULATED CHAIN</Mock></p>}
+          {pack.anchor && (/NOT FISCO/i.test(pack.anchor.network || "")
+            ? <p>Anchor: <code>{pack.anchor.tx_hash.slice(0, 20)}…</code> on <b>{pack.anchor.network}</b> <Mock>SIMULATED CHAIN</Mock></p>
+            : <p>Anchor: tx <code title={pack.anchor.tx_hash}>{pack.anchor.tx_hash}</code>, block <b>{pack.anchor.block_number}</b> on <b>{pack.anchor.network}</b> <Mock>REAL CHAIN · LOCAL, 4 NODES ON ONE HOST</Mock></p>)}
           {pack.costs?.route && <p>Route {pack.costs.route}: saved CNY {fmt(pack.costs.saved_cny, 2)} vs a typical bank route <Mock /></p>}
           <h4>Independent checks</h4>
           <ul>{check && Object.entries(check).filter(([k]) => k !== "pinned_fingerprint").map(([k, v]) =>
             <li key={k}>{v === null ? "➖" : v ? "✅" : "❌"} {k}{v === null ? " (not checked)" : ""}</li>)}</ul>
-          <p className="muted">A pack embeds its own public keys, so it only counts if their fingerprint matches the pinned one above (<code>key_pinned</code>); each approval is an Ed25519 signature over the exact payment, checked against the pinned approver device keys (<code>approvals_signed</code>, <code>approver_keys_pinned</code>); the anchor is checked against this server's simulated chain.</p>
+          <p className="muted">A pack embeds its own public keys, so it only counts if their fingerprint matches the pinned one above (<code>key_pinned</code>); each approval is an Ed25519 signature over the exact payment, checked against the pinned approver device keys (<code>approvals_signed</code>, <code>approver_keys_pinned</code>); the anchor is checked against this server's chain (a local simulation by default; the FISCO BCOS contract when OASIS_ANCHOR=fisco).</p>
         </div>
       )}
     </section>

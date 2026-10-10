@@ -33,7 +33,7 @@ def monthly_burn(passport: Passport, history_cny: list[float] | None = None) -> 
 
 def runway_months(passport: Passport, rates: MockRates, day_index: int = 0, history_cny=None) -> float:
     """Months the money lasts after pending obligations are covered."""
-    pending = sum(o.amount for o in passport.obligations if o.status in ("pending", "planned")
+    pending = sum(o.remaining for o in passport.obligations if o.status in ("pending", "planned", "partially_paid")
                   and o.type in ("tuition", "rent", "deposit"))
     free = cny_equivalent(passport, rates, day_index) - pending
     burn, _ = monthly_burn(passport, history_cny)

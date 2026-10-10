@@ -45,7 +45,7 @@ from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
 from ..proof.pack import verify_proof_pack
 from ..storage import SqliteStore
-from ..chain.anchor import LocalAnchorChain
+from ..chain.anchor import Anchor, LocalAnchorChain
 from ..trust.approvals import ApproverRegistry
 from ..trust.audit import verify_chain
 from ..trust.keyfile import default_session_secret_path, load_or_create_secret
@@ -57,7 +57,7 @@ from .ratelimit import RateLimiter
 ROOT = Path(__file__).resolve().parents[2]
 REPORTS = ROOT / "eval" / "reports"
 MOCK_NOTE = ("MOCK: rates, fees, payment rails, registry identities, wallet spending and balances are simulated "
-             "sandbox data. Anchoring uses a local simulated chain, not FISCO BCOS.")
+             "sandbox data. Anchoring uses a local simulated chain unless OASIS_ANCHOR=fisco, which uses a real FISCO BCOS chain running locally (4 nodes, one host).")
 
 REDTEAM_MAX_TEXT = 4000          # bytes of attack text per attempt
 REDTEAM_MAX_POISON = 400         # bytes of poisoned-tool-output JSON per attempt
@@ -138,7 +138,7 @@ class Session:
                 | self.redteam_world.approvers.pinned_key_ids())
 
     def anchor_chains(self, ids: tuple[str, ...] | None = None) -> list:
-        return [w.anchor for w in (self.world, self.redteam_world) if isinstance(w.anchor, LocalAnchorChain)]
+        return [w.anchor for w in (self.world, self.redteam_world) if isinstance(w.anchor, Anchor)]
 
     def save(self) -> None:
         if not self.store:

@@ -8,8 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from .. import config
 from ..mock.ledger import InsufficientFunds
 from .llm import diverges_from_genuine
+from .request_types import LABELS, classify_request, needs_out_of_band
 from ..passport.models import Level, Obligation, Recipient
 from ..proof.pack import build_proof_pack
 from ..trust import corridor
@@ -134,10 +136,11 @@ class OasisAgent:
         return self.w.ledger.transfer(self.w.ledger.executor_credential(), from_ref, to_ref, amount, "CNY", memo)
 
     def _policy_input(self, *, rec: Recipient | None, payee_id: str, purpose: str, amount: float,
-                      cor, risk: float, hits, approvals, recurring: bool, remitter: str) -> PolicyInput:
+                      cor, risk: float, hits, approvals, recurring: bool, remitter: str, currency: str = "CNY",
+                      instalment: bool = False, remaining: float | None = None) -> PolicyInput:
         paid = sum(h["amount_cny"] for h in self.w.history if h["payee_id"] == payee_id)
         return PolicyInput(self.w.passport, rec, payee_id, purpose, amount, self._inr(amount), cor, list(hits),
-                           risk, tuple(approvals), recurring, remitter, paid)
+                           risk, tuple(approvals), recurring, remitter, paid, currency, instalment, remaining)
 
     # --------------------------------------------------------------- test payment
     def _test_payment(self, rec: Recipient, out: Outcome) -> bool:
@@ -234,9 +237,11 @@ class OasisAgent:
         fields["purpose"] = purpose
         amount = float(fields.get("amount") or 0)
         ob = self._match_obligation(fields)
-        out.label = "stop" if out.canary_hits else ("matches_known" if ob and abs(ob.amount - amount) < 0.5
+        # An instalment is a deliberate part payment of what is still owed (never more than that, never a different payee).
+        instalment = ob is not None and 0.5 < amount < ob.remaining - 0.5
+        out.label = "stop" if out.canary_hits else ("matches_known" if ob and abs(ob.remaining - amount) < 0.5
                                                     else "new_or_changed")
-        risk = w.llm.risk(fields, req.text, names, accounts, ob.amount if ob else None,
+        risk = w.llm.risk(fields, req.text, names, accounts, (amount if instalment else ob.remaining) if ob else None,
                           self._risk_ctx(fields, amount))
         out.risk = {"score": risk.score, "evidence": risk.evidence}
         if risk.components is not None:
@@ -247,6 +252,10 @@ class OasisAgent:
         if out.canary_hits and f_.canaries:
             return self._finish_freeze(out, ob, fields, ["canary tripwire fired during understanding"],
                                        "R01_canary", t0, amount)
+        structured = amount > 0 and bool(fields.get("account_ref")) and bool(fields.get("payee_name") or fields.get("payee_id"))
+        kind = classify_request(req.text)
+        if f_.intents_policy and needs_out_of_band(kind, structured):
+            return self._finish_out_of_band(out, ob, fields, kind, t0, amount)
         if amount <= 0 or not fields.get("account_ref"):
             out.status = "held"
             out.trace.append("Understand: low-confidence extraction - asking the student to confirm fields")
@@ -304,18 +313,20 @@ class OasisAgent:
         out.draft, dh = draft, draft["draft_hash"]
         signed = self._verified_approvals(req, dh, out)       # role -> approval record; ONLY verified signatures count
         approvals = set(signed)
-        mismatch = ob is not None and abs(ob.amount - amount) > 0.5
+        mismatch = ob is not None and not instalment and abs(ob.remaining - amount) > 0.5
+        currency = (fields.get("currency") or "CNY").upper()
 
         def policy(appr):
             return decide(self._policy_input(rec=rec, payee_id=payee_id, purpose=purpose, amount=amount, cor=cor,
                                              risk=risk.score, hits=hits, approvals=appr, recurring=req.recurring,
-                                             remitter=remitter))
+                                             remitter=remitter, currency=currency, instalment=instalment,
+                                             remaining=ob.remaining if ob else None))
         d = policy(approvals)
         out.trace.append(f"Commit: policy {d.action} ({d.rule}) {d.reasons}")
         while d.action == "hold" and approver and set(d.required_approvals) <= APPROVABLE:
             roles, minutes = approver.review({"fields": fields, "obligation": ob, "decision": d, "risk": risk,
                                               "mismatch": mismatch, "followed_injection": ext.followed_injection,
-                                              "label": out.label, "remitter": remitter, "purpose": purpose,
+                                              "label": out.label, "remitter": remitter, "purpose": purpose, "instalment": instalment,
                                               "amount": amount, "required": list(d.required_approvals)})
             w.advance(minutes)
             for r in roles - approvals:
@@ -388,17 +399,25 @@ class OasisAgent:
         out.sim_minutes = w.sim_minutes - t0
         w.history.append({"payee_id": payee_id, "amount_cny": amount, "amount_inr": self._inr(amount), "ts": w.now.timestamp()})
         p.remitted_inr_fy[remitter] = p.remitted_inr_fy.get(remitter, 0.0) + self._inr(amount)
-        if ob and abs(ob.amount - amount) < 0.5:
-            ob.status = "paid"
+        if ob:
+            if abs(ob.remaining - amount) < 0.5:
+                ob.amount_paid, ob.status = ob.amount, "paid"
+            elif 0 < amount < ob.remaining:
+                ob.amount_paid = round(ob.amount_paid + amount, 2)
+                ob.status = "partially_paid"
         if rec:
             w.verifier.record_success(p, payee_id)
         p.reputation["verified_on_time_payments"] += 1 if (ob and rec) else 0
         if intent is not None:
             ih = w.builder.intent_hash(intent)
             entry = w.audit.find("transfer_executed", intent_id=intent["intent_id"])[-1]
+            anchor = w.anchor.verify(ih)
+            ab = w.anchor_block
+            if anchor and ab and ab.get("digest") == ih and "tx_hash" not in anchor:
+                anchor = {**anchor, "tx_hash": ab["tx_hash"]}      # FISCO verify() reads the contract; the tx hash comes from anchor()
             pack = build_proof_pack(signer=w.signer, intent=intent,
                                     verification=out.verification or {}, costs=out.savings or {},
-                                    audit_entry=entry, anchor=w.anchor.verify(ih),
+                                    audit_entry=entry, anchor=anchor,
                                     trust_public_keys=w.signer.public_keys(), decision=d.to_dict() if d else None)
             w.proofs[intent["intent_id"]] = pack
             p.reputation["proofs"].append(intent["intent_id"])
@@ -412,8 +431,28 @@ class OasisAgent:
         out.card = self._card(out, fields.get("payee_name", "?"), amount, status, rule, reasons)
         out.recovery = self._recovery(ob)
         if ob and status in ("rejected",):
-            ob.status = "pending"
+            ob.status = ob.open_status
         w.audit.append("stopped", {"rule": rule, "status": status, "reasons": reasons})
+        out.sim_minutes = w.sim_minutes - t0
+        return out
+
+    def _finish_out_of_band(self, out, ob, fields, kind, t0, amount) -> Outcome:
+        """R16: the document asks for something Oasis never does from a document (change who approves, change where a
+        payee is paid, refund/reverse, pay an authority that is not in the Passport). Nothing is actioned and no payment
+        is attempted; the student is told to confirm through a channel the document did not supply."""
+        w = self.w
+        what = LABELS.get(kind, kind)
+        reasons = [f"This looks like {what}.",
+                   "A document or message cannot change approvers, approval limits or a payee's bank details, and Oasis does not "
+                   "act on refund or reversal requests found in a document. Nothing in it was actioned."]
+        out.status, out.detected = "held", True
+        out.trace.append(f"Understand: request type {kind} - requires out-of-band verification")
+        out.card = self._card(out, fields.get("payee_name", "?"), amount, "held", "R16_out_of_band_verification", reasons,
+                              "Confirm it yourself through the registry-verified contact (not any contact in the document); "
+                              "then re-submit the genuine invoice.")
+        out.decision = {"action": "hold", "tier": 2, "rule": "R16_out_of_band_verification", "reasons": reasons,
+                        "required_approvals": ["out_of_band_verification"], "ruleset": config.RULESET_VERSION}
+        w.audit.append("out_of_band_required", {"request_type": kind, "amount": amount})
         out.sim_minutes = w.sim_minutes - t0
         return out
 
@@ -431,7 +470,7 @@ class OasisAgent:
     def unfreeze_after_review(self, obligation_id: str) -> None:
         ob = self.w.passport.obligation(obligation_id)
         if ob and ob.status == "frozen":
-            ob.status = "pending"
+            ob.status = ob.open_status
             self.w.audit.append("unfreeze", {"obligation": obligation_id, "by": "student"})
 
     def approve_recovery(self, obligation_id: str | None) -> dict:

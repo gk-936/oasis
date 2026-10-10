@@ -14,6 +14,7 @@ import hashlib
 import json
 import re
 import time
+import unicodedata
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -21,16 +22,21 @@ from pathlib import Path
 from .. import config
 from . import i18n
 
-AMOUNT_RE = re.compile(r"(?:Amount|Total|金额)\s*[:：]?\s*(?:CNY|RMB|¥|￥)?\s*([\d,]+(?:\.\d+)?)", re.I)
+_CUR_CODES = "CNY|RMB|USD|EUR|GBP|INR|JPY|HKD|AUD|CAD|SGD|CHF|KRW|NZD"
+_CUR_SYMBOLS = "¥￥$＄€£₹元"
+_CUR_ALT = rf"(?:{_CUR_CODES}|US\$|[{_CUR_SYMBOLS}])"
+AMOUNT_RE = re.compile(rf"(?:Amount(?:\s+due)?|Total|金额)\s*[:：]?\s*({_CUR_ALT})?\s*([\d,，]+(?:\.\d+)?)\s*({_CUR_CODES}|元)?", re.I)
 FIELD_RES = {
-    "payee_name": re.compile(r"(?:Payee|Pay to|收款人)\s*[:：]\s*(.+)", re.I),
-    "payee_id": re.compile(r"Payee ID\s*[:：]\s*([\w-]+)", re.I),
-    "account_ref": re.compile(r"(?:Account|Acct|账号)\s*[:：]\s*([\w-]+)", re.I),
+    "payee_name": re.compile(r"(?:Payee|Pay to|Payable to|Beneficiary|Recipient|收款人|收款方)\s*[:：]\s*(.+)", re.I),
+    "payee_id": re.compile(r"Payee[ _]?ID\s*[:：]\s*([\w-]+)", re.I),
+    "account_ref": re.compile(r"(?:Account(?:\s*(?:No\.?|Number|#))?|Acct|账号|账户|卡号)\s*[:：]\s*(.+)", re.I),
     "purpose": re.compile(r"(?:Purpose|用途)\s*[:：]\s*([^\n]+)", re.I),
-    "due": re.compile(r"(?:Due|Due date|截止)\s*[:：]\s*(\d{4}-\d{2}-\d{2})", re.I),
+    "due": re.compile(r"(?:Due(?: date)?|截止)\s*[:：]\s*(\d{4}-\d{2}-\d{2})", re.I),
 }
 INJECTION_RE = re.compile(r"(ignore (all |any )?(previous|prior) (instructions|rules)|system note|"
                           r"note to (the )?(assistant|agent)|assistant:|you must now)", re.I)
+ISOLATION_RE = re.compile(r"(do not|don'?t|never) (contact|call|tell|inform|verify with)|keep (this )?(confidential|secret)|"
+                          r"不要联系|请勿联系|不要告诉", re.I)
 OVERRIDE_ACCT_RE = re.compile(r"(?:pay|send|transfer)[^.\n]*?(?:account|acct)\s*[:：]?\s*(\w{8,})", re.I)
 OVERRIDE_AMT_RE = re.compile(r"(?:pay|send|transfer)[^.\n]*?(?:CNY|RMB|¥)\s*([\d,]+(?:\.\d+)?)", re.I)
 OVERRIDE_PID_RE = re.compile(r"payee[_ ]id\s*[:=]?\s*([\w-]+)", re.I)
@@ -96,6 +102,15 @@ def heuristic_risk(fields: dict, text: str, known_names: list[str], known_accoun
         flags.append((0.45 if len(hits) >= 2 else 0.30, f"urgency/pressure language: {', '.join(hits)}"))
     if INJECTION_RE.search(text):
         flags.append((0.55, "document contains instructions addressed to the assistant"))
+    if ISOLATION_RE.search(text):
+        flags.append((0.30, "document tells the reader not to contact or verify with anyone"))
+    # The extractor normalises the account number; the raw text is judged here, so hidden/look-alike characters stay evidence.
+    seen: set[str] = set()
+    for m in FIELD_RES["account_ref"].finditer(text):
+        for msg in account_anomalies(_read_account(m.group(1)) or ""):
+            if msg not in seen:
+                seen.add(msg)
+                flags.append((0.30, msg))
     name = fields.get("payee_name") or ""
     exact = any(k.casefold() == name.casefold() for k in known_names)
     close = [k for k in known_names if k.casefold() != name.casefold() and name
@@ -193,18 +208,151 @@ def normalize_purpose(raw) -> str | None:
     return str(raw).strip().casefold()
 
 
+# ---------------------------------------------------------------------------------------------- account normalisation
+_SEPARATORS = set(" \t\u00a0\u3000-\u2010\u2011\u2012\u2013\u2014\u2015\u2212")
+_ACCT_TOKEN = re.compile(r"[\w\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff\u2010-\u2015-]+")
+_ACCT_GROUP = re.compile(r"[ \t\u00a0\u3000]+([\d\uff10-\uff19\u200b-\u200f\u2060-\u2064\ufeff-]+)")
+
+
+def normalize_account(raw) -> str:
+    """The comparable form of an account number: NFKC (full-width digits become ASCII), invisible/format characters
+    (zero-width space/joiner, word joiner, BOM, bidi controls) removed, and display separators (spaces, hyphens,
+    dashes) stripped; underscores and other characters are kept. Nothing else is touched: letters that merely look like digits or Latin letters
+    (Cyrillic, Greek...) are NOT folded, so a look-alike never becomes a registered number by accident. The result is
+    compared EXACTLY against the registry; the raw text is kept separately for the risk scorer (`account_anomalies`)."""
+    s = unicodedata.normalize("NFKC", str(raw or ""))
+    s = "".join(c for c in s if unicodedata.category(c) != "Cf")
+    return "".join(c for c in s if c not in _SEPARATORS and not c.isspace())
+
+
+def account_anomalies(raw) -> list[str]:
+    """Evidence (never a decision) that an account string was written to deceive a reader or a naive parser."""
+    s = str(raw or "")
+    found = []
+    if any(unicodedata.category(c) == "Cf" for c in s):
+        found.append("invisible (zero-width) characters inside the account number")
+    nf = unicodedata.normalize("NFKC", s)
+    if nf != s and any(c.isdigit() and not c.isascii() or "\uff00" <= c <= "\uffef" for c in s):
+        found.append("full-width or non-ASCII digits in the account number")
+    core = normalize_account(s)
+    if core and not core.isascii():
+        found.append("look-alike (non-ASCII) letters in the account number")
+    return found
+
+
+def _read_account(rest: str) -> str | None:
+    """The account written at the start of `rest`: one token, or a run of short digit groups ('6228 4800 0000 1234')."""
+    m = _ACCT_TOKEN.match(rest.strip())
+    if not m:
+        return None
+    rest = rest.strip()
+    raw, pos = m.group(0), m.end()
+    first = normalize_account(raw)
+    if first.isdigit() and len(first) <= 8:
+        while True:
+            g = _ACCT_GROUP.match(rest, pos)
+            gn = normalize_account(g.group(1)) if g else ""
+            if not g or not gn.isdigit() or len(gn) > 8:
+                break
+            raw, pos = raw + g.group(0), g.end()
+    return raw
+
+
+# Key synonyms for layouts other than "Key: value" (tables, "Key - value", bold markdown).
+_KEY_SYNONYMS = {
+    "Payee ID": ("payee id", "payee_id", "payeeid"),
+    "Payee": ("payee", "pay to", "payable to", "beneficiary", "recipient", "payee name", "收款人", "收款方"),
+    "Account": ("account", "account no", "account no.", "account number", "account #", "acct", "beneficiary account",
+                "账号", "账户", "卡号"),
+    "Amount": ("amount", "amount due", "total", "total due", "金额"),
+    "Purpose": ("purpose", "用途"),
+    "Due": ("due", "due date", "截止"),
+}
+_SYN = {syn: canon for canon, syns in _KEY_SYNONYMS.items() for syn in syns}
+_DASH_KV = re.compile(r"^\s*([A-Za-z#_ .\u4e00-\u9fff]{2,24}?)\s*(?:—|–|―|\s-\s|=)\s*(\S.*)$")
+
+
+def canonical_text(text: str) -> str:
+    """Rewrite common invoice layouts as 'Key: value' lines so one set of patterns reads them all: markdown/ASCII
+    tables ('| Payee | Chen Wei |'), 'Payee — X' / 'Payee - X' / 'Payee = X', bold keys ('**Payee:** X'), 'Pay to X'.
+    Only known keys are rewritten; every other line is passed through unchanged. This is a layout normaliser, not an
+    interpreter: it never follows instructions, and values are copied verbatim."""
+    out: list[str] = []
+    for line in text.splitlines():
+        ln = line.replace("**", "").replace("__", "").strip()
+        if ln.startswith("|") and ln.count("|") >= 2:
+            cells = [c.strip() for c in ln.strip("|").split("|")]
+            if len(cells) >= 2 and cells[0] and not set("".join(cells)) <= set("-: "):
+                key = _SYN.get(cells[0].casefold().rstrip(":"))
+                if key:
+                    out.append(f"{key}: {cells[1]}")
+                    continue
+            if set("".join(cells)) <= set("-: "):
+                continue
+        m = _DASH_KV.match(ln)
+        if m and _SYN.get(m.group(1).casefold().strip(" :")):
+            out.append(f"{_SYN[m.group(1).casefold().strip(' :')]}: {m.group(2)}")
+            continue
+        out.append(ln if ln != line.strip() else line)
+    return "\n".join(out)
+
+
+_CUR_MAP = {"RMB": "CNY", "元": "CNY", "¥": "CNY", "￥": "CNY", "$": "USD", "＄": "USD", "US$": "USD", "€": "EUR",
+            "£": "GBP", "₹": "INR"}
+
+
+def normalize_currency(raw) -> str | None:
+    """ISO-style code for a currency written as a code or a symbol; None if empty. An unrecognised value is returned
+    upper-cased (never guessed to be CNY), so the policy layer sees it as a non-CNY request."""
+    if raw is None:
+        return None
+    t = str(raw).strip()
+    if not t:
+        return None
+    u = t.upper()
+    if u in _CUR_MAP or t in _CUR_MAP:
+        return _CUR_MAP.get(u) or _CUR_MAP[t]
+    for sym, code in _CUR_MAP.items():
+        if not sym.isalpha() and sym in t:
+            return code
+    m = re.search(rf"\b({_CUR_CODES})\b", u)
+    return _CUR_MAP.get(m.group(1), m.group(1)) if m else u
+
+
+def _norm_model_field(k: str, v):
+    """Same normalisation for what the model returns as for the regex parse (account digits, currency code, purpose)."""
+    if k == "account_ref":
+        return normalize_account(v) or str(v).strip()
+    if k == "currency":
+        return normalize_currency(v) or "CNY"
+    if k == "purpose":
+        return normalize_purpose(v)
+    return str(v)
+
+
 def regex_fields(text: str) -> dict:
-    """Plain deterministic field parse of the document's own labelled lines (never follows instructions)."""
+    """Plain deterministic field parse of the document's own labelled lines (never follows instructions).
+    Reads 'Key: value' lines, tables and dash/equals layouts (see `canonical_text`). `account_ref` comes back
+    normalised (`normalize_account`); the raw text stays available to the risk scorer. `currency` is what the
+    document states ('CNY' when it states none)."""
+    t = canonical_text(text)
     f: dict = {}
     for k, rx in FIELD_RES.items():
-        m = rx.search(text)
-        if m:
-            f[k] = m.group(1).strip().rstrip(".")
+        m = rx.search(t)
+        if not m:
+            continue
+        if k == "account_ref":
+            raw = _read_account(m.group(1))
+            if raw is not None and normalize_account(raw):
+                f[k] = normalize_account(raw)
+            continue
+        f[k] = m.group(1).strip().rstrip(".")
     if "purpose" in f:
         f["purpose"] = normalize_purpose(f["purpose"])
-    m = AMOUNT_RE.search(text)
+    m = AMOUNT_RE.search(t)
     if m:
-        f["amount"] = parse_amount(m.group(1))
+        f["amount"] = parse_amount(m.group(2))
+        f["currency"] = normalize_currency(m.group(1) or m.group(3)) or "CNY"
     f.setdefault("currency", "CNY")
     return f
 
@@ -250,7 +398,7 @@ class OfflineLLM(LLM):
             body = text[INJECTION_RE.search(text).start():]
             a, amt = OVERRIDE_ACCT_RE.search(body), OVERRIDE_AMT_RE.search(body)
             if a:
-                f["account_ref"], followed = a.group(1), True
+                f["account_ref"], followed = normalize_account(a.group(1)), True
             if amt:
                 f["amount"], followed = parse_amount(amt.group(1)), True
             pid = OVERRIDE_PID_RE.search(body)
@@ -606,7 +754,7 @@ class GroqLLM(OfflineLLM):
             j = json.loads(out)
             for k in ("payee_name", "payee_id", "account_ref", "currency", "purpose", "due"):
                 if j.get(k):
-                    base.fields.setdefault(k, normalize_purpose(j[k]) if k == "purpose" else str(j[k]))
+                    base.fields.setdefault(k, _norm_model_field(k, j[k]))
             if isinstance(j.get("amount"), (int, float)):
                 base.fields.setdefault("amount", float(j["amount"]))
             base.translation = j.get("translation") or base.translation
@@ -622,7 +770,7 @@ class GroqLLM(OfflineLLM):
         for k in ("payee_name", "payee_id", "account_ref", "currency", "due"):
             v = j.get(k)
             if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v).strip():
-                f[k] = str(v).strip()
+                f[k] = _norm_model_field(k, str(v).strip())
         p = normalize_purpose(j.get("purpose")) if isinstance(j.get("purpose"), str) else None
         if p:
             f["purpose"] = p

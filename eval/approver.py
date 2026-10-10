@@ -18,6 +18,8 @@ class SimulatedHumans:
         d = ctx["decision"]
         ob, mismatch = ctx["obligation"], ctx["mismatch"]
         injected = any("instructions addressed" in e for e in ctx["risk"].evidence)
+        # A part payment to the registered payee of an obligation, at most what is still owed, is consistent (the pipeline
+        # already refused an unregistered payee and flags an overpayment as `mismatch`).
         consistent = (ob is not None and not mismatch) or (ctx["purpose"] == "family_support" and ctx["remitter"] == "parent")
         roles, minutes = set(), 0
         if "student" in required:

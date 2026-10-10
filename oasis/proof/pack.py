@@ -41,8 +41,9 @@ def verify_proof_pack(pack: dict, trusted_fingerprints=None, chain=None, approve
     - `approver_keys_pinned`: with `approver_key_ids` (the key ids the server registered for its approvers, from
       GET /api/approvers, obtained out of band) each approval's key must be one of them. None = not checked. When a pack
       has approvals, `ok` additionally requires this to be True, for the same reason as `key_pinned`.
-    - `anchor_on_chain`: with `chain` (an Anchor that can look blocks up, e.g. LocalAnchorChain) the anchor block must
-      exist with the intent hash as digest and the chain must be intact. None = not checked (no chain available, or
+    - `anchor_on_chain`: with `chain` (an Anchor that can look blocks up: LocalAnchorChain, or FiscoAnchor whose
+      `verify(digest)` reads the OasisAnchor contract) the anchor must exist with the intent hash as digest (for FISCO, in
+      the block the pack names) and a local chain must be intact. None = not checked (no chain available, or
       the pack carries no anchor).
     """
     checks: dict = {}
@@ -84,7 +85,12 @@ def verify_proof_pack(pack: dict, trusted_fingerprints=None, chain=None, approve
     if chain is not None and anchor:
         blk = chain.verify(anchor.get("digest", ""))
         ok = blk is not None and blk.get("digest") == pack.get("intent_hash")
-        if ok and anchor.get("tx_hash"):
+        if ok and "block_number" in anchor:
+            # FISCO BCOS result shape: {tx_hash, block_number, digest, network, contract}. `verify(digest)` reads the
+            # contract and returns {digest, timestamp_ms, block_number, sender, ...} (no tx hash): the anchor is on chain
+            # if the contract holds this digest, in the block the pack names.
+            ok = blk.get("block_number") == anchor["block_number"]
+        elif ok and anchor.get("tx_hash"):
             ok = blk.get("tx_hash") == anchor["tx_hash"]
         if ok and hasattr(chain, "chain_ok"):
             ok = chain.chain_ok()

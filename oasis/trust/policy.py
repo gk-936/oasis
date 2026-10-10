@@ -29,6 +29,9 @@ class PolicyInput:
     recurring: bool = False
     remitter: str = "student"
     paid_to_payee_cny: float = 0.0           # already paid to this payee in the current limit window
+    currency: str = "CNY"                    # the currency the DOCUMENT demands (the rail only ever settles CNY)
+    instalment: bool = False                 # a part payment below the obligation's remaining amount
+    remaining_cny: float | None = None       # what is still owed on the matched obligation (instalments only)
 
 
 @dataclass
@@ -67,6 +70,13 @@ def decide(p: PolicyInput) -> Decision:
             return Decision("allow", 1, "R04b_test_payment", ["Registry-confirmed recipient; small verification test payment."])
         return Decision("freeze", 3, "R04c_bad_test_payment", ["A test payment is only allowed to a registry-confirmed recipient, up to CNY 10."])
 
+    # R15 the document demands a currency other than CNY: Oasis settles CNY obligations in CNY only and never
+    # converts a demand silently (a USD figure read as CNY, or CNY paid against a USD demand, is a different amount).
+    if (p.currency or "CNY").upper() != "CNY":
+        return Decision("hold", 2, "R15_currency_mismatch",
+                        [f"The document demands {p.currency.upper()}, but this obligation is settled in CNY. Oasis will not pay "
+                         "a foreign-currency demand as if it were CNY."], ["corrected_cny_invoice"])
+
     # R05 unverified recipient -> hold for verification
     if LEVEL_ORDER[level] < LEVEL_ORDER[Level.VERIFIED_LOW]:
         return Decision("hold", 2, "R05_unverified", ["Recipient is not verified; the verification ramp must complete first."],
@@ -93,15 +103,19 @@ def decide(p: PolicyInput) -> Decision:
     if p.purpose == "family_support" and p.amount_inr > rules.parent_coapproval_above_inr:
         need = ["student", "parent"]
     # R10 tier-1 automatic: small, recurring, fully verified recipient
-    tier1 = (not over_limit and level == Level.VERIFIED_FULL and p.recurring and p.amount_cny <= rules.tier1_auto_limit_cny
+    tier1 = (not p.instalment and not over_limit and level == Level.VERIFIED_FULL and p.recurring and p.amount_cny <= rules.tier1_auto_limit_cny
              and p.purpose != "family_support")
     if tier1:
         return Decision("allow", 1, "R10_tier1_auto", ["Small recurring payment to a fully verified recipient."])
 
     missing = [r for r in need if r not in p.approvals]
     if missing:
-        return Decision("hold", 2, "R11_approval_required",
-                        [f"Approval required from: {', '.join(missing)}."], missing)
+        why = [f"Approval required from: {', '.join(missing)}."]
+        if p.instalment:
+            why.insert(0, f"Part payment of CNY {p.amount_cny:,.2f}"
+                          + (f" against CNY {p.remaining_cny:,.2f} still owed" if p.remaining_cny is not None else "")
+                          + ": an instalment is never automatic.")
+        return Decision("hold", 2, "R11_approval_required", why, missing)
     return Decision("allow", 2, "R12_approved", ["All required approvals present; recipient verified; within limits."])
 
 

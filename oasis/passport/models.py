@@ -42,10 +42,20 @@ class Obligation(BaseModel):
     amount: float
     currency: str = "CNY"
     due: str  # ISO date
-    status: str = "pending"  # pending | planned | paid | frozen
+    status: str = "pending"  # pending | planned | partially_paid | paid | frozen
+    amount_paid: float = 0.0  # CNY already paid towards this obligation (instalments); `amount` stays the full obligation
     recurring: bool = False
     every_days: int = 30     # recurrence period for recurring bills
     label: str = ""
+
+    @property
+    def remaining(self) -> float:
+        return round(max(self.amount - self.amount_paid, 0.0), 2)
+
+    @property
+    def open_status(self) -> str:
+        """The status of an obligation that is neither paid nor frozen: partially_paid after an instalment, else pending."""
+        return "partially_paid" if self.amount_paid > 0 else "pending"
 
 
 class Balance(BaseModel):

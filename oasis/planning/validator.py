@@ -92,7 +92,7 @@ def lrs_limit_inr() -> float:
 
 def required_obligations(passport) -> list:
     """Obligations a plan must fund: pending/planned and not recurring (recurring bills are paid by Tier-1 autonomy)."""
-    return sorted((o for o in passport.obligations if o.status in ("pending", "planned") and not o.recurring),
+    return sorted((o for o in passport.obligations if o.status in ("pending", "planned", "partially_paid") and not o.recurring),
                   key=lambda o: o.due)
 
 
@@ -196,15 +196,15 @@ def validate_plan(world, steps) -> Validation:
                 amt = float(s.get("amount_cny"))
             except (TypeError, ValueError):
                 amt = -1.0
-            if abs(amt - ob.amount) > CNY_TOL:
-                errors.append(Issue("amount_mismatch", f"{ob.id} is CNY {ob.amount:,.2f}; the step pays CNY {amt:,.2f}.", i,
-                                    f"Set amount_cny to {ob.amount}."))
+            if abs(amt - ob.remaining) > CNY_TOL:
+                errors.append(Issue("amount_mismatch", f"{ob.id} still has CNY {ob.remaining:,.2f} to pay; the step pays CNY {amt:,.2f}.", i,
+                                    f"Set amount_cny to {ob.remaining}."))
                 continue
             if d > date.fromisoformat(ob.due):
                 errors.append(Issue("late_payment", f"{ob.id} is due {ob.due}; the step pays on {d}.", i,
                                     f"Pay on or before {ob.due}."))
                 continue
-            parsed.append({"i": i, "action": "pay", "date": d, "ob": ob, "amount": ob.amount})
+            parsed.append({"i": i, "action": "pay", "date": d, "ob": ob, "amount": ob.remaining})
 
     # ---- 2. every required obligation must be paid ---------------------------------------------------
     for ob in required_obligations(p):

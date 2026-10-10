@@ -82,7 +82,7 @@ def _pay_recurring(agent: OasisAgent, ob: Obligation) -> dict | None:
     if rec is None or rec.verification.level != Level.VERIFIED_FULL:
         return None     # only fully verified recipients are eligible for autonomous payment
     text = (f"Recurring bill (agent-initiated from the Passport)\nPayee: {rec.name}\nPayee ID: {rec.id}\n"
-            f"Account: {rec.account_ref}\nAmount: CNY {ob.amount:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
+            f"Account: {rec.account_ref}\nAmount: CNY {ob.remaining:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
     req = Request(text, source="recurring", recurring=True)
     out = agent.handle(req)       # no approver: Tier 1 passes by itself, anything else is held
     if out.status == "paid":

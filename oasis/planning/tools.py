@@ -91,7 +91,7 @@ class PlanningToolbox:
     def tool_list_obligations(self) -> dict:
         p = self.w.passport
         need = {o.id for o in required_obligations(p)}
-        return {"obligations": [{"id": o.id, "type": o.type, "payee_id": o.payee_id, "amount_cny": o.amount, "due": o.due,
+        return {"obligations": [{"id": o.id, "type": o.type, "payee_id": o.payee_id, "amount_cny": o.remaining, "due": o.due,
                                  "status": o.status, "recurring": o.recurring, "plan_must_fund": o.id in need}
                                 for o in p.obligations if o.status != "paid"]}
 

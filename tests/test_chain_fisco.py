@@ -90,3 +90,46 @@ def test_live_fisco_anchor():
     assert re.fullmatch(r"0x[0-9a-f]{64}", r["tx_hash"]) and r["block_number"] >= 1
     v = a.verify(digest)
     assert v and v["block_number"] == r["block_number"]
+
+
+# ------------------------------------------------------------------------------------------ wiring into World / proof pack
+def _paid_world(monkeypatch, deterministic=False):
+    from eval.approver import SimulatedHumans
+    from eval.scenarios import tuition
+    from oasis import world as world_mod
+    from oasis.agent.llm import OfflineLLM
+    from oasis.agent.pipeline import OasisAgent, Request
+    fc = FakeConsole()
+    monkeypatch.setattr(world_mod, "make_anchor", lambda: FiscoAnchor(runner=fc))
+    w = world_mod.World(llm=OfflineLLM(), deterministic=deterministic)
+    out = OasisAgent(w).handle(Request(tuition()), SimulatedHumans())
+    return w, out, fc
+
+
+def test_world_uses_make_anchor_unless_deterministic(monkeypatch):
+    w, out, fc = _paid_world(monkeypatch, deterministic=False)
+    assert isinstance(w.anchor, FiscoAnchor) and out.status == "paid"
+    w2, _, _ = _paid_world(monkeypatch, deterministic=True)
+    assert isinstance(w2.anchor, LocalAnchorChain)
+
+
+def test_proof_pack_carries_the_fisco_result_and_verifies_on_chain(monkeypatch):
+    import copy
+    from oasis.proof.pack import verify_proof_pack
+    w, out, fc = _paid_world(monkeypatch)
+    pack = w.proofs[out.proof_id]
+    assert pack["anchor"]["tx_hash"] == TX and pack["anchor"]["block_number"] == 8
+    assert pack["anchor"]["digest"] == pack["intent_hash"]
+    res = verify_proof_pack(pack, {w.trust_fingerprint()}, w.anchor, w.approvers.pinned_key_ids())
+    assert res["anchor_on_chain"] is True and res["anchor_matches_intent"] is True and res["ok"]
+    wrong_block = copy.deepcopy(pack)
+    wrong_block["anchor"]["block_number"] = 99
+    assert verify_proof_pack(wrong_block, {w.trust_fingerprint()}, w.anchor)["anchor_on_chain"] is False
+    other = copy.deepcopy(pack)
+    other["anchor"]["digest"] = "00" * 32
+    assert verify_proof_pack(other, {w.trust_fingerprint()}, w.anchor)["anchor_on_chain"] is False
+
+
+def test_default_environment_is_the_local_simulation(monkeypatch):
+    monkeypatch.delenv("OASIS_ANCHOR", raising=False)
+    assert isinstance(make_anchor(), LocalAnchorChain)

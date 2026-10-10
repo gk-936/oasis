@@ -38,7 +38,7 @@ Tests: `tests/test_chain_fisco.py` (hermetic fake console) and `OASIS_FISCO_IT=1
 
 ## Honest limits
 
-Single machine, all 4 nodes on one host: demonstrates the integration, not decentralised trust. The default sender account is the console's auto-generated key. `anchor()` is not wired into the API yet (see `docs/notes-for-merge.md`).
+Single machine, all 4 nodes on one host: demonstrates the integration, not decentralised trust. The default sender account is the console's auto-generated key. When `OASIS_ANCHOR=fisco`, `World` uses `make_anchor()` (deterministic worlds, tests, the benchmark and the scripted demo always use the local simulation). The proof pack stores the `anchor()` result (tx hash, block, contract); its `anchor_on_chain` check calls `verify(digest)` on the contract and compares the digest and block number. The Proof tab shows the tx hash and block. Each anchored payment costs about 7 s (WSL console).
 
 ## Remove everything
 

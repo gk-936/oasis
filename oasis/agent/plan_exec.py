@@ -59,7 +59,7 @@ def accept_plan(agent: OasisAgent, plan_id: str) -> dict:
 def _bill_text(world, ob) -> str:
     rec = world.passport.recipients[ob.payee_id]
     return (f"Payment from an accepted plan (agent-initiated; details from the Passport and registry)\nPayee: {rec.name}\n"
-            f"Payee ID: {rec.id}\nAccount: {rec.account_ref}\nAmount: CNY {ob.amount:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
+            f"Payee ID: {rec.id}\nAccount: {rec.account_ref}\nAmount: CNY {ob.remaining:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
 
 
 def conversion_draft(plan_id: str, i: int, s: dict) -> dict:

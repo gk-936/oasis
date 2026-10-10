@@ -15,6 +15,8 @@ Tiers: 1 = the agent may act alone within bounds, 2 = explicit human approval, 3
 | R03 | freeze (tier 3) | the registry contradicts the recipient |
 | R04 | freeze | risk score ≥ 0.85 (escalation only) |
 | R04b/c | allow / freeze | verification test payment: ≤ CNY 10, only to a registry-confirmed recipient |
+| R15 | hold | the document demands a currency other than CNY (needs a corrected CNY invoice; no approval overrides it) |
+| R16 | hold | out-of-band verification required: a document asks to change an approver or approval limit, to refund or reverse, to pay an authority not in the Passport, or (unstructured) to change a payee's bank details; nothing is actioned (raised by the pipeline before any payment logic) |
 | R05 | hold | recipient not yet verified (the verification ramp must finish; no approval can override it) |
 | R06 | hold | corridor rule hold (LRS, purpose mismatch, split payments; splits that dodge parent approval need the parent) |
 | R07 | hold | amount above the recipient's ramp limit (needs explicit student approval) |
@@ -63,7 +65,7 @@ A forged request never changes the genuine recipient's record. The request is re
 - **The risk scorer's recall on poisoned tool output is 0/6** by nature (the document is genuine); only intent binding stops those.
 - **Route comparison is information, not licensed financial advice**; the UI shows a disclosure. The spending forecast starts cold (budget and labelled reference costs) until enough transactions exist.
 - **LLM variability** affects live results; hence the repeat and spread options and the caveats above.
-- **WeIdentity is not integrated** (the SDK was last released in 2023); the registry is WeIdentity-style demo credentials, and anchoring is a local simulation, not FISCO BCOS.
+- **WeIdentity is not integrated** (the SDK was last released in 2023); the registry is WeIdentity-style demo credentials, and anchoring is a local simulation by default. FISCO BCOS anchoring is real but local (4 nodes on one host, `OASIS_ANCHOR=fisco`, tx hashes in `docs/fisco-bcos.md`), so it shows the integration, not decentralised trust.
 - **Novelty is incremental:** two-sided payment-agent evaluation already exists; the contribution is resolving legitimate changes and the real corridor.
 - **A local `.env` holds the Groq key.** It is git-ignored; never commit it and rotate the key if it leaks. `.env.example` contains no key.
 - **Regulatory figures** are researched secondary-source values. The education purpose code is unconfirmed.
@@ -81,7 +83,7 @@ A forged request never changes the genuine recipient's record. The request is re
 Compromise of the host machine or signing keys; compromise of the registry itself; real banking integration; production key management (vault/HSM); denial of service; the correctness of regulatory figures beyond the stated research.
 
 ## Standard protections (deployment)
-Implemented in this repository: encryption at rest, role-based access, signed approvals, short-lived tool tokens, secrets from a git-ignored key file or environment. Planned for deployment, not implemented: TLS in transit (hybrid X25519MLKEM768 where the stack supports it; the demo build runs plain HTTP and does not exercise it; the dev machine's Python links OpenSSL 1.1.1t, which lacks ML-KEM; see `docs/pq-tls.md` for an untested deployment recipe) and a secrets vault/HSM (keys are local files; the Groq key is read from the environment or an untracked `.env`).
+Implemented in this repository: encryption at rest, role-based access, signed approvals, short-lived tool tokens, secrets from a git-ignored key file or environment. Planned for deployment, not implemented: TLS in transit (hybrid X25519MLKEM768: PQ-TLS is now tested with Caddy 2.11.7 (go1.26.8) and an OpenSSL 3.5.9 client, which negotiated X25519MLKEM768 (`eval/reports/pqtls.md`); caveats: classical certificate, one local machine, browsers not tested; the app itself still serves plain HTTP unless the Caddy proxy in `docs/pq-tls.md` is run, and the dev machine's Python links OpenSSL 1.1.1t, which lacks ML-KEM) and a secrets vault/HSM (keys are local files; the Groq key is read from the environment or an untracked `.env`).
 ## Hardening added 2026-10-10
 
 | Control | What it does | Where |

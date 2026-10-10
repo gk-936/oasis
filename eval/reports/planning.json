@@ -506,7 +506,7 @@
     "proposals": 1,
     "tokens": 0,
     "model_calls": 0,
-    "seconds": 0.0,
+    "seconds": 0.01,
     "steps": [
      {
       "action": "convert",
