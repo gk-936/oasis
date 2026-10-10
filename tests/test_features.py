@@ -18,6 +18,7 @@ from oasis.planning import spending
 from oasis.proof.pack import verify_proof_pack
 from oasis.trust.audit import verify_chain
 from oasis.world import Features, World
+from demo_helpers import status, step
 
 
 def _auto():
@@ -70,27 +71,29 @@ def test_demo_is_repeatable_and_offline(run):
 
 def test_demo_run1_content():
     r = play("legit")
-    plan = r["steps"][0]["plan"]
+    plan = step(r, "arrives with")["plan"]
     assert plan["shortfall_inr"] > 0 and plan["projected_savings"]["saved_cny"] > 0
-    assert [s["outcome"]["status"] for s in r["steps"][1:4]] == ["paid"] * 3
-    tamil = r["steps"][2]["parent_view"]["ta"]["explanation"]
+    assert [status(r, k) for k in ("Tuition to the verified", "Parent co-approves", "Landlord's genuine")] == ["paid"] * 3
+    tamil = step(r, "Parent co-approves")["parent_view"]["ta"]["explanation"]
     assert "ஒப்புதல்" in tamil and "8,000" in tamil
-    kinds = [a["kind"] for a in r["steps"][4]["actions"]]
+    kinds = [a["kind"] for a in step(r, "Tier-1 autonomy")["actions"]]
     assert kinds == ["rate_target_conversion", "recurring_bill_paid"]
-    assert r["steps"][5]["proof_ids"] and r["steps"][5]["savings_receipt"]["total_saved_cny"] > 0
+    receipts = step(r, "Proof packs")
+    assert receipts["proof_ids"] and receipts["savings_receipt"]["total_saved_cny"] > 0
 
 
 def test_demo_run2_content():
     r = play("attack")
-    s = r["steps"]
-    assert s[0]["outcome"]["status"] == "rejected" and s[0]["outcome"]["card"]
-    assert s[1]["outcome"]["status"] == "frozen" and "differs from signed intent" in " ".join(s[1]["outcome"]["trace"])
-    assert s[2]["outcome"]["canary_hits"] and s[2]["outcome"]["recovery"]
-    assert s[3]["outcome"]["status"] == "paid" and s[3]["recovery"]["canaries_cleared"] >= 1
+    forged, rewritten = step(r, "Forged invoice"), step(r, "rewritten after approval")
+    injected, recovery = step(r, "Hidden page injection"), step(r, "student approves the recovery")
+    assert forged["outcome"]["status"] == "rejected" and forged["outcome"]["card"]
+    assert rewritten["outcome"]["status"] == "frozen" and "differs from signed intent" in " ".join(rewritten["outcome"]["trace"])
+    assert injected["outcome"]["canary_hits"] and injected["outcome"]["recovery"]
+    assert recovery["outcome"]["status"] == "paid" and recovery["recovery"]["canaries_cleared"] >= 1
 
 
-def test_demo_api_step_by_step():
-    c = TestClient(api.app)
+def test_demo_api_step_by_step(api_client):
+    c = api_client
     st = c.post("/api/demo/start", json={"run": "attack"}).json()
     assert st["total"] == 5
     for i in range(5):
@@ -99,7 +102,6 @@ def test_demo_api_step_by_step():
     assert r["done"] and c.post("/api/demo/next").json()["done"]
     assert c.get("/api/demo/state").json()["done"]
     assert c.post("/api/demo/start", json={"run": "nope"}).status_code == 400
-    c.post("/api/reset")
 
 
 # ------------------------------------------------------------------ Tier-1 autonomy
@@ -157,16 +159,14 @@ def test_recurring_bill_not_automatic_unless_verified_full_and_small():
     assert acts and acts[0]["kind"] == "recurring_bill_held" and w.ledger.paid_to("6228480000002468") == 0
 
 
-def test_autonomy_api_and_chat_target():
-    c = TestClient(api.app)
-    c.post("/api/reset")
+def test_autonomy_api_and_chat_target(api_client):
+    c = api_client
     r = c.post("/api/chat", json={"message": "convert 1500 when the rate reaches 0.0855"}).json()
     assert r["target"]["rate"] == 0.0855 and "own" in r["reply"]
     t = c.post("/api/autonomy/tick", json={"days": 5}).json()
     assert {a["kind"] for a in t["actions"]} == {"rate_target_conversion", "recurring_bill_paid"}
     assert c.get("/api/state").json()["autonomy"]["log"]
     assert c.post("/api/rate-target", json={"rate": -1, "convert_cny": 5}).status_code == 400
-    c.post("/api/reset")
 
 
 # ------------------------------------------------------------------ spending + forecast
@@ -193,15 +193,13 @@ def test_forecast_switches_from_cold_start_to_own_pattern():
     assert spending.simulate_spending(World(Features.full()).passport, date(2026, 10, 1), 3)[0]["source"] == "mock"
 
 
-def test_spending_api():
-    c = TestClient(api.app)
-    c.post("/api/reset")
+def test_spending_api(api_client):
+    c = api_client
     assert c.get("/api/state").json()["spending"]["basis"] == "cold_start"
     r = c.post("/api/spending/simulate", json={"days": 21}).json()
     assert r["basis"] == "own_pattern"
     t = c.post("/api/spending/add", json={"desc": "Luckin coffee", "amount_cny": 18}).json()
     assert t["transaction"]["category"] == "food"
-    c.post("/api/reset")
 
 
 # ------------------------------------------------------------------ parent languages
@@ -214,9 +212,8 @@ def test_parent_explanations_real_language_and_numbers(lang, marker):
     assert i18n.parent_facts({**ctx, "verification_level": "verified_full"}, lang)[0]["value"].startswith("₹94,331")
 
 
-def test_parent_api_languages():
-    c = TestClient(api.app)
-    c.post("/api/reset")
+def test_parent_api_languages(api_client):
+    c = api_client
     c.post("/api/intake", json={"text": "Payee: Arjun (own CNY account)\nPayee ID: payee_student_self\nAccount: acct_student_cny\n"
                                         "Amount: CNY 8,000\nPurpose: family_support", "remitter": "parent"})
     ta = c.get("/api/parent/pending").json()["pending"][0]
@@ -224,7 +221,6 @@ def test_parent_api_languages():
     assert ta["language"] == "ta" and hi["language"] == "hi" and ta["explanation"] != hi["explanation"]
     assert hi["labels"]["approve"] == "मंज़ूर करें" and hi["facts"]
     assert c.get("/api/parent/pending?lang=xx").status_code == 400
-    c.post("/api/reset")
 
 
 # ------------------------------------------------------------------ recovery + image intake
@@ -239,10 +235,9 @@ def test_recovery_approval_clears_tripwire_and_allows_genuine_payment():
     assert a.handle(Request(tuition()), h).status == "paid"
 
 
-def test_image_intake_without_readable_image_is_a_low_confidence_hold(monkeypatch):
+def test_image_intake_without_readable_image_is_a_low_confidence_hold(monkeypatch, api_client):
     monkeypatch.setattr(config, "GROQ_API_KEY", "")
-    c = TestClient(api.app)
-    c.post("/api/reset")
+    c = api_client
     r = c.post("/api/intake/image", files={"file": ("x.png", b"not really an image", "image/png")}).json()
     assert r["status"] == "held" and r["card"]["rule"] == "extract_low_confidence" and "paste" in r["message"].lower()
     assert api.S.world.ledger.transfers == []

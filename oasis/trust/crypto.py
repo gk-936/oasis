@@ -138,6 +138,22 @@ class SM2Signer(Signer):
         self._sm2.public_key = pub_hex
         self._pub = bytes.fromhex(pub_hex)
 
+    @classmethod
+    def from_private_int(cls, d: int) -> "SM2Signer":
+        """Signer for an exact private scalar d (1 <= d <= n-2), e.g. a published test-vector key.
+
+        The seed constructor maps seed -> (seed mod (n-2)) + 1, so d is reached with seed = d-1.
+        """
+        if not 1 <= d <= cls._N - 2:
+            raise ValueError("SM2 private key out of range")
+        return cls(seed=(d - 1).to_bytes(32, "big"))
+
+    def sign_with_k(self, message: bytes, k: int) -> bytes:
+        """Deterministic signature with a caller-chosen nonce k. For known-answer tests ONLY: never reuse a k."""
+        if self._d is None:
+            raise RuntimeError("verify-only signer")
+        return bytes.fromhex(self._sm2.sign_with_sm3(message, f"{k:064x}"))
+
     def sign(self, message: bytes) -> bytes:
         if self._d is None:
             raise RuntimeError("verify-only signer")

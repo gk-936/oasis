@@ -5,14 +5,13 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
-from fastapi.testclient import TestClient
 
 from oasis.agent import plan_exec
 from oasis.agent.llm import GroqLLM, OfflineLLM, QuotaExhausted
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.agent.planner import AgenticPlanner, DeterministicPlanner, build_record, propose
 from oasis.agent.recovery import build_recovery, contact_tokens, validate_draft
-from oasis.api.main import app
+
 from oasis.demo import FORGED, TUITION, new_demo_world
 from oasis.planning.scenarios import SCENARIOS, build_scenario_world
 from oasis.planning.tools import TOOL_SPECS, PlanningToolbox
@@ -306,9 +305,8 @@ def test_executed_plan_payments_go_through_signed_intents_and_wait_for_approval(
     assert plan_exec.step_statuses(w, rec)[2]["status"] == "done"
 
 
-def test_api_plan_flow():
-    c = TestClient(app)
-    c.post("/api/reset")
+def test_api_plan_flow(api_client):
+    c = api_client
     sc = c.get("/api/plan/scenarios").json()
     assert len(sc) == 8
     r = c.post("/api/plan", json={"scenario": "safe_quota_tuition"}).json()

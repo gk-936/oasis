@@ -16,11 +16,10 @@ def test_sm3_vectors():
 
 
 def test_sm2_standard_vector():
-    d1 = (int(D, 16) - 1).to_bytes(32, "big")
-    sg = SM2Signer(seed=d1)
+    sg = SM2Signer.from_private_int(int(D, 16))
     assert sg.public_key().hex().upper() == PUB
-    sig = sg._sm2.sign_with_sm3(b"message digest", K)
-    assert sig.upper() == R + S
+    sig = sg.sign_with_k(b"message digest", int(K, 16))
+    assert sig.hex().upper() == R + S
     assert sg.verify(b"message digest", bytes.fromhex(R + S))
     assert SM2Signer(public_key=bytes.fromhex(PUB)).verify(b"message digest", bytes.fromhex(R + S))
 
@@ -39,11 +38,15 @@ def test_roundtrip_tamper_cross_key():
 
 
 def test_leading_04_pubkey_not_corrupted():
-    for i in range(400):  # find a key whose x starts with hex 0 or 4
+    # gmssl strips leading "0"/"4" hex chars from the public key; such keys must still verify.
+    found = 0
+    for i in range(400):
         s = SM2Signer(seed=i.to_bytes(4, "big") + b"x")
         if s.public_key().hex()[0] in "04":
+            found += 1
             assert SM2Signer(public_key=s.public_key()).verify(b"m", s.sign(b"m"))
-            return
+            assert s.verify(b"m", s.sign(b"m"))
+    assert found >= 5, "no affected key found in the search range; the test would be vacuous"
 
 
 def test_hybrid_with_sm2_and_swap():
