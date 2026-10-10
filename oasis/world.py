@@ -15,6 +15,7 @@ from .trust.canaries import CanaryHit, Canaries
 from .trust.crypto import HybridSigner, demo_signer
 from .trust.executor import Executor
 from .trust.intents import IntentBuilder
+from .trust.keystore import fingerprint
 from .trust.verification import Verifier
 
 CST = timezone(timedelta(hours=8))
@@ -58,9 +59,11 @@ class Features:
 class World:
     def __init__(self, features: Features | None = None, llm: LLM | None = None, seed: int = 7,
                  inr: float = 400000, persona: str = "arjun", audit_path=None, deterministic: bool = False,
-                 store=None, autonomy: bool = False):
+                 store=None, autonomy: bool = False, signer: HybridSigner | None = None):
         """`deterministic=True` (scripted demo only): seeded demo keys and nonces, simulated-clock anchor
-        timestamps, so a run reproduces the same audit-chain head every time. `store` is an optional SqliteStore."""
+        timestamps, so a run reproduces the same audit-chain head every time. `store` is an optional SqliteStore.
+        `signer` supplies the trust signing keys (the API passes the persistent server keys, see trust/keystore.py);
+        by default a fresh in-memory key set is generated (demo keys when deterministic)."""
         self.features = features or Features.full()
         self.llm = llm or make_llm()
         self.rates = MockRates(seed)
@@ -76,7 +79,7 @@ class World:
         self.audit = AuditLog(audit_path, clock=lambda: self.now.timestamp(),
                               on_append=store.append_audit if store else None)
         self.canaries = Canaries.plant(f"{seed:02d}") if self.features.canaries else None
-        self.signer = demo_signer("trust", "oasis-demo-key-1") if deterministic else HybridSigner()
+        self.signer = signer or (demo_signer("trust", "oasis-demo-key-1") if deterministic else HybridSigner())
         self.builder = IntentBuilder(self.signer, seed=seed if deterministic else None)
         self.verifier = Verifier(self.registry)
         self.anchor: Anchor = LocalAnchorChain(clock=(lambda: self.now.timestamp()) if deterministic else time.time)
@@ -89,6 +92,9 @@ class World:
         self.passport = self._seed_passport(inr, persona)
         self._seed_world()
         self.sync_balances()
+
+    def trust_fingerprint(self) -> str:
+        return fingerprint(self.signer.public_keys())
 
     # -- clock -----------------------------------------------------------
     def now_iso(self) -> str:

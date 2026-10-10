@@ -15,6 +15,24 @@ rules:
     loan_funded_rate: 0.0
     status: researched
     source: Finance Act 2026 changes (Flywire etc.); confirm against Income-tax Act 2025 / CBDT
+  # TCS rate per purpose (used by corridor.py). Threshold is per remitter per financial year.
+  # Only the education rows are researched. The "other" row is a PLACEHOLDER, NOT a confirmed legal rate: the rate that
+  # applies to other LRS purposes (family maintenance, gifts, living costs, rent) was not verified for this project.
+  # The value below only keeps the arithmetic running and is shown to the user as "unconfirmed" wherever it is used.
+  tcs_by_purpose:
+    threshold_inr: 1000000
+    education:
+      rate: 0.02
+      status: researched
+      source: Finance Act 2026 changes (Flywire etc.); confirm against Income-tax Act 2025 / CBDT
+    education_loan:
+      rate: 0.0
+      status: researched
+      source: education funded by a loan from a specified financial institution is nil-rated; confirm against CBDT
+    other:
+      rate: 0.02          # UNCONFIRMED PLACEHOLDER. Do not read this as the legal rate for these purposes.
+      status: unconfirmed
+      source: not verified; confirm the TCS rate for this purpose with the authorised dealer bank / CBDT
   purpose_code_education:
     value: S0305
     status: unconfirmed
@@ -35,6 +53,12 @@ rules:
     near_limit_ratio: 0.9
     status: policy
     source: Oasis policy
+purpose_tcs_category:     # which tcs_by_purpose row a purpose uses (anything not listed uses "other")
+  tuition: education
+  rent: other
+  deposit: other
+  living: other
+  family_support: other
 purpose_payee_types:
   tuition: [university]
   rent: [landlord]

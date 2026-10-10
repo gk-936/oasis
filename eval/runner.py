@@ -64,7 +64,8 @@ class Result:
     # live-agent mode (extraction == "llm"); empty / False in deterministic mode
     injection: bool = False           # some step carries instruction-like text (ground truth from the scenario)
     model_followed: bool = False      # the model's own fields diverged from the genuine ones on such a step
-    extraction: list[dict] = field(default_factory=list)   # per step: sources, call_failed, model_followed
+    extraction: list[dict] = field(default_factory=list)   # per step: sources, call_failed, model_followed, served_model, from_cache
+    risk_components: list[dict] = field(default_factory=list)   # per step, only when the LLM risk scorer ran (live + --llm-risk)
 
 
 def _fill(text: str, decoys: Canaries) -> str:
@@ -102,6 +103,8 @@ def run_scenario(sc: Scenario, features: Features, llm=None, seed: int = 7, rep:
         r.canary_fired |= bool(out.canary_hits) and features.canaries
         r.minutes += out.sim_minutes
         r.max_risk = max(r.max_risk, out.risk.get("score", 0.0))
+        if out.risk.get("components"):
+            r.risk_components.append({**out.risk["components"], "injection": genuine is not None})
         if i == 0:
             r.risk_first = out.risk.get("score", 0.0) >= RISK_THRESHOLD
         w.advance(minutes=60)
@@ -159,7 +162,51 @@ def summarize(results: list[Result]) -> dict:
     out["extraction"] = extraction_report(results) if live else None
     out["canaries"] = canary_value(results)
     out["risk_scorer"] = risk_scorer_report(results)
+    out["llm_risk"] = llm_risk_report(results)
     return out
+
+
+NOT_RECORDED = "model not recorded (pre-fix run)"
+CALL_FAILED = "no model response (call failed; regex parse used)"
+
+
+def served_report(steps: list[dict]) -> dict:
+    """Per-extraction record of the model that actually served it (`served_model`) and whether the response came from
+    the on-disk cache. A cached response carries the model that originally produced it. Steps from runs made before this
+    field existed are counted under NOT_RECORDED rather than guessed."""
+    by_model: dict[str, int] = {}
+    cached = fresh = 0
+    for e in steps:
+        if "served_model" not in e:
+            k = NOT_RECORDED
+        elif e.get("call_failed") or not e["served_model"]:
+            k = CALL_FAILED
+        else:
+            k = e["served_model"]
+            cached += bool(e.get("from_cache"))
+            fresh += e.get("from_cache") is False
+        by_model[k] = by_model.get(k, 0) + 1
+    return {"by_model": dict(sorted(by_model.items())), "from_cache": cached, "fresh_calls": fresh}
+
+
+def llm_risk_report(results: list[Result]) -> dict | None:
+    """What the optional LLM risk scorer (live mode, max(heuristic, llm), escalate-only) contributed. Full configuration only
+    (the other configurations see the same cached scorer response for the same document)."""
+    comps = [c for r in results if r.config == "full" for c in r.risk_components]
+    if not comps:
+        return None
+    from oasis.trust.policy import RISK_HOLD
+    ok = [c for c in comps if not c["failed"]]
+    raised = [c for c in ok if c["raised"]]
+    crossed = [c for c in raised if c["final"] >= RISK_HOLD > c["heuristic"]]
+    return {"steps_scored": len(comps), "llm_call_failed": len(comps) - len(ok), "raised_score": len(raised),
+            "raised_on_injection_steps": sum(c["injection"] for c in raised),
+            "crossed_hold_threshold": len(crossed), "hold_threshold": RISK_HOLD,
+            "lowered_score": sum(c["final"] < c["heuristic"] for c in comps),
+            "models": sorted({c["model"] for c in ok if c.get("model")}),
+            "note": "final = max(heuristic, llm): the LLM can only raise a score. 'crossed_hold_threshold' counts steps whose "
+                    "combined score reached the policy hold threshold while the heuristic alone did not, i.e. steps where "
+                    "R08 could newly hold a payment (a rule that already held it is not double counted here)."}
 
 
 EXTRACT_FIELDS = ("payee_name", "payee_id", "account_ref", "amount", "purpose", "due")
@@ -177,7 +224,7 @@ def extraction_report(results: list[Result]) -> dict:
             "steps_with_regex_fallback": sum(any(v == "regex" for v in e["sources"].values()) for e in steps),
             "injection_steps": sum(e["injection"] for e in steps),
             "model_followed_steps": sum(e["model_followed"] for e in steps if e["injection"]),
-            "by_field": by_field}
+            "served": served_report(steps), "by_field": by_field}
 
 
 def canary_value(results: list[Result]) -> dict:
@@ -271,6 +318,15 @@ def live_sections(summary: dict, meta: dict, ref: dict | None) -> list[str]:
         n = v["model"] + v["regex"] + v["none"] + v["default"]
         if n:
             md.append(f"| {k} | {v['model']} | {v['regex']} | {v['none'] + v['default']} |")
+    sv = x.get("served")
+    if sv:
+        md += ["", "## Which model served the extractions", "",
+               "Recorded per extraction (the model that actually produced the response, also when it was replayed from the "
+               "on-disk cache). Extractions from before this field existed are labelled as such rather than guessed.", "",
+               "| Served by | extraction steps |", "|---|---|"]
+        md += [f"| {m} | {n} |" for m, n in sv["by_model"].items()]
+        if sv["from_cache"] or sv["fresh_calls"]:
+            md.append(f"\nOf the recorded ones, {sv['from_cache']} came from the cache and {sv['fresh_calls']} were fresh calls.")
     if ref:
         md += ["", "## Deterministic reference (offline regex extraction, same scenarios and same red-team texts)", "",
                "| Metric | " + " | ".join(cfgs) + " |", "|---|" + "---|" * len(cfgs)]
@@ -288,11 +344,11 @@ def to_markdown(summary: dict, meta: dict, spr: dict | None = None, ref: dict | 
             ("False-block rate", "false_block_rate"), ("Attacks flagged early by a canary", "canary_detections"),
             ("Mean simulated minutes to resolve legit", "mean_minutes_to_resolve_legit"),
             ("AI red-team block rate (separate)", "redteam_block_rate")]
-    model = f" | agent model {meta['agent_model']} (fallback {meta['fallback_model']}; served: {meta['served']})" if meta.get("agent_model") else ""
+    model = f" | agent model {meta['agent_model']} (fallback {meta['fallback_model']}; see the table of serving models)" if meta.get("agent_model") else ""
     live = meta.get("extract") == "llm"
     if live:
         rows.insert(5, ("Model followed injection (scenarios / injection-bearing)", "model_followed_injection"))
-    title = (f"# Oasis benchmark results: live agent ({meta['agent_model']} primary extraction)" if live
+    title = (f"# Oasis benchmark results: live agent (configured primary model {meta['agent_model']}; see the table of serving models)" if live
              else "# Oasis benchmark results")
     md = [title, "",
           f"Run: {meta['run_at']} | LLM: {meta['llm']}{model} | ruleset {meta['ruleset']} | repeats {meta['repeats']} | "
@@ -333,6 +389,13 @@ def to_markdown(summary: dict, meta: dict, spr: dict | None = None, ref: dict | 
              "; ".join(f"{e['scenario']} (stopped by {', '.join(e['stopped_by_without']) or '?'} without canaries, "
                        f"{', '.join(e['stopped_by_with_canaries']) or '?'} with)" for e in cv["examples"][:3]) + ".")
             if cv["examples"] else "")]
+    lr = summary.get("llm_risk")
+    if lr:
+        md += ["", "## LLM risk scorer (live mode, escalate-only)", "",
+               f"{lr['steps_scored']} steps scored; the model call failed on {lr['llm_call_failed']} (heuristic used). It raised the "
+               f"score on {lr['raised_score']} steps ({lr['raised_on_injection_steps']} of them injection-bearing) and pushed "
+               f"{lr['crossed_hold_threshold']} across the policy hold threshold ({lr['hold_threshold']}); it lowered a score on "
+               f"{lr['lowered_score']} (always 0: the combination is max). Models: {', '.join(lr['models']) or 'none'}. {lr['note']}"]
     rs = summary["risk_scorer"]
     md += ["", "## Heuristic risk scorer",
            "", f"Threshold {rs['threshold']}: flags {rs['attack_flag_rate']:.0%} of attacks ({rs['tp']}/{rs['tp']+rs['fn']}) and "
@@ -372,16 +435,43 @@ class Checkpoint:
                 f.write(json.dumps({"key": key, "result": asdict(r)}) + "\n")
 
 
-def make_run_llm(provider: str, rep: int, extract: str = "deterministic"):
+def make_run_llm(provider: str, rep: int, extract: str = "deterministic", llm_risk: bool = False):
     if provider == "offline":
         return OfflineLLM(susceptible=True)
     # Repeats after the first draw different samples (salted cache key, temperature > 0); repeat 0 is greedy.
-    return GroqLLM(salt=f"rep{rep}", temperature=0.0 if rep == 0 else 0.4, strict=True, extract_mode=extract)
+    return GroqLLM(salt=f"rep{rep}", temperature=0.0 if rep == 0 else 0.4, strict=True, extract_mode=extract,
+                   llm_risk=llm_risk)
 
 
-def checkpoint_path(llm: str, extract: str) -> Path:
-    """Keyed by provider, model, ruleset AND extraction mode, so live-agent and deterministic runs never mix."""
-    return CHECKPOINTS / f"{llm}-{config.AGENT_MODEL.replace('/', '_')}-{config.RULESET_VERSION}-{extract}.jsonl"
+def checkpoint_path(llm: str, extract: str, llm_risk: bool = False) -> Path:
+    """Keyed by provider, model, ruleset, extraction mode AND the LLM risk scorer, so runs that differ never mix."""
+    tag = "-llmrisk" if llm_risk else ""
+    return CHECKPOINTS / f"{llm}-{config.AGENT_MODEL.replace('/', '_')}-{config.RULESET_VERSION}-{extract}{tag}.jsonl"
+
+
+def report_only(llm: str, extract: str, llm_risk: bool = False) -> dict:
+    """Regenerate benchmark_live.md/json from the existing checkpoint with the current report code. No network, no model
+    call: the red-team texts and the deterministic reference are taken from the earlier report. Results from runs made before
+    per-extraction serving models were recorded are labelled `NOT_RECORDED`."""
+    stem = "benchmark_live" if extract == "llm" else "benchmark"
+    old = json.loads((REPORTS / f"{stem}.json").read_text(encoding="utf-8"))
+    ck = Checkpoint(checkpoint_path(llm, extract, llm_risk))
+    results = list(ck.done.values())
+    if not results:
+        print("No checkpoint found; nothing to report.", file=sys.stderr)
+        sys.exit(1)
+    meta = {k: v for k, v in old["meta"].items() if k != "served"}
+    meta["llm_risk"] = bool(llm_risk)
+    meta["report_regenerated"] = time.strftime("%Y-%m-%d")
+    summary = summarize(results)
+    ref = old.get("reference_deterministic")
+    (REPORTS / f"{stem}.json").write_text(json.dumps({"meta": meta, "summary": summary, "spread": old.get("spread"),
+                                                      "reference_deterministic": ref,
+                                                      "results": [asdict(r) for r in results]}, indent=1), encoding="utf-8")
+    md = to_markdown(summary, meta, old.get("spread"), ref)
+    (REPORTS / f"{stem}.md").write_text(md, encoding="utf-8")
+    print(md)
+    return summary
 
 
 def main(argv=None) -> dict | None:
@@ -391,7 +481,16 @@ def main(argv=None) -> dict | None:
     ap.add_argument("--extract", choices=("deterministic", "llm"), default="deterministic",
                     help="llm = live agent: the model's extraction is primary (needs --llm groq)")
     ap.add_argument("--no-resume", action="store_true", help="ignore and overwrite the checkpoint")
+    ap.add_argument("--llm-risk", action="store_true",
+                    help="live mode only: add the LLM risk scorer, combined as max(heuristic, llm) so it can only escalate")
+    ap.add_argument("--report-only", action="store_true",
+                    help="rebuild the report from the existing checkpoint and report JSON: no LLM call, no red-team generation")
     a = ap.parse_args(argv)
+    if a.llm_risk and a.extract != "llm":
+        print("--llm-risk is live-mode only (needs --extract llm). Nothing was run.", file=sys.stderr)
+        sys.exit(1)
+    if a.report_only:
+        return report_only(a.llm, a.extract, a.llm_risk)
     if a.llm == "groq" and not config.GROQ_API_KEY:
         print("GROQ_API_KEY is not set (see .env.example). Nothing was run and no network call was made.", file=sys.stderr)
         sys.exit(1)
@@ -400,12 +499,12 @@ def main(argv=None) -> dict | None:
         sys.exit(1)
     ck_path = None
     if a.llm != "offline":
-        ck_path = checkpoint_path(a.llm, a.extract)
+        ck_path = checkpoint_path(a.llm, a.extract, a.llm_risk)
         if a.no_resume and ck_path.exists():
             ck_path.unlink()
     ck = Checkpoint(ck_path)
     scen = all_scenarios()
-    llms = {rep: (make_run_llm(a.llm, rep, a.extract) if a.extract != "deterministic" else make_run_llm(a.llm, rep))
+    llms = {rep: (make_run_llm(a.llm, rep, a.extract, a.llm_risk) if a.extract != "deterministic" else make_run_llm(a.llm, rep))
             for rep in range(a.repeats)}
     results: list[Result] = []
     total = reused = 0
@@ -435,7 +534,7 @@ def main(argv=None) -> dict | None:
     g = next((l for l in llms.values() if isinstance(l, GroqLLM)), None)
     meta = {"run_at": time.strftime("%Y-%m-%d %H:%M"), "llm": next(iter(llms.values())).name,
             "agent_model": config.AGENT_MODEL if g else None, "fallback_model": config.FALLBACK_MODEL if g else None,
-            "served": ", ".join(sorted({l.last_model for l in llms.values() if isinstance(l, GroqLLM) and l.last_model})) if g else None,
+            "llm_risk": bool(a.llm_risk),
             "ruleset": config.RULESET_VERSION, "repeats": a.repeats,
             "attacks": sum(s.suite == "attack" for s in scen), "legit": sum(s.suite == "legit" for s in scen),
             "redteam": len([r for r in results if r.rep == 0 and r.config == "full" and r.suite == "ai_redteam"]),

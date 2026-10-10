@@ -42,7 +42,7 @@ def test_session_survives_restart_and_reset_wipes(tmp_path):
         assert s2.world.audit.head() == head and verify_chain(s2.world.audit.entries).ok
         assert s2.world.passport.obligation("obl_tuition_1").status == "paid"
         assert s2.world.passport.balance("CNY") == bal
-        assert r["proof_id"] in s2.world.proofs and verify_proof_pack(s2.world.proofs[r["proof_id"]])["ok"]
+        assert r["proof_id"] in s2.world.proofs and verify_proof_pack(s2.world.proofs[r["proof_id"]], {s2.world.trust_fingerprint()}, s2.world.anchor)["ok"]
         assert len(s2.world.cards) == len(s1.world.cards) >= 1
         assert s2.world.ledger.money_lost() == 0
         api.S = s2                                                                # restored session keeps working
@@ -143,7 +143,7 @@ def test_recurring_bill_paid_automatically_with_proof_and_next_cycle():
     acts = a.run_days(4)
     paid = [x for x in acts if x["kind"] == "recurring_bill_paid"]
     assert paid and paid[0]["tier"] == 1 and paid[0]["rule"] == "R10_tier1_auto"
-    assert verify_proof_pack(w.proofs[paid[0]["proof_id"]])["ok"]
+    assert verify_proof_pack(w.proofs[paid[0]["proof_id"]], {w.trust_fingerprint()}, w.anchor)["ok"]
     nxt = [o for o in w.passport.obligations if o.id.startswith("obl_phone_1#")]
     assert nxt and nxt[0].status == "pending" and nxt[0].due > "2026-11-01"
 

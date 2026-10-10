@@ -92,7 +92,7 @@ def render(data: dict) -> str:
             if r.get("skipped"):
                 L.append(f"| {r['title']} | not run ({r['skipped']}) | | | | | | | |")
                 continue
-            L.append(f"| {r['title']} | {'yes' if r['valid'] else 'NO'} | {r['iterations_to_valid'] or '-'} | {'yes: ' + (r['fallback_reason'] or '')[:60] if r['fell_back'] else 'no'} | "
+            L.append(f"| {r['title']}{(' (' + r['run_date'] + ', per-plan cap ' + format(r['per_plan_cap'], ',') + ')') if r.get('per_plan_cap') else ''} | {'yes' if r['valid'] else 'NO'} | {r['iterations_to_valid'] or '-'} | {'yes: ' + (r['fallback_reason'] or '')[:60] if r['fell_back'] else 'no'} | "
                      f"{r['deadlines_met']}/{r['obligations']} | {r['fees_cny']:,.0f} vs {r['bank_fees_cny']:,.0f} | {r['tcs_inr']:,.0f} | "
                      f"{', '.join(r['first_errors']) or '-'} | {', '.join(r['warnings']) or '-'} |")
         L.append("")
@@ -124,6 +124,7 @@ def main(argv=None) -> dict:
     ap = argparse.ArgumentParser()
     ap.add_argument("--llm", default="offline", choices=("offline", "groq"))
     ap.add_argument("--token-cap", type=int, default=DEFAULT_TOKEN_CAP, help="stop starting new live scenarios once this many tokens were spent")
+    ap.add_argument("--per-plan-cap", type=int, default=PER_PLAN_CAP, help="stop asking the model once one plan has used this many tokens")
     ap.add_argument("--only", help="comma-separated scenario ids")
     ap.add_argument("--ledger-baseline", type=int, default=None,
                     help="Groq tokens already used today BEFORE the planning work (cache replays count as 0 new tokens, so the total is taken from the ledger)")
@@ -145,8 +146,9 @@ def main(argv=None) -> dict:
             if spent >= args.token_cap:
                 rows.append({"scenario": sid, "title": SCENARIOS[sid].title, "skipped": f"token cap {args.token_cap:,} reached"})
                 continue
-            planner = AgenticPlanner(llm, token_cap=min(PER_PLAN_CAP, args.token_cap - spent))
+            planner = AgenticPlanner(llm, token_cap=min(args.per_plan_cap, args.token_cap - spent))
             r = run_scenario(sid, planner)
+            r["run_date"], r["per_plan_cap"] = time.strftime("%Y-%m-%d"), min(args.per_plan_cap, args.token_cap - spent)
             spent += r["tokens"]
             rows.append(r)
             print(f"{sid}: valid={r['valid']} fallback={r['fell_back']} proposals={r['proposals']} tokens={r['tokens']} (total {spent:,})")
@@ -163,6 +165,18 @@ def main(argv=None) -> dict:
         key, planner_name, model = "offline", "deterministic", None
         notes.append("The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; "
                      "that is why scenarios with a shortfall need two proposals.")
+    prev = data.get(key) or {}
+    if key == "live" and prev:
+        # merge: rows from earlier runs are kept (labelled with their date and cap) unless re-run now
+        old = [dict(r, run_date=r.get("run_date", prev.get("date")), per_plan_cap=r.get("per_plan_cap", PER_PLAN_CAP))
+               for r in prev.get("results", []) if not r.get("skipped") and r["scenario"] not in {x["scenario"] for x in rows if not x.get("skipped")}]
+        new_ids = {x["scenario"] for x in rows if not x.get("skipped")}
+        rows = [r for r in old] + [x for x in rows if not x.get("skipped")] + [x for x in rows if x.get("skipped") and x["scenario"] not in {o["scenario"] for o in old}]
+        order = list(SCENARIOS)
+        rows.sort(key=lambda r: order.index(r["scenario"]))
+        notes = [f"Run {time.strftime('%Y-%m-%d')} (scenarios {', '.join(sorted(new_ids))}): " + n for n in notes]             + [f"Earlier run {prev.get('date')}: " + n for n in prev.get("notes", []) if not n.startswith(("Not run live",)) and "fallback(s)" not in n]
+    for r in rows:
+        r.setdefault("run_date", time.strftime("%Y-%m-%d"))
     notes += extra_notes(rows, ids) if key == "live" else []
     data[key] = {"date": time.strftime("%Y-%m-%d"), "planner": planner_name, "model": model,
                  "fallback_model": config.FALLBACK_MODEL if key == "live" else None, "summary": summarize(rows), "results": rows, "notes": notes}

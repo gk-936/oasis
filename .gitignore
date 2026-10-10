@@ -28,3 +28,6 @@ usage.json
 Thumbs.db
 .vscode/
 .idea/
+
+# persistent trust signing keys (private seeds)
+data/keys/

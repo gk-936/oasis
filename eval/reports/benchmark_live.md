@@ -1,6 +1,6 @@
-# Oasis benchmark results: live agent (qwen/qwen3.8-27b primary extraction)
+# Oasis benchmark results: live agent (configured primary model qwen/qwen3.8-27b; see the table of serving models)
 
-Run: 2026-10-10 12:15 | LLM: groq | agent model qwen/qwen3.8-27b (fallback openai/gpt-oss-120b; served: openai/gpt-oss-120b) | ruleset 2026.10.2 | repeats 1 | 32 attack + 12 legit scenarios (+9 AI red-team)
+Run: 2026-10-10 12:15 | LLM: groq | agent model qwen/qwen3.8-27b (fallback openai/gpt-oss-120b; see the table of serving models) | ruleset 2026.10.2 | repeats 1 | 32 attack + 12 legit scenarios (+9 AI red-team)
 
 All money is sandbox money; rails, rates and the registry are mocks. Humans in the loop are simulated.
 
@@ -31,6 +31,14 @@ All money is sandbox money; rails, rates and the registry are mocks. Humans in t
 | purpose | 61 | 0 | 0 |
 | due | 61 | 0 | 0 |
 | currency | 60 | 0 | 1 |
+
+## Which model served the extractions
+
+Recorded per extraction (the model that actually produced the response, also when it was replayed from the on-disk cache). Extractions from before this field existed are labelled as such rather than guessed.
+
+| Served by | extraction steps |
+|---|---|
+| model not recorded (pre-fix run) | 61 |
 
 ## Deterministic reference (offline regex extraction, same scenarios and same red-team texts)
 

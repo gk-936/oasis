@@ -23,6 +23,7 @@ from ..agent.parent import parent_view
 from ..agent.pipeline import OasisAgent, Request
 from ..agent import plan_exec
 from ..agent.planner import AgenticPlanner, DeterministicPlanner, build_record, make_planner
+from ..agent.replay import MODES, fixture_info
 from ..demo import DemoRunner, new_demo_world
 from ..planning import spending
 from ..planning.scenarios import SCENARIOS, build_scenario_world
@@ -30,7 +31,9 @@ from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
 from ..proof.pack import verify_proof_pack
 from ..storage import SqliteStore
+from ..chain.anchor import LocalAnchorChain
 from ..trust.audit import verify_chain
+from ..trust.keystore import fingerprint, load_or_create_signer
 from ..world import Features, World
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,9 +49,12 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http
 class Session:
     """One student's sandbox (plus a separate red-team sandbox), optionally backed by SQLite."""
 
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None, key_path=None):
         self.db_path = config.DB_PATH if db_path is None else db_path
         self.store = None if self.db_path in ("", ":memory:") else SqliteStore(self.db_path)
+        # A persistent session (SQLite file) also gets persistent trust keys, so proof packs verify after a restart and
+        # the published fingerprint stays stable. An in-memory session (tests) gets fresh in-memory keys.
+        self.signer = load_or_create_signer(key_path) if (self.store or key_path) else None
         self.pending: dict[str, dict] = {}   # pending_id -> {"request","approvals","required","outcome"}
         self.demo: DemoRunner | None = None
         self.redteam_log: list[dict] = []
@@ -57,14 +63,14 @@ class Session:
         self._build(snap)
 
     def _build(self, snap: dict | None = None, world: World | None = None) -> None:
-        self.world = world or World(Features.full(), make_llm(), store=self.store, autonomy=True)
+        self.world = world or World(Features.full(), make_llm(), store=self.store, autonomy=True, signer=self.signer)
         if snap:
             self.world.restore(snap)
             self.pending = {k: {"request": Request(**v["request"]), "approvals": set(v["approvals"]),
                                 "required": v["required"], "outcome": v["outcome"]}
                             for k, v in snap["kv"].get("pending", {}).items()}
         self.agent = OasisAgent(self.world)
-        self.redteam_world = World(Features.full(), make_llm())   # separate sandbox ledger for judges
+        self.redteam_world = World(Features.full(), make_llm(), signer=self.signer)   # separate sandbox ledger for judges
         self.redteam_agent = OasisAgent(self.redteam_world)
 
     def reset(self) -> None:
@@ -74,16 +80,24 @@ class Session:
         self._build()
         self.save()
 
-    def start_demo(self, run: str) -> DemoRunner:
+    def start_demo(self, run: str, mode: str = "offline") -> DemoRunner:
         if self.store:
             self.store.clear()
         self.pending, self.redteam_log, self.chat = {}, [], []
-        w = new_demo_world(self.store)
+        w = new_demo_world(self.store, mode)
         self.demo = DemoRunner(run, w)
         self._build(world=w)
         self.demo.agent = self.agent
         self.save()
         return self.demo
+
+    def trusted_fingerprints(self) -> set[str]:
+        """Key fingerprints this server vouches for: its own signing keys. The scripted demo's keys are public (seeded),
+        so they are trusted only while the demo world is the active world."""
+        return {self.world.trust_fingerprint(), self.redteam_world.trust_fingerprint()}
+
+    def anchor_chains(self, ids: tuple[str, ...] | None = None) -> list:
+        return [w.anchor for w in (self.world, self.redteam_world) if isinstance(w.anchor, LocalAnchorChain)]
 
     def save(self) -> None:
         if not self.store:
@@ -143,6 +157,7 @@ class RedTeamIn(BaseModel):
 
 class DemoIn(BaseModel):
     run: str = "legit"   # legit | attack
+    mode: str = "offline"   # offline | live (live = recorded model responses replayed from the fixture; no network)
 
 
 class RateTargetIn(BaseModel):
@@ -195,7 +210,7 @@ def state():
         "llm": w.llm.name, "agent_model": config.AGENT_MODEL if w.llm.name == "groq" else None,
         "fallback_model": config.FALLBACK_MODEL if w.llm.name == "groq" else None,
         "persistence": {"enabled": S.store is not None, "path": S.db_path if S.store else None},
-        "demo": {"active": S.demo is not None, "run": S.demo.run if S.demo else None},
+        "demo": {"active": S.demo is not None, "run": S.demo.run if S.demo else None, "mode": S.demo.mode if S.demo else None},
         "now": w.now_iso(),
         "passport": {**p.model_dump(), "recipients": {k: v.model_dump() for k, v in p.recipients.items() if k not in decoys}},
         "rate_mid": w.rates.mid(w.day_index),
@@ -486,14 +501,37 @@ def proof(intent_id: str):
     return pk
 
 
+def _verify_pinned(pack: dict) -> dict:
+    """Verify against THIS server's pinned key fingerprint and its (simulated) chain; any other keys fail key_pinned."""
+    best = None
+    for chain in S.anchor_chains() or [None]:
+        res = verify_proof_pack(pack, S.trusted_fingerprints(), chain)
+        if best is None or (res["ok"] and not best["ok"]):
+            best = res
+    res = best
+    res["pinned_fingerprint"] = S.world.trust_fingerprint()
+    return res
+
+
+@app.get("/api/trust/fingerprint")
+def trust_fingerprint():
+    """The fingerprint (sha256 over the canonical public keys) that verifiers must pin. Public keys only."""
+    w = S.world
+    return {"fingerprint": w.trust_fingerprint(), "key_id": w.signer.key_id, "public_keys": w.signer.public_keys(),
+            "algorithms": sorted(w.signer.public_keys()), "persistent": S.signer is not None and not w.deterministic,
+            "demo_keys": bool(w.deterministic),
+            "note": "Pin this fingerprint out of band. A proof pack embeds its own public keys, so a pack signed with any "
+                    "other keys fails the key_pinned check. Demo keys are seeded and public: never trust them for real use."}
+
+
 @app.get("/api/proof/{intent_id}/verify")
 def proof_verify(intent_id: str):
-    return verify_proof_pack(proof(intent_id))
+    return _verify_pinned(proof(intent_id))
 
 
 @app.post("/api/proof/verify")
 def proof_verify_upload(pack: dict):
-    return verify_proof_pack(pack)
+    return _verify_pinned(pack)
 
 
 @app.get("/api/audit")
@@ -526,12 +564,17 @@ def benchmark():
 
 @app.post("/api/demo/start")
 def demo_start(body: DemoIn):
-    """Reset to the scripted demo world (fixed seed, fixed MOCK data, offline LLM) and return the step list."""
+    """Reset to the scripted demo world (fixed seed, fixed MOCK data) and return the step list. `mode` "offline" (default)
+    uses the offline LLM; "live" replays recorded qwen/qwen3.8-27b responses from the fixture (no network)."""
     if body.run not in DemoRunner.RUNS:
         raise HTTPException(400, f"run must be one of {DemoRunner.RUNS}")
-    d = S.start_demo(body.run)
+    if body.mode not in MODES:
+        raise HTTPException(400, f"mode must be one of {MODES}")
+    d = S.start_demo(body.run, body.mode)
     return jsonable_encoder({"run": d.run, "steps": d.titles, "total": len(d.titles), "done": d.done,
-                             "llm": S.world.llm.name, "seed": 7})
+                             "llm": S.world.llm.name, "seed": 7, "mode": d.mode,
+                             "model": config.AGENT_MODEL if d.mode == "live" else None,
+                             "fixture": fixture_info() if d.mode == "live" else None})
 
 
 @app.post("/api/demo/next")
@@ -547,7 +590,7 @@ def demo_next():
 def demo_state():
     if not S.demo:
         return {"active": False}
-    return jsonable_encoder({"active": True, "run": S.demo.run, "index": S.demo.index, "total": len(S.demo.titles),
+    return jsonable_encoder({"active": True, "run": S.demo.run, "mode": S.demo.mode, "index": S.demo.index, "total": len(S.demo.titles),
                              "done": S.demo.done, "steps": S.demo.titles, "results": S.demo.results})
 
 

@@ -357,8 +357,9 @@ def _pack(w, digest=None):
 def test_proof_pack_anchor_digest_must_match_intent_hash():
     from oasis.proof.pack import verify_proof_pack
     w = _world()
-    assert verify_proof_pack(_pack(w))["ok"]
-    bad = verify_proof_pack(_pack(w, digest="0" * 64))              # properly signed pack, wrong anchor
+    fp = {w.trust_fingerprint()}
+    assert verify_proof_pack(_pack(w), fp)["ok"]
+    bad = verify_proof_pack(_pack(w, digest="0" * 64), fp)              # properly signed pack, wrong anchor
     assert bad["anchor_matches_intent"] is False and bad["pack_signature"] is True and not bad["ok"]
 
 

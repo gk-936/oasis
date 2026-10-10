@@ -19,6 +19,7 @@ def parent_view(world, fields: dict, lang: str | None = None) -> dict:
     ctx = {"student": p.student.name, "amount_inr": amount_inr, "amount_cny": amount_cny,
            "purpose": fields.get("purpose") or "family_support", "payee": (rec.name if rec else fields.get("payee_name")),
            "verification_level": rec.verification.level.value if rec else None,
+           "verification_limit_cny": rec.verification.limit_cny if rec else 0.0,
            "threshold_inr": p.rules.parent_coapproval_above_inr}
     return {"language": lang, "language_name": i18n.LANGS.get(lang, lang), "amount_inr": amount_inr,
             "amount_cny": amount_cny, "explanation": world.llm.explain("parent_approval", ctx, lang),

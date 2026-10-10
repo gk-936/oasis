@@ -44,6 +44,30 @@ def _n(x: float) -> str:
     return f"{x:,.0f}"
 
 
+VERIFY_SENTENCE = {
+    "en": {"verified_full": "The recipient is fully verified through the official registry.",
+           "verified_low": "The recipient is verified only up to a low limit (CNY {limit}) and is not yet fully verified.",
+           "registry_checked": "The recipient was found in the official registry but is not fully verified yet.",
+           "none": "The recipient has NOT been verified."},
+    "ta": {"verified_full": "இந்தப் பெறுநர் அதிகாரப்பூர்வ பதிவேட்டில் முழுமையாகச் சரிபார்க்கப்பட்டுள்ளார்.",
+           "verified_low": "இந்தப் பெறுநர் குறைந்த வரம்புக்கு (¥{limit} வரை) மட்டுமே சரிபார்க்கப்பட்டுள்ளார்; இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.",
+           "registry_checked": "இந்தப் பெறுநர் அதிகாரப்பூர்வ பதிவேட்டில் உள்ளார், ஆனால் இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.",
+           "none": "இந்தப் பெறுநர் இன்னும் சரிபார்க்கப்படவில்லை."},
+    "hi": {"verified_full": "प्राप्तकर्ता की पुष्टि आधिकारिक रजिस्ट्री से पूरी तरह हो चुकी है।",
+           "verified_low": "प्राप्तकर्ता की पुष्टि केवल कम सीमा (¥{limit} तक) के लिए हुई है; पूरी तरह सत्यापन अभी नहीं हुआ है।",
+           "registry_checked": "प्राप्तकर्ता आधिकारिक रजिस्ट्री में मिला है, पर अभी पूरी तरह सत्यापित नहीं है।",
+           "none": "प्राप्तकर्ता का अभी सत्यापन नहीं हुआ है।"},
+}
+
+
+def verification_sentence(ctx: dict, lang: str = "en") -> str:
+    """What the parent is told about the recipient, taken from the actual verification level in the Passport."""
+    lang = lang if lang in LANGS else "en"
+    lvl = ctx.get("verification_level")
+    key = lvl if lvl in ("verified_full", "verified_low", "registry_checked") else "none"
+    return VERIFY_SENTENCE[lang][key].format(limit=_n(float(ctx.get("verification_limit_cny") or 0)))
+
+
 def parent_approval(ctx: dict, lang: str = "en") -> str:
     lang = lang if lang in LANGS else "en"
     student = ctx.get("student", "Your child")
@@ -54,16 +78,16 @@ def parent_approval(ctx: dict, lang: str = "en") -> str:
     approx = f" (≈ ¥{_n(float(cny))})" if cny else ""
     if lang == "ta":
         return (f"{student} சார்பாக {payee} என்ற பெறுநருக்கு ₹{_n(inr)}{approx} அனுப்ப உங்கள் ஒப்புதல் கோரப்படுகிறது (நோக்கம்: {purpose}). "
-                f"இந்தப் பெறுநர் அதிகாரப்பூர்வ பதிவேட்டில் சரிபார்க்கப்பட்டுள்ளார். "
+                f"{verification_sentence(ctx, lang)} "
                 f"₹{thr}க்கு மேற்பட்ட குடும்பப் பரிமாற்றங்களுக்கு பெற்றோரின் ஒப்புதல் அவசியம். "
                 f"நீங்கள் ஒப்புக்கொள்ளாத வரை எந்தப் பணமும் அனுப்பப்படாது. தயவுசெய்து ஒப்புக்கொள்ளுங்கள் அல்லது நிராகரியுங்கள்.")
     if lang == "hi":
         return (f"{student} की ओर से {payee} को {purpose} के लिए ₹{_n(inr)}{approx} भेजने के लिए आपकी मंज़ूरी माँगी जा रही है। "
-                f"प्राप्तकर्ता की पुष्टि आधिकारिक रजिस्ट्री से हो चुकी है। "
+                f"{verification_sentence(ctx, lang)} "
                 f"₹{thr} से अधिक के पारिवारिक ट्रांसफर के लिए माता-पिता की मंज़ूरी ज़रूरी है। "
                 f"आपकी मंज़ूरी के बिना कोई पैसा नहीं भेजा जाएगा। कृपया मंज़ूर करें या अस्वीकार करें।")
-    return (f"{student} wants to send INR {_n(inr)}{approx} for {purpose} to {payee}. The recipient is verified "
-            f"through the official registry. Family transfers above INR {thr} need a parent's approval. "
+    return (f"{student} wants to send INR {_n(inr)}{approx} for {purpose} to {payee}. {verification_sentence(ctx, lang)} "
+            f"Family transfers above INR {thr} need a parent's approval. "
             f"No money moves until you approve. Please approve or decline.")
 
 

@@ -1,6 +1,7 @@
 """Corridor rules engine: data-driven (YAML) checks for the INR -> CNY corridor."""
 from __future__ import annotations
 from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
 from functools import lru_cache
 
 import yaml
@@ -41,18 +42,30 @@ class CorridorResult:
 USD_INR = 88.0  # MOCK reference rate for limit arithmetic
 
 
+def tcs_rate(passport: Passport, purpose: str, rules: dict) -> dict:
+    """TCS rate for a purpose, from the data file: {"rate", "status" (researched | unconfirmed), "category"}."""
+    table = rules["rules"]["tcs_by_purpose"]
+    category = rules.get("purpose_tcs_category", {}).get(purpose, "other")
+    if category == "education" and passport.funding_source == "education_loan":
+        category_row = "education_loan"
+    else:
+        category_row = category
+    row = table[category_row]
+    return {"rate": row["rate"], "status": row["status"], "category": category_row, "threshold_inr": table["threshold_inr"]}
+
+
 def tcs_amount(passport: Passport, remitter: str, amount_inr: float, purpose: str, rules: dict) -> float:
-    if passport.funding_source == "education_loan":
-        return 0.0
-    t = rules["rules"]["tcs_threshold_inr"]
+    r = tcs_rate(passport, purpose, rules)
     already = passport.remitted_inr_fy.get(remitter, 0.0)
-    over = max(0.0, already + amount_inr - t["value"]) - max(0.0, already - t["value"])
-    return round(over * t["rate_above"], 2)
+    t = r["threshold_inr"]
+    over = max(0.0, already + amount_inr - t) - max(0.0, already - t)
+    return round(over * r["rate"], 2)
 
 
 def check(passport: Passport, *, payee_type: str, purpose: str, amount_cny: float, amount_inr: float,
           remitter: str = "student", history: list[dict] | None = None, payee_id: str = "",
-          now_ts: float = 0.0) -> CorridorResult:
+          now_ts: float = 0.0, year: int | None = None) -> CorridorResult:
+    """`year` is the calendar year used for the SAFE quota (default: the year of `now_ts`)."""
     rules = load_rules()
     r = rules["rules"]
     res = CorridorResult()
@@ -70,18 +83,28 @@ def check(passport: Passport, *, payee_type: str, purpose: str, amount_cny: floa
                                     {"used_inr": used, "limit_inr": lrs_inr}))
 
     tcs = tcs_amount(passport, remitter, amount_inr, purpose, rules)
+    tr = tcs_rate(passport, purpose, rules)
     if tcs > 0:
+        note = ("" if tr["status"] != "unconfirmed" else
+                f" The {tr['rate']:.0%} rate for this purpose is UNCONFIRMED (placeholder): check it with the authorised dealer bank.")
         res.findings.append(Finding("tcs", "warn",
-                                    f"TCS of INR {tcs:,.0f} would be collected (recoverable as a tax credit).",
-                                    {"tcs_inr": tcs}))
+                                    f"TCS of INR {tcs:,.0f} would be collected (recoverable as a tax credit).{note}",
+                                    {"tcs_inr": tcs, "rate": tr["rate"], "rate_status": tr["status"],
+                                     "category": tr["category"]}))
     elif used + amount_inr > r["tcs_threshold_inr"]["value"] * 0.8 and passport.funding_source != "education_loan":
         res.findings.append(Finding("tcs_near", "info",
                                     "Approaching the INR 10 lakh TCS threshold for this remitter."))
 
+    # SAFE facilitation quota: cumulative per CALENDAR year, the same arithmetic as the plan validator
+    # (planning/validator.py): INR already converted this year (Passport.safe_used_inr) plus this amount.
     safe_inr = r["safe_quota_usd"]["value"] * USD_INR
-    if amount_inr > safe_inr:
+    y = year if year is not None else (datetime.fromtimestamp(now_ts, timezone.utc).year if now_ts else date.today().year)
+    safe_used = passport.safe_used_inr.get(str(y), 0.0)
+    if safe_used + amount_inr > safe_inr:
         res.findings.append(Finding("safe_quota", "warn",
-                                    "Conversion exceeds the annual SAFE facilitation quota; stage it or prepare documents."))
+                                    f"Conversions in {y} would total INR {safe_used + amount_inr:,.0f}, above the annual SAFE "
+                                    f"facilitation quota of INR {safe_inr:,.0f}; stage it or prepare documents.",
+                                    {"year": y, "used_inr": round(safe_used, 2), "quota_inr": round(safe_inr, 2)}))
 
     if purpose == "tuition":
         res.findings.append(Finding("purpose_code", "info",

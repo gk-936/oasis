@@ -140,7 +140,7 @@ def test_summary_and_report_label_live_mode(tmp_path):
     meta = {"run_at": "x", "llm": "groq", "agent_model": "m/x", "fallback_model": "f", "served": "m/x", "ruleset": "r",
             "repeats": 1, "attacks": 1, "legit": 1, "redteam": 0, "extract": "llm"}
     md = runner.to_markdown(sm, meta)
-    assert "live agent (m/x primary extraction)" in md and "Model followed injection" in md
+    assert "live agent (configured primary model m/x" in md and "Model followed injection" in md
 
 
 def test_checkpoints_are_keyed_by_mode(monkeypatch, tmp_path):

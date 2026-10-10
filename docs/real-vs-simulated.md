@@ -13,7 +13,7 @@
 | Tier-1 autonomy: student rate targets and recurring bills to Verified_Full recipients, under the policy engine | Rates that targets are checked against (mock path) |
 | Spending categorisation and the cold-start → own-pattern forecast | Reference costs and the transactions it learns from in the demo (mock wallet data) |
 | SQLite persistence of Passport, audit log, proofs, why-cards | Anchoring runs on `LocalAnchorChain`, a local hash-linked simulation, **not** FISCO BCOS |
-| Scripted, repeatable demo (fixed seed, offline) | Demo signing keys are seeded and public; real keys are ephemeral per process |
+| Scripted, repeatable demo (fixed seed, offline) | Demo signing keys are seeded and public; real server keys persist in a git-ignored file and are not vault-backed |
 | Agentic planner: tool protocol, deterministic plan validator (SAFE per calendar year, LRS, TCS, deadlines, funds), offline planner, Groq native tool calling with recorded fallback (fake-client tests; live run on 3 of 8 scenarios, 2026-10-10) | Rates, routes and fees the plans are quoted against; the registry's verified contact channels |
 | Optional SM2/SM3 signer (`gmssl` 3.2.2): sign/verify, tamper and cross-key rejection, standard test vector reproduced (not constant-time, unaudited; interoperability untested) | |
 | Benchmark runner, baseline (same pipeline with layers off), red-team console | |

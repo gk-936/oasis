@@ -51,7 +51,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 142 tests, no network, no database file
+# 221 tests, no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json
@@ -74,7 +74,10 @@ If a live run exhausts the daily budget it stops cleanly (exit code 2); rerun th
 
 ### Scripted demo (works offline, repeats exactly)
 
-Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`, then `POST /api/demo/next` per step, or `POST /api/demo/run` for the whole run). The demo uses a fixed seed, fixed mock data, the offline model (never the network), seeded **demo-only** signing keys and a simulated clock, so each run produces the same statuses, amounts and the same audit-chain head hash every time (`tests/test_features.py` checks this).
+Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`, then `POST /api/demo/next` per step, or `POST /api/demo/run` for the whole run). The demo uses a fixed seed, fixed mock data, seeded **demo-only** signing keys and a simulated clock, so each run produces the same statuses, amounts and the same audit-chain head hash every time (`tests/test_features.py` and `tests/test_review_fixes.py` check this). It never uses the network. A toggle in the Demo tab (`"mode": "offline"|"live"` in the API) chooses who reads, scores and plans:
+
+- **Offline** (default): the deterministic parser, scorer and planner, no AI model. Each step is labelled "offline parser".
+- **Live-replay**: qwen/qwen3.8-27b reads the documents (live-agent extraction), adds an escalate-only AI risk score and plans with native tool calling. Its answers were recorded once into the committed fixture `eval/fixtures/demo_cache/` (model name, response text and date only) and are replayed from it, so the demo repeats exactly with no network. Each step shows its mode and model, for example "Qwen qwen3.8-27b - replayed from recorded response 2026-10-10". If a response is missing from the fixture, that call falls back to the offline parser, heuristic scorer or deterministic planner and the step says so. **Status of the fixture: not recorded yet** (the free-tier daily token allowance was spent before the recording could run), so live-replay currently shows the labelled offline fallback on every step. Record it with `PYTHONPATH=. python -m eval.record_demo_fixture` (about 25k tokens; it refuses when fewer than 40k of the daily 200k would remain).
 
 - Run 1 (legitimate): Passport and forecast, agent plan with validator revision, tuition paid with a signed intent, parent co-approves a top-up (shown in Tamil/Hindi/English), landlord's genuine account change completes through the verification ramp, Tier-1 autonomy (rate target + recurring bill), proof packs and savings receipt.
 - Run 2 (attack): forged invoice stopped with a why-card, payment instructions rewritten at execution and stopped by the executor's intent check, hidden page injection reaches a canary, freeze and recovery plan, the student approves the recovery and the genuine payment completes.
@@ -88,19 +91,34 @@ Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`,
 | Attack block rate (32 attacks) | baseline / +verification / +intents+policy / full | **offline:** 6.2% / 68.8% / 100% / 100% | `eval/reports/benchmark.md` |
 | Money lost (CNY, sandbox) | same | **offline:** 479,000 / 108,000 / 0 / 0 | same |
 | Legitimate completion, false blocks (12 changes) | all four | **offline:** 100%, 0% | same |
-| Attack block rate, **live agent** (qwen/qwen3.8-27b is the primary extraction) | same | **live:** 18.8% / 68.8% / 100% / 100%; baseline loses CNY 380,000 | `eval/reports/benchmark_live.md` |
+| Attack block rate, **live agent** (extraction by a live model; qwen/qwen3.8-27b configured as primary, which model actually served each extraction was **not recorded** in this run) | same | **live:** 18.8% / 68.8% / 100% / 100%; baseline loses CNY 380,000 | `eval/reports/benchmark_live.md` |
 | Model followed an embedded injection | all four | **live:** 0 of 6 injection-bearing scenarios | same |
 | Plan quality, deterministic planner | 8 scenarios | **offline:** 8/8 valid, 20/20 deadlines, conversion fees 82.8% below a typical bank route (MOCK rates) | `eval/reports/planning.md` |
-| Plan quality, Groq tool-calling planner | 3 of 8 scenarios | **live:** final plans 3/3 valid, but only 1/3 without falling back to the deterministic plan | same |
+| Plan quality, Groq tool-calling planner | 8 scenarios, one run | **live:** final plans 8/8 valid, but only 4/8 without falling back to the deterministic plan (token cap); 100,235 tokens | same |
 | 90-day simulation (5 personas) | Oasis vs manual | **model:** fees saved CNY 1,676 to 3,351 per persona (mock fees) | `eval/reports/simulation.md` |
 
 Honest caveats:
 
 - **Live benchmark: one repeat**, temperature 0, **six** injection-bearing scenarios. "The model followed 0 of 6" is not a robustness claim, and `--repeats 3` was not run. Within a repeat, identical documents reuse one cached model response across the four configurations.
 - The offline baseline uses a regex parser that deliberately follows embedded instructions (a gullible agent); the live baseline is whatever the model does, which is why it loses less (CNY 380,000 vs 479,000). The other three configurations are identical in both modes.
+- **Which model served the live benchmark is not established for the committed run.** The earlier report line "served: openai/gpt-oss-120b" only named the last model that answered, not each extraction. Per-extraction serving model and cache flag are now recorded and `benchmark_live.md` counts them per model; the committed run predates that field and is labelled "model not recorded (pre-fix run)". Treat the live numbers as "a live model (qwen/qwen3.8-27b primary, openai/gpt-oss-120b fallback)", not as a statement about one model.
 - **Canaries are an early-detection layer, not an extra blocking layer**: they block 0 additional attacks over signed intents + policy and flag 3 attacks earlier (at Understand, offline run).
-- The heuristic **risk scorer's features were chosen after seeing the benchmark** (in-sample): it flags 81% of attacks and 0% of legitimate changes; it cannot see poisoned-tool attacks (0/6) and only ever escalates. A small held-out set is in `tests/test_pipeline.py`.
+- The **risk scorer** is a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate (combined as max(heuristic, llm); not part of the committed live benchmark, which used the heuristic alone). The heuristic's features were chosen after seeing the benchmark (in-sample): it flags 81% of attacks and 0% of legitimate changes; it cannot see poisoned-tool attacks (0/6). A small held-out set is in `tests/test_pipeline.py`.
 - The simulated student and parent are not oracles; real people could approve a scam. Savings come from mock fees. Corridor figures (SAFE, LRS, TCS) are researched, not officially confirmed.
+
+## Verifying a proof pack
+
+A proof pack embeds the public keys that signed it, so a pack alone proves nothing: anyone could change the amount, sign with fresh keys and embed those. `verify_proof_pack(pack, trusted_fingerprints=..., chain=...)` therefore only reports `ok` when the fingerprint of the embedded keys (sha256 over the canonical public keys) is one you pinned. The API pins its own: `GET /api/trust/fingerprint` (shown at the top of the Proof tab), and `/api/proof/.../verify` and `POST /api/proof/verify` check against it. With a chain available the verifier also checks that the anchor block exists with the intent hash as digest and the chain is intact; standalone verification reports the anchor as "not checked" (and `ok` stays false without a pinned fingerprint).
+
+- Fingerprint of the scripted demo's public keys: `396bbb6e7a75c14fa88bf26bdbee0218a5aefdb48ca3ef9a0f9ff2de3dffdbdf` (anyone can forge with these keys, so never pin them outside the demo).
+- A real server's fingerprint is created on first start and printed by the endpoint; pin it out of band (for example in this README for your deployment).
+
+## Honest limits
+
+- **Some 100% results are partly by construction.** The same team wrote the attacks and the defences. The simulated student declines using the risk evidence the system itself produced. Legitimate account changes succeed because the scenarios pre-register the new account in the registry. A 100% block rate on this suite is therefore not a claim about unseen attackers, and a 100% completion rate is not a claim about real landlords and universities.
+- **Approvals are not authenticated.** Roles ("student", "parent") are plain strings in the request; any API caller can approve as the parent. The two-person rule is enforced in the policy engine, not by identity. A real deployment needs authentication and per-user sessions.
+- **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
+- **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
 
 ## What is real and what is simulated
 
@@ -108,7 +126,7 @@ Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enf
 
 ## AI as a Financial Participant
 
-What the AI does: reads documents and screenshots (including Chinese text), extracts payment fields, scores risk, builds and revises a payment plan by calling read-only tools, explains decisions in plain language (and in Tamil/Hindi for a parent), compares routes, watches student-set rate targets, and drafts a recovery message to the legitimate recipient's registry-verified channel.
+What the AI does: reads documents and screenshots (including Chinese text), extracts payment fields, scores risk (a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate), builds and revises a payment plan by calling read-only tools, explains decisions in plain language (and in Tamil/Hindi for a parent), compares routes, watches student-set rate targets, and drafts a recovery message to the legitimate recipient's registry-verified channel.
 
 What the AI never does: hold the payment credential, approve a payment, change a recipient's verification status, edit the audit log, sign an intent, choose a payee account (only the registry-confirmed account is paid), predict exchange rates, or contact anyone on its own. Extraction is untrusted, the risk score can only escalate a decision, a plan is only a proposal that still passes verification, policy, signing and the executor, and recovery drafts are rejected if they contain any account or contact from the suspicious request. Safety never depends on the LLM.
 
@@ -116,7 +134,7 @@ What the AI never does: hold the payment credential, approve a payment, change a
 
 - **Single process (demo/evaluation):** the quick start above. `python -m uvicorn oasis.api.main:app --host 0.0.0.0 --port 8000` serves API and UI. State is SQLite at `data/oasis.db` (`OASIS_DB` to move it, `:memory:` for none).
 - **No Node needed to run:** `frontend/dist` is committed (about 190 KB) and served by the API; rebuild it with `npm run build` after UI changes.
-- **Not production-ready, by design:** the build serves plain HTTP, the SQLite file is unencrypted, signing keys are ephemeral per process, and the API has no authentication. A real deployment needs TLS (hybrid X25519MLKEM768 at a reverse proxy; untested recipe in [docs/pq-tls.md](docs/pq-tls.md)), encryption at rest, a key vault and authentication. See [docs/security-self-assessment.md](docs/security-self-assessment.md).
+- **Not production-ready, by design:** the build serves plain HTTP, the SQLite file is unencrypted, the trust signing keys are an unencrypted git-ignored file (`data/keys/trust_key.json`), and the API has no authentication. A real deployment needs TLS (hybrid X25519MLKEM768 at a reverse proxy; untested recipe in [docs/pq-tls.md](docs/pq-tls.md)), encryption at rest, a key vault and authentication. See [docs/security-self-assessment.md](docs/security-self-assessment.md).
 
 ## Documentation
 
@@ -133,7 +151,7 @@ What the AI never does: hold the payment credential, approve a payment, change a
 
 ### Persistence
 
-The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approvals and clock in SQLite (`data/oasis.db`, override with `OASIS_DB`; `OASIS_DB=:memory:` disables it) so state survives an API restart. Tests and the benchmark are in-memory. Signing keys are not stored; they are ephemeral per process in this build, and proof packs embed their public keys, so packs issued before a restart still verify. The red-team sandbox is never persisted.
+The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approvals and clock in SQLite (`data/oasis.db`, override with `OASIS_DB`; `OASIS_DB=:memory:` disables it) so state survives an API restart. Tests and the benchmark are in-memory. The trust signing keys are generated once and kept in a git-ignored file (`data/keys/trust_key.json`, override with `OASIS_TRUST_KEY`; plain file, not a vault), so the key fingerprint and old proof packs stay valid across restarts. Tests and the benchmark use in-memory keys; the scripted demo uses seeded public demo keys. The red-team sandbox is never persisted.
 
 ### LLM configuration
 
@@ -146,6 +164,8 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | `OASIS_AGENT_MODEL` | `qwen/qwen3.8-27b` | Groq **preview** model; accepts images; may be retired at short notice |
 | `OASIS_FALLBACK_MODEL` | `openai/gpt-oss-120b` | production model, used automatically if the agent model errors (retired/404, daily limit); no vision |
 | `OASIS_REDTEAM_MODEL` | `openai/gpt-oss-120b` | AI red-team generator |
+| `OASIS_LLM_RISK` | `0` | `1` adds the LLM risk scorer in live mode (`OASIS_EXTRACT=llm` only); combined as max(heuristic, llm), so it can only escalate |
+| `OASIS_TRUST_KEY` | `data/keys/trust_key.json` | where the persistent trust signing keys live (git-ignored) |
 | `OASIS_GROQ_RPM` / `_DAILY_TOKENS` / `_DAILY_REQUESTS` | 25 / 180000 / 900 | client-side guard rails under the free tier (about 30 RPM, 1,000 requests/day, 200k tokens/day) |
 
 Model IDs were checked against console.groq.com/docs/models on 2026-10-10. `qwen/qwen3-32b` and `qwen/qwen3.6-27b` are retired. The Groq adapter rate-limits itself, backs off on 429 (honouring `retry-after`), keeps a daily budget on disk, caches every response on disk (`data/llm_cache/`; cache hits cost nothing) and falls back to the second model. If Groq is unavailable the offline parser is the floor. Unit tests use a fake client; the adapter, image intake and the benchmark have also been run live (2026-10-10).
@@ -166,7 +186,7 @@ PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm groq --extract llm --repe
 
 Free-text purposes ("Tuition fee for Fall 2026 semester", "房租", "deposit (2 months)") are normalised to tuition / rent / deposit / living / family_support by a deterministic mapper applied to both regex and model output. Finished results are checkpointed in `data/bench_cache/`. If the daily budget runs out the run stops cleanly (exit code 2); run the same command again later and it continues. The report shows min / mean / max across repeats. In deterministic mode the unsafe behaviour of the unprotected baseline is modelled by the regex extractor that follows embedded instructions; in live-agent mode it is whatever the model does. Poisoned-tool scenarios (a simulated rewrite of payment details at execution time) are independent of the model in both modes. Safety layers never depend on the model.
 
-Safety never depends on the LLM. Extraction is untrusted. The risk score can only escalate a decision. Verification, the policy engine, signed intents and the executor are all deterministic code.
+Safety never depends on the LLM. Extraction is untrusted. The risk score (a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate) can only escalate a decision. Verification, the policy engine, signed intents and the executor are all deterministic code.
 
 ## What the layers add (offline benchmark, 32 attacks + 12 legitimate changes)
 

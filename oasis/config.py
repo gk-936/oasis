@@ -28,6 +28,8 @@ LLM_PROVIDER = os.getenv("OASIS_LLM", "offline")
 # Extraction mode: "deterministic" (default; regex is the floor, the model only fills gaps) or "llm" (live agent:
 # the model's JSON is primary, the regex parse is only a per-field fallback).
 EXTRACT_MODE = os.getenv("OASIS_EXTRACT", "deterministic")
+# Optional LLM risk scorer (live mode only, i.e. OASIS_EXTRACT=llm): combined as max(heuristic, llm), escalate-only.
+LLM_RISK = os.getenv("OASIS_LLM_RISK", "0") == "1"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # Verify these on console.groq.com/docs/models before a run (checked 2026-10-10).
 AGENT_MODEL = os.getenv("OASIS_AGENT_MODEL", "qwen/qwen3.8-27b")  # preview model; may be retired

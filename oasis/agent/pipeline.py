@@ -180,7 +180,8 @@ class OasisAgent:
             if req.genuine is not None:
                 out.followed_injection = mdl or diverges_from_genuine(fields, req.genuine)
             out.extraction = {"mode": "llm", "sources": dict(ext.sources), "call_failed": ext.call_failed,
-                              "model_followed": bool(mdl), "ground_truth": req.genuine is not None}
+                              "model_followed": bool(mdl), "ground_truth": req.genuine is not None,
+                              "served_model": ext.served_model, "from_cache": ext.from_cache}
         out.trace.append(f"Understand: extracted payee={fields.get('payee_name')!r} amount={fields.get('amount')} "
                          f"purpose={fields.get('purpose')} (untrusted)")
         if w.canaries:
@@ -197,6 +198,8 @@ class OasisAgent:
         risk = w.llm.risk(fields, req.text, names, accounts, ob.amount if ob else None,
                           self._risk_ctx(fields, amount))
         out.risk = {"score": risk.score, "evidence": risk.evidence}
+        if risk.components is not None:
+            out.risk["components"] = risk.components
         out.trace.append(f"Understand: label={out.label}; risk={risk.score:.2f} {risk.evidence}")
         w.audit.append("understand", {"label": out.label, "fields": fields, "risk": out.risk})
 
@@ -251,7 +254,7 @@ class OasisAgent:
 
         cor = corridor.check(p, payee_type=rec.payee_type if rec else "", purpose=purpose, amount_cny=amount,
                              amount_inr=self._inr(amount), remitter=remitter, history=w.history,
-                             payee_id=payee_id, now_ts=w.now.timestamp())
+                             payee_id=payee_id, now_ts=w.now.timestamp(), year=w.today.year)
         out.corridor = cor.to_dict()
         hits = w.canaries.hits if w.canaries else []
         approvals = set(req.approvals)

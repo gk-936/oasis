@@ -87,3 +87,7 @@ p, li, td, summary { overflow-wrap: anywhere; }
 .pill { white-space: nowrap; }
 .plan td:first-child { white-space: nowrap; vertical-align: top; }
 @media (max-width: 600px) { .plan td { padding: 4px 4px; font-size: 13px; } }
+
+.aibadge { margin: 4px 0 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.9em; border: 1px solid var(--border, #d0d7de); }
+.aibadge.live { background: rgba(88, 101, 242, 0.08); }
+.aibadge.offline { background: rgba(128, 128, 128, 0.08); }

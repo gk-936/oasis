@@ -22,10 +22,10 @@ def test_legit_tuition_paid_with_verifiable_proof_pack():
     o = a.handle(Request(tuition()), SimulatedHumans())
     assert o.status == "paid" and o.proof_id
     pack = w.proofs[o.proof_id]
-    assert verify_proof_pack(pack)["ok"]
+    assert verify_proof_pack(pack, {w.trust_fingerprint()}, w.anchor)["ok"]
     tampered = copy.deepcopy(pack)
     tampered["intent"]["amount"] = 1.0
-    assert not verify_proof_pack(tampered)["ok"]
+    assert not verify_proof_pack(tampered, {w.trust_fingerprint()}, w.anchor)["ok"]
     assert verify_chain(w.audit.entries).ok
     assert w.passport.obligation("obl_tuition_1").status == "paid"
 

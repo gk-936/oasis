@@ -56,16 +56,16 @@ Tiers: 1 = the agent may act alone within bounds, 2 = needs explicit human appro
 
 **Audit chain.** Each entry stores `hash = SHA-256(canonical{i, ts, kind, data, prev})`. `verify_chain` recomputes the chain and reports the first broken link.
 
-**Proof pack.** A proof pack contains the intent, intent hash, verification state, costs, policy decision, audit entry and anchor block, plus the trust public keys. It is hybrid-signed. `verify_proof_pack` needs no secrets.
+**Proof pack.** A proof pack contains the intent, intent hash, verification state, costs, policy decision, audit entry and anchor block, plus the trust public keys. It is hybrid-signed. `verify_proof_pack(pack, trusted_fingerprints, chain)` needs no secrets but needs a pinned key fingerprint: the keys in the pack prove nothing by themselves, so `key_pinned` must be true (fingerprint = sha256 of the canonical public keys, `GET /api/trust/fingerprint`), and with a chain the anchor block must exist with the intent hash as digest on an intact chain (`anchor_on_chain`; null = not checked). Trust keys persist in `data/keys/trust_key.json` (git-ignored, `OASIS_TRUST_KEY`); the scripted demo uses seeded public keys.
 
 **Corridor rules** (`oasis/trust/rules/inr_cny.yaml`, data rather than code):
 
 | Rule | Value | Action |
 |---|---|---|
 | LRS | USD 250k per remitter per financial year | hold |
-| TCS | 2% above INR 10 lakh (self-funded), nil for loan-funded | warn, with the amount |
+| TCS | per purpose, from `tcs_by_purpose` in the YAML: education 2% above INR 10 lakh, education-loan nil; other purposes use a marked UNCONFIRMED placeholder rate and the message says so | warn, with the amount |
 | Education purpose code | S0305 (unconfirmed) | shown |
-| SAFE quota | USD 50k per person per year | warn and stage |
+| SAFE quota | USD 50k per person per calendar year, cumulative (`safe_used_inr`), the same arithmetic as the plan validator | warn and stage |
 | Wallet foreign-card fee | 3% over CNY 200 | added to route cost |
 | Split payments | 2 or more payments to the same payee within 72 hours, each just under an approval threshold | hold |
 
@@ -96,7 +96,7 @@ Other persisted objects: **payment intent** (payee, account, amount, currency, r
 - **Trust boundary.** Documents, screenshots, web pages, tool output and every LLM output are untrusted. The policy engine, intent builder/signer, executor, verification ramp, registry interface and audit log are deterministic code. Only the `Executor` holds the (sandbox) payment credential.
 - **Signed intents bind approval to execution.** The executor pays only if both signatures verify, the payload equals the intent exactly (payee, account, amount, currency, route), the intent is unexpired and its nonce unused, and the policy, re-evaluated at execution time, still says `allow`. Any failure freezes the payment. This is what stops poisoned-tool rewrites and replays.
 - **Registry, not request, is the source of the account.** The account on a request is treated as forgeable; the registry-confirmed account is the only one paid.
-- **Escalate-only AI.** The risk score can raise a decision to hold (0.5) or freeze (0.85), never lower it. LLM text for the parent view must keep every number unchanged or it is discarded. Recovery drafts are validated against the suspicious request.
+- **Escalate-only AI.** Risk scoring is a heuristic scorer, plus an optional LLM scorer in live mode (`OASIS_LLM_RISK=1` with `OASIS_EXTRACT=llm`) that can only escalate: the two are combined as max(heuristic, llm), a failed LLM call falls back to the heuristic and is recorded, and responses are cached. The risk score can raise a decision to hold (0.5) or freeze (0.85), never lower it. LLM text for the parent view must keep every number unchanged or it is discarded. Recovery drafts are validated against the suspicious request.
 - **Tamper evidence.** Hash-chained audit log, hybrid-signed proof packs verifiable without secrets, intent hashes anchored (locally simulated).
 - **Crypto-agility and post-quantum.** Hybrid Ed25519 + ML-DSA-65 by default; optional SM2/SM3. TLS with hybrid ML-KEM is a deployment recipe only (`pq-tls.md`).
 - Threat model, permission tiers and known risks: `security-self-assessment.md`.
@@ -137,12 +137,13 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | POST | `/api/redteam` | judges' red-team console (separate sandbox world, never persisted) |
 | GET | `/api/redteam/log` | red-team attempts and outcomes |
 | GET | `/api/proof/{intent_id}` | proof pack |
-| GET | `/api/proof/{intent_id}/verify` | independent checks of that pack |
-| POST | `/api/proof/verify` | verify a pasted proof pack (needs no secrets) |
+| GET | `/api/proof/{intent_id}/verify` | independent checks of that pack, pinned to this server's key fingerprint and chain |
+| POST | `/api/proof/verify` | verify a pasted proof pack against this server's pinned fingerprint (a pack signed by other keys fails `key_pinned`) |
+| GET | `/api/trust/fingerprint` | the trust-key fingerprint to pin, the public keys, and whether they are persistent or demo keys |
 | GET | `/api/audit` | audit chain |
 | GET | `/api/audit/verify` | recompute the chain; first broken link if any |
 | GET | `/api/benchmark` | benchmark and simulation reports |
-| POST | `/api/demo/start` | start a scripted run (`{"run": "legit" or "attack"}`) |
+| POST | `/api/demo/start` | start a scripted run (`{"run": "legit" or "attack", "mode": "offline" or "live"}`; live replays recorded model responses from `eval/fixtures/demo_cache/`, no network, with a per-step mode/model label) |
 | POST | `/api/demo/next` | play the next step |
 | GET | `/api/demo/state` | current demo state |
 | POST | `/api/demo/run` | play a whole run in one call |

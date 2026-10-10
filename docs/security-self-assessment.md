@@ -47,7 +47,8 @@ A forged request never changes the genuine recipient's record. The request is re
 - **Simulated humans.** The benchmark's student and parent approve only requests consistent with the Passport. A real student might approve a scam, which tier-2 approval can't fully prevent.
 - **Offline LLM and thin live evidence.** The default benchmark uses a deterministic "gullible" extractor that follows embedded instructions, a worst-case stand-in. The live-agent run (`--llm groq --extract llm`, qwen/qwen3.8-27b) is one repeat at temperature 0 over six injection-bearing scenarios: the model followed 0 of 6 and the baseline lost CNY 380,000 instead of 479,000. That is not a robustness claim; `--repeats 3` was not run, and the injection count is the same in all four configurations by construction (one cached response per document per repeat).
 - **Risk scorer** is heuristic (offline) or LLM-based. It is measured (offline: flags 81% of attacks and 0% of legitimate changes; 69% on the first step only, up from 44%), but the features were chosen after seeing the benchmark, so those rates are in-sample, and it cannot see poisoned tool output (the invoice looks genuine). It only escalates; it never allows.
-- **Persistence** stores state in an unencrypted SQLite file; signing keys are ephemeral per process. Real deployments need encryption at rest and a key vault.
+- **Persistence** stores state in an unencrypted SQLite file; the trust signing keys are a plain git-ignored file (`data/keys/trust_key.json`), generated once so the fingerprint is stable. Real deployments need encryption at rest and a key vault.
+- **Proof-pack forgery (found by external review, fixed).** `verify_proof_pack` used to trust the public keys embedded in the pack, so a pack with a changed amount or account signed by fresh keys verified. It now requires the embedded keys' fingerprint to be pinned (`trusted_fingerprints`; the API pins the server's, published at `GET /api/trust/fingerprint`) and, when a chain is available, checks the anchor block and chain integrity. Residual: a verifier that does not pin a fingerprint obtains no authenticity, only consistency; the anchor is a local simulation.
 - **Tier-1 autonomy** is bounded (CNY 500 recurring bills to Verified_Full recipients, CNY 5,000 rate-target conversions into the student's own balance), but a compromised host or Passport would let it act within those bounds.
 - **Demo keys** are seeded and public so runs reproduce; they are used only in the scripted demo.
 - **Image intake** uses the Groq agent model; if the image cannot be read the flow holds and asks for text. Verified live once on a generated invoice PNG (all fields read); other image types are untested.
@@ -58,6 +59,7 @@ A forged request never changes the genuine recipient's record. The request is re
 - **The LLM can propose a bad plan; it cannot execute one.** The deterministic validator checks feasibility and the stated rules, not global optimality. Live evidence: of 3 plan scenarios run on Groq, 1 was valid without falling back; 2 hit the per-plan token cap and the deterministic plan was reported. The tool-calling model once emitted garbled arguments (rejected by the validator).
 - **Model availability.** The primary agent model is a Groq preview model that can be retired at short notice; the fallback is automatic and the offline parser is the floor.
 - **No API authentication.** The FastAPI app trusts its caller (a single-student sandbox). Real use needs authentication, per-user state and CSRF/CORS review.
+- **Risk scoring is a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate** (max of the two; its failure falls back to the heuristic and is recorded). It is untrusted input to the policy engine like every other model output.
 - **The risk scorer's recall on poisoned tool output is 0/6** by nature (the document is genuine); only intent binding stops those.
 - **Route comparison is information, not licensed financial advice**; the UI shows a disclosure. The spending forecast starts cold (budget and labelled reference costs) until enough transactions exist.
 - **LLM variability** affects live results; hence the repeat and spread options and the caveats above.
@@ -67,6 +69,13 @@ A forged request never changes the genuine recipient's record. The request is re
 - **Regulatory figures** are researched secondary-source values. The education purpose code is unconfirmed.
 - **Screenshots** may contain third parties' personal data. The vision path keeps only extracted text and does not store the image.
 
+
+## Honest limits
+
+- **Some 100% results are partly by construction.** The same team wrote the attacks and the defences. The simulated student declines using the risk evidence the system itself produced. Legitimate account changes succeed because the scenarios pre-register the new account in the registry. A 100% block rate on this suite is therefore not a claim about unseen attackers, and a 100% completion rate is not a claim about real landlords and universities.
+- **Approvals are not authenticated.** Roles ("student", "parent") are plain strings in the request; any API caller can approve as the parent. The two-person rule is enforced in the policy engine, not by identity. A real deployment needs authentication and per-user sessions.
+- **Live planning is weak so far.** In the latest live run (qwen/qwen3.8-27b with openai/gpt-oss-120b as fallback; `eval/reports/planning.md`, 2026-10-10) all 8 scenarios ended with a valid plan, but only 4 of 8 without falling back to the deterministic planner (the other 4 hit the per-plan token cap), using 100,235 tokens and 42 model calls; proposals to the first valid plan averaged 2.75 (max 4). The deterministic planner is valid on 8 of 8 with 1.5 proposals. One run, no repeats.
+- **The AI risk scorer is escalate-only and optional.** The default scorer is heuristic; the LLM scorer exists only in live mode and has not yet been run on the full live benchmark, so its contribution is unmeasured.
 
 ## Out of scope
 Compromise of the host machine or signing keys; compromise of the registry itself; real banking integration; production key management and encryption at rest; denial of service; the correctness of regulatory figures beyond the stated research.

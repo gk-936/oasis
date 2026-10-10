@@ -111,11 +111,23 @@ function ParentLang({ views }) {
   );
 }
 
+function AiBadge({ ai }) {
+  if (!ai) return null;
+  const live = ai.mode === "live";
+  return (
+    <p className={`aibadge ${live ? "live" : "offline"}`} title="Which mode and which model produced this step">
+      <b>{live ? "Live-replay" : "Offline"}</b> · {ai.label}
+      {ai.replay_misses > 0 && <span className="muted"> · {ai.replay_misses} call(s) not in the fixture, offline fallback used</span>}
+    </p>
+  );
+}
+
 function StepView({ r, openProof }) {
   return (
     <div className="card step">
       <div className="row"><h3 style={{ margin: 0 }}>{r.title}</h3><Chips items={r.pipeline} /></div>
       <p className="muted">{r.narrative}</p>
+      <AiBadge ai={r.ai} />
       <p className="headline">{r.headline}</p>
       {r.plan && <PlanView plan={r.plan} />}
       {r.agentic_plan && <PlanPanel plan={r.agentic_plan} />}
@@ -147,15 +159,23 @@ function Demo({ refresh, openProof }) {
   const [results, setResults] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [mode, setMode] = useState("offline");
   const guard = async (fn) => { setBusy(true); setErr(null); try { await fn(); } catch (e) { setErr(String(e)); } setBusy(false); };
-  const start = (run) => guard(async () => { setResults([]); setInfo(await api("/demo/start", { run })); refresh(); });
+  const start = (run) => guard(async () => { setResults([]); setInfo(await api("/demo/start", { run, mode })); refresh(); });
   const next = () => guard(async () => { const r = await api("/demo/next", {}); setResults((x) => [...x, r]); setInfo((i) => ({ ...i, done: r.done })); refresh(); });
   const all = async () => { while (true) { const r = await api("/demo/next", {}); setResults((x) => [...x, r]); if (r.done) { setInfo((i) => ({ ...i, done: true })); break; } } refresh(); };
   const playAll = () => guard(all);
   return (
     <section>
-      <p>The scripted demo (spec section 19): fixed seed, fixed <Mock>MOCK</Mock> data, the offline model and seeded <b>demo</b> keys,
-        so it plays the same way every time with no network. It loads into the same Passport you see in the other tabs.</p>
+      <p>The scripted demo (spec section 19): fixed seed, fixed <Mock>MOCK</Mock> data and seeded <b>demo</b> keys, no network.
+        It loads into the same Passport you see in the other tabs. Choose who does the reading, scoring and planning:</p>
+      <div className="row" role="group" aria-label="Demo mode">
+        <button className={mode === "live" ? "" : "ghost"} disabled={busy} onClick={() => setMode("live")}>Live-replay (Qwen, recorded)</button>
+        <button className={mode === "offline" ? "" : "ghost"} disabled={busy} onClick={() => setMode("offline")}>Offline parser</button>
+      </div>
+      <p className="muted">{mode === "live"
+        ? "Live-replay: qwen/qwen3.8-27b reads the documents, adds an escalate-only risk score and plans with tool calls. Its answers were recorded once and are replayed from a committed fixture, so the demo repeats exactly with no network. Anything not recorded falls back to the offline parser and is labelled on the step."
+        : "Offline: a deterministic rule-based parser and planner, no AI model."}</p>
       <div className="row">
         <button disabled={busy} onClick={() => start("legit")}>Start Run 1: legitimate</button>
         <button disabled={busy} onClick={() => start("attack")}>Start Run 2: attack</button>
@@ -163,7 +183,7 @@ function Demo({ refresh, openProof }) {
         {info && !info.done && <button className="ghost" disabled={busy} onClick={playAll}>Play all remaining</button>}
       </div>
       {err && <div className="error">{err}</div>}
-      {info && <p className="muted">Run: <b>{info.run}</b> · seed {info.seed} · model {info.llm} · step {results.length}/{info.total}
+      {info && <p className="muted">Run: <b>{info.run}</b> · mode <b>{info.mode === "live" ? "live-replay" : "offline"}</b> · seed {info.seed} · model {info.mode === "live" ? `${info.model} (replayed; fixture: ${info.fixture?.entries ?? 0} recorded responses${info.fixture?.recorded?.length ? ", " + info.fixture.recorded.join(", ") : ""})` : info.llm} · step {results.length}/{info.total}
         {info.done && results.length > 0 && " · complete"}</p>}
       {info && results.length === 0 && (
         <ol>{info.steps.map((s) => <li key={s.title}><b>{s.title}</b> <span className="muted">{s.narrative}</span></li>)}</ol>)}
@@ -527,7 +547,9 @@ function Proof({ s, selected }) {
   const [pack, setPack] = useState(null);
   const [check, setCheck] = useState(null);
   const [audit, setAudit] = useState(null);
+  const [fp, setFp] = useState(null);
   const [err, setErr] = useState(null);
+  useEffect(() => { api("/trust/fingerprint").then(setFp).catch(() => {}); }, [s]);
   const load = useCallback(async (pid) => {
     try { setId(pid); setPack(await api(`/proof/${pid}`)); setCheck(await api(`/proof/${pid}/verify`)); setErr(null); }
     catch (e) { setErr(String(e)); }
@@ -539,6 +561,8 @@ function Proof({ s, selected }) {
       <div className="row">{(s?.proofs || []).map((p) => <button key={p} className={p === id ? "" : "ghost"} onClick={() => load(p)}>{p}</button>)}
         {!s?.proofs?.length && <p className="muted">No proof packs yet — pay something first (or run the legit demo).</p>}</div>
       {err && <div className="error">{err}</div>}
+      {fp && <p className="muted">Trust-key fingerprint (sha256 of the public keys; pin this to verify a pack): <code>{fp.fingerprint}</code>
+        {fp.demo_keys ? " · DEMO keys (seeded, public: never trust them outside the demo)" : fp.persistent ? " · persistent server keys" : " · in-memory keys"}</p>}
       {audit && <p className="muted">Audit chain: {audit.ok ? "intact" : `BROKEN at entry ${audit.first_broken}`} · {audit.entries} entries · head <code>{audit.head.slice(0, 16)}…</code></p>}
       {pack && (
         <div className="card">
@@ -549,7 +573,9 @@ function Proof({ s, selected }) {
           {pack.anchor && <p>Anchor: <code>{pack.anchor.tx_hash.slice(0, 20)}…</code> on <b>{pack.anchor.network}</b> <Mock>SIMULATED CHAIN</Mock></p>}
           {pack.costs?.route && <p>Route {pack.costs.route}: saved CNY {fmt(pack.costs.saved_cny, 2)} vs a typical bank route <Mock /></p>}
           <h4>Independent checks</h4>
-          <ul>{check && Object.entries(check).map(([k, v]) => <li key={k}>{v ? "✅" : "❌"} {k}</li>)}</ul>
+          <ul>{check && Object.entries(check).filter(([k]) => k !== "pinned_fingerprint").map(([k, v]) =>
+            <li key={k}>{v === null ? "➖" : v ? "✅" : "❌"} {k}{v === null ? " (not checked)" : ""}</li>)}</ul>
+          <p className="muted">A pack embeds its own public keys, so it only counts if their fingerprint matches the pinned one above (<code>key_pinned</code>); the anchor is checked against this server's simulated chain.</p>
         </div>
       )}
     </section>
