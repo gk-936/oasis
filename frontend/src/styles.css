@@ -107,3 +107,9 @@ p, li, td, summary { overflow-wrap: anywhere; }
 .card.unlock { border-left: 4px solid var(--warn); }
 header .right { align-items: center; }
 @media (max-width: 600px) { .roles { grid-template-columns: 1fr; } header .right { margin-left: 0; width: 100%; } }
+
+/* exchange-rate provenance badge: live (green), STALE (amber), MOCK (grey) */
+.ratebadge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.9em; border: 1px solid var(--border, #d0d7de); }
+.ratebadge.live { background: rgba(31, 122, 90, 0.10); border-color: var(--ok); }
+.ratebadge.stale { background: rgba(183, 121, 31, 0.15); border-color: var(--warn); color: var(--warn); }
+.ratebadge.mock { background: rgba(128, 128, 128, 0.12); }

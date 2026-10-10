@@ -50,6 +50,18 @@ function MockBanner({ note }) {
   return <div className="mock" role="note"><b>MOCK DATA.</b> {note || "All money, rates, rails, registry identities and balances are simulated sandbox data."}</div>;
 }
 
+// Provenance of the INR→CNY figure: live (real ECB reference rate), STALE (live, last refresh failed) or MOCK.
+function RateBadge({ rates, rate }) {
+  const mode = !rates ? "mock" : rates.mode === "live" ? (rates.stale ? "stale" : "live") : "mock";
+  const text = rates?.label || `INR→CNY ${rate} · MOCK (offline fallback, not a market rate)`;
+  return (
+    <span className={`ratebadge ${mode}`} data-testid="rate-badge" title={rates?.spreads_and_fees}>
+      {text}
+    </span>
+  );
+}
+const RATE_FOOT = "Route spreads, fees, delivery times and reliability are always MOCK, even when the mid-market rate is live. Oasis never predicts rates.";
+
 function StatusPill({ status }) {
   return <span className={`pill ${status}`}>{status}</span>;
 }
@@ -235,7 +247,7 @@ function Demo({ refresh, openProof }) {
 
 /* ------------------------------------------------------------------ Chat */
 function Chat({ refresh }) {
-  const [log, setLog] = useState([{ role: "oasis", text: "Hi Arjun. Tell me what you need to pay, or forward an invoice and I'll check it before anything moves. You can also say: convert 2000 when the rate reaches 0.0855." }]);
+  const [log, setLog] = useState([{ role: "oasis", text: "Hi Arjun. Tell me what you need to pay, or forward an invoice and I'll check it before anything moves. You can also say: convert 2000 when the rate reaches 0.0700." }]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState(null);
   const send = async (text) => {
@@ -332,7 +344,7 @@ function Spending({ s, refresh }) {
 
 function Autonomy({ s, refresh }) {
   const a = s.autonomy;
-  const [rate, setRate] = useState("0.0855");
+  const [rate, setRate] = useState("0.0700");
   const [cny, setCny] = useState("2000");
   const [days, setDays] = useState(5);
   const [last, setLast] = useState(null);
@@ -342,7 +354,7 @@ function Autonomy({ s, refresh }) {
   return (
     <div className="card">
       <h3>Tier-1 autonomy <Mock /></h3>
-      <p className="muted">The agent acts on its own only inside deterministic policy: small conversions at rates <b>you</b> set (it never predicts rates), and small recurring bills to Verified_Full recipients (up to CNY {fmt(a.tier1_auto_pay_cny)}). Rate now {a.rate_now}.</p>
+      <p className="muted">The agent acts on its own only inside deterministic policy: small conversions at rates <b>you</b> set (it never predicts rates), and small recurring bills to Verified_Full recipients (up to CNY {fmt(a.tier1_auto_pay_cny)}). Rate now {a.rate_now} <RateBadge rates={s.rates} rate={a.rate_now} />.</p>
       <h4>Rate targets</h4>
       {a.targets.length === 0 && <p className="muted">No targets yet.</p>}
       {a.targets.map((t) => (
@@ -493,7 +505,8 @@ function Passport({ s, refresh }) {
         <h3>Balances <Mock /></h3>
         {p.balances.map((b) => <div key={b.currency} className="big">{b.currency} {fmt(b.amount, 2)}</div>)}
         <p className="muted">Runway after obligations: {s.runway_months} months · burn {fmt(s.burn.monthly_cny)} CNY/month ({s.burn.basis})</p>
-        <p className="muted">Mid-market INR→CNY {s.rate_mid} (mock path) · simulated date {s.now.slice(0, 10)}</p>
+        <p className="muted"><RateBadge rates={s.rates} rate={s.rate_mid} /> · simulated date {s.now.slice(0, 10)}</p>
+        <p className="muted" style={{ fontSize: "0.85em" }}>{s.rates?.spreads_and_fees || RATE_FOOT} {RATE_FOOT}</p>
         <p className="muted">{s.persistence.enabled ? `State is saved to SQLite (${s.persistence.path}) and survives a restart.` : "In-memory session (not persisted)."}</p>
       </div>
       <div className="card">

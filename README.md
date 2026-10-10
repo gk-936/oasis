@@ -92,10 +92,11 @@ Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`,
 | Money lost (CNY, sandbox) | same | **offline:** 479,000 / 108,000 / 0 / 0 | same |
 | Legitimate completion, false blocks (12 changes) | all four | **offline:** 100%, 0% | same |
 | Attack block rate, **live agent** (extraction by a live model; qwen/qwen3.8-27b configured as primary, which model actually served each extraction was **not recorded** in this run) | same | **live:** 18.8% / 68.8% / 100% / 100%; baseline loses CNY 380,000 | `eval/reports/benchmark_live.md` |
+| **Hidden test set** (40 blind cases: 28 attack, 12 legit; sha256-verified; run once, nothing tuned, **pre-fix**) | baseline / +verification / +intents+policy / full | **offline:** attacks passed 46.4% / 92.9% / 100% / 100%; baseline loses CNY 180,600, others 0; legit completion 83.3% / 83.3% / **75%** / **75%** (3 false blocks: spaced account digits, markdown-table invoice, partial instalment) | `eval/reports/benchmark_hidden.md` |
 | Model followed an embedded injection | all four | **live:** 0 of 6 injection-bearing scenarios | same |
-| Plan quality, deterministic planner | 8 scenarios | **offline:** 8/8 valid, 20/20 deadlines, conversion fees 82.8% below a typical bank route (MOCK rates) | `eval/reports/planning.md` |
+| Plan quality, deterministic planner | 8 scenarios | **offline:** 8/8 valid, 20/20 deadlines, conversion fees 83.0% below a typical bank route (MOCK rates, recalibrated 2026-10-10) | `eval/reports/planning.md` |
 | Plan quality, Groq tool-calling planner | 8 scenarios, one run | **live:** final plans 8/8 valid, but only 4/8 without falling back to the deterministic plan (token cap); 100,235 tokens | same |
-| 90-day simulation (5 personas) | Oasis vs manual | **model:** fees saved CNY 1,676 to 3,351 per persona (mock fees) | `eval/reports/simulation.md` |
+| 90-day simulation (5 personas) | Oasis vs manual | **model:** fees saved CNY 1,542 to 2,963 per persona (mock fees, recalibrated rate) | `eval/reports/simulation.md` |
 
 Honest caveats:
 
@@ -104,6 +105,7 @@ Honest caveats:
 - **Which model served the live benchmark is not established for the committed run.** The earlier report line "served: openai/gpt-oss-120b" only named the last model that answered, not each extraction. Per-extraction serving model and cache flag are now recorded and `benchmark_live.md` counts them per model; the committed run predates that field and is labelled "model not recorded (pre-fix run)". Treat the live numbers as "a live model (qwen/qwen3.8-27b primary, openai/gpt-oss-120b fallback)", not as a statement about one model.
 - **Canaries are an early-detection layer, not an extra blocking layer**: they block 0 additional attacks over signed intents + policy and flag 3 attacks earlier (at Understand, offline run).
 - The **risk scorer** is a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate (combined as max(heuristic, llm); not part of the committed live benchmark, which used the heuristic alone). The heuristic's features were chosen after seeing the benchmark (in-sample): it flags 81% of attacks and 0% of legitimate changes; it cannot see poisoned-tool attacks (0/6). A small held-out set is in `tests/test_pipeline.py`.
+- **Mock rate recalibrated on 2026-10-10:** the mock INR→CNY base moved from 0.0845 to 0.0692 (the real ECB-derived cross rate as of 2026-10-09), the sandbox starting balance from INR 4 to INR 5 lakh and the split-payment attack amounts from CNY 4,000 to ~3,300 to keep their original meaning. The offline benchmark, simulation, planning (offline) and demo reports were regenerated; the benchmark outcome is unchanged. The recorded live-model runs (`benchmark_live.*`, the Groq rows of `planning.*`) were made at the old base and were not re-run (no Groq budget).
 - The simulated student and parent are not oracles; real people could approve a scam. Savings come from mock fees. Corridor figures (SAFE, LRS, TCS) are researched, not officially confirmed.
 
 ## Login and roles
@@ -138,7 +140,7 @@ A proof pack embeds the public keys that signed it, so a pack alone proves nothi
 
 ## What is real and what is simulated
 
-Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, the benchmark harness and the Groq adapter. Simulated (labelled MOCK): exchange rates, routes and fees, payment rails and balances, the payee registry (WeIdentity-style demo credentials), wallet spending, humans in the benchmark, the clock, and anchoring (a local hash-linked simulation, not FISCO BCOS). Full table: [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
+Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, the benchmark harness and the Groq adapter. Simulated (labelled MOCK): route spreads and fees (the INR→CNY mid-market rate is a mock snapshot of the real level by default, and the real ECB reference rate with `OASIS_RATES=live`, shown with a live / STALE / MOCK badge; Oasis never predicts rates; see [docs/live-rates.md](docs/live-rates.md)), routes, payment rails and balances, the payee registry (WeIdentity-style demo credentials), wallet spending, humans in the benchmark, the clock, and anchoring (a local hash-linked simulation, not FISCO BCOS). Full table: [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
 
 ## AI as a Financial Participant
 

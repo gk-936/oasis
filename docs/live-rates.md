@@ -51,10 +51,16 @@ Show a badge next to every INR to CNY figure, from `state.rates.label`:
 
 * Live: `INR→CNY 0.0692 · live · ECB via Frankfurter · as of 2026-10-09 · fetched 14:05 UTC`
 * Stale: `INR→CNY 0.0692 · STALE · live · ECB via Frankfurter · as of 2026-10-09 · fetched 11:02 UTC` (warning colour)
-* Mock: `INR→CNY 0.0845 · MOCK (offline fallback, not a market rate)` (neutral/grey)
+* Mock: `INR→CNY 0.0700 · MOCK (offline fallback, not a market rate)` (neutral/grey)
 
 Add a second line or tooltip from `state.rates.spreads_and_fees`: route spreads and fees are MOCK in every mode.
 Attribution line for live mode: "Rates: ECB reference rates via Frankfurter. Informational mid-market rate, not a transactable quote."
 
 Note: when `OASIS_RATES=live`, outputs are non-deterministic and the audit-chain head of the scripted demo will differ; keep the
 demo and benchmark on `mock`.
+
+## Wiring and the mock base
+
+`World` builds its rates with `make_rates(seed, mode="mock" if deterministic else rates_mode)`, so `OASIS_RATES=live` affects only the API's student world; the scripted demo, scenario worlds, the red-team sandbox, the benchmark, the simulator and the tests are always mock. `GET /api/state` carries `rates` (the provenance dict above) and the UI shows it as a badge (green live, amber STALE, grey MOCK) with a footnote that route spreads and fees are mock. `get_rates` (planning tool) and the plan validator's `rate_basis` say "live" or "mock" accordingly.
+
+The mock path is `MockRates.BASE * (1 + 0.012 sin((day + seed) / 6))` with `BASE = 0.0692`, the ECB-derived INR→CNY cross rate on 2026-10-09 (Frankfurter: CNY per EUR / INR per EUR). It was 0.0845 until 2026-10-10, which overstated the rate by about 22%. It is a frozen snapshot, not a live value.

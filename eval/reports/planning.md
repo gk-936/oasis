@@ -14,19 +14,19 @@ Planner: `deterministic`; run 2026-10-10.
 | Fallbacks to the deterministic plan | 0 |
 | Proposals to first valid plan (mean / max) | 1.5 / 2 |
 | Deadlines met | 20 of 20 |
-| Conversion fees vs typical bank | CNY 5,138 vs CNY 29,867 (82.8% lower) |
+| Conversion fees vs typical bank | CNY 4,990 vs CNY 29,378 (83.0% lower) |
 | Tokens / model calls | 0 / 0 |
 
 | Scenario | Valid | Proposals to valid | Fallback | Deadlines | Fees (CNY) vs bank | TCS (INR) | First validator errors | Warnings |
 |---|---|---|---|---|---|---|---|---|
-| Arrival shortfall (the demo student) | yes | 2 | no | 3/3 | 390 vs 2,093 | 0 | insufficient_inr | low_runway, parent_remitter |
-| Tight runway | yes | 1 | no | 3/3 | 322 vs 1,885 | 0 | - | low_runway |
-| SAFE-quota tuition | yes | 1 | no | 1/1 | 2,548 vs 16,391 | 74,238 | - | safe_quota_near, tcs |
-| Late scholarship | yes | 2 | no | 2/2 | 354 vs 1,853 | 0 | insufficient_inr | late_income_ignored, low_runway, parent_remitter |
-| Parent remitter crossing TCS | yes | 2 | no | 1/1 | 296 vs 1,613 | 5,093 | insufficient_inr | low_runway, parent_remitter, tcs |
-| Rate target to protect | yes | 2 | no | 3/3 | 390 vs 2,093 | 0 | rate_target_reserve | parent_remitter |
-| Five obligations | yes | 1 | no | 5/5 | 382 vs 2,285 | 0 | - | - |
-| Urgent deposit | yes | 1 | no | 2/2 | 457 vs 1,652 | 0 | - | - |
+| Arrival shortfall (the demo student) | yes | 2 | no | 3/3 | 365 vs 2,018 | 0 | insufficient_inr | low_runway, parent_remitter |
+| Tight runway | yes | 1 | no | 3/3 | 309 vs 1,848 | 0 | - | low_runway |
+| SAFE-quota tuition | yes | 1 | no | 1/1 | 2,523 vs 16,316 | 95,066 | - | safe_quota_near, tcs |
+| Late scholarship | yes | 2 | no | 2/2 | 329 vs 1,778 | 0 | insufficient_inr | late_income_ignored, low_runway, parent_remitter |
+| Parent remitter crossing TCS | yes | 2 | no | 1/1 | 275 vs 1,538 | 6,655 | insufficient_inr | low_runway, parent_remitter, tcs |
+| Rate target to protect | yes | 2 | no | 3/3 | 365 vs 2,018 | 0 | rate_target_reserve | parent_remitter |
+| Five obligations | yes | 1 | no | 5/5 | 369 vs 2,247 | 0 | - | - |
+| Urgent deposit | yes | 1 | no | 2/2 | 453 vs 1,615 | 0 | - | - |
 
 - The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; that is why scenarios with a shortfall need two proposals.
 

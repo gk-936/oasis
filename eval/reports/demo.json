@@ -1,6 +1,6 @@
 {
   "legit": {
-    "audit_head": "cc1c6367ea2b396a7338d2f977d28440be42b3498b24159363e5d186acacad2d",
+    "audit_head": "38417365ea11d0c3c51b9ad4d555858e860b4e7b491ca6cc29bab7c048d1cf72",
     "audit_entries": 29,
     "audit_ok": true,
     "money_lost_cny": 0,
@@ -10,8 +10,8 @@
     "replay_head_identical": true,
     "steps": [
       {
-        "title": "1. Arjun arrives with INR 4 lakh",
-        "headline": "Needs about INR 495,383 for CNY 42,000 of obligations; shortfall INR 95,383; the agent's plan is valid after 2 proposal(s) (saves CNY 1,703 vs a typical bank route)"
+        "title": "1. Arjun arrives with INR 5 lakh",
+        "headline": "Needs about INR 604,727 for CNY 42,000 of obligations; shortfall INR 104,727; the agent's plan is valid after 2 proposal(s) (saves CNY 1,653 vs a typical bank route)"
       },
       {
         "title": "2. Tuition to the verified university",
@@ -31,12 +31,12 @@
       },
       {
         "title": "6. Proof packs and savings receipt",
-        "headline": "4 proof packs; savings CNY 1,364.22; audit chain intact"
+        "headline": "4 proof packs; savings CNY 1,313.66; audit chain intact"
       }
     ]
   },
   "attack": {
-    "audit_head": "d0a0a83e6d64f8e9a609a4a6d8d1519d8a2e8569a883d61941e2088326bd96f2",
+    "audit_head": "64f5aa04bca100693c35d34f1692f4d8987623a433307d72b255a40e38c1a449",
     "audit_entries": 22,
     "audit_ok": true,
     "money_lost_cny": 0,

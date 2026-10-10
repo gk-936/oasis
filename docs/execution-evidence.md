@@ -12,8 +12,8 @@ Everything below ran on the simulated sandbox (MOCK rates, rails, registry and b
 
 Audit-chain heads for the seeded demo (offline model, seed 7, seeded DEMO keys, simulated clock), reproduced on every run:
 
-- Run 1 (legit): `cc1c6367ea2b396a7338d2f977d28440be42b3498b24159363e5d186acacad2d` (29 entries, money lost 0)
-- Run 2 (attack): `d0a0a83e6d64f8e9a609a4a6d8d1519d8a2e8569a883d61941e2088326bd96f2` (money lost 0)
+- Run 1 (legit): `38417365ea11d0c3c51b9ad4d555858e860b4e7b491ca6cc29bab7c048d1cf72` (29 entries, money lost 0)
+- Run 2 (attack): `64f5aa04bca100693c35d34f1692f4d8987623a433307d72b255a40e38c1a449` (money lost 0)
 
 If the code or ruleset changes, these hashes change; regenerate with `python -m eval.demo_log` and read `demo.md`. The API exposes the same data live: `GET /api/audit`, `GET /api/audit/verify`, `GET /api/proof/{intent_id}/verify`, `POST /api/demo/run`.
 

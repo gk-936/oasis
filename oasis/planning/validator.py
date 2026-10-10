@@ -23,13 +23,15 @@ Rules (each failure is an error with a code and a hint; warnings never block):
 Warnings: tcs, tcs_near, safe_quota_near, small_conversion, route_not_cheapest, low_runway, late_income_ignored,
 approval_expected, parent_remitter.
 
-Rates are quoted at today's mock mid-market rate for the whole horizon. That is a quote, not a forecast: the agent
+Rates are quoted at today's mid-market rate (live ECB reference when OASIS_RATES=live, else the mock; route spreads and fees
+are always mock) for the whole horizon. That is a quote, not a forecast: the agent
 does not predict exchange rates.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+from ..market import provenance
 from ..mock.rates import ROUTES, Route, delivered_amount
 from ..trust import corridor
 
@@ -38,6 +40,14 @@ ROUTE_BY_ID = {r.id: r for r in ROUTES}
 BANK = next(r for r in ROUTES if r.typical_bank)
 MIN_CONVERSION_CNY = 500.0
 REMITTERS = ("student", "parent")
+
+
+def _rate_basis(w, mid: float) -> str:
+    pv = provenance(w.rates, w.day_index)
+    if pv["mode"] == "live":
+        return (f"today's live mid-market rate {mid:.6f} ({pv['source']}, as of {pv['as_of']}"
+                f"{', STALE' if pv['stale'] else ''}; route spreads and fees are mock; a quote, not a forecast)")
+    return f"today's mock mid-market rate {mid:.6f} (a quote, not a forecast)"
 
 
 @dataclass
@@ -342,7 +352,7 @@ def validate_plan(world, steps) -> Validation:
         "fees_cny": round(cost_mid - total_deliv, 2), "bank_fees_cny": round(cost_mid - total_bank, 2),
         "tcs_inr": round(tcs_total, 2), "obligations": len(req), "deadlines_met": met,
         "final_inr": round(sim_inr_after, 2), "final_cny": round(final_cny, 2), "runway_months_after": round(runway, 2),
-        "rate_basis": f"today's mock mid-market rate {mid:.6f} (a quote, not a forecast)",
+        "rate_basis": _rate_basis(world, mid),
     }
     sched.sort(key=lambda s: (s["date"], 0 if s["action"] == "convert" else 1, s["step"]))
     return Validation(not errors, [e.to_dict() for e in errors], [w.to_dict() for w in warns], metrics, sched)

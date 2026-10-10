@@ -110,11 +110,11 @@ def test_demo_api_step_by_step(api_client):
 # ------------------------------------------------------------------ Tier-1 autonomy
 def test_rate_target_converts_only_when_reached_and_within_limit():
     w, a = _auto()
-    t = a.set_rate_target(0.0900, 2000)           # unreachable in the mock rate path
+    t = a.set_rate_target(0.0800, 2000)           # unreachable in the mock rate path
     assert all(x["kind"] != "rate_target_conversion" for x in a.run_days(10))
     assert t["status"] == "watching"
     w2, a2 = _auto()
-    t2 = a2.set_rate_target(0.0855, 2000)
+    t2 = a2.set_rate_target(0.0700, 2000)
     acts = a2.run_days(5)
     conv = [x for x in acts if x["kind"] == "rate_target_conversion"]
     assert conv and conv[0]["rule"] == "R13_tier1_rate_target" and conv[0]["tier"] == 1
@@ -125,7 +125,7 @@ def test_rate_target_converts_only_when_reached_and_within_limit():
 
 def test_rate_target_above_limit_needs_student():
     w, a = _auto()
-    a.set_rate_target(0.0855, 20000)
+    a.set_rate_target(0.0700, 20000)
     acts = a.run_days(5)
     assert [x["kind"] for x in acts if x["kind"].startswith("rate_target")] == ["rate_target_needs_approval"]
     assert w.passport.rules.rate_targets[0]["status"] == "awaiting_approval"
@@ -136,7 +136,7 @@ def test_rate_target_above_limit_needs_student():
 def test_rate_target_frozen_by_canary():
     w, a = _auto()
     w.canaries.scan({"x": next(iter(w.canaries.decoy_tokens))}, "test")
-    a.set_rate_target(0.0855, 1000)
+    a.set_rate_target(0.0700, 1000)
     acts = a.run_days(5)
     assert any(x["kind"] == "rate_target_blocked" for x in acts) and not any(x["kind"] == "rate_target_conversion" for x in acts)
 
@@ -164,8 +164,8 @@ def test_recurring_bill_not_automatic_unless_verified_full_and_small():
 
 def test_autonomy_api_and_chat_target(api_client):
     c = api_client
-    r = c.post("/api/chat", json={"message": "convert 1500 when the rate reaches 0.0855"}).json()
-    assert r["target"]["rate"] == 0.0855 and "own" in r["reply"]
+    r = c.post("/api/chat", json={"message": "convert 1500 when the rate reaches 0.0700"}).json()
+    assert r["target"]["rate"] == 0.0700 and "own" in r["reply"]
     t = c.post("/api/autonomy/tick", json={"days": 5}).json()
     assert {a["kind"] for a in t["actions"]} == {"rate_target_conversion", "recurring_bill_paid"}
     assert c.get("/api/state").json()["autonomy"]["log"]

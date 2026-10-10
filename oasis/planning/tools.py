@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
+from ..market import provenance
 from ..mock.rates import ROUTES, delivered_amount
 from ..trust import corridor
 from . import forecast
@@ -29,7 +30,7 @@ TOOL_SPECS = [
     _fn("read_passport", "Read-only. Balances (INR, CNY), SAFE quota used per year, INR sent per remitter this financial year, "
                          "rate targets, income not yet arrived."),
     _fn("list_obligations", "Read-only. Obligations with id, payee_id, exact amount_cny, due date and plan_must_fund."),
-    _fn("get_rates", "Read-only. Today's mock INR to CNY mid rate and each route's fees. A quote, not a forecast."),
+    _fn("get_rates", "Read-only. Today's INR to CNY mid-market rate (real ECB reference rate when OASIS_RATES=live, otherwise a mock; see the note and 'rates' fields) and each route's fees (route spreads and fees are always mock). A quote, not a forecast."),
     _fn("get_routes", "Read-only. For send_inr: CNY delivered per route, days, on_time for the due date, saving vs the bank route.",
         {"send_inr": {"type": "number"}, "due": {"type": "string", "description": "YYYY-MM-DD, optional"}}, ["send_inr"]),
     _fn("check_corridor", "Read-only. LRS, TCS and SAFE-quota findings for converting amount_inr.",
@@ -97,8 +98,11 @@ class PlanningToolbox:
     def tool_get_rates(self) -> dict:
         w = self.w
         mid = w.rates.mid(w.day_index)
+        prov = provenance(w.rates, w.day_index)
         return {"as_of": w.today.isoformat(), "mid_cny_per_inr": mid,
-                "note": "mock quote at today's rate for the whole horizon; Oasis does not predict rates",
+                "note": (f"{'live' if prov['mode'] == 'live' else 'mock'} mid-market quote at today's rate for the whole horizon; "
+                         "route spreads and fees are mock; Oasis does not predict rates"),
+                "rates": prov,
                 "routes": [{"id": r.id, "name": r.name, "fixed_fee_inr": r.fixed_fee_inr, "pct_fee": r.pct_fee,
                             "spread": r.rate_spread, "days": r.days, "reliability": r.reliability,
                             "typical_bank": r.typical_bank} for r in ROUTES]}

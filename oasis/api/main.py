@@ -38,6 +38,7 @@ from ..agent import plan_exec
 from ..agent.planner import AgenticPlanner, DeterministicPlanner, build_record, make_planner
 from ..agent.replay import MODES, fixture_info
 from ..demo import DemoRunner, new_demo_world
+from ..market import provenance
 from ..planning import spending
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
@@ -105,7 +106,7 @@ class Session:
                                 "required": v["required"], "outcome": v["outcome"]}
                             for k, v in snap["kv"].get("pending", {}).items()}
         self.agent = OasisAgent(self.world)
-        self.redteam_world = World(Features.full(), make_llm(), signer=self.signer)   # separate sandbox ledger for judges
+        self.redteam_world = World(Features.full(), make_llm(), signer=self.signer, rates_mode="mock")   # separate sandbox ledger for judges
         self.redteam_agent = OasisAgent(self.redteam_world)
 
     def reset(self) -> None:
@@ -389,6 +390,7 @@ def state(p: Principal = Depends(VIEWERS)):
         "now": w.now_iso(),
         "passport": {**p_.model_dump(), "recipients": {k: v.model_dump() for k, v in p_.recipients.items() if k not in decoys}},
         "rate_mid": w.rates.mid(w.day_index),
+        "rates": provenance(w.rates, w.day_index),
         "routes": [{"id": q.route.id, "name": q.route.name, "delivered_cny_per_100k_inr": q.delivered_cny,
                     "days": q.arrives_in_days, "reliability": q.route.reliability, "cost_vs_mid_pct": q.cost_vs_mid_pct,
                     "typical_bank": q.route.typical_bank} for q in quotes],
@@ -556,7 +558,7 @@ def chat(body: ChatIn, p: Principal = Depends(STUDENT)):
              f"Cheapest on-time route right now: {best.route.name}. "
              + (" Alerts: " + " ".join(t.message for t in tr) if tr else " No alerts.") +
              " Forward me any invoice or message and I'll check it before anything is paid. "
-             "You can also say: 'convert 2000 when the rate reaches 0.0855'.")
+             "You can also say: 'convert 2000 when the rate reaches 0.0700'.")
     S.chat.append({"role": "oasis", "text": reply})
     return {"reply": reply}
 

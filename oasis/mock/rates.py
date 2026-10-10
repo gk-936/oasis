@@ -26,8 +26,13 @@ ROUTES = [
 
 
 class MockRates:
-    """Deterministic mid-market INR→CNY path: a gentle sine around 0.0845 CNY per INR."""
-    BASE = 0.0845
+    """Deterministic mid-market INR→CNY path: a gentle sine around a real-world level.
+
+    BASE is calibrated to the real ECB-derived INR→CNY cross rate (CNY_per_EUR / INR_per_EUR, via Frankfurter) of
+    about 0.0692 CNY per INR as of 2026-10-09. It is a frozen snapshot used only for the offline/deterministic path;
+    it is NOT a live rate and Oasis never predicts rates (see docs/live-rates.md, docs/real-vs-simulated.md).
+    """
+    BASE = 0.0692
 
     def __init__(self, seed: int = 7):
         self.seed = seed

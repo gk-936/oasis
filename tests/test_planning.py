@@ -39,7 +39,7 @@ def w():
     return build_scenario_world("urgent_deadline")      # INR 600k; deposit 6,000 due 2026-10-14; tuition 30,000 due 2026-11-15
 
 
-GOOD = lambda: [conv("2026-10-12", 426753, R2), pay("obl_deposit_1", "2026-10-13", "payee_landlord_chen", 6000),
+GOOD = lambda: [conv("2026-10-12", 521046, R2), pay("obl_deposit_1", "2026-10-13", "payee_landlord_chen", 6000),
                 pay("obl_tuition_1", "2026-11-13", "payee_univ_x", 30000)]
 
 
@@ -77,7 +77,7 @@ def test_late_and_backdated_payments(w):
 
 def test_route_must_arrive_before_the_payment(w):
     g = GOOD()
-    g[0] = conv("2026-10-12", 426753, R3)            # 3 days: arrives 10-15, the deposit is paid 10-13
+    g[0] = conv("2026-10-12", 521046, R3)            # 3 days: arrives 10-15, the deposit is paid 10-13
     v = validate_plan(w, g)
     assert "route_too_slow" in codes(v)
     assert "unknown_route" in codes(validate_plan(w, [conv("2026-10-12", 1000, "route_nope")] + GOOD()[1:]))
@@ -99,7 +99,7 @@ def test_safe_quota_is_per_calendar_year_and_staging_fixes_it():
     v = validate_plan(w, one)
     err = next(e for e in v.errors if e["code"] == "safe_quota_exceeded")
     assert err["data"]["max_send_inr"] == pytest.approx(quota) and "2027-01-01" in err["hint"]
-    staged = [conv("2026-10-12", quota), conv("2027-01-01", 450000), pay("obl_tuition_1", "2027-01-15", "payee_univ_x", 400000)]
+    staged = [conv("2026-10-12", quota), conv("2027-01-01", 1450000), pay("obl_tuition_1", "2027-01-15", "payee_univ_x", 400000)]
     assert validate_plan(w, staged).ok
     # SAFE use already booked this year shrinks the room
     w.passport.safe_used_inr["2026"] = quota - 1000
@@ -108,17 +108,17 @@ def test_safe_quota_is_per_calendar_year_and_staging_fixes_it():
 
 def test_lrs_tcs_warnings_and_rate_target_reserve():
     w = build_scenario_world("parent_tcs")
-    v = validate_plan(w, [conv("2026-10-12", 50000, R2), conv("2026-10-12", 304634, R3, "parent"),
+    v = validate_plan(w, [conv("2026-10-12", 50000, R2), conv("2026-10-12", 384000, R3, "parent"),
                           pay("obl_tuition_1", "2026-11-13", "payee_univ_x", 30000)])
     assert v.ok
     tcs = [x for x in v.warnings if x["code"] == "tcs"]
-    assert tcs and v.metrics["tcs_inr"] == pytest.approx(0.02 * (950000 + 304634 - 1_000_000), abs=1)
+    assert tcs and v.metrics["tcs_inr"] == pytest.approx(0.02 * (950000 + 384000 - 1_000_000), abs=1)
     assert any(x["code"] == "parent_remitter" for x in v.warnings)
     w.passport.remitted_inr_fy["parent"] = 21_900_000                          # beyond LRS (USD 250k at 88)
-    assert "lrs_exceeded" in codes(validate_plan(w, [conv("2026-10-12", 50000, R2), conv("2026-10-12", 304634, R3, "parent"),
+    assert "lrs_exceeded" in codes(validate_plan(w, [conv("2026-10-12", 50000, R2), conv("2026-10-12", 384000, R3, "parent"),
                                                      pay("obl_tuition_1", "2026-11-13", "payee_univ_x", 30000)]))
     r = build_scenario_world("rate_target")
-    v = validate_plan(r, [conv("2026-10-12", 495395), pay("obl_deposit_1", "2026-10-23", "payee_landlord_chen", 6000),
+    v = validate_plan(r, [conv("2026-10-12", 615000), pay("obl_deposit_1", "2026-10-23", "payee_landlord_chen", 6000),
                           pay("obl_rent_1", "2026-10-30", "payee_landlord_chen", 6000),
                           pay("obl_tuition_1", "2026-11-13", "payee_univ_x", 30000)])
     assert codes(v) == {"rate_target_reserve"}

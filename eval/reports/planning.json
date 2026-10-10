@@ -13,9 +13,9 @@
    "max_iterations_to_valid": 2,
    "deadlines_met": 20,
    "deadlines_total": 20,
-   "fees_cny": 5138.16,
-   "bank_fees_cny": 29866.63,
-   "fee_reduction_vs_bank_pct": 82.8,
+   "fees_cny": 4989.66,
+   "bank_fees_cny": 29377.98,
+   "fee_reduction_vs_bank_pct": 83.0,
    "tokens": 0,
    "model_calls": 0
   },
@@ -35,11 +35,11 @@
     "deadlines_met": 3,
     "obligations": 3,
     "conversions": 2,
-    "send_inr": 496195.0,
-    "delivered_cny": 42001.05,
-    "fees_cny": 389.88,
-    "bank_fees_cny": 2093.12,
-    "saved_vs_bank_cny": 1703.24,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
     "tcs_inr": 0.0,
     "warnings": [
      "low_runway",
@@ -56,14 +56,14 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 400000.0,
+      "send_inr": 500000.0,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 96195.0,
+      "send_inr": 105542.0,
       "route_id": "route_inr_cny_3",
       "remitter": "parent"
      },
@@ -89,7 +89,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 400,000; the parent would remit INR 96,195, which needs the parent's consent."
+    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 500,000; the parent would remit INR 105,542, which needs the parent's consent.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "tight_runway",
@@ -106,11 +107,11 @@
     "deadlines_met": 3,
     "obligations": 3,
     "conversions": 1,
-    "send_inr": 495395.0,
-    "delivered_cny": 42001.05,
-    "fees_cny": 321.54,
-    "bank_fees_cny": 1885.31,
-    "saved_vs_bank_cny": 1563.77,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
     "tcs_inr": 0.0,
     "warnings": [
      "low_runway"
@@ -124,7 +125,7 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 495395.0,
+      "send_inr": 604742.0,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
@@ -150,7 +151,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time."
+    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "safe_quota_tuition",
@@ -167,12 +169,12 @@
     "deadlines_met": 1,
     "obligations": 1,
     "conversions": 2,
-    "send_inr": 4711923.0,
-    "delivered_cny": 400001.06,
-    "fees_cny": 2547.95,
-    "bank_fees_cny": 16391.4,
-    "saved_vs_bank_cny": 13843.45,
-    "tcs_inr": 74238.46,
+    "send_inr": 5753305.0,
+    "delivered_cny": 400001.04,
+    "fees_cny": 2523.19,
+    "bank_fees_cny": 16316.14,
+    "saved_vs_bank_cny": 13792.95,
+    "tcs_inr": 95066.1,
     "warnings": [
      "safe_quota_near",
      "tcs"
@@ -193,7 +195,7 @@
      {
       "action": "convert",
       "date": "2027-01-01",
-      "send_inr": 311923.0,
+      "send_inr": 1353305.0,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
@@ -205,7 +207,8 @@
       "amount_cny": 400000.0
      }
     ],
-    "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January."
+    "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "late_scholarship",
@@ -222,11 +225,11 @@
     "deadlines_met": 2,
     "obligations": 2,
     "conversions": 2,
-    "send_inr": 425540.0,
-    "delivered_cny": 36001.02,
-    "fees_cny": 353.71,
-    "bank_fees_cny": 1853.48,
-    "saved_vs_bank_cny": 1499.77,
+    "send_inr": 519267.0,
+    "delivered_cny": 36001.03,
+    "fees_cny": 328.97,
+    "bank_fees_cny": 1778.23,
+    "saved_vs_bank_cny": 1449.27,
     "tcs_inr": 0.0,
     "warnings": [
      "late_income_ignored",
@@ -244,14 +247,14 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 300000,
+      "send_inr": 366000,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 125540.0,
+      "send_inr": 153267.0,
       "route_id": "route_inr_cny_3",
       "remitter": "parent"
      },
@@ -270,7 +273,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 300,000; the parent would remit INR 125,540, which needs the parent's consent."
+    "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "parent_tcs",
@@ -287,12 +291,12 @@
     "deadlines_met": 1,
     "obligations": 1,
     "conversions": 2,
-    "send_inr": 354634.0,
-    "delivered_cny": 30001.0,
-    "fees_cny": 296.09,
-    "bank_fees_cny": 1613.0,
-    "saved_vs_bank_cny": 1316.9,
-    "tcs_inr": 5092.68,
+    "send_inr": 432741.0,
+    "delivered_cny": 30001.07,
+    "fees_cny": 275.22,
+    "bank_fees_cny": 1537.9,
+    "saved_vs_bank_cny": 1262.68,
+    "tcs_inr": 6654.82,
     "warnings": [
      "low_runway",
      "parent_remitter",
@@ -316,7 +320,7 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 304634.0,
+      "send_inr": 382741.0,
       "route_id": "route_inr_cny_3",
       "remitter": "parent"
      },
@@ -328,7 +332,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 30,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 50,000; the parent would remit INR 304,634, which needs the parent's consent."
+    "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 30,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 50,000; the parent would remit INR 382,741, which needs the parent's consent.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "rate_target",
@@ -345,11 +350,11 @@
     "deadlines_met": 3,
     "obligations": 3,
     "conversions": 2,
-    "send_inr": 496194.87,
-    "delivered_cny": 42001.04,
-    "fees_cny": 389.88,
-    "bank_fees_cny": 2093.12,
-    "saved_vs_bank_cny": 1703.24,
+    "send_inr": 605542.71,
+    "delivered_cny": 42001.06,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
     "tcs_inr": 0.0,
     "warnings": [
      "parent_remitter"
@@ -365,14 +370,14 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 286081.87,
+      "send_inr": 349285.71,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 210113.0,
+      "send_inr": 256257.0,
       "route_id": "route_inr_cny_3",
       "remitter": "parent"
      },
@@ -398,7 +403,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 233,918 for rate targets) covers INR 286,082; the parent would remit INR 210,113, which needs the parent's consent."
+    "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "multiple_obligations",
@@ -415,11 +421,11 @@
     "deadlines_met": 5,
     "obligations": 5,
     "conversions": 1,
-    "send_inr": 613153.0,
-    "delivered_cny": 52001.07,
-    "fees_cny": 381.82,
-    "bank_fees_cny": 2284.7,
-    "saved_vs_bank_cny": 1902.88,
+    "send_inr": 748535.0,
+    "delivered_cny": 52001.06,
+    "fees_cny": 369.44,
+    "bank_fees_cny": 2247.08,
+    "saved_vs_bank_cny": 1877.63,
     "tcs_inr": 0.0,
     "warnings": [],
     "first_errors": [],
@@ -431,7 +437,7 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 613153.0,
+      "send_inr": 748535.0,
       "route_id": "route_inr_cny_3",
       "remitter": "student"
      },
@@ -471,7 +477,8 @@
       "amount_cny": 6000.0
      }
     ],
-    "rationale": "Pay 5 obligation(s) 2 days before each due date; fund the CNY shortfall of 52,000 with 1 conversion(s) on the cheapest route that arrives in time."
+    "rationale": "Pay 5 obligation(s) 2 days before each due date; fund the CNY shortfall of 52,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+    "run_date": "2026-10-10"
    },
    {
     "scenario": "urgent_deadline",
@@ -488,11 +495,11 @@
     "deadlines_met": 2,
     "obligations": 2,
     "conversions": 1,
-    "send_inr": 426753.0,
-    "delivered_cny": 36001.07,
-    "fees_cny": 457.29,
-    "bank_fees_cny": 1652.5,
-    "saved_vs_bank_cny": 1195.21,
+    "send_inr": 521046.0,
+    "delivered_cny": 36001.04,
+    "fees_cny": 453.42,
+    "bank_fees_cny": 1615.21,
+    "saved_vs_bank_cny": 1161.79,
     "tcs_inr": 0.0,
     "warnings": [],
     "first_errors": [],
@@ -504,7 +511,7 @@
      {
       "action": "convert",
       "date": "2026-10-12",
-      "send_inr": 426753.0,
+      "send_inr": 521046.0,
       "route_id": "route_inr_cny_2",
       "remitter": "student"
      },
@@ -523,7 +530,8 @@
       "amount_cny": 30000.0
      }
     ],
-    "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 1 conversion(s) on the cheapest route that arrives in time."
+    "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+    "run_date": "2026-10-10"
    }
   ],
   "notes": [

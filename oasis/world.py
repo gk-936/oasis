@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from .agent.llm import LLM, make_llm
 from .chain.anchor import Anchor, LocalAnchorChain
 from .mock.ledger import Account, SandboxLedger, Transfer
+from .market import make_rates
 from .mock.rates import MockRates
 from .mock.registry import VerifiedPayeeRegistry
 from .passport.models import (Approver, Balance, Level, Obligation, Passport, Recipient, Rules, Student)
@@ -59,9 +60,10 @@ class Features:
 
 class World:
     def __init__(self, features: Features | None = None, llm: LLM | None = None, seed: int = 7,
-                 inr: float = 400000, persona: str = "arjun", audit_path=None, deterministic: bool = False,
+                 inr: float = 500000, persona: str = "arjun", audit_path=None, deterministic: bool = False,
                  store=None, autonomy: bool = False, signer: HybridSigner | None = None,
-                 approvers: ApproverRegistry | None = None, sim_devices: bool = True):
+                 approvers: ApproverRegistry | None = None, sim_devices: bool = True,
+                 rates_mode: str | None = None):
         """`deterministic=True` (scripted demo only): seeded demo keys and nonces, simulated-clock anchor
         timestamps, so a run reproduces the same audit-chain head every time. `store` is an optional SqliteStore.
         `signer` supplies the trust signing keys (the API passes the persistent server keys, see trust/keystore.py);
@@ -71,7 +73,9 @@ class World:
         for the SIMULATED humans; the API's real world passes `sim_devices=False`, so only real devices can approve."""
         self.features = features or Features.full()
         self.llm = llm or make_llm()
-        self.rates = MockRates(seed)
+        # Exchange rates: OASIS_RATES=live uses the real ECB reference rate (see docs/live-rates.md); the default and every
+        # deterministic/benchmark/test world use the mock. `rates_mode` forces a mode ("mock" | "live").
+        self.rates: MockRates = make_rates(seed, mode="mock" if deterministic else rates_mode)
         self.seed = seed
         self.deterministic = deterministic
         self.store = store

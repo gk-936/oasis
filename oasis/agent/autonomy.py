@@ -1,6 +1,6 @@
 """Tier-1 autonomy: what the agent may do on its own, still under deterministic policy.
 
-1. Student-set rate targets: "convert CNY 5,000 if INR->CNY reaches 0.0855". The agent watches the (mock) rate;
+1. Student-set rate targets: "convert CNY 5,000 if INR->CNY reaches 0.0700". The agent watches the (mock) rate;
    it never predicts it. When the target is reached `policy.decide_conversion` decides: a small conversion into
    the student's own CNY balance is Tier 1 (allow); a larger one needs the student; a tripped canary freezes it.
 2. Small recurring bills to Verified_Full recipients (e.g. a mobile plan): paid through the SAME six-step
