@@ -30,7 +30,7 @@ Open the URL. The login screen offers three roles. The demo passcodes are **publ
 |---|---|---|
 | judge | `judge-demo` | the red-team console and read-only views (start here) |
 | student | `student-demo` | chat, pay an invoice, sign an approval, run the scripted demo |
-| parent | `parent-demo` | co-sign larger payments, see the parent view (English, Tamil, Hindi) |
+| parent | `parent-demo` | co-sign larger payments, see the parent view (English, Tamil, Hindi, Chinese). Interface language: English by default; switch to 简体中文 with the picker (`?lang=zh` also works) |
 
 The start scripts run in **judge mode** (`OASIS_JUDGE_MODE=1`): API docs (`/docs`) are off, the red-team limit is 10 attempts a minute, failed logins are limited to 5 a minute, sessions last 30 minutes, and the public passcodes are only accepted because the script sets `OASIS_ALLOW_DEMO_PASSCODES=1` for you. With `-RandomPasscodes` / `--random-passcodes` the script generates random passcodes for this run and prints them instead. Outside the scripts, `OASIS_JUDGE_MODE=1` refuses the default passcodes unless you set `OASIS_PASS_*` or the allow flag, and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses them always. Each judge login gets **its own red-team sandbox** (its own ledger, registry and attempt log); other judges' attempts are invisible to you. The server keeps at most 20 sandboxes at once and drops the least recently used.
 

@@ -34,10 +34,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from .. import config
-from ..agent.i18n import LANGS
+from ..agent import localize as loc
+from ..agent.i18n import LANGS, UI_LANGS, lang_from_accept, ui_lang
+from ..agent.zh_messages import route_zh
 from ..agent.llm import GroqLLM, VisionExtractor, VisionUnavailable, explain_template, make_llm
 from ..agent.parent import parent_view
 from ..agent.pipeline import OasisAgent, Request
@@ -125,11 +128,59 @@ async def guard(request: HttpRequest, call_next):
     return response
 
 
+_ROLE_ERR = re.compile(r"role may not do this", re.I)
+_SIG_ERR = re.compile(r"signature|signed approval", re.I)
+
+
+def _error_code(detail) -> str | None:
+    """A language-neutral tag for the errors the UI treats specially (it must not parse translated wording)."""
+    if not isinstance(detail, str):
+        return None
+    if _ROLE_ERR.search(detail):
+        return "role_not_allowed"
+    if "cross-origin" in detail:
+        return "cross_origin"
+    if _SIG_ERR.search(detail):
+        return "approval_rejected"
+    return None
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _http_error(request: HttpRequest, exc: StarletteHTTPException):
+    """Same body as FastAPI's default ({"detail": ...}), with the text in the caller's language and, where the UI needs it, a
+    language-neutral `code`. Status codes and headers are untouched."""
+    body = {"detail": loc.tr_error(exc.detail, _ui_lang(request))}
+    code = _error_code(exc.detail)
+    if code:
+        body["code"] = code
+    return JSONResponse(body, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+
+
+_PYDANTIC_ZH = {"Field required": "此字段必填", "Input should be a valid string": "应为有效的文本",
+                "Input should be a valid boolean": "应为有效的布尔值", "Input should be a valid integer": "应为有效的整数",
+                "Input should be a valid number": "应为有效的数字", "Input should be a valid dictionary": "应为有效的对象",
+                "Input should be a valid list": "应为有效的列表"}
+
+
+def _pydantic_zh(msg: str) -> str:
+    if msg in _PYDANTIC_ZH:
+        return _PYDANTIC_ZH[msg]
+    m = re.fullmatch(r"String should have at most (\d+) characters?", msg)
+    if m:
+        return f"文本最多 {m.group(1)} 个字符"
+    m = re.fullmatch(r"Input should be greater than (.+)", msg)
+    if m:
+        return f"应大于 {m.group(1)}"
+    return msg
+
+
 @app.exception_handler(RequestValidationError)
 async def _validation_error(request: HttpRequest, exc: RequestValidationError):
     """422 without echoing the offending input: it may hold NaN or an unpaired surrogate, which cannot be rendered as JSON
     (that used to turn a validation error into a 500), and echoing request text back helps nobody."""
-    errs = [{"loc": [str(x) for x in e.get("loc", ())], "type": e.get("type"), "msg": str(e.get("msg"))} for e in exc.errors()]
+    zh = _ui_lang(request) == "zh"
+    errs = [{"loc": [str(x) for x in e.get("loc", ())], "type": e.get("type"),
+             "msg": _pydantic_zh(str(e.get("msg"))) if zh else str(e.get("msg"))} for e in exc.errors()]
     return JSONResponse({"detail": errs}, status_code=422)
 
 
@@ -211,14 +262,18 @@ class Session:
             self.store.clear()
         self.pending, self.demo, self.chat = {}, None, []
         self.reliability_last = None
+        lang = self.world.passport.student.language
         self._build()
+        self.world.passport.student.language = lang         # the interface language is the student's, not part of the sandbox
         self.save()
 
     def start_demo(self, run: str, mode: str = "offline") -> DemoRunner:
         if self.store:
             self.store.clear()
         self.pending, self.chat = {}, []
+        lang = self.world.passport.student.language
         w = new_demo_world(self.store, mode)      # its own registry with seeded SIMULATED approver devices
+        w.passport.student.language = lang
         self.demo = DemoRunner(run, w)
         self._build(world=w)
         self.demo.agent = self.agent
@@ -281,6 +336,26 @@ def _principal(request: HttpRequest) -> Principal | None:
         h = request.headers.get("authorization", "")
         tok = h[7:] if h.lower().startswith("bearer ") else None
     return S.auth.verify(tok)
+
+
+def _ui_lang(request: HttpRequest) -> str:
+    """The language of this response: `?lang=` > the `X-Oasis-Lang` header the UI sends > the logged-in student's saved language
+    (Passport) > Accept-Language > English. Only the whitelisted UI codes (en, zh) are ever honoured; anything else is ignored."""
+    for cand in (request.query_params.get("lang"), request.headers.get("x-oasis-lang")):
+        c = ui_lang(cand)
+        if c:
+            return c
+    try:
+        if _principal(request) is not None:
+            c = ui_lang(S.world.passport.student.language)
+            if c:
+                return c
+    except Exception:  # noqa: BLE001 - language resolution must never break a request
+        pass
+    return lang_from_accept(request.headers.get("accept-language")) or "en"
+
+
+UI = Depends(_ui_lang)
 
 
 def require(*roles: str):
@@ -480,7 +555,26 @@ def me(request: HttpRequest):
     if p.role in ("student", "parent"):
         k = S.approvers.active(p.role)
         out["device_key"] = {"key_id": k["key_id"], "public_key": k["public_key"]} if k else None
+    if p.role == "student":
+        out["language"] = ui_lang(S.world.passport.student.language) or "en"
     return out
+
+
+class LanguageIn(Strict):
+    language: str = Field(max_length=16)
+
+
+@app.post("/api/student/language")
+def set_language(body: LanguageIn, p: Principal = Depends(STUDENT)):
+    """Save the student's interface language in the Passport (student.language). Only the whitelisted UI codes are accepted
+    (`en`, `zh`; a region tag such as zh-CN is normalised); anything else is a 400 and changes nothing."""
+    code = ui_lang(body.language)
+    if code is None:
+        raise HTTPException(400, f"unsupported language {body.language!r}; use one of {sorted(UI_LANGS)}")
+    S.world.passport.student.language = code
+    S.world.audit.append("language_set", {"language": code})
+    S.save()
+    return {"language": code, "supported": list(UI_LANGS)}
 
 
 # ------------------------------------------------------------------ device keys (signed approvals)
@@ -510,20 +604,20 @@ def approvers(p: Principal = Depends(ANY)):
 
 # ------------------------------------------------------------------ state
 @app.get("/api/state")
-def state(p: Principal = Depends(VIEWERS)):
+def state(p: Principal = Depends(VIEWERS), ui: str = UI):
     w = S.world
     if p.role == "parent":      # least privilege: the parent sees only what concerns them
-        return jsonable_encoder({
+        return loc.localize_state(jsonable_encoder({
             "mock_note": MOCK_NOTE, "role": "parent", "now": w.now_iso(),
             "persistence": {"enabled": S.store is not None, "path": None},
             "proofs": _parent_proofs(),
-            "pending": [_pending_view(k, v) for k, v in S.pending.items() if "parent" in v["required"]]})
+            "pending": [_pending_view(k, v) for k, v in S.pending.items() if "parent" in v["required"]]}), ui)
     p_ = w.passport
     quotes = rank(quote_routes(w.rates, 100000, w.today, None, w.day_index))
     burn, basis = monthly_burn(p_)
     decoys = w.canaries.decoy_payees if w.canaries else set()
     sp = spending.summarize(p_)
-    return jsonable_encoder({
+    return loc.localize_state(jsonable_encoder({
         "mock_note": MOCK_NOTE, "role": p.role,
         "llm": w.llm.name, "agent_model": config.AGENT_MODEL if w.llm.name == "groq" else None,
         "fallback_model": config.FALLBACK_MODEL if w.llm.name == "groq" else None,
@@ -554,7 +648,7 @@ def state(p: Principal = Depends(VIEWERS)):
         "security_feed": [{"i": e["i"], "kind": e["kind"], "ts": e["ts"]} for e in w.audit.entries[-30:]],
         "ledger_money_lost": w.ledger.money_lost(),
         "canaries_tripped": bool(w.canaries and w.canaries.tripped),
-    })
+    }), ui)
 
 
 @app.post("/api/reset")
@@ -573,12 +667,12 @@ def _intake(body: IntakeIn) -> dict:
 
 
 @app.post("/api/intake")
-def intake(body: IntakeIn, p: Principal = Depends(STUDENT)):
-    return _intake(body)
+def intake(body: IntakeIn, p: Principal = Depends(STUDENT), ui: str = UI):
+    return loc.localize_outcome(_intake(body), ui)
 
 
 @app.post("/api/intake/image")
-async def intake_image(file: UploadFile = File(...), remitter: str = "student", p: Principal = Depends(STUDENT)):
+async def intake_image(file: UploadFile = File(...), remitter: str = "student", p: Principal = Depends(STUDENT), ui: str = UI):
     """Image intake via the Groq agent model. If the image cannot be read the result is a low-confidence hold
     asking the student to paste the text or confirm the fields; nothing is guessed."""
     data = await file.read()
@@ -590,12 +684,12 @@ async def intake_image(file: UploadFile = File(...), remitter: str = "student", 
         o = _out(S.agent.handle(req))
         o["message"] = str(e)
         S.save()
-        return o
-    return _intake(IntakeIn(text=text, remitter=remitter, source="screenshot"))
+        return loc.localize_outcome(o, ui)
+    return loc.localize_outcome(_intake(IntakeIn(text=text, remitter=remitter, source="screenshot")), ui)
 
 
 @app.post("/api/approve")
-def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT)):
+def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT), ui: str = UI):
     """Approve (or decline) a held payment AS THE ROLE OF THE SESSION. Approving needs a signature, made with that
     role's registered device key, over the pending payment's exact draft hash. The role string grants nothing."""
     role = p.role
@@ -643,7 +737,7 @@ def approve(body: ApproveIn, p: Principal = Depends(STUDENT_PARENT)):
     S.pending.pop(body.pending_id)
     o["pending_id"] = _store_pending(req, o)
     S.save()
-    return o
+    return loc.localize_outcome(o, ui)
 
 
 class PayAgainIn(Strict):
@@ -651,7 +745,7 @@ class PayAgainIn(Strict):
 
 
 @app.post("/api/pay-again")
-def pay_again(body: PayAgainIn, p: Principal = Depends(STUDENT)):
+def pay_again(body: PayAgainIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """The student's explicit "pay again" for a suspected duplicate (R17). It re-runs the held request with `pay_again`
     set and a FRESH draft: the result is an ordinary held payment, with the duplicate warning attached, that must still
     be signed with the student's device key. Nothing is paid here."""
@@ -667,7 +761,7 @@ def pay_again(body: PayAgainIn, p: Principal = Depends(STUDENT)):
     S.pending.pop(body.pending_id)
     o["pending_id"] = _store_pending(req, o)
     S.save()
-    return o
+    return loc.localize_outcome(o, ui)
 
 
 @app.post("/api/recovery/approve")
@@ -703,60 +797,93 @@ def parent_pending(lang: str | None = None, p: Principal = Depends(require("pare
 
 
 INVOICE_HINT = re.compile(r"(Payee|Account|Amount|收款人|账号|金额)\s*[:：]", re.I)
+TARGET_RE_ZH = re.compile(r"(?:汇率|rate)[^\d]{0,12}(0\.\d+)[^\d]{0,12}(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)"
+                          r"|(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)[^\d]{0,24}?(?:汇率|rate)[^\d]{0,12}(0\.\d+)", re.I)
 TARGET_RE = re.compile(r"convert\s+(?:cny\s*|¥|rmb\s*)?([\d,]+(?:\.\d+)?)[^.\n]*?(?:rate|inr)[^\d]{0,30}?(0\.\d+)", re.I)
 
 
+_STATUS_ZH = {"paid": "已支付", "held": "已暂缓，等待批准", "frozen": "已冻结", "rejected": "已拒绝", "needs_verification": "需要验证"}
+_OBL_ZH = {"tuition": "学费", "rent": "房租", "deposit": "押金", "living": "生活费", "family_support": "家庭资助"}
+
+
 @app.post("/api/chat")
-def chat(body: ChatIn, p: Principal = Depends(STUDENT)):
+def chat(body: ChatIn, p: Principal = Depends(STUDENT), ui: str = UI):
+    zh = ui == "zh"
     S.chat.append({"role": "student", "text": body.message})
     if INVOICE_HINT.search(body.message):
-        res = _intake(IntakeIn(text=body.message))
-        reply = (f"I checked it. Status: {res['status']}." +
-                 (f" {res['card']['text']}" if res.get("card") else "") +
-                 (f" Proof pack {res['proof_id']} is ready." if res.get("proof_id") else ""))
+        res = loc.localize_outcome(_intake(IntakeIn(text=body.message)), ui)
+        if zh:
+            reply = (f"我已检查完毕。状态：{_STATUS_ZH.get(res['status'], res['status'])}。" +
+                     (f" {res['card']['text']}" if res.get("card") else "") +
+                     (f" 证明包 {res['proof_id']} 已就绪。" if res.get("proof_id") else ""))
+        else:
+            reply = (f"I checked it. Status: {res['status']}." +
+                     (f" {res['card']['text']}" if res.get("card") else "") +
+                     (f" Proof pack {res['proof_id']} is ready." if res.get("proof_id") else ""))
         S.chat.append({"role": "oasis", "text": reply, "outcome": res})
         return {"reply": reply, "outcome": res}
     m = TARGET_RE.search(body.message)
+    mz = None if m else TARGET_RE_ZH.search(body.message)
+    if mz:
+        m = (mz.group(2), mz.group(1)) if mz.group(1) else (mz.group(3), mz.group(4))
     if m:
-        amount, rate = float(m.group(1).replace(",", "")), float(m.group(2))
+        amount, rate = ((float(m[0].replace(",", "")), float(m[1])) if isinstance(m, tuple)
+                        else (float(m.group(1).replace(",", "")), float(m.group(2))))
         t = S.agent.set_rate_target(rate, amount)
         S.save()
         lim = S.world.passport.rules.tier1_auto_convert_cny
-        reply = (f"Rate target set: I will watch INR to CNY and, when it reaches {rate:.4f}, convert CNY {amount:,.0f} "
-                 + ("on my own (within your Tier-1 limit)." if amount <= lim else f"after you approve it (above your CNY {lim:,.0f} auto limit).")
-                 + " I do not predict rates; I only act on your target.")
+        if zh:
+            reply = (f"已设定汇率目标：我会关注 INR 对 CNY 的汇率，当它达到 {rate:.4f} 时，" +
+                     (f"自行兑换 ¥{amount:,.0f}（在您的 1 级自动额度之内）。" if amount <= lim
+                      else f"在您批准之后兑换 ¥{amount:,.0f}（超过 ¥{lim:,.0f} 的自动额度）。") +
+                     " 我不会预测汇率，只会按您设定的目标行动。")
+        else:
+            reply = (f"Rate target set: I will watch INR to CNY and, when it reaches {rate:.4f}, convert CNY {amount:,.0f} "
+                     + ("on my own (within your Tier-1 limit)." if amount <= lim else f"after you approve it (above your CNY {lim:,.0f} auto limit).")
+                     + " I do not predict rates; I only act on your target.")
         S.chat.append({"role": "oasis", "text": reply, "target": t})
         return {"reply": reply, "target": t}
     w = S.world
     pp = w.passport
-    tr = triggers(pp, w.rates, w.today, w.day_index)
+    tr_ = triggers(pp, w.rates, w.today, w.day_index)
     pend = [o for o in pp.obligations if o.status != "paid"]
     best = rank(quote_routes(w.rates, 100000, w.today, None, w.day_index))[0]
-    reply = (f"You have INR {pp.balance('INR'):,.0f} and CNY {pp.balance('CNY'):,.0f}. "
-             f"Upcoming: " + "; ".join(f"{o.type} CNY {o.amount:,.0f} due {o.due}" for o in pend) + ". "
-             f"Runway after obligations: {runway_months(pp, w.rates, w.day_index):.1f} months. "
-             f"Cheapest on-time route right now: {best.route.name}. "
-             + (" Alerts: " + " ".join(t.message for t in tr) if tr else " No alerts.") +
-             " Forward me any invoice or message and I'll check it before anything is paid. "
-             "You can also say: 'convert 2000 when the rate reaches 0.0700'.")
+    if zh:
+        alerts = loc.localize_triggers([t.__dict__ for t in tr_], ui)
+        reply = (f"您有 ₹{pp.balance('INR'):,.0f} 和 ¥{pp.balance('CNY'):,.0f}。"
+                 f"即将到期：" + "；".join(f"{_OBL_ZH.get(o.type, o.type)} ¥{o.amount:,.0f}，到期日 {o.due}" for o in pend) + "。"
+                 f"付清应付款项后的资金可维持：{runway_months(pp, w.rates, w.day_index):.1f} 个月。"
+                 f"当前最便宜且能按时到账的路线：{route_zh(best.route.name)}。"
+                 + ("提醒：" + " ".join(a["message"] for a in alerts) if alerts else "目前没有提醒。") +
+                 " 把任何发票或消息转发给我，我会在付款之前先检查。"
+                 "您也可以这样说：“convert 2000 when the rate reaches 0.0700”（汇率达到 0.0700 时兑换 2000）。")
+    else:
+        reply = (f"You have INR {pp.balance('INR'):,.0f} and CNY {pp.balance('CNY'):,.0f}. "
+                 f"Upcoming: " + "; ".join(f"{o.type} CNY {o.amount:,.0f} due {o.due}" for o in pend) + ". "
+                 f"Runway after obligations: {runway_months(pp, w.rates, w.day_index):.1f} months. "
+                 f"Cheapest on-time route right now: {best.route.name}. "
+                 + (" Alerts: " + " ".join(t.message for t in tr_) if tr_ else " No alerts.") +
+                 " Forward me any invoice or message and I'll check it before anything is paid. "
+                 "You can also say: 'convert 2000 when the rate reaches 0.0700'.")
     S.chat.append({"role": "oasis", "text": reply})
     return {"reply": reply}
 
 
 # ------------------------------------------------------------------ agentic planning (spec step 2)
-def _plan_view(world, rec: dict) -> dict:
+def _plan_view(world, rec: dict, ui: str = "en") -> dict:
     consents = [{**d, "signed_by": ((rec.get("consents") or {}).get(str(d["step"])) or {}).get("key_id")}
                 for d in plan_exec.parent_consents_needed(rec)] if rec.get("id") else []
-    return jsonable_encoder({**rec, "step_status": plan_exec.step_statuses(world, rec), "parent_consents": consents})
+    return loc.localize_plan(jsonable_encoder({**rec, "step_status": plan_exec.step_statuses(world, rec), "parent_consents": consents}), ui)
 
 
 @app.get("/api/plan/scenarios")
-def plan_scenarios(p: Principal = Depends(STUDENT_JUDGE)):
-    return [{"id": s.id, "title": s.title, "description": s.description, "goal": s.goal, "tests": s.tests} for s in SCENARIOS.values()]
+def plan_scenarios(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
+    return loc.localize_scenarios([{"id": s.id, "title": s.title, "description": s.description, "goal": s.goal, "tests": s.tests}
+                                   for s in SCENARIOS.values()], ui)
 
 
 @app.post("/api/plan")
-def plan_create(body: PlanIn, p: Principal = Depends(STUDENT)):
+def plan_create(body: PlanIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """The agent builds a plan by calling read-only tools and revising from the validator's errors. It is a PROPOSAL:
     nothing is paid or converted until the student accepts it, and executing it goes through the normal pipeline."""
     live = body.live and isinstance(S.world.llm, GroqLLM)
@@ -767,24 +894,24 @@ def plan_create(body: PlanIn, p: Principal = Depends(STUDENT)):
         planner = AgenticPlanner(S.world.llm) if live else DeterministicPlanner()
         rec = build_record(w, planner.plan(w, body.goal or SCENARIOS[body.scenario].goal), body.goal or SCENARIOS[body.scenario].goal)
         rec["scenario"] = body.scenario
-        return _plan_view(w, rec)          # scenario worlds are throwaway: not stored, not executable
+        return _plan_view(w, rec, ui)          # scenario worlds are throwaway: not stored, not executable
     planner = AgenticPlanner(S.world.llm) if live else DeterministicPlanner()
     rec = build_record(S.world, planner.plan(S.world, body.goal), body.goal)
     S.save()
-    return _plan_view(S.world, rec)
+    return _plan_view(S.world, rec, ui)
 
 
 @app.get("/api/plans")
-def plans_list(p: Principal = Depends(STUDENT_JUDGE)):
-    return [_plan_view(S.world, r) for r in S.world.plans]
+def plans_list(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
+    return [_plan_view(S.world, r, ui) for r in S.world.plans]
 
 
 @app.get("/api/plan/{plan_id}")
-def plan_get(plan_id: str, p: Principal = Depends(STUDENT_JUDGE)):
+def plan_get(plan_id: str, p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
     rec = plan_exec.get_plan(S.world, plan_id)
     if rec is None:
         raise HTTPException(404, "no such plan")
-    return _plan_view(S.world, rec)
+    return _plan_view(S.world, rec, ui)
 
 
 @app.post("/api/plan/{plan_id}/accept")
@@ -843,7 +970,7 @@ def rate_target_approve(body: TargetIdIn, p: Principal = Depends(STUDENT)):
 
 
 @app.post("/api/autonomy/tick")
-def autonomy_tick(body: TickIn, p: Principal = Depends(STUDENT)):
+def autonomy_tick(body: TickIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Advance the simulated clock and let the agent do its Tier-1 work (rate targets, recurring bills)."""
     days = max(1, min(int(body.days), 60))
     acts = S.agent.run_days(days)
@@ -854,7 +981,7 @@ def autonomy_tick(body: TickIn, p: Principal = Depends(STUDENT)):
             a["pending_id"] = _store_pending(req, _out(held))
         out.append(a)
     S.save()
-    return jsonable_encoder({"days": days, "now": S.world.now_iso(), "actions": out})
+    return jsonable_encoder({"days": days, "now": S.world.now_iso(), "actions": loc.localize_actions(out, ui)})
 
 
 @app.post("/api/spending/simulate")
@@ -895,7 +1022,7 @@ def _log_attempt(rec: dict) -> None:
 
 
 @app.post("/api/redteam")
-def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE)):
+def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE), ui: str = UI):
     """Judge-only console. Runs in a SEPARATE sandbox world (its own ledger, registry and simulated approvers) that can
     never touch the student's ledger. Rate-limited per client and size-limited; every attempt is logged."""
     from eval.approver import SimulatedHumans
@@ -928,7 +1055,7 @@ def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE)
                   "risk_score": (o.get("risk") or {}).get("score"), "detected": o.get("detected"),
                   "canary_kinds": [h.get("kind") for h in o.get("canary_hits") or []],
                   "followed_injection": o.get("followed_injection"), "money_lost": o["money_lost_this_attempt"]})
-    return o
+    return loc.localize_outcome(o, ui)
 
 
 @app.get("/api/redteam/log")
@@ -1054,7 +1181,7 @@ def benchmark(p: Principal = Depends(STUDENT_JUDGE)):
         out["benchmark"].pop("results", None)
     if out["planning"]:       # keep the payload small: summaries only (the markdown report has the per-scenario table)
         out["planning"] = {k: {"summary": v["summary"], "date": v["date"], "planner": v["planner"], "model": v.get("model")}
-                           for k, v in out["planning"].items() if isinstance(v, dict)}
+                           for k, v in out["planning"].items() if isinstance(v, dict) and "summary" in v}   # e.g. "experiment" has no summary
     return out
 
 
@@ -1062,10 +1189,10 @@ def benchmark(p: Principal = Depends(STUDENT_JUDGE)):
 # STUDENT action; judges see the same scripted runs through the read-only demo/state view. The demo world has its own
 # simulated approver devices: its "humans" are in-process, exactly like the benchmark's.
 @app.post("/api/demo/start")
-def demo_start(body: DemoIn, p: Principal = Depends(STUDENT)):
+def demo_start(body: DemoIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Reset to the scripted demo world (fixed seed, fixed MOCK data) and return the step list. `mode` "offline" (default)
     uses the offline LLM; "live" replays recorded qwen/qwen3.8-27b responses from the fixture (no network)."""
-    return _demo_start(body)
+    return loc.localize_demo_info(_demo_start(body), ui)
 
 
 def _demo_start(body: DemoIn) -> dict:
@@ -1081,29 +1208,30 @@ def _demo_start(body: DemoIn) -> dict:
 
 
 @app.post("/api/demo/next")
-def demo_next(p: Principal = Depends(STUDENT)):
+def demo_next(p: Principal = Depends(STUDENT), ui: str = UI):
     if not S.demo:
         raise HTTPException(409, "no demo running; POST /api/demo/start first")
     res = S.demo.next()
     S.save()
-    return jsonable_encoder(res)
+    return loc.localize_demo_step(jsonable_encoder(res), ui)
 
 
 @app.get("/api/demo/state")
-def demo_state(p: Principal = Depends(STUDENT_JUDGE)):
+def demo_state(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
     if not S.demo:
         return {"active": False}
-    return jsonable_encoder({"active": True, "run": S.demo.run, "mode": S.demo.mode, "index": S.demo.index, "total": len(S.demo.titles),
-                             "done": S.demo.done, "steps": S.demo.titles, "results": S.demo.results})
+    return loc.localize_demo_info(jsonable_encoder({
+        "active": True, "run": S.demo.run, "mode": S.demo.mode, "index": S.demo.index, "total": len(S.demo.titles),
+        "done": S.demo.done, "steps": S.demo.titles, "results": [loc.localize_demo_step(r, ui) for r in S.demo.results]}), ui)
 
 
 @app.post("/api/demo/run")
-def demo_run(body: DemoIn, p: Principal = Depends(STUDENT)):
+def demo_run(body: DemoIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Play a whole scripted demo run in one call (same result every time, no network)."""
     _demo_start(body)
     res = S.demo.run_all()
     S.save()
-    return jsonable_encoder(res)
+    return loc.localize_demo_step(jsonable_encoder(res), ui)
 
 
 @app.post("/api/demo/reset")
@@ -1114,11 +1242,11 @@ def demo_reset(p: Principal = Depends(STUDENT)):
 
 
 @app.get("/api/explain/savings")
-def savings(p: Principal = Depends(STUDENT_JUDGE)):
+def savings(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
     convs = [e["data"] for e in S.world.audit.entries if e["kind"] == "conversion"]
     tot = round(sum(c["saved_cny"] for c in convs), 2)
     return {"conversions": convs, "total_saved_cny": tot,
-            "text": explain_template("savings", {"saved_cny": tot, "saved_pct": convs[-1]["saved_pct"] if convs else 0})}
+            "text": explain_template("savings", {"saved_cny": tot, "saved_pct": convs[-1]["saved_pct"] if convs else 0}, ui)}
 
 
 DIST = ROOT / "frontend" / "dist"

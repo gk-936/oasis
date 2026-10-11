@@ -88,7 +88,7 @@ Tiers: 1 = the agent may act alone within bounds, 2 = needs explicit human appro
 
 **Scripted demo** (`oasis/demo.py`). Fixed seed, fixed mock data, offline model, seeded demo keys/nonces and the simulated clock, so each run reproduces the same audit-chain head. Run 2 catches the forged invoice at Verify (the registry contradicts the account); the step-5 intent-mismatch catch is shown by the second attack (rewritten payment instructions).
 
-**Parent view.** Explanations in English, Tamil and Hindi are templated (`oasis/agent/i18n.py`); a live model may rewrite them, but the rewrite is accepted only if every number survives unchanged. The wording has not been reviewed by a native speaker.
+**Parent view.** Explanations in English, Tamil, Hindi and Chinese are templated (`oasis/agent/i18n.py`); a live model may rewrite them, but the rewrite is accepted only if every number survives unchanged. The wording has not been reviewed by a native speaker.
 
 **Groq adapter.** Primary `qwen/qwen3.8-27b`, automatic fallback to `openai/gpt-oss-120b` on retired-model/404 or daily-limit errors (a gone model is skipped for the rest of the process), client-side rate limit, backoff honouring `retry-after` on 429, a daily token/request budget kept on disk, a response cache, `<think>` stripping. Image intake uses the primary model only (the fallback has no vision); failure becomes a low-confidence hold. Covered by tests with a fake client and exercised against the live API (smoke test and benchmark runs, 2026-10-10).
 
@@ -179,7 +179,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 
 ```
 oasis/
-  agent/        llm.py (offline / Groq / vision), i18n.py + parent.py (Tamil/Hindi/English), pipeline.py
+  agent/        llm.py (offline / Groq / vision), i18n.py + zh_messages.py + localize.py + parent.py (Tamil/Hindi/English/Chinese), pipeline.py
                 (six steps, layer switches), autonomy.py (Tier-1: rate targets, recurring bills),
                 planner.py (agentic tool-calling planner: offline + Groq), plan_exec.py (accept/run a plan through the
                 pipeline), recovery.py (autonomous recovery draft + validation)
@@ -267,3 +267,9 @@ Code: `oasis/proof/reliability.py`; API in section 6; UI: Passport tab, card "Pa
 The Passport tab card "Balances by currency" shows holdings in INR and CNY, the total in each currency at the current mid rate (with the live or MOCK rate badge), the exposure split in percent, and the existing conversion-timing hints and rate targets. It is computed by `oasis/passport/currency.py::currency_view` and returned in `GET /api/state` as `currency_view` (unit-tested in `tests/test_reliability.py`). The valuation uses the mid rate, so a real conversion would return less after route spread and fees.
 
 Only the INR to CNY corridor is supported (README Known limitation 20). There is no wallet in any other currency. Supporting another corridor would need: a rules file next to `oasis/trust/rules/inr_cny.yaml` (per-currency limits, tax and quota rules with sources), the corridor-rules loader pointed at it, and route spreads and fees for that pair in the mock layer (`oasis/mock/rates.py` routes and `oasis/market/`), plus a payee registry for that country. None of this exists today.
+
+## 17. Languages (English and Simplified Chinese)
+
+English is the default and the competition's official language. The UI is translated by a small in-repo module (`frontend/src/i18n/`: `en.js`, `zh.js`, `index.js` with `t(key, vars)` `{placeholder}` interpolation, plural-safe `tp`, a registry and a `useLang` hook). Adding a language is one dictionary file, one line in the registry and its code in `oasis/agent/i18n.py` (`UI_LANGS`, the server whitelist). The choice is kept in `localStorage` (guarded) and, for a logged-in student, saved in the Passport (`POST /api/student/language`, student role only, whitelisted codes; `GET /api/auth/me` returns it). `document.documentElement.lang` follows. Numbers use `Intl` with the active locale, except rupees, which keep Indian grouping (`en-IN`) in both languages.
+
+Server text is translated at the API edge, never in stored data (audit chain, proof packs, cards and plans stay English and byte-identical). The language of a response is `?lang=` > `X-Oasis-Lang` (sent by the UI) > the student's saved language > `Accept-Language` > English. `oasis/agent/zh_messages.py` maps the English reasons of policy, verification, corridor, executor, risk, forecast and the planner/validator to Chinese by message shape with the same placeholders (no translation: the English text is returned unchanged); `oasis/agent/localize.py` applies it to outcomes, why-cards, state, plans, the demo and error messages (errors also carry a language-neutral `code`). The parent approval text gains Chinese (`i18n.py`); a live-model rewrite must keep every number (`numbers_preserved`). Not translated by design: invoice text, payee names, legal/regulatory source quotes, rule ids, hashes, key ids, tool-call JSON, the generated benchmark reports and the third-party recovery draft written by a model. All Chinese is machine-drafted and needs native-speaker review (glossary: `docs/i18n-glossary.md`). Tests: `tests/test_i18n.py`.

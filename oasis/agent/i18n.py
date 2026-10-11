@@ -1,4 +1,4 @@
-"""Templated explanations in the parent's language (English, Tamil, Hindi).
+"""Templated explanations in the parent's language (English, Tamil, Hindi, Simplified Chinese).
 
 These are the offline path. When an LLM is available it may rewrite them, but the numbers must survive
 (see `numbers_preserved`); otherwise the template is used. Wording should be reviewed by a native speaker
@@ -7,8 +7,46 @@ before real use.
 from __future__ import annotations
 import re
 
-LANGS = {"en": "English", "ta": "தமிழ் (Tamil)", "hi": "हिन्दी (Hindi)"}
-LANG_NAMES = {"en": "English", "ta": "Tamil", "hi": "Hindi"}
+LANGS = {"en": "English", "ta": "தமிழ் (Tamil)", "hi": "हिन्दी (Hindi)", "zh": "简体中文 (Chinese)"}
+LANG_NAMES = {"en": "English", "ta": "Tamil", "hi": "Hindi", "zh": "Simplified Chinese"}
+
+# Interface languages (the web UI and the server-originated text shown in it). English is the default and the official
+# language of the competition; adding a language = a UI dictionary file, one registration line in frontend/src/i18n/index.js
+# and its entry here. Parent-approval wording (LANGS above) is a separate, larger set.
+UI_LANGS = ("en", "zh")
+DEFAULT_UI_LANG = "en"
+
+
+def ui_lang(value) -> str | None:
+    """Normalise a language code ('zh', 'zh-CN', 'zh_Hans', 'en-US') to a supported UI code, or None if unsupported."""
+    if not isinstance(value, str):
+        return None
+    v = value.strip().lower().replace("_", "-")
+    if not v:
+        return None
+    base = v.split("-", 1)[0]
+    return base if base in UI_LANGS else None
+
+
+def lang_from_accept(header: str | None) -> str | None:
+    """The first supported language in an Accept-Language header (q-values respected), or None."""
+    if not header:
+        return None
+    best: tuple[float, int, str] | None = None
+    for i, part in enumerate(header.split(",")):
+        bits = part.strip().split(";")
+        code = ui_lang(bits[0])
+        q = 1.0
+        for b in bits[1:]:
+            b = b.strip()
+            if b.startswith("q="):
+                try:
+                    q = float(b[2:])
+                except ValueError:
+                    q = 0.0
+        if code and q > 0 and (best is None or (q, -i) > (best[0], -best[1])):
+            best = (q, i, code)
+    return best[2] if best else None
 
 PURPOSE = {
     "en": {"family_support": "family support", "tuition": "tuition", "rent": "rent", "deposit": "a deposit",
@@ -17,6 +55,7 @@ PURPOSE = {
            "deposit": "முன்பணம்", "living": "வாழ்க்கைச் செலவு"},
     "hi": {"family_support": "पारिवारिक खर्च", "tuition": "ट्यूशन फ़ीस", "rent": "किराया",
            "deposit": "जमानत राशि", "living": "रोज़मर्रा का खर्च"},
+    "zh": {"family_support": "家庭资助", "tuition": "学费", "rent": "房租", "deposit": "押金", "living": "生活费"},
 }
 
 LEVEL = {
@@ -25,6 +64,7 @@ LEVEL = {
            "registry_checked": "பதிவேட்டில் சரிபார்க்கப்பட்டது"},
     "hi": {"verified_full": "पूरी तरह सत्यापित", "verified_low": "सत्यापित (कम सीमा)",
            "registry_checked": "रजिस्ट्री से जाँचा गया"},
+    "zh": {"verified_full": "已完全验证", "verified_low": "已验证（低额度）", "registry_checked": "已在登记处核验"},
 }
 
 LABELS = {
@@ -37,6 +77,9 @@ LABELS = {
     "hi": {"amount": "राशि", "recipient": "प्राप्तकर्ता", "verified": "प्राप्तकर्ता की जाँच", "why": "आपसे क्यों पूछा जा रहा है",
            "why_text": "सीमा से ऊपर के पारिवारिक ट्रांसफर के लिए माता-पिता की मंज़ूरी ज़रूरी है",
            "approve": "मंज़ूर करें", "decline": "अस्वीकार करें", "nomove": "आपकी मंज़ूरी के बिना कोई पैसा नहीं जाएगा।"},
+    "zh": {"amount": "金额", "recipient": "收款人", "verified": "收款人核验", "why": "为什么需要您确认",
+           "why_text": "超过共同批准限额的家庭汇款需要家长批准", "approve": "批准", "decline": "拒绝",
+           "nomove": "在您批准之前，不会有任何资金转出。"},
 }
 
 
@@ -57,6 +100,10 @@ VERIFY_SENTENCE = {
            "verified_low": "प्राप्तकर्ता की पुष्टि केवल कम सीमा (¥{limit} तक) के लिए हुई है; पूरी तरह सत्यापन अभी नहीं हुआ है।",
            "registry_checked": "प्राप्तकर्ता आधिकारिक रजिस्ट्री में मिला है, पर अभी पूरी तरह सत्यापित नहीं है।",
            "none": "प्राप्तकर्ता का अभी सत्यापन नहीं हुआ है।"},
+    "zh": {"verified_full": "该收款人已通过官方登记处完成全面验证。",
+           "verified_low": "该收款人仅验证至低额度（¥{limit}），尚未完成全面验证。",
+           "registry_checked": "已在官方登记处查到该收款人，但尚未完成全面验证。",
+           "none": "尚未对该收款人进行验证。"},
 }
 
 
@@ -70,12 +117,13 @@ def verification_sentence(ctx: dict, lang: str = "en") -> str:
 
 def parent_approval(ctx: dict, lang: str = "en") -> str:
     lang = lang if lang in LANGS else "en"
-    student = ctx.get("student", "Your child")
+    student = ctx.get("student", "您的孩子" if lang == "zh" else "Your child")
     inr, cny = float(ctx.get("amount_inr", 0)), ctx.get("amount_cny")
-    payee = ctx.get("payee") or "a verified recipient"
+    payee = ctx.get("payee") or ("一位已验证的收款人" if lang == "zh" else "a verified recipient")
     purpose = PURPOSE[lang].get(ctx.get("purpose") or "family_support", ctx.get("purpose") or "")
     thr = _n(float(ctx.get("threshold_inr", 50000)))
     approx = f" (≈ ¥{_n(float(cny))})" if cny else ""
+    approx_zh = f"（约 ¥{_n(float(cny))}）" if cny else ""
     if lang == "ta":
         return (f"{student} சார்பாக {payee} என்ற பெறுநருக்கு ₹{_n(inr)}{approx} அனுப்ப உங்கள் ஒப்புதல் கோரப்படுகிறது (நோக்கம்: {purpose}). "
                 f"{verification_sentence(ctx, lang)} "
@@ -86,6 +134,11 @@ def parent_approval(ctx: dict, lang: str = "en") -> str:
                 f"{verification_sentence(ctx, lang)} "
                 f"₹{thr} से अधिक के पारिवारिक ट्रांसफर के लिए माता-पिता की मंज़ूरी ज़रूरी है। "
                 f"आपकी मंज़ूरी के बिना कोई पैसा नहीं भेजा जाएगा। कृपया मंज़ूर करें या अस्वीकार करें।")
+    if lang == "zh":
+        return (f"{student}请求您批准一笔汇款：向{payee}汇出₹{_n(inr)}{approx_zh}，用途：{purpose}。"
+                f"{verification_sentence(ctx, lang)}"
+                f"超过₹{thr}的家庭汇款需要家长共同批准。"
+                f"在您批准之前，不会有任何资金转出。请选择批准或拒绝。")
     return (f"{student} wants to send INR {_n(inr)}{approx} for {purpose} to {payee}. {verification_sentence(ctx, lang)} "
             f"Family transfers above INR {thr} need a parent's approval. "
             f"No money moves until you approve. Please approve or decline.")
@@ -96,11 +149,19 @@ def parent_facts(ctx: dict, lang: str = "en") -> list[dict]:
     L = LABELS[lang]
     lvl = LEVEL[lang].get(ctx.get("verification_level") or "", ctx.get("verification_level") or "-")
     facts = [{"label": L["amount"], "value": f"₹{_n(float(ctx.get('amount_inr', 0)))}"
-              + (f" (≈ ¥{_n(float(ctx['amount_cny']))})" if ctx.get("amount_cny") else "")},
+              + ((f"（约 ¥{_n(float(ctx['amount_cny']))}）" if lang == "zh" else f" (≈ ¥{_n(float(ctx['amount_cny']))})")
+                 if ctx.get("amount_cny") else "")},
              {"label": L["recipient"], "value": ctx.get("payee") or "-"},
              {"label": L["verified"], "value": lvl},
              {"label": L["why"], "value": L["why_text"]}]
     return facts
+
+
+NEXT_ZH = {
+    "R16_out_of_band_verification": "请通过登记处核实的联系方式亲自确认（不要使用文件中提供的任何联系方式），然后重新提交真实的发票。",
+    "extract_low_confidence": "请确认付款详情。",
+    "default": "我们会通过官方登记处重新核实，并在继续之前征求您的意见。",
+}
 
 
 def why_stopped(ctx: dict, lang: str = "en") -> str:
@@ -111,6 +172,13 @@ def why_stopped(ctx: dict, lang: str = "en") -> str:
     if lang == "hi":
         return (f"{payee} को ¥{amt} का भुगतान रोका गया (नियम {rule})। कोई पैसा नहीं गया। "
                 f"आगे: हम आधिकारिक रजिस्ट्री से दोबारा जाँच करेंगे और आगे बढ़ने से पहले आपसे पूछेंगे।")
+    if lang == "zh":
+        from .zh_messages import ACTION_ZH, tr
+        action = ACTION_ZH.get(ctx.get("action"), ctx.get("action") or "拦截")
+        reasons = "；".join(tr(r, "zh").rstrip("。.") for r in ctx.get("reasons", [])) or "暂无更多详情"
+        nxt = ctx.get("next_zh") or NEXT_ZH.get(rule, NEXT_ZH["default"])
+        return (f"这笔向{payee}支付 ¥{amt} 的款项已被{action}（规则 {rule}）。原因：{reasons}。"
+                f"没有任何资金转出。下一步：{nxt}")
     return ""
 
 

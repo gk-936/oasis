@@ -14,7 +14,8 @@ Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a 
 - **Compares routes and saves fees.** The agent's plan (valid after 2 validator revisions) saves **CNY 1,653 vs a typical bank route**. Across the 8 planning scenarios conversion fees were CNY 4,990 vs 29,378 (83% lower); in the 90-day simulation of 5 personas Oasis saves CNY 1,542 to 2,963 each, Arjun CNY 2,731. All mock fees; see [docs/results.md](docs/results.md).
 - **Meets deadlines.** All 20 deadlines across the 8 planning scenarios were met by the deterministic planner, with CNY arriving before it is spent.
 - **Pays tuition with a signed intent** to the registry-verified university account, and issues a proof pack he can show anyone.
-- **Gets parent co-approval in Tamil, Hindi or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
+- **Languages.** The interface and the server's plain-language explanations come in English (default) and Simplified Chinese (picker on the login screen and in the header; a student's choice is saved in the Passport); machine-drafted Chinese, see `docs/i18n-glossary.md`.
+- **Gets parent co-approval in Tamil, Hindi, Chinese or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
 - **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
 - **Builds a payment record (credit building, not a credit score).** Each payment that went through the full checks with a verified proof pack can be put in a signed **payment-reliability record** (on time or late, pseudonymous by default, amount ranges unless he opts in) that a landlord or university can verify. It is not a credit score and no bureau accepts it; it is a verifiable record from a sandbox.
 - **Acts on his behalf within small limits:** a rate-target conversion and a recurring bill (Tier-1 autonomy), then shows a **savings receipt** (CNY 1,313.66 in the demo) and the Student Financial Passport.
@@ -51,7 +52,7 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Live model vs injections | Model followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
-| Tests | 537 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Tests | 573 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
 
@@ -61,6 +62,7 @@ Full list of 20 below.
 - **Weak unaided AI planning:** 7 of 24 live plans valid; the fallback makes the final plan valid.
 - **Benchmarks are partly by construction:** same team wrote attacks and defences; humans are simulated.
 - **Demo-grade security setup:** shared passcodes, no MFA, plaintext keys unless a passphrase is set.
+- **Translations are machine-drafted:** Chinese, Tamil and Hindi wording is unreviewed by native speakers; English is the official text.
 - **Regulatory figures are researched, not confirmed** by a bank or counsel; not legal advice.
 
 ## Quick start
@@ -73,7 +75,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 537 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 573 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
@@ -154,7 +156,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 14. **Requests are serialised.** One request runs at a time to protect the single-writer sandbox state, so a slow live-model call blocks the others; time is the simulated clock, not wall time.
 15. **The judge role can read the student's data.** It is read-only by design so a reviewer can inspect state, audit and plans, and it cannot call any state-changing student endpoint.
 16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
-17. **Tamil and Hindi parent text is templated and has not been reviewed by native speakers.**
+17. **Tamil, Hindi and Chinese (zh-CN) text is machine-drafted: the parent approval wording and the Chinese interface and server messages have not been reviewed by native speakers.** English is the default and the competition's official language; see `docs/i18n-glossary.md`.
 18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
 19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed ([technical documentation][tech], section 15).
 20. **Only INR and CNY are supported.** Balances, rates, rules and routes cover INR to CNY only; there is no wallet in another currency. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).

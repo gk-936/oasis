@@ -10,6 +10,7 @@
 // compromised browser while unlocked. Honest limit, also in docs/security-self-assessment.md.
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { t } from "./i18n/index.js";
 
 const te = new TextEncoder();
 const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -71,12 +72,12 @@ export function lockDevice(role) { delete mem[role]; }
  */
 export function signApproval(role, draft) {
   const dev = mem[role];
-  if (!dev) throw new Error("your signing key is locked: enter your passcode to unlock it");
-  if (!draft?.canonical || !draft?.draft_hash) throw new Error("this payment carries no draft to sign");
-  if (sha256hex(draft.canonical) !== draft.draft_hash) throw new Error("draft hash does not match its contents; refusing to sign");
+  if (!dev) throw new Error(t("crypto.locked"));
+  if (!draft?.canonical || !draft?.draft_hash) throw new Error(t("crypto.nodraft"));
+  if (sha256hex(draft.canonical) !== draft.draft_hash) throw new Error(t("crypto.hashmismatch"));
   const c = JSON.parse(draft.canonical);
   for (const k of ["payee_id", "account_ref", "amount", "currency", "purpose", "route_id", "not_after", "nonce"]) {
-    if (c[k] !== draft[k]) throw new Error(`displayed ${k} differs from what would be signed; refusing to sign`);
+    if (c[k] !== draft[k]) throw new Error(t("crypto.fielddiffers", { field: k }));
   }
   const sig = ed25519.sign(te.encode(`oasis-approval-v1|${role}|${draft.draft_hash}`), dev.seed);
   return { signature: b64(sig), key_id: dev.keyId };
@@ -85,7 +86,7 @@ export function signApproval(role, draft) {
 /** Sign a plan-conversion consent (the draft carries its own canonical string + hash). */
 export function signConsent(role, d) {
   const dev = mem[role];
-  if (!dev) throw new Error("your signing key is locked: enter your passcode to unlock it");
-  if (sha256hex(d.canonical) !== d.draft_hash) throw new Error("consent hash does not match its contents; refusing to sign");
+  if (!dev) throw new Error(t("crypto.locked"));
+  if (sha256hex(d.canonical) !== d.draft_hash) throw new Error(t("crypto.consenthash"));
   return { signature: b64(ed25519.sign(te.encode(`oasis-approval-v1|${role}|${d.draft_hash}`), dev.seed)), key_id: dev.keyId };
 }

@@ -421,6 +421,13 @@ class OfflineLLM(LLM):
 
 
 def explain_template(kind: str, ctx: dict, language: str = "en") -> str:
+    if language == "zh":                      # Simplified Chinese: a complete zh sentence, not appended to the English one
+        if kind == "why_stopped":
+            return i18n.why_stopped(ctx, "zh")
+        if kind == "savings":
+            return f"Oasis 的汇款路线相比典型银行路线节省 ¥{ctx.get('saved_cny', 0):,.2f}（{ctx.get('saved_pct', 0)}%）。"
+        if kind == "parent_approval":
+            return i18n.parent_approval(ctx, "zh")
     reasons = "; ".join(ctx.get("reasons", [])) or "no further detail"
     if kind == "why_stopped":
         loc = i18n.why_stopped(ctx, language) if language != "en" else ""

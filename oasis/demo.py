@@ -162,7 +162,7 @@ class DemoRunner:
             o = a.handle(Request(TOPUP, remitter="parent"), h)
             fields = {"amount": 8000, "payee_id": "payee_student_self", "payee_name": "Arjun (own CNY account)",
                       "purpose": "family_support"}
-            return {"outcome": _slim(o), "parent_view": {lg: parent_view(w, fields, lg) for lg in ("ta", "hi", "en")},
+            return {"outcome": _slim(o), "parent_view": {lg: parent_view(w, fields, lg) for lg in ("ta", "hi", "en", "zh")},
                     "approvals_log": h.log[-1:] if h.log else [],
                     "headline": f"Top-up {o.status} after parent approval (shown to the parent in Tamil)"}
 

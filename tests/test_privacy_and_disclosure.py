@@ -110,8 +110,11 @@ def test_disclosure_is_on_every_screen_of_the_ui_source():
     src = (ROOT / "frontend" / "src" / "App.jsx").read_text(encoding="utf-8")
     m = re.search(r"<footer>([^<]*)</footer>", src)
     assert m, "the app must render a footer"
-    text = m.group(1)
-    assert "not licensed financial advice" in text and "hackathon prototype" in text
+    assert m.group(1).strip() == '{t("app.footer")}'          # the sentence lives in the language dictionaries
+    for lang, phrases in (("en", ("not licensed financial advice", "hackathon prototype")), ("zh", ("不构成持牌金融建议", "黑客松原型"))):
+        d = (ROOT / "frontend" / "src" / "i18n" / f"{lang}.js").read_text(encoding="utf-8")
+        line = next(x for x in d.splitlines() if x.lstrip().startswith('"app.footer"'))
+        assert all(ph in line for ph in phrases), (lang, line)
     # The footer sits in the persistent layout, after <main>, so it is not tied to a tab or to being logged in.
     layout = src[src.rindex("<div className=\"app\">"):]
     assert layout.index("</main>") < layout.index("<footer>") < layout.index("</div>")

@@ -253,7 +253,7 @@ pre.md { background: var(--surface-2); border: 1px solid var(--line); padding: 1
 .rolebtn { display: flex; flex-direction: column; gap: 4px; text-align: left; align-items: flex-start; background: var(--surface); color: var(--ink); border: 2px solid var(--line-strong); min-height: 84px; padding: 10px 12px; }
 .rolebtn:hover:not(:disabled) { filter: none; border-color: var(--brand); }
 .rolebtn span { font-size: .8rem; font-weight: 400; color: var(--muted); }
-.rolebtn.on { border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
+.rolebtn.on { color: var(--ink); border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
 .hint { font-size: .85rem; color: var(--muted); margin-top: 12px; }
 
 /* responsive */
@@ -310,3 +310,15 @@ td.r, th.r, td .pill { white-space: nowrap; }
 /* payment reliability record: inline checkbox rows */
 label.check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 label.check > input { width: 20px; min-height: 20px; height: 20px; padding: 0; margin: 0; flex: none; }
+
+/* ---- interface language: picker + Chinese typography */
+.langpick button { min-height: 32px; padding: 3px 10px; font-size: .85rem; }
+.topbar .langpick { border-color: var(--head-muted); }
+.topbar .langpick button { color: var(--head-ink); }
+.topbar .langpick button[aria-pressed="true"] { background: var(--head-ink); color: var(--head); }
+.login-lang { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+html[lang="zh-CN"] { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC", var(--sans); line-height: 1.6; }
+html[lang="zh-CN"] h1, html[lang="zh-CN"] h2 { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", var(--sans); letter-spacing: 0; }
+html[lang="zh-CN"] .tagline { max-width: 40ch; }
+html[lang="zh-CN"] .trail .why { font-size: .8rem; }
+html[lang="zh-CN"] label { font-size: .88rem; }
