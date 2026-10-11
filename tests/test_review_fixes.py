@@ -577,7 +577,8 @@ def test_docs_carry_the_honest_limits_and_no_stale_counts():
         text = (config.ROOT / name).read_text(encoding="utf-8")
         assert "## Known limitations" in text and "partly by construction" in text
         assert "Authentication is demo-grade" in text and "Live results are small samples" in text
-    readme = (config.ROOT / "README.md").read_text(encoding="utf-8")
-    assert "a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate" in readme
+    detail = (config.ROOT / "docs" / "results.md").read_text(encoding="utf-8")
+    assert "a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate" in detail
+    assert "attacks passed" not in (config.ROOT / "README.md").read_text(encoding="utf-8")
     for name in ("README.md", "docs/execution-evidence.md"):
         assert "142 tests" not in (config.ROOT / name).read_text(encoding="utf-8")

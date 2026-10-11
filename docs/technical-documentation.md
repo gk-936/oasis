@@ -170,3 +170,79 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | POST | `/api/demo/run` | play a whole run in one call |
 | POST | `/api/demo/reset` | reset the demo |
 | GET | `/api/explain/savings` | conversions and total saved versus a typical bank route |
+
+
+## 7. Repository layout
+
+```
+oasis/
+  agent/        llm.py (offline / Groq / vision), i18n.py + parent.py (Tamil/Hindi/English), pipeline.py
+                (six steps, layer switches), autonomy.py (Tier-1: rate targets, recurring bills),
+                planner.py (agentic tool-calling planner: offline + Groq), plan_exec.py (accept/run a plan through the
+                pipeline), recovery.py (autonomous recovery draft + validation)
+  passport/     Student Financial Passport data model
+  planning/     route comparison, forecast + triggers, spending categorisation (cold start -> own pattern),
+                tools.py (planner tool protocol), validator.py (deterministic plan validator), scenarios.py
+  trust/        crypto (Signer interface: Ed25519 + ML-DSA-65 hybrid by default; optional SM2/SM3 via gmssl; PQ-TLS tested with an OpenSSL client against Caddy: docs/pq-tls.md), verification ramp, intents,
+                policy engine, corridor rules (rules/inr_cny.yaml), executor, canaries, audit chain
+  proof/        proof packs + standalone verifier
+  chain/        anchoring interface: LocalAnchorChain (simulated, default); FiscoAnchor (4-node local test chain, real FISCO BCOS 3.17.1, OASIS_ANCHOR=fisco)
+  mock/         rates/routes, sandbox ledger, payee registry (WeIdentity-style), wallet/QR fees
+  storage.py    SQLite persistence
+  demo.py       scripted demo runs (fixed seed, offline)
+  api/          FastAPI app
+  world.py      wires one student's session together
+eval/           scenarios, simulated humans, runner (resumable), planning eval, outcome simulator, demo_log, reports/
+frontend/       React 18: demo, chat, Passport, parent view, red-team console, proof viewer, numbers
+tests/          pytest
+docs/           technical documentation, security self-assessment, real-vs-simulated, execution evidence, PQ-TLS recipe
+```
+
+## 8. Agentic planning (spec step 2) and autonomous recovery (step 5)
+
+The agent builds a payment plan by calling read-only tools (`read_passport`, `list_obligations`, `get_rates`, `get_routes`, `check_corridor`, `forecast_runway`) and the proposal-only `propose_plan`. A deterministic validator (`oasis/planning/validator.py`) checks every proposal (each obligation paid in its exact amount, to its own payee, by its due date; CNY arrives before it is spent; the student's INR never negative; SAFE quota per calendar year, so a large tuition is split across two conversions; LRS; INR kept for rate targets; TCS/LRS warnings surfaced) and returns concrete errors so the planner revises (at most 4 proposals). The model can only propose; accepting a plan still sends every payment through verification, signed intents, policy and the executor. Offline a deterministic planner speaks the same protocol; with a Groq key `AgenticPlanner` uses native tool calling and falls back to the deterministic plan (recorded) if it cannot produce a valid one. UI: Passport tab, "Agentic plan" (also shown in demo Run 1). API: `POST /api/plan`, `GET /api/plans`, `POST /api/plan/{id}/accept|execute`. After a freeze the agent drafts the message to the legitimate recipient using only the registry's verified channel; the draft is rejected if it contains any account number or contact from the suspicious request. Results: `eval/reports/planning.md`, summarised in [results.md](results.md).
+
+## 9. What the AI does and never does
+
+What the AI does: reads documents and screenshots (including Chinese text), extracts payment fields, scores risk (a heuristic scorer, plus an optional LLM scorer in live mode that can only escalate), builds and revises a payment plan by calling read-only tools, explains decisions in plain language (and in Tamil/Hindi for a parent), compares routes, watches student-set rate targets, and drafts a recovery message to the legitimate recipient's registry-verified channel.
+
+What the AI never does: hold the payment credential, approve a payment, change a recipient's verification status, edit the audit log, sign an intent, choose a payee account (only the registry-confirmed account is paid), predict exchange rates, or contact anyone on its own. Extraction is untrusted, the risk score can only escalate a decision, a plan is only a proposal that still passes verification, policy, signing and the executor, and recovery drafts are rejected if they contain any account or contact from the suspicious request. Safety never depends on the LLM. Much of the work in the product (route comparison, forecasting, validation, verification, signing, enforcement, execution, audit) is deterministic code; unaided model planning is currently weak (see [results.md](results.md) section 4).
+
+## 10. Scripted demo (works offline, repeats exactly)
+
+Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`, then `POST /api/demo/next` per step, or `POST /api/demo/run` for the whole run). The demo uses a fixed seed, fixed mock data, seeded **demo-only** signing keys and a simulated clock, so each run produces the same statuses, amounts and the same audit-chain head hash every time (`tests/test_features.py` and `tests/test_review_fixes.py` check this). It never uses the network. A toggle in the Demo tab (`"mode": "offline"|"live"` in the API) chooses who reads, scores and plans:
+
+- **Offline** (default): the deterministic parser, scorer and planner, no AI model. Each step is labelled "offline parser".
+- **Live-replay**: qwen/qwen3.8-27b reads the documents (live-agent extraction), adds an escalate-only AI risk score and plans with native tool calling. Its answers were recorded once into the committed fixture `eval/fixtures/demo_cache/` (model name, response text and date only) and are replayed from it, so the demo repeats exactly with no network. Each step shows its mode and model, for example "Qwen qwen3.8-27b - replayed from recorded response 2026-10-10". If a response is missing from the fixture, that call falls back to the offline parser, heuristic scorer or deterministic planner and the step says so. **Status of the fixture: not recorded yet** (the free-tier daily token allowance was spent before the recording could run), so live-replay currently shows the labelled offline fallback on every step. Record it with `PYTHONPATH=. python -m eval.record_demo_fixture` (about 25k tokens; it refuses when fewer than 40k of the daily 200k would remain).
+
+- Run 1 (legitimate): Passport and forecast, agent plan with validator revision, tuition paid with a signed intent, parent co-approves a top-up (shown in Tamil/Hindi/English), landlord's genuine account change completes through the verification ramp, Tier-1 autonomy (rate target + recurring bill), proof packs and savings receipt.
+- Run 2 (attack): the forged invoice is caught at step 3 (Verify: the registry contradicts the account) and stopped with a why-card; payment instructions rewritten at execution (the second attack) are stopped at step 5 by the executor's intent check; hidden page injection reaches a canary, freeze and recovery plan, the student approves the recovery and the genuine payment completes.
+
+**Recording the demo:** set `OASIS_KEY_PASSPHRASE` before recording (for example `export OASIS_KEY_PASSPHRASE=...` before starting uvicorn) so the key files under `data/keys/` are passphrase-wrapped and plaintext keys are never shown on screen; use custom `OASIS_PASS_*` passcodes too, and start from a clean sandbox (`POST /api/reset`).
+
+`POST /api/reset` (or `/api/demo/reset`, or the "Reset sandbox" button) returns to a clean sandbox and wipes the SQLite state.
+
+## 11. Login, roles and signed approvals (detail)
+
+Every API endpoint except `/api/health`, `/api/trust/fingerprint`, proof verification and login needs a session. Set `OASIS_PASS_STUDENT` / `OASIS_PASS_PARENT` / `OASIS_PASS_JUDGE` in `.env` for anything real (`OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults). `OASIS_JUDGE_MODE=1` (set by the judge start scripts) refuses the default passcodes unless `OASIS_ALLOW_DEMO_PASSCODES=1`, switches off `/docs`, and tightens limits (10 red-team attempts per minute, 5 failed logins per minute, 30-minute sessions). Each judge login gets its own red-team sandbox world (at most 20 kept, least recently used evicted). Wrong role gives 403, no session 401. The scripted demo is a student action because it replaces the persisted sandbox.
+
+**Signed approvals.** On first login a student or parent gets an Ed25519 device key made in the browser (private half never leaves it, wrapped with the passcode). Approving a payment signs its exact draft (payee, account, amount, currency, purpose, route, expiry, nonce); the policy engine and executor accept a role's approval only if that signature verifies against the role's registered public key, and the proof pack shows "signed by parent device key ab12...". To try the two-person flow, open two browsers: student (Chat tab, "Simulate a family top-up request", approve) then parent (Parent tab, approve).
+
+**Security features:** role-based access, signed approvals, encryption at rest, short-lived single-use executor tokens, a rate-limited and size-limited judge console whose every attempt is logged to `data/redteam_attempts.jsonl` (git-ignored).
+
+## 12. Verifying a proof pack
+
+A proof pack embeds the public keys that signed it, so a pack alone proves nothing: anyone could change the amount, sign with fresh keys and embed those. `verify_proof_pack(pack, trusted_fingerprints=..., chain=...)` therefore only reports `ok` when the fingerprint of the embedded keys (sha256 over the canonical public keys) is one you pinned. The API pins its own: `GET /api/trust/fingerprint` (shown at the top of the Proof tab), and `/api/proof/.../verify` and `POST /api/proof/verify` check against it. Approvals inside the pack are Ed25519 signatures over the exact payment and must come from pinned approver device keys (`approvals_signed`, `approver_keys_pinned`). With a chain available the verifier also checks that the anchor block exists with the intent hash as digest and the chain is intact; standalone verification reports the anchor as "not checked" (and `ok` stays false without a pinned fingerprint).
+
+- Fingerprint of the scripted demo's public keys: `396bbb6e7a75c14fa88bf26bdbee0218a5aefdb48ca3ef9a0f9ff2de3dffdbdf` (anyone can forge with these keys, so never pin them outside the demo).
+- A real server's fingerprint is created on first start and printed by the endpoint; pin it out of band.
+
+## 13. What is real and what is simulated (summary)
+
+Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, the benchmark harness and the Groq adapter. Simulated (labelled MOCK): route spreads and fees (the INR→CNY mid-market rate is a mock snapshot of the real level by default, and the real ECB reference rate with `OASIS_RATES=live`, shown with a live / STALE / MOCK badge; Oasis never predicts rates; see [live-rates.md](live-rates.md)), routes, payment rails and balances, the payee registry (WeIdentity-style demo credentials), wallet spending, humans in the benchmark, the clock, and anchoring by default (a local hash-linked simulation; FISCO BCOS is a 4-node local test chain: real v3.17.1 Air, 4 nodes on one host (WSL2), the `OasisAnchor` contract anchors only sha256 intent digests, and real transaction hashes are in [fisco-bcos.md](fisco-bcos.md). It is opt-in (`OASIS_ANCHOR=fisco`); the default, the tests, the benchmark and the scripted demo use the labelled local simulation). Post-quantum TLS: PQ-TLS is tested: Caddy 2.11.7 (go1.26.8) terminating TLS 1.3 with only `x25519mlkem768`, an OpenSSL 3.5.9 client negotiated X25519MLKEM768 and a classical-only client was refused (`eval/reports/pqtls.md`). Caveats: the certificate is classical (ECDSA from Caddy's internal CA), the test is local on one machine, and browsers were not tested. Full table: [real-vs-simulated.md](real-vs-simulated.md).
+
+## 14. Deployment
+
+- **Single process (demo/evaluation):** `python -m uvicorn oasis.api.main:app --host 0.0.0.0 --port 8000` serves API and UI. State is SQLite at `data/oasis.db` (`OASIS_DB` to move it, `:memory:` for none).
+- **No Node needed to run:** `frontend/dist` is committed (about 190 KB) and served by the API; rebuild it with `npm run build` after UI changes.
+- **Not production-ready, by design (see Known limitations):** the build serves plain HTTP by default. Payload columns in the SQLite file are AES-256-GCM encrypted, but table names, row ids and counts are in clear, and the data key and trust signing key under `data/keys/` are plaintext files unless `OASIS_KEY_PASSPHRASE` is set (then scrypt+AES-GCM wrapped). The API requires a role login (student, parent, judge) and payment approvals are signed by browser-held device keys, but the passcodes are shared demo-grade secrets (public defaults unless `OASIS_PASS_*` is set), with no per-person accounts or MFA. A real deployment still needs TLS (hybrid X25519MLKEM768 at a reverse proxy; PQ-TLS is tested as described in section 13; recipe in [pq-tls.md](pq-tls.md)), a key vault or HSM, per-person accounts with MFA, and a full independent audit. See [security-self-assessment.md](security-self-assessment.md).
