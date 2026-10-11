@@ -1,58 +1,105 @@
-# INR -> CNY corridor rules. Data, not code. Every row has a source and "as of" date.
-# status: "researched" = from secondary sources; confirm against the official source before quoting.
+# INR -> CNY corridor rules. Data, not code. Every rule has: source, retrieved (date read), confidence, status.
+# status vocabulary:
+#   confirmed-primary    the figure was read on the official/primary page named in `source`
+#   researched-secondary figure agrees across named secondary sources (tax portals, bank notices, news); NOT confirmed by a
+#                        bank or counsel; confirm with an authorised dealer (AD) bank before relying on it
+#   unconfirmed          could not be confirmed from any readable source; shown to users as UNCONFIRMED
+# Research record and caveats: docs/regulatory-sources.md. Not legal advice, not a compliance opinion.
 corridor: INR-CNY
-version: "2026.10.1"
+version: "2026.10.2"
 as_of: "2026-10"
 rules:
   lrs_annual_limit_usd:
     value: 250000
     action: hold
-    status: researched
-    source: RBI LRS framework (secondary sources); confirm against RBI Master Direction
+    status: confirmed-primary
+    confidence: high
+    retrieved: "2026-10-11"
+    source: >-
+      RBI Master Direction on the Liberalised Remittance Scheme (rbi.org.in, BS_ViewMasDirections.aspx?id=10192): ADs may
+      freely allow resident individuals up to USD 250,000 per financial year. For studies abroad an AD may allow more, based on
+      the institution's estimate. Per individual remitter: a parent and the student have separate limits.
   tcs_threshold_inr:
     value: 1000000
     rate_above: 0.02
     loan_funded_rate: 0.0
-    status: researched
-    source: Finance Act 2026 changes (Flywire etc.); confirm against Income-tax Act 2025 / CBDT
-  # TCS rate per purpose (used by corridor.py). Threshold is per remitter per financial year.
-  # Only the education rows are researched. The "other" row is a PLACEHOLDER, NOT a confirmed legal rate: the rate that
-  # applies to other LRS purposes (family maintenance, gifts, living costs, rent) was not verified for this project.
-  # The value below only keeps the arithmetic running and is shown to the user as "unconfirmed" wherever it is used.
+    status: researched-secondary
+    confidence: medium-high
+    retrieved: "2026-10-11"
+    source: >-
+      Income-tax Act 2025 s.394(1) (formerly s.206C(1G) of the 1961 Act), as amended by Finance Act 2026. Threshold INR 10 lakh
+      per remitter per financial year. The incometaxindia.gov.in page was not readable (HTTP 403); read via a statute mirror
+      (eztax.in), tax portals (taxguru, tdsman) and a bank notice (sc.bank.in). Sub-section numbering unconfirmed.
+  # TCS rate per purpose (used by corridor.py). Threshold is per remitter per financial year, shared across purposes.
+  # All three rows are secondary-sourced: show "confirm with your authorised dealer bank" wherever they are used.
   tcs_by_purpose:
     threshold_inr: 1000000
     education:
       rate: 0.02
-      status: researched
-      source: Finance Act 2026 changes (Flywire etc.); confirm against Income-tax Act 2025 / CBDT
+      status: researched-secondary
+      confidence: medium
+      retrieved: "2026-10-11"
+      source: >-
+        Income-tax Act 2025 s.394(1), as amended by Finance Act 2026 (education/medical rate cut from 5% to 2% from 1 April
+        2026): nil to INR 10 lakh, 2% above. Official page not readable; three independent secondary sources and an AD bank
+        notice agree.
     education_loan:
       rate: 0.0
-      status: researched
-      source: education funded by a loan from a specified financial institution is nil-rated; confirm against CBDT
-    other:
-      rate: 0.02          # UNCONFIRMED PLACEHOLDER. Do not read this as the legal rate for these purposes.
-      status: unconfirmed
-      source: not verified; confirm the TCS rate for this purpose with the authorised dealer bank / CBDT
+      status: researched-secondary
+      confidence: medium
+      retrieved: "2026-10-11"
+      source: >-
+        Income-tax Act 2025 s.394: no collection where the remittance is a loan from a financial institution as defined in
+        s.129(3)(b) (formerly 80E) for education. Applies to the loan-funded part only. Secondary sources; confirm with the AD
+        bank whether a sanction letter is required.
+    other:       # rent, deposit, living costs, family support, gifts and every purpose not listed in purpose_tcs_category
+      rate: 0.20
+      status: researched-secondary
+      confidence: medium-high
+      retrieved: "2026-10-11"
+      source: >-
+        Income-tax Act 2025 s.394(1) table item 7.D(b), as amended by Finance Act 2026: 20% on the amount above INR 10 lakh
+        per remitter per financial year, unchanged by Budget 2026. Secondary-sourced (statute mirror, taxguru, tdsman, sc.bank.in
+        notice); the official page was not readable. Confirm with the authorised dealer bank.
   purpose_code_education:
     value: S0305
+    description: Travel for education (including fees, hostel expenses etc.)
     status: unconfirmed
-    source: secondary sources; confirm code with an authorised dealer bank
+    confidence: low-medium
+    retrieved: "2026-10-11"
+    source: >-
+      Secondary sources only (e.g. skydo.com purpose-code page). The RBI purpose-code annex was not read. Confirm the code the
+      AD bank's form requires for tuition paid to a Chinese university.
   safe_quota_usd:
     value: 50000
     action: plan_staged_conversion
-    status: researched
-    source: SAFE circular + HSBC China individual FX guide; confirm with receiving bank
+    status: confirmed-primary
+    confidence: high
+    retrieved: "2026-10-11"
+    source: >-
+      SAFE Detailed Rules for Implementing the Measures for the Administration of Individual Foreign Exchange, Article 2
+      (safe.gov.cn/tianjin/2024/0430/2464.html): annual total USD 50,000 equivalent per person per calendar year, for
+      settlement and purchase; 汇发〔2020〕14. Foreign individuals above the quota use Article 11 documents such as school fee
+      proof. Applicability to a payment that lands directly in a university account is not established (medium).
   wallet_foreign_card_fee:
     rate: 0.03
     applies_over_cny: 200
-    status: researched
-    source: Alipay in-app customer service per May 2026 report; check in app
+    status: researched-secondary
+    confidence: medium
+    retrieved: "2026-10-11"
+    source: >-
+      WeChat Pay: Beijing municipal government English page, 2026-03-26 (3% fee waived for transactions under CNY 200, which
+      implies 3% above). Alipay wording UNCONFIRMED (its help page could not be fetched). Applies to foreign cards used in the
+      wallets, not to INR bank transfers. Wallet caps are not modelled: sources conflict.
   split_pattern:
     window_hours: 72
     min_payments: 2
     near_limit_ratio: 0.9
-    status: policy
-    source: Oasis policy
+    kind: oasis_policy       # an Oasis heuristic, not a legal rule; the status below only means "no legal source claimed"
+    status: unconfirmed
+    confidence: n/a
+    retrieved: "2026-10-11"
+    source: Oasis internal policy (tunable heuristic for payments split to stay under an approval threshold); not a regulatory figure.
 purpose_tcs_category:     # which tcs_by_purpose row a purpose uses (anything not listed uses "other")
   tuition: education
   rent: other

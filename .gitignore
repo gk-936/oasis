@@ -34,6 +34,7 @@ data/keys/
 
 # red-team attempts store (every judge console attempt; input for the next work item)
 data/redteam_attempts.jsonl
+data/judge_sandbox/
 
 # local tooling (FISCO BCOS WSL distro, Caddy, downloads): scripts/Caddyfile stay tracked
 tools/fisco/.keepalive.pid

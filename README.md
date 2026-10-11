@@ -42,6 +42,8 @@ PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (see "Login and roles" below); API docs at /docs
 ```
 
+**For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox database and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md).
+
 Frontend development mode (proxies `/api` to :8000): `cd frontend && npm ci && npm run dev`.
 
 ### Configuration (.env)
@@ -51,7 +53,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 413 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
+# 437 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json
@@ -121,7 +123,7 @@ Every API endpoint except `/api/health`, `/api/trust/fingerprint`, proof verific
 | parent | `parent-demo` | approve as parent (signed), consent to parent-remitted conversions, see only their own pending items and proofs |
 | judge | `judge-demo` | red-team console (rate-limited, own sandbox ledger) and read-only views |
 
-Set `OASIS_PASS_STUDENT` / `OASIS_PASS_PARENT` / `OASIS_PASS_JUDGE` in `.env` for anything real (`OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults). Wrong role gives 403, no session 401. The scripted demo is a student action because it replaces the persisted sandbox.
+Set `OASIS_PASS_STUDENT` / `OASIS_PASS_PARENT` / `OASIS_PASS_JUDGE` in `.env` for anything real (`OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults). `OASIS_JUDGE_MODE=1` (set by the judge start scripts) refuses the default passcodes unless `OASIS_ALLOW_DEMO_PASSCODES=1`, switches off `/docs`, and tightens limits (10 red-team attempts per minute, 5 failed logins per minute, 30-minute sessions). Each judge login gets its own red-team sandbox world (at most 20 kept, least recently used evicted). Wrong role gives 403, no session 401. The scripted demo is a student action because it replaces the persisted sandbox.
 
 **Signed approvals.** On first login a student or parent gets an Ed25519 device key made in the browser (private half never leaves it, wrapped with the passcode). Approving a payment signs its exact draft (payee, account, amount, currency, purpose, route, expiry, nonce); the policy engine and executor accept a role's approval only if that signature verifies against the role's registered public key, and the proof pack shows "signed by parent device key ab12...". To try the two-person flow, open two browsers: student (Chat tab, "Simulate a family top-up request", approve) then parent (Parent tab, approve).
 
@@ -147,7 +149,7 @@ A proof pack embeds the public keys that signed it, so a pack alone proves nothi
 9. **Humans in the benchmark are simulated, and the same team wrote the attacks and the defences.** The scripted student and parent approve only requests consistent with the Passport, so 100% results are partly by construction; the blind hidden set mitigates this partly and is now partly burned, because its failures were fixed afterwards ([hidden-set report][hidden]).
 10. **Live results are small samples.** After the planner-prompt change (per-plan cap 22,000 tokens, temperature 0.3, a distinct cache salt per repeat) live planning ran 24 plans on 2026-10-11: three full repeats of the eight scenarios (the repeat-3 sample replaced an older 2026-10-10 Tight runway row). Valid without fallback: 4 of 8 in repeat 1, 2 of 8 in repeat 2 and 1 of 8 in repeat 3 (min / mean / max 1 / 2.33 / 4 of 8; pooled 7 of 24, 29%; the earlier single run, before the change, was 4 of 8). Per scenario, valid without fallback out of 3 repeats: Arrival shortfall 1, Tight runway 0, SAFE-quota tuition 0, Late scholarship 1, Parent remitter crossing TCS 2, Rate target 1, Five obligations 1, Urgent deposit 1. The 17 fallbacks were 10 token-cap stops, 4 plans where the model never proposed a plan within its call budget, 2 plans that ended with no valid plan after one proposal and 1 Groq API HTTP 400 tool-call validation error; the final plan was valid in all 24 only because a fallback is the deterministic plan. qwen/qwen3.8-27b answered last in 20 of the 24 plans (4 of the 7 model-valid plans) and the fallback openai/gpt-oss-120b in the other 4 (3 of the 7). A later controlled experiment on 2026-10-11 changed only what the model is shown (compact tool results, format v2, now the default; v1 kept as a switch) and used 230,613 new tokens: on the same original scenarios (7 of the 8; the urgent-deadline scenario was not run) one repeat gave 5 of 7 valid without fallback against 6 of 21 under the old format (p about 0.08, so inconclusive), and on four new held-out scenarios written beforehand it gave 3 of 4 under both formats, so no gain is shown there; pooled 8 of 11 against 9 of 25. Only one repeat of the new format fit the budget; see docs/planner-efficiency.md. The live benchmark ran 3 repeats (temperature 0, then 0.4 and 0.4) with the LLM risk scorer over six injection scenarios: outcomes were identical in every repeat (zero spread), the model followed 0 of 18 embedded injections, and 167 of 183 extractions were served by qwen/qwen3.8-27b and 16 by the fallback ([planning report][plan]). Planning repeat 3 was run on its own with `python -m eval.planning --llm groq --repeats 3 --repeat-index 3`.
 11. **The risk scorer is heuristic and was tuned on the benchmark itself (in-sample).** An optional LLM scorer in live mode can only escalate, and neither scorer can see poisoned tool output (0/6), which only intent binding stops.
-12. **Regulatory figures are researched but not officially confirmed.** The TCS rate for non-education purposes is a marked placeholder, and the education purpose code is unconfirmed (`oasis/trust/rules/inr_cny.yaml`).
+12. **Regulatory figures were researched on 2026-10-11 from named sources, several of them secondary, and are not confirmed by a bank or counsel.** The LRS limit (RBI Master Direction) and the SAFE annual quota (SAFE Detailed Rules, Article 2) were read on primary pages; the TCS threshold and rates (Income-tax Act 2025 s.394 as amended by Finance Act 2026: education 2%, education loan nil, other purposes 20%, all above INR 10 lakh) come from tax portals, a statute mirror and a bank notice because the official page could not be read; the WeChat Pay foreign-card fee comes from a Beijing government page, the Alipay wording and the education purpose code (S0305) are unconfirmed, and wallet caps are not modelled because the sources conflict. Every rule carries its source, date, confidence and status in `oasis/trust/rules/inr_cny.yaml` (shown in the Passport tab and at `GET /api/corridor/rules`); confirm each figure with an authorised dealer bank before relying on it. This is not legal advice; see [regulatory sources][regsrc].
 13. **Rate limiting and tokens are per process.** The login throttle (per client address, in memory) and the session and executor token stores reset on restart and do not work across several workers, and one address can be locked out for a minute.
 14. **Requests are serialised.** One request runs at a time to protect the single-writer sandbox state, so a slow live-model call blocks the others; time is the simulated clock, not wall time.
 15. **The judge role can read the student's data.** It is read-only by design so a reviewer can inspect state, audit and plans, and it cannot call any state-changing student endpoint.
@@ -163,6 +165,7 @@ A proof pack embeds the public keys that signed it, so a pack alone proves nothi
 [tech]: docs/technical-documentation.md
 [hidden]: eval/reports/benchmark_hidden_prefix.md
 [plan]: eval/reports/planning.md
+[regsrc]: docs/regulatory-sources.md
 
 ## What is real and what is simulated
 
@@ -187,6 +190,9 @@ What the AI never does: hold the payment credential, approve a payment, change a
 | [docs/technical-documentation.md](docs/technical-documentation.md) | architecture, algorithms, security design, data model, API, evaluation method |
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
+| [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring and record keeping, explicitly NOT compliance, with what is not covered |
+| [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |
+| [JUDGE_GUIDE.md](JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge to try to break Oasis, offline, one command |
 | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) | what is working code and what is MOCK |
 | [docs/execution-evidence.md](docs/execution-evidence.md) | sandbox logs and reports, how to regenerate them |
 | [docs/pq-tls.md](docs/pq-tls.md) | post-quantum TLS recipe, tested with an OpenSSL 3.5 client against Caddy (evidence: [eval/reports/pqtls.md](eval/reports/pqtls.md)) |

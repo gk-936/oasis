@@ -265,8 +265,7 @@ def validate_plan(world, steps) -> Validation:
             tcs = _tcs(used_by[rem], send, rules, loan, tr["rate"])
             if tcs > 0:
                 tcs_total += tcs
-                unconf = (" The rate for this purpose is UNCONFIRMED (a placeholder): check it with the authorised dealer bank."
-                          if tr["status"] == "unconfirmed" else "")
+                unconf = corridor.tcs_caveat(tr)
                 warns.append(Issue("tcs", f"Step {i}: TCS of INR {tcs:,.0f} would be collected from the {rem} remitter "
                                    f"({tr['rate']:.0%} above {_lakh(tr['threshold_inr'])}; recoverable as a tax credit, not a fee).{unconf}",
                                    i, "", {"tcs_inr": tcs, "remitter": rem, "rate": tr["rate"], "rate_status": tr["status"]}))

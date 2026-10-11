@@ -13,7 +13,7 @@ const api = async (path, body) => {
   let r;
   try {
     r = await fetch(`/api${path}`, body === undefined ? {} : {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: typeof body === "string" ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, "Network error");
@@ -626,6 +626,50 @@ function AgentPlan({ s, refresh }) {
   );
 }
 
+/* ------------------------------------------------------------------ Corridor rules and sources */
+const RULE_STATUS = {
+  "confirmed-primary": ["ok", "confirmed (primary source)"],
+  "researched-secondary": ["warn", "secondary-sourced: confirm with your bank"],
+  unconfirmed: ["bad", "UNCONFIRMED"],
+};
+function ruleValue(r) {
+  const v = r.values || {};
+  if (r.id === "lrs_annual_limit_usd") return `USD ${fmt(v.value)} per financial year`;
+  if (r.id === "tcs_threshold_inr") return `${inr(v.value)} per remitter per financial year`;
+  if (r.id.startsWith("tcs_")) return `${pct(v.rate)} above the ${inr(1000000)} threshold`;
+  if (r.id === "safe_quota_usd") return `USD ${fmt(v.value)} per person per calendar year`;
+  if (r.id === "wallet_foreign_card_fee") return `${pct(v.rate)} above ¥${v.applies_over_cny} (foreign cards in wallets)`;
+  if (r.id === "purpose_code_education") return String(v.value);
+  if (r.id === "split_pattern") return `${v.min_payments}+ payments within ${v.window_hours} h at or above ${pct(v.near_limit_ratio)} of a limit`;
+  return JSON.stringify(v);
+}
+function CorridorRules() {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState(null);
+  const load = useCallback(() => { setErr(null); api("/corridor/rules").then(setD).catch(setErr); }, []);
+  useEffect(() => { load(); }, [load]);
+  return (
+    <div className="card wide" aria-label="Corridor rules and sources">
+      <div className="hd"><h3>Corridor rules &amp; sources</h3><span className="pill neutral">researched 2026-10-11</span></div>
+      {err && <ErrorBox error={err} onRetry={load} />}
+      {!d && !err && <Loading />}
+      {d && <>
+        <p className="muted small">{d.disclaimer} The amounts in the app are MOCK sandbox data; only these rule figures are researched.</p>
+        <ul className="rules" aria-label="Corridor rules">{d.rules.map((r) => {
+          const policy = r.kind === "oasis_policy";
+          const [cls, txt] = policy ? ["neutral", "Oasis policy, not a legal rule"] : (RULE_STATUS[r.status] || ["neutral", r.status]);
+          return (
+            <li key={r.id}>
+              <div className="rule-hd"><b>{r.label}</b><span className={`pill ${cls}`}>{txt}</span></div>
+              <div>{ruleValue(r)} <span className="muted small">· confidence: {r.confidence}</span></div>
+              <details><summary className="small">Source, retrieved {r.retrieved}</summary><p className="small">{r.source}</p></details>
+            </li>);
+        })}</ul>
+      </>}
+    </div>
+  );
+}
+
 function Passport({ s, refresh }) {
   if (!s) return <Skeleton rows={6} />;
   const p = s.passport;
@@ -667,6 +711,7 @@ function Passport({ s, refresh }) {
       <AgentPlan s={s} refresh={refresh} />
       <Spending s={s} refresh={refresh} />
       <Autonomy s={s} refresh={refresh} />
+      <CorridorRules />
       <div className="card">
         <h3>Alerts</h3>
         {s.triggers.length ? s.triggers.map((t, i) => <p key={i}><Pill status={t.kind} /> {t.message}</p>) : <p className="muted">No alerts.</p>}
@@ -746,7 +791,7 @@ function Parent({ refresh, role }) {
 
 /* ------------------------------------------------------------------ Red team */
 const MAX_BYTES = 4000;
-function RedTeam() {
+function RedTeam({ onProof }) {
   const [text, setText] = useState(SAMPLE_ATTACK);
   const [poison, setPoison] = useState("");
   const [o, setO] = useState(null);
@@ -765,7 +810,7 @@ function RedTeam() {
       <div>
         <h2 id="rt-h">Red-team console</h2>
         <p className="lead">Try to make the agent pay the wrong party. Inputs run through the full pipeline against a <b>separate sandbox ledger</b> <Mock />, never the demo or student state.
-          Limits: 20 attempts per minute and 4,000 bytes of text; every attempt is logged.</p>
+          Limits: a per-minute attempt limit (20; 10 in judge mode) and 4,000 bytes of text; every attempt is logged. Each login session gets its own sandbox.</p>
       </div>
       <div className="card">
         <label>Attack text (an invoice, message or page the agent will read)
@@ -787,7 +832,8 @@ function RedTeam() {
             {log && <div className="kpi"><div className="k">Attempts logged</div><div className="v">{log.attempts.length}</div></div>}
             {log && <div className="kpi"><div className="k">Total lost</div><div className="v">{cny(log.total_lost, 2)}</div></div>}
           </div>
-          <Outcome o={o} />
+          {log?.isolation && <p className="muted small">Your own MOCK sandbox: {log.isolation}.</p>}
+          <Outcome o={o} onProof={onProof} />
         </div>
       )}
       {!o && !busy && <Empty title="No attempt yet">Run the sample attack, or edit the text. A forged account number is blocked at Verify; a decoy credential freezes the flow at Understand.</Empty>}
@@ -796,6 +842,51 @@ function RedTeam() {
 }
 
 /* ------------------------------------------------------------------ Proof */
+/* Edit a copy of the loaded pack and verify it: any change must make the checks fail. The text is the server's own bytes,
+   only re-indented (re-serialising through JS would turn 30000.0 into 30000 and break the signed canonical form). */
+function prettyJson(raw) {
+  let out = "", ind = 0, inStr = false, esc = false;
+  const nl = () => "\n" + "  ".repeat(ind);
+  for (const ch of raw) {
+    if (inStr) { out += ch; if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') { inStr = true; out += ch; }
+    else if (ch === "{" || ch === "[") { ind++; out += ch + nl(); }
+    else if (ch === "}" || ch === "]") { ind--; out += nl() + ch; }
+    else if (ch === ",") out += ch + nl();
+    else if (ch === ":") out += ": ";
+    else out += ch;
+  }
+  return out.replace(/([{[])\s+([}\]])/g, "$1$2");
+}
+function TamperLab({ id }) {
+  const [text, setText] = useState("");
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    setRes(null); setErr(null);
+    fetch(`/api/proof/${id}`).then((r) => r.text()).then((t) => { if (live) setText(prettyJson(t)); }).catch(() => {});
+    return () => { live = false; };
+  }, [id]);
+  const go = async () => {
+    setBusy(true); setErr(null);
+    try { JSON.parse(text); setRes(await api("/proof/verify", text)); announce("Edited copy verified"); }
+    catch (e) { setErr(e instanceof SyntaxError ? new Error("That is not valid JSON.") : e); setRes(null); }
+    finally { setBusy(false); }
+  };
+  const fails = res ? Object.entries(res).filter(([k, v]) => k !== "pinned_fingerprint" && k !== "ok" && v === false).map(([k]) => k) : [];
+  return (
+    <details><summary>Try tampering with this pack</summary>
+      <p className="muted small">Edit the JSON below (for example change <code>"amount"</code> or an account) and press Verify. The server checks your edited copy against its pinned keys; this changes no state.</p>
+      <label>Proof pack JSON (editable copy)<textarea rows={10} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} /></label>
+      <div className="row"><button className="ghost" disabled={busy || !text} onClick={go}>Verify edited copy</button>
+        {res && (res.ok ? <Pill status="verified">still verifies (unchanged)</Pill> : <Pill status="failed">rejected: {fails.join(", ") || "not ok"}</Pill>)}</div>
+      {err && <ErrorBox error={err} onDismiss={() => setErr(null)} />}
+    </details>
+  );
+}
+
 function Proof({ s, selected }) {
   const [id, setId] = useState("");
   const [pack, setPack] = useState(null);
@@ -857,6 +948,7 @@ function Proof({ s, selected }) {
             <tr key={k}><td><code>{k}</code></td><td>{v === null ? <Pill status="neutral">not checked</Pill> : v ? <Pill status="verified">pass</Pill> : <Pill status="failed">FAIL</Pill>}</td></tr>))}</tbody></table></div>
           <details><summary>How to read these checks</summary>
             <p className="muted">A pack embeds its own public keys, so it only counts if their fingerprint matches the pinned one above (<code>key_pinned</code>); each approval is an Ed25519 signature over the exact payment, checked against the pinned approver device keys (<code>approvals_signed</code>, <code>approver_keys_pinned</code>); the anchor is checked against this server's chain (a local simulation by default; the FISCO BCOS contract when OASIS_ANCHOR=fisco).</p></details>
+          <TamperLab id={id} />
         </div>
       )}
     </section>
@@ -1069,7 +1161,7 @@ export default function App() {
             {tab === "Chat" && <Chat refresh={refresh} openProof={openProof} s={s} />}
             {tab === "Passport" && <Passport s={s} refresh={refresh} />}
             {tab === "Parent" && <Parent refresh={refresh} role={auth.role} />}
-            {tab === "Red team" && <RedTeam />}
+            {tab === "Red team" && <RedTeam onProof={openProof} />}
             {tab === "Proof" && <Proof s={s} selected={proofSel} />}
             {tab === "Numbers" && <Numbers />}
           </>)}

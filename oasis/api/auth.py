@@ -23,8 +23,17 @@ from dataclasses import dataclass
 from typing import Callable
 
 ROLES = ("student", "parent", "judge")
+
+
+def judge_mode() -> bool:
+    """OASIS_JUDGE_MODE=1: the bundle for letting outside judges try a sandbox. Read at call time. Effects: default (public)
+    passcodes are refused unless OASIS_ALLOW_DEMO_PASSCODES=1, /docs /redoc /openapi.json are 404, and the limits are tighter
+    (red-team attempts per minute, failed logins per minute, session lifetime). It adds no new capability."""
+    return os.environ.get("OASIS_JUDGE_MODE") == "1"
+
 DEMO_PASSCODES = {"student": "student-demo", "parent": "parent-demo", "judge": "judge-demo"}
 SESSION_TTL_S = int(os.environ.get("OASIS_SESSION_TTL_S", "3600"))
+JUDGE_SESSION_TTL_S = 1800
 COOKIE = "oasis_session"
 
 
@@ -52,10 +61,13 @@ class Auth:
                  ttl_s: int | None = None, clock: Callable[[], float] = time.time):
         self._secret = secret or secrets.token_bytes(32)
         self._pass = passcodes or passcodes_from_env()
-        self.ttl_s = ttl_s or SESSION_TTL_S
+        self.ttl_s = ttl_s or (JUDGE_SESSION_TTL_S if judge_mode() and "OASIS_SESSION_TTL_S" not in os.environ else SESSION_TTL_S)
         self._clock = clock
         self._revoked: set[str] = set()
         self.demo_defaults = [r for r in ROLES if self._pass[r] == DEMO_PASSCODES[r]]
+        if judge_mode() and self.demo_defaults and os.environ.get("OASIS_ALLOW_DEMO_PASSCODES") != "1":
+            raise RuntimeError(f"OASIS_JUDGE_MODE=1 refuses the public demo passcode for: {self.demo_defaults}. Set OASIS_PASS_* "
+                               f"or, for a sandbox you accept is open to anyone who reads the repo, OASIS_ALLOW_DEMO_PASSCODES=1.")
         if os.environ.get("OASIS_REQUIRE_CUSTOM_PASSCODES") == "1" and self.demo_defaults:
             raise RuntimeError(f"OASIS_REQUIRE_CUSTOM_PASSCODES=1 but the demo passcode is still set for: {self.demo_defaults}")
 

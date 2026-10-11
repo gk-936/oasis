@@ -43,7 +43,7 @@ USD_INR = 88.0  # MOCK reference rate for limit arithmetic
 
 
 def tcs_rate(passport: Passport, purpose: str, rules: dict) -> dict:
-    """TCS rate for a purpose, from the data file: {"rate", "status" (researched | unconfirmed), "category"}."""
+    """TCS rate for a purpose, from the data file: {"rate", "status" (see STATUSES), "category", "threshold_inr"}."""
     table = rules["rules"]["tcs_by_purpose"]
     category = rules.get("purpose_tcs_category", {}).get(purpose, "other")
     if category == "education" and passport.funding_source == "education_loan":
@@ -52,6 +52,47 @@ def tcs_rate(passport: Passport, purpose: str, rules: dict) -> dict:
         category_row = category
     row = table[category_row]
     return {"rate": row["rate"], "status": row["status"], "category": category_row, "threshold_inr": table["threshold_inr"]}
+
+
+STATUSES = ("confirmed-primary", "researched-secondary", "unconfirmed")
+
+
+def tcs_caveat(tr: dict) -> str:
+    """Text appended to a TCS message unless the rate was read from a primary source (none of the TCS rows was)."""
+    if tr["status"] == "confirmed-primary":
+        return ""
+    return (f" The {tr['rate']:.0%} rate for this purpose is UNCONFIRMED/secondary-sourced (status: {tr['status']}): "
+            f"confirm it with the authorised dealer bank.")
+
+
+def rules_public(name: str = "inr_cny.yaml") -> dict:
+    """Every rule with its value, source, retrieval date, confidence and status, for the API and the UI. Read-only view of the
+    data file; flattens the per-purpose TCS rows. Not legal advice."""
+    data = load_rules(name)
+    out: list[dict] = []
+
+    def add(rule_id: str, row: dict, label: str) -> None:
+        values = {k: v for k, v in row.items() if k not in ("source", "retrieved", "confidence", "status", "kind", "description", "action")}
+        out.append({"id": rule_id, "label": label, "values": values, "description": row.get("description"),
+                    "kind": row.get("kind", "regulatory"), "source": " ".join(str(row["source"]).split()),
+                    "retrieved": str(row["retrieved"]), "confidence": row["confidence"], "status": row["status"]})
+
+    labels = {"lrs_annual_limit_usd": "India LRS annual limit (USD)", "tcs_threshold_inr": "India TCS threshold (INR)",
+              "purpose_code_education": "RBI purpose code, education", "safe_quota_usd": "China SAFE annual quota (USD)",
+              "wallet_foreign_card_fee": "Wallet foreign-card fee", "split_pattern": "Split-payment pattern (Oasis policy)"}
+    tcs_labels = {"education": "India TCS, education (self-funded)", "education_loan": "India TCS, education (specified-FI loan)",
+                  "other": "India TCS, other purposes (rent, living, family)"}
+    for rid, row in data["rules"].items():
+        if rid == "tcs_by_purpose":
+            for k, lab in tcs_labels.items():
+                add(f"tcs_{k}", row[k], lab)
+        else:
+            add(rid, row, labels.get(rid, rid))
+    return {"corridor": data["corridor"], "version": data["version"], "as_of": data["as_of"], "retrieved": "2026-10-11",
+            "statuses": list(STATUSES),
+            "disclaimer": ("Researched on 2026-10-11 from the named sources; several are secondary and none is confirmed by a bank "
+                           "or counsel. Not legal advice. Confirm with an authorised dealer bank before relying on any figure."),
+            "rules": out}
 
 
 def tcs_amount(passport: Passport, remitter: str, amount_inr: float, purpose: str, rules: dict) -> float:
@@ -85,8 +126,7 @@ def check(passport: Passport, *, payee_type: str, purpose: str, amount_cny: floa
     tcs = tcs_amount(passport, remitter, amount_inr, purpose, rules)
     tr = tcs_rate(passport, purpose, rules)
     if tcs > 0:
-        note = ("" if tr["status"] != "unconfirmed" else
-                f" The {tr['rate']:.0%} rate for this purpose is UNCONFIRMED (placeholder): check it with the authorised dealer bank.")
+        note = tcs_caveat(tr)
         res.findings.append(Finding("tcs", "warn",
                                     f"TCS of INR {tcs:,.0f} would be collected (recoverable as a tax credit).{note}",
                                     {"tcs_inr": tcs, "rate": tr["rate"], "rate_status": tr["status"],
@@ -109,7 +149,7 @@ def check(passport: Passport, *, payee_type: str, purpose: str, amount_cny: floa
     if purpose == "tuition":
         res.findings.append(Finding("purpose_code", "info",
                                     f"Report under education purpose code {r['purpose_code_education']['value']} "
-                                    f"(unconfirmed - verify with the authorised dealer bank)."))
+                                    f"(UNCONFIRMED: {r['purpose_code_education']['status']}; verify with the authorised dealer bank)."))
 
     res.findings.extend(split_flags(passport, payee_id, amount_cny, amount_inr, history or [], now_ts,
                                     r["split_pattern"]))

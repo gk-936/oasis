@@ -20,7 +20,9 @@ import asyncio
 import hashlib
 import json
 import math
+import os
 import re
+from collections import OrderedDict
 import secrets
 import threading
 from datetime import date, datetime, timedelta, timezone
@@ -52,11 +54,12 @@ from ..proof.pack import verify_proof_pack
 from ..storage import SqliteStore
 from ..chain.anchor import Anchor, LocalAnchorChain
 from ..trust.approvals import ApproverRegistry
+from ..trust import corridor
 from ..trust.audit import verify_chain
 from ..trust.keyfile import default_session_secret_path, load_or_create_secret
 from ..trust.keystore import fingerprint, load_or_create_signer
 from ..world import Features, World
-from .auth import COOKIE, ROLES, Auth, Principal
+from .auth import COOKIE, ROLES, Auth, Principal, judge_mode
 from .ratelimit import RateLimiter
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +71,10 @@ REDTEAM_MAX_TEXT = 4000          # bytes of attack text per attempt
 REDTEAM_MAX_POISON = 400         # bytes of poisoned-tool-output JSON per attempt
 REDTEAM_PER_MINUTE = 20          # attempts per client per minute
 LOGIN_FAILS_PER_MINUTE = 10
+REDTEAM_MAX_WORLDS = 20          # red-team sandboxes kept at once (one per judge session); least recently used is evicted
+JUDGE_REDTEAM_PER_MINUTE = 10    # OASIS_JUDGE_MODE=1: tighter limits
+JUDGE_LOGIN_FAILS_PER_MINUTE = 5
+DOCS_PATHS = ("/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect")
 
 app = FastAPI(title="Oasis API", version="0.3.0")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -89,6 +96,8 @@ async def guard(request: HttpRequest, call_next):
       a time, so two simultaneous approvals can never both pass the replay check and the audit chain cannot fork.
     """
     path = request.url.path
+    if judge_mode() and (path in DOCS_PATHS or path.startswith("/docs/")):      # interactive API docs off in judge mode
+        return JSONResponse({"detail": "not found"}, status_code=404)
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         origin = request.headers.get("origin")
         if origin and origin != "null" and origin not in CORS_ORIGINS and origin.split("://", 1)[-1] != request.headers.get("host"):
@@ -122,8 +131,17 @@ async def _validation_error(request: HttpRequest, exc: RequestValidationError):
     return JSONResponse({"detail": errs}, status_code=422)
 
 
+class RedTeamBox:
+    """One judge session's red-team sandbox: its own World (ledger, audit chain, registry, simulated approvers), agent and log."""
+
+    def __init__(self, signer):
+        self.world = World(Features.full(), make_llm(), signer=signer, rates_mode="mock")
+        self.agent = OasisAgent(self.world)
+        self.log: list[dict] = []
+
+
 class Session:
-    """One student's sandbox (plus a separate red-team sandbox), optionally backed by SQLite."""
+    """One student's sandbox (plus per-judge red-team sandboxes), optionally backed by SQLite."""
 
     def __init__(self, db_path: str | None = None, key_path=None, data_key_path=None, attempts_path=None):
         self.db_path = config.DB_PATH if db_path is None else db_path
@@ -138,13 +156,16 @@ class Session:
         # the published fingerprint stays stable. An in-memory session (tests) gets fresh in-memory keys.
         self.signer = load_or_create_signer(key_path) if persistent else None
         self.approvers = ApproverRegistry()      # public keys of the real approvers' devices; private keys stay in browsers
-        self.attempts_path = Path(attempts_path) if attempts_path else config.DATA_DIR / "redteam_attempts.jsonl"
-        self.redteam_limiter = RateLimiter(REDTEAM_PER_MINUTE, 60.0)
-        self.login_limiter = RateLimiter(LOGIN_FAILS_PER_MINUTE, 60.0)
+        self.attempts_path = Path(attempts_path or os.environ.get("OASIS_ATTEMPTS_FILE") or config.DATA_DIR / "redteam_attempts.jsonl")
+        jm = judge_mode()
+        self.redteam_per_minute = JUDGE_REDTEAM_PER_MINUTE if jm else REDTEAM_PER_MINUTE
+        self.redteam_max_worlds = int(os.environ.get("OASIS_REDTEAM_MAX_WORLDS") or REDTEAM_MAX_WORLDS)
+        self.redteam_limiter = RateLimiter(self.redteam_per_minute, 60.0)
+        self.login_limiter = RateLimiter(JUDGE_LOGIN_FAILS_PER_MINUTE if jm else LOGIN_FAILS_PER_MINUTE, 60.0)
         self.redteam_log_limiter = RateLimiter(5, 60.0)
         self.pending: dict[str, dict] = {}   # pending_id -> {"request","signed","required","outcome"}
         self.demo: DemoRunner | None = None
-        self.redteam_log: list[dict] = []
+        self.redteam_boxes: OrderedDict[str, RedTeamBox] = OrderedDict()     # judge session id -> sandbox (LRU, bounded)
         self.chat: list[dict] = []
         snap = self.store.load() if self.store else None
         if snap:
@@ -160,20 +181,39 @@ class Session:
                                 "required": v["required"], "outcome": v["outcome"]}
                             for k, v in snap["kv"].get("pending", {}).items()}
         self.agent = OasisAgent(self.world)
-        self.redteam_world = World(Features.full(), make_llm(), signer=self.signer, rates_mode="mock")   # separate sandbox ledger for judges
-        self.redteam_agent = OasisAgent(self.redteam_world)
+        self.redteam_boxes = OrderedDict()                 # every judge's sandbox starts fresh with the student's reset
+        self._rt_default = RedTeamBox(self.signer)          # fallback world (no judge session); never persisted
+
+    @property
+    def redteam_world(self) -> World:
+        return self._rt_default.world
+
+    def redteam_box(self, key: str) -> RedTeamBox:
+        """The calling judge session's own sandbox, created on first use. At most `redteam_max_worlds` are kept; the least
+        recently used one is evicted (its attempts stay in the attempts file, its world and proofs are dropped)."""
+        box = self.redteam_boxes.get(key)
+        if box is None:
+            box = self.redteam_boxes[key] = RedTeamBox(self.signer)
+            while len(self.redteam_boxes) > self.redteam_max_worlds:
+                self.redteam_boxes.popitem(last=False)
+        else:
+            self.redteam_boxes.move_to_end(key)
+        return box
+
+    def redteam_worlds(self) -> list[World]:
+        return [self._rt_default.world] + [b.world for b in self.redteam_boxes.values()]
 
     def reset(self) -> None:
         if self.store:
             self.store.clear()
-        self.pending, self.demo, self.redteam_log, self.chat = {}, None, [], []
+        self.pending, self.demo, self.chat = {}, None, []
         self._build()
         self.save()
 
     def start_demo(self, run: str, mode: str = "offline") -> DemoRunner:
         if self.store:
             self.store.clear()
-        self.pending, self.redteam_log, self.chat = {}, [], []
+        self.pending, self.chat = {}, []
         w = new_demo_world(self.store, mode)      # its own registry with seeded SIMULATED approver devices
         self.demo = DemoRunner(run, w)
         self._build(world=w)
@@ -184,15 +224,17 @@ class Session:
     def trusted_fingerprints(self) -> set[str]:
         """Key fingerprints this server vouches for: its own signing keys. The scripted demo's keys are public (seeded),
         so they are trusted only while the demo world is the active world."""
-        return {self.world.trust_fingerprint(), self.redteam_world.trust_fingerprint()}
+        return {self.world.trust_fingerprint()} | {w.trust_fingerprint() for w in self.redteam_worlds()}
 
     def pinned_approver_keys(self) -> set[str]:
         """Approver device-key ids this server vouches for (registered real devices + the sandbox worlds' simulated ones)."""
-        return (self.approvers.pinned_key_ids() | self.world.approvers.pinned_key_ids()
-                | self.redteam_world.approvers.pinned_key_ids())
+        keys = self.approvers.pinned_key_ids() | self.world.approvers.pinned_key_ids()
+        for w in self.redteam_worlds():
+            keys |= w.approvers.pinned_key_ids()
+        return keys
 
     def anchor_chains(self, ids: tuple[str, ...] | None = None) -> list:
-        return [w.anchor for w in (self.world, self.redteam_world) if isinstance(w.anchor, Anchor)]
+        return [w.anchor for w in [self.world, *self.redteam_worlds()] if isinstance(w.anchor, Anchor)]
 
     def save(self) -> None:
         if not self.store:
@@ -448,6 +490,13 @@ def device_register(body: DeviceIn, p: Principal = Depends(STUDENT_PARENT)):
     S.world.audit.append("device_registered", {"role": p.role, "key_id": rec["key_id"]})
     S.save()
     return {"role": p.role, "key_id": rec["key_id"], "active": True}
+
+
+@app.get("/api/corridor/rules")
+def corridor_rules(p: Principal = Depends(ANY)):
+    """Every corridor rule with its value, precise source, retrieval date, confidence and status (confirmed-primary |
+    researched-secondary | unconfirmed). Read-only view of the YAML data file; any logged-in role may read it."""
+    return {**corridor.rules_public(), "note": MOCK_NOTE}
 
 
 @app.get("/api/approvers")
@@ -858,16 +907,17 @@ def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE)
         if S.redteam_log_limiter.allow(client):       # a flood of refused attempts is logged at 5/min, shortened
             _log_attempt({**base, "text": body.text[:200], "text_sha256": hashlib.sha256(body.text.encode()).hexdigest(),
                           "tool_poison": None, "outcome": "rate_limited"})
-        raise HTTPException(429, f"rate limit: at most {REDTEAM_PER_MINUTE} attempts per minute",
+        raise HTTPException(429, f"rate limit: at most {S.redteam_per_minute} attempts per minute",
                             headers={"Retry-After": str(S.redteam_limiter.retry_after(client))})
-    w = S.redteam_world
+    box = S.redteam_box(p.jti)          # this judge session's own sandbox world
+    w = box.world
     before = w.ledger.money_lost()
-    o = _out(S.redteam_agent.handle(Request(body.text, tool_poison=body.tool_poison), SimulatedHumans()))
+    o = _out(box.agent.handle(Request(body.text, tool_poison=body.tool_poison), SimulatedHumans()))
     o["money_lost_this_attempt"] = round(w.ledger.money_lost() - before, 2)
     d = o.get("decision") or {}
     entry = {"text": body.text[:500], "status": o["status"], "lost": o["money_lost_this_attempt"]}
-    S.redteam_log.append(entry)
-    del S.redteam_log[:-200]
+    box.log.append(entry)
+    del box.log[:-200]
     _log_attempt({**base, "text": body.text, "tool_poison": body.tool_poison, "outcome": "ran", "status": o["status"],
                   "label": o.get("label"), "rule": d.get("rule") or (o.get("card") or {}).get("rule"),
                   "risk_score": (o.get("risk") or {}).get("score"), "detected": o.get("detected"),
@@ -878,8 +928,11 @@ def redteam(body: RedTeamIn, request: HttpRequest, p: Principal = Depends(JUDGE)
 
 @app.get("/api/redteam/log")
 def redteam_log(p: Principal = Depends(JUDGE)):
-    return {"attempts": S.redteam_log, "total_lost": S.redteam_world.ledger.money_lost(),
-            "limits": {"per_minute": REDTEAM_PER_MINUTE, "max_text_bytes": REDTEAM_MAX_TEXT}}
+    box = S.redteam_box(p.jti)
+    return {"attempts": box.log, "total_lost": box.world.ledger.money_lost(),
+            "limits": {"per_minute": S.redteam_per_minute, "max_text_bytes": REDTEAM_MAX_TEXT,
+                       "max_worlds": S.redteam_max_worlds},
+            "isolation": "your attempts and your sandbox ledger are private to this login session"}
 
 
 # ------------------------------------------------------------------ proof + audit
@@ -893,11 +946,13 @@ def _parent_proofs() -> list[str]:
 def proof(intent_id: str, p: Principal = Depends(VIEWERS)):
     if p.role == "parent" and intent_id not in _parent_proofs():
         raise HTTPException(403, "the parent can open only the proof packs of payments they approved")
-    return _proof(intent_id)
+    return _proof(intent_id, p)
 
 
-def _proof(intent_id: str) -> dict:
-    pk = S.world.proofs.get(intent_id) or S.redteam_world.proofs.get(intent_id)
+def _proof(intent_id: str, p: Principal | None = None) -> dict:
+    """A judge session looks in its own red-team sandbox first (intent ids repeat across sandboxes), then the shared lookup."""
+    own = S.redteam_boxes.get(p.jti) if p is not None and p.role == "judge" else None
+    pk = (own.world.proofs.get(intent_id) if own else None) or S.world.proofs.get(intent_id) or next((w.proofs[intent_id] for w in S.redteam_worlds() if intent_id in w.proofs), None)
     if not pk:
         raise HTTPException(404, "no such proof pack")
     return pk
@@ -931,9 +986,9 @@ def trust_fingerprint():
 
 
 @app.get("/api/proof/{intent_id}/verify")
-def proof_verify(intent_id: str):
+def proof_verify(intent_id: str, request: HttpRequest):
     """PUBLIC and harmless: returns only check results for a pack that already exists."""
-    return _verify_pinned(_proof(intent_id))
+    return _verify_pinned(_proof(intent_id, _principal(request)))
 
 
 @app.post("/api/proof/verify")

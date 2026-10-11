@@ -71,8 +71,9 @@ Tiers: 1 = the agent may act alone within bounds, 2 = needs explicit human appro
 | Rule | Value | Action |
 |---|---|---|
 | LRS | USD 250k per remitter per financial year | hold |
-| TCS | per purpose, from `tcs_by_purpose` in the YAML: education 2% above INR 10 lakh, education-loan nil; other purposes use a marked UNCONFIRMED placeholder rate and the message says so | warn, with the amount |
+| TCS | per purpose, from `tcs_by_purpose` in the YAML: education 2% above INR 10 lakh, education-loan nil, other purposes (rent, deposit, living, family support) 20% above INR 10 lakh; all three are secondary-sourced and the message says "UNCONFIRMED/secondary-sourced" | warn, with the amount |
 | Education purpose code | S0305 (unconfirmed) | shown |
+| Rule sources | every rule has `source`, `retrieved`, `confidence`, `status` (confirmed-primary / researched-secondary / unconfirmed) | `GET /api/corridor/rules`; Passport tab card |
 | SAFE quota | USD 50k per person per calendar year, cumulative (`safe_used_inr`), the same arithmetic as the plan validator | warn and stage |
 | Wallet foreign-card fee | 3% over CNY 200 | added to route cost |
 | Split payments | 2 or more payments to the same payee within 72 hours, each just under an approval threshold | hold |
@@ -131,6 +132,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/health`, `/api/auth/config` | public: liveness; login screen config (never a passcode) |
 | POST | `/api/auth/login`, `/api/auth/logout`; GET `/api/auth/me` | role + passcode -> session cookie; revoke; who am I (200 `{"role": null}` when logged out, so the UI probe is not an error) |
 | POST | `/api/device/register` | student/parent registers the public half of their Ed25519 device key |
+| GET | `/api/corridor/rules` | any role: every corridor rule with value, source, retrieved date, confidence and status (confirmed-primary / researched-secondary / unconfirmed) |
 | GET | `/api/approvers` | registered approver public keys (any role) |
 | POST | `/api/plan/{plan_id}/consent` | parent only: signed consent to a parent-remitted conversion step |
 | GET | `/api/state` | student/judge: Passport, routes, forecast triggers, why-cards, pending items (with signable drafts), security feed; parent: only their pending items and proofs |
@@ -153,7 +155,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | POST | `/api/autonomy/tick` | the agent's Tier-1 work (rate targets, recurring bills) |
 | POST | `/api/spending/simulate` | import mock wallet spending |
 | POST | `/api/spending/add` | add and categorise a transaction |
-| POST | `/api/redteam` | judge only: red-team console (separate sandbox world, never persisted; 20/min, 4,000 bytes, 429/413) |
+| POST | `/api/redteam` | judge only: red-team console (a separate sandbox world per judge session, never persisted, at most 20 kept; 20/min (10 in judge mode), 4,000 bytes, 429/413) |
 | GET | `/api/redteam/log` | red-team attempts and outcomes |
 | GET | `/api/proof/{intent_id}` | proof pack |
 | GET | `/api/proof/{intent_id}/verify` | independent checks of that pack, pinned to this server's key fingerprint and chain |

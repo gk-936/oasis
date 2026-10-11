@@ -35,7 +35,7 @@ PUBLIC = [("get", "/api/health"), ("get", "/api/auth/config"), ("get", "/api/tru
 
 PROTECTED = [("get", "/api/state"), ("get", "/api/audit"), ("get", "/api/audit/verify"), ("get", "/api/proof/int_0001"),
              ("get", "/api/benchmark"), ("get", "/api/plans"), ("get", "/api/parent/pending"), ("get", "/api/redteam/log"),
-             ("get", "/api/demo/state"), ("get", "/api/approvers"),
+             ("get", "/api/demo/state"), ("get", "/api/approvers"), ("get", "/api/corridor/rules"),
              ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
              ("post", "/api/redteam"), ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"),
              ("post", "/api/plan/plan_001/execute"), ("post", "/api/plan/plan_001/consent"), ("post", "/api/rate-target"),
@@ -559,6 +559,7 @@ def test_tcs_warning_reads_the_rate_from_the_data_file(monkeypatch):
     v = validate_plan(w, rec["steps"])
     msg2 = next(x["message"] for x in v.warnings if x["code"] == "tcs")
     assert "5%" in msg2 and "INR 7 lakh" in msg2 and "2%" not in msg2
-    rules["rules"]["tcs_by_purpose"]["education"]["status"] = "unconfirmed"
+    assert "UNCONFIRMED/secondary-sourced" in msg2                                   # secondary-sourced rows carry the tag
+    rules["rules"]["tcs_by_purpose"]["education"]["status"] = "confirmed-primary"
     v = validate_plan(w, rec["steps"])
-    assert "UNCONFIRMED" in next(x["message"] for x in v.warnings if x["code"] == "tcs")
+    assert "UNCONFIRMED" not in next(x["message"] for x in v.warnings if x["code"] == "tcs")   # a primary-confirmed row would not

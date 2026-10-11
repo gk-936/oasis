@@ -7,7 +7,7 @@
 | Hybrid Ed25519 + ML-DSA-65 signed intents, intent-enforcing executor | Wallet / QR foreign-card fees (3% over CNY 200 + 1% card bank fee, from researched figures) and imported wallet spending |
 | Verification ramp (registry check → test payment → low limit → full limit) | Verified-payee registry: WeIdentity-*style* demo credentials, not real institutions, not the WeIdentity SDK |
 | Canary tripwires (early detection) and freeze → recovery plan → ask | Sandbox balances; parent account |
-| Corridor rules engine with data file `inr_cny.yaml` (values researched, marked unconfirmed where applicable) | Simulated humans in the benchmark (student / parent approvers) |
+| Corridor rules engine with data file `inr_cny.yaml` (values researched 2026-10-11, each with source, date and status: primary-confirmed, secondary-sourced or unconfirmed) | Simulated humans in the benchmark (student / parent approvers) |
 | SHA-256 hash-chained audit log and verifier | Simulated clock and "minutes to resolve" |
 | Proof packs and an independent verifier | Outcome simulation is a **model** with stated assumptions (`eval/simulator.py`) |
 | Tier-1 autonomy: student rate targets and recurring bills to Verified_Full recipients, under the policy engine | Rates that targets are checked against (mock path unless `OASIS_RATES=live`) |

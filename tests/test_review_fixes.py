@@ -535,28 +535,30 @@ def test_pipeline_corridor_check_uses_the_years_conversions_so_far():
 def test_tcs_rates_come_from_the_data_file():
     rules = corridor.load_rules()
     table = rules["rules"]["tcs_by_purpose"]
-    assert table["education"]["rate"] == 0.02 and table["education"]["status"] == "researched"
+    assert table["education"]["rate"] == 0.02 and table["education"]["status"] == "researched-secondary"
     assert table["education_loan"]["rate"] == 0.0
-    assert table["other"]["status"] == "unconfirmed"                           # a placeholder, never asserted as law
+    assert table["other"]["rate"] == 0.20 and table["other"]["status"] == "researched-secondary"   # secondary-sourced, not asserted as confirmed
     assert rules["purpose_tcs_category"]["tuition"] == "education"
     p = _passport()
-    assert corridor.tcs_rate(p, "tuition", rules)["status"] == "researched"
+    assert corridor.tcs_rate(p, "tuition", rules)["status"] == "researched-secondary"
     for purpose in ("family_support", "living", "rent", "deposit", "something_new"):
-        assert corridor.tcs_rate(p, purpose, rules)["status"] == "unconfirmed"
+        r = corridor.tcs_rate(p, purpose, rules)
+        assert r["status"] == "researched-secondary" and r["rate"] == 0.20
     p.funding_source = "education_loan"
-    assert corridor.tcs_rate(p, "tuition", rules) | {} and corridor.tcs_rate(p, "tuition", rules)["rate"] == 0.0
-    assert corridor.tcs_rate(p, "living", rules)["status"] == "unconfirmed"     # a loan only makes education nil-rated
+    assert corridor.tcs_rate(p, "tuition", rules)["rate"] == 0.0
+    assert corridor.tcs_rate(p, "living", rules)["rate"] == 0.20     # a loan only makes education nil-rated
 
 
-def test_tcs_finding_says_unconfirmed_for_other_purposes_only():
+def test_tcs_finding_carries_the_secondary_sourced_tag_and_the_purpose_rate():
     p = _passport()
     p.remitted_inr_fy["parent"] = 950000
     fam = corridor.check(p, payee_type="student", purpose="family_support", amount_cny=10000, amount_inr=118000, remitter="parent")
     f = next(x for x in fam.findings if x.rule == "tcs")
-    assert f.data["rate_status"] == "unconfirmed" and "UNCONFIRMED" in f.message and f.data["tcs_inr"] > 0
+    assert f.data["rate_status"] == "researched-secondary" and "UNCONFIRMED/secondary-sourced" in f.message
+    assert f.data["rate"] == 0.20 and f.data["tcs_inr"] == pytest.approx((950000 + 118000 - 1000000) * 0.20)
     edu = corridor.check(p, payee_type="university", purpose="tuition", amount_cny=10000, amount_inr=118000, remitter="parent")
     g = next(x for x in edu.findings if x.rule == "tcs")
-    assert g.data["rate_status"] == "researched" and "UNCONFIRMED" not in g.message
+    assert g.data["rate_status"] == "researched-secondary" and "secondary-sourced" in g.message
     assert g.data["tcs_inr"] == pytest.approx((950000 + 118000 - 1000000) * 0.02)
 
 
@@ -566,7 +568,7 @@ def test_changing_the_rate_in_the_data_changes_the_tcs(monkeypatch):
     p = _passport()
     p.remitted_inr_fy["student"] = 1_000_000
     assert corridor.tcs_amount(p, "student", 100000, "tuition", rules) == pytest.approx(5000)
-    assert corridor.tcs_amount(p, "student", 100000, "family_support", rules) == pytest.approx(2000)
+    assert corridor.tcs_amount(p, "student", 100000, "family_support", rules) == pytest.approx(20000)
 
 
 # ============================================================================== docs stay honest

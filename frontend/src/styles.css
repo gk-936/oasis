@@ -299,3 +299,10 @@ td.r, th.r, td .pill { white-space: nowrap; }
 .dupline { margin: 6px 0; color: var(--warn-fg); }
 .tbl td.acct .hashwrap { flex-wrap: nowrap; white-space: nowrap; }
 .tbl td.acct .hash { white-space: nowrap; }
+
+/* corridor rules card: stacked items so long sources wrap at any width */
+.rules { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 0; }
+.rules li { padding: 10px 0; border-top: 1px solid var(--line, rgba(127,127,127,.25)); display: grid; gap: 4px; }
+.rules li:first-child { border-top: 0; }
+.rule-hd { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; }
+.rules p { margin: 4px 0 0; overflow-wrap: anywhere; }
