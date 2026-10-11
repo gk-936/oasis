@@ -159,6 +159,9 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/redteam/log` | red-team attempts and outcomes |
 | GET | `/api/proof/{intent_id}` | proof pack |
 | GET | `/api/proof/{intent_id}/verify` | independent checks of that pack, pinned to this server's key fingerprint and chain |
+| POST | `/api/reliability/record` | student: options `include_name` (default false) and `share_amounts` (default false); signs a payment-reliability record of the payments that completed the full pipeline with a verified proof pack (section 15) |
+| GET | `/api/reliability/mine` | student: the last record created and how many payments are eligible now |
+| POST | `/api/reliability/verify` | public, like proof verification: checks a pasted record against this server's pinned fingerprint and its proof packs; bounded input, never a 500 |
 | POST | `/api/proof/verify` | verify a pasted proof pack against this server's pinned fingerprint (a pack signed by other keys fails `key_pinned`) |
 | GET | `/api/trust/fingerprint` | the trust-key fingerprint to pin, the public keys, and whether they are persistent or demo keys |
 | GET | `/api/audit` | audit chain |
@@ -246,3 +249,21 @@ Real: the six-step pipeline, policy engine, hybrid signed intents and intent-enf
 - **Single process (demo/evaluation):** `python -m uvicorn oasis.api.main:app --host 0.0.0.0 --port 8000` serves API and UI. State is SQLite at `data/oasis.db` (`OASIS_DB` to move it, `:memory:` for none).
 - **No Node needed to run:** `frontend/dist` is committed (about 190 KB) and served by the API; rebuild it with `npm run build` after UI changes.
 - **Not production-ready, by design (see Known limitations):** the build serves plain HTTP by default. Payload columns in the SQLite file are AES-256-GCM encrypted, but table names, row ids and counts are in clear, and the data key and trust signing key under `data/keys/` are plaintext files unless `OASIS_KEY_PASSPHRASE` is set (then scrypt+AES-GCM wrapped). The API requires a role login (student, parent, judge) and payment approvals are signed by browser-held device keys, but the passcodes are shared demo-grade secrets (public defaults unless `OASIS_PASS_*` is set), with no per-person accounts or MFA. A real deployment still needs TLS (hybrid X25519MLKEM768 at a reverse proxy; PQ-TLS is tested as described in section 13; recipe in [pq-tls.md](pq-tls.md)), a key vault or HSM, per-person accounts with MFA, and a full independent audit. See [security-self-assessment.md](security-self-assessment.md).
+
+## 15. Payment reliability record (credit building, honestly)
+
+Code: `oasis/proof/reliability.py`; API in section 6; UI: Passport tab, card "Payment reliability record". Tests: `tests/test_reliability.py`.
+
+**What it is.** A signed list of the payments that completed through the full Oasis pipeline with a verified proof pack: obligation type, payee type, paid date, due date, an `on_time` flag (paid date <= due date, both from the SIMULATED clock), the proof pack id and intent hash, the anchor reference if any, and either an amount band (default) or the exact amount (student opt-in). The student appears as a pseudonymous id (`stu_` plus a hash of the student id and the key fingerprint); the name is included only if the student ticks "Include my name". The record carries its caveats ("payment-reliability record from a SANDBOX; not a credit score; not accepted by any credit bureau"), the trust public keys and their fingerprint, a `record_hash` and a hybrid signature (Ed25519 + ML-DSA-65) over the canonical body. Integral floats are normalised to integers before hashing, so a record re-saved by a browser or another JSON tool still verifies.
+
+**Who is listed.** Only history entries whose proof pack exists, verifies against this server's keys, and matches the obligation, payee, currency and amount. Unpaid, held, frozen, rejected and duplicate (R17) payments never produce such an entry. A tampered or missing proof pack removes the payment from the next record.
+
+**Verifying.** `verify_reliability_record(record, trusted_fingerprints, proof_lookup=None)` never raises and returns per-check results: `signature`, `fingerprint_matches`, `key_pinned` (None means no fingerprint was supplied, and then `ok` is False), `record_hash`, `summary_consistent`, `on_time_consistent`, `unique_proofs` and `proofs_checked`. With a proof lookup each listed proof must exist, verify, and match its entry (intent hash, amount or band, paid date from the audit entry, anchor reference). Without one, `proofs_checked` is None: the entries were not cross-checked. A record re-signed with fresh keys fails the pin; an entry edited and re-signed by the real key still fails the proof cross-check.
+
+**Limits.** It is not a credit score and no bureau, bank or regulator accepts it (README Known limitation 19). The due date is not inside the proof pack. The record is signed by one sandbox server and is only as trustworthy as the fingerprint a checker pinned out of band. Privacy design (opt-in name and amounts) is in [compliance-mapping.md](compliance-mapping.md), row 10.
+
+## 16. Currencies: INR and CNY only
+
+The Passport tab card "Balances by currency" shows holdings in INR and CNY, the total in each currency at the current mid rate (with the live or MOCK rate badge), the exposure split in percent, and the existing conversion-timing hints and rate targets. It is computed by `oasis/passport/currency.py::currency_view` and returned in `GET /api/state` as `currency_view` (unit-tested in `tests/test_reliability.py`). The valuation uses the mid rate, so a real conversion would return less after route spread and fees.
+
+Only the INR to CNY corridor is supported (README Known limitation 20). There is no wallet in any other currency. Supporting another corridor would need: a rules file next to `oasis/trust/rules/inr_cny.yaml` (per-currency limits, tax and quota rules with sources), the corridor-rules loader pointed at it, and route spreads and fees for that pair in the mock layer (`oasis/mock/rates.py` routes and `oasis/market/`), plus a payee registry for that country. None of this exists today.

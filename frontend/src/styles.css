@@ -306,3 +306,7 @@ td.r, th.r, td .pill { white-space: nowrap; }
 .rules li:first-child { border-top: 0; }
 .rule-hd { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; }
 .rules p { margin: 4px 0 0; overflow-wrap: anywhere; }
+
+/* payment reliability record: inline checkbox rows */
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+label.check > input { width: 20px; min-height: 20px; height: 20px; padding: 0; margin: 0; flex: none; }

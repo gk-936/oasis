@@ -16,9 +16,19 @@ Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a 
 - **Pays tuition with a signed intent** to the registry-verified university account, and issues a proof pack he can show anyone.
 - **Gets parent co-approval in Tamil, Hindi or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
 - **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
+- **Builds a payment record (credit building, not a credit score).** Each payment that went through the full checks with a verified proof pack can be put in a signed **payment-reliability record** (on time or late, pseudonymous by default, amount ranges unless he opts in) that a landlord or university can verify. It is not a credit score and no bureau accepts it; it is a verifiable record from a sandbox.
 - **Acts on his behalf within small limits:** a rate-target conversion and a recurring bill (Tier-1 autonomy), then shows a **savings receipt** (CNY 1,313.66 in the demo) and the Student Financial Passport.
 
 Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
+
+## Why this matters
+
+Cited external facts (sources, dates and gaps: [docs/problem-evidence.md](docs/problem-evidence.md); read 2026-10-11, no user research with real students has been done):
+
+- Sending money costs about 6.5% of the amount on average worldwide and banks are the dearest provider type at about 14.6% ([World Bank Remittance Prices Worldwide, Q1 2025](https://remittanceprices.worldbank.org/sites/default/files/rpw_main_report_and_annex_q125_1_0.pdf), read via a summary); we found no cited India-to-China tuition figure.
+- Paying in China by foreign card in WeChat Pay carries a 3% fee on each payment of CNY 200 or more ([Beijing government](https://english.beijing.gov.cn/travellinginbeijing/essentials/inboundtourismfacilitationmeasures/202603/t20260326_4566766.html)).
+- Shanghai's government warns international students about texts from a "landlord with a new number" asking for rent to a different card ([Shanghai government](https://english.shanghai.gov.cn/en-Editor'sPick-StudyinShanghai/20240828/f7b950613be9462e80a8bd94ca2c38de.html)); a Belgian university warned that fraudsters alter the account number on genuine tuition invoices ([VRT News](https://www.vrt.be/vrtnws/en/2026/10/01/ku-leuven-warns-of-invoice-fraud-with-tuition-fee-payments/), date unresolved).
+- The Ministry of External Affairs told the Rajya Sabha in 2023 that about 10,000 Indian students were in higher education in China, adding that students do not register with missions ([Careers360 report](https://news.careers360.com/no-specific-data-indian-students-studying-abroad-china-mbbs-russia-fmge-covid-in-spite-of-constant-efforts-ministry)).
 
 ## What the AI does vs what code does
 
@@ -41,11 +51,11 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Live model vs injections | Model followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
-| Tests | 494 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Tests | 537 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
 
-Full list of 18 below.
+Full list of 20 below.
 
 - **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
 - **Weak unaided AI planning:** 7 of 24 live plans valid; the fallback makes the final plan valid.
@@ -63,7 +73,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 494 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 537 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
@@ -117,6 +127,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
+| [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |
 | [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |
 | [JUDGE_GUIDE.md](JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge to try to break Oasis, offline, one command |
 | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) | what is working code and what is MOCK |
@@ -145,6 +156,8 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
 17. **Tamil and Hindi parent text is templated and has not been reviewed by native speakers.**
 18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
+19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed ([technical documentation][tech], section 15).
+20. **Only INR and CNY are supported.** Balances, rates, rules and routes cover INR to CNY only; there is no wallet in another currency. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).
 
 [sec]: docs/security-self-assessment.md
 [sec-hard]: docs/security-self-assessment.md#hardening-added-2026-10-10

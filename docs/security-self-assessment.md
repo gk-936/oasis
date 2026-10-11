@@ -108,6 +108,8 @@ A forged request never changes the genuine recipient's record. The request is re
 16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
 17. **Tamil and Hindi parent text is templated and has not been reviewed by native speakers.**
 18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
+19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed ([technical documentation][tech], section 15).
+20. **Only INR and CNY are supported.** Balances, rates, rules and routes cover INR to CNY only; there is no wallet in another currency. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).
 
 [sec]: security-self-assessment.md
 [sec-hard]: security-self-assessment.md#hardening-added-2026-10-10

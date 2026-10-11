@@ -50,7 +50,9 @@ from ..planning import spending
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
+from ..passport.currency import currency_view
 from ..proof.pack import verify_proof_pack
+from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
 from ..storage import SqliteStore
 from ..chain.anchor import Anchor, LocalAnchorChain
 from ..trust.approvals import ApproverRegistry
@@ -167,6 +169,7 @@ class Session:
         self.demo: DemoRunner | None = None
         self.redteam_boxes: OrderedDict[str, RedTeamBox] = OrderedDict()     # judge session id -> sandbox (LRU, bounded)
         self.chat: list[dict] = []
+        self.reliability_last = None
         snap = self.store.load() if self.store else None
         if snap:
             self.approvers.load(snap["kv"].get("approvers", []))
@@ -207,6 +210,7 @@ class Session:
         if self.store:
             self.store.clear()
         self.pending, self.demo, self.chat = {}, None, []
+        self.reliability_last = None
         self._build()
         self.save()
 
@@ -530,6 +534,7 @@ def state(p: Principal = Depends(VIEWERS)):
         "passport": {**p_.model_dump(), "recipients": {k: v.model_dump() for k, v in p_.recipients.items() if k not in decoys}},
         "rate_mid": w.rates.mid(w.day_index),
         "rates": provenance(w.rates, w.day_index),
+        "currency_view": currency_view(p_, w.rates.mid(w.day_index), provenance(w.rates, w.day_index)),
         "routes": [{"id": q.route.id, "name": q.route.name, "delivered_cny_per_100k_inr": q.delivered_cny,
                     "days": q.arrives_in_days, "reliability": q.route.reliability, "cost_vs_mid_pct": q.cost_vs_mid_pct,
                     "typical_bank": q.route.typical_bank} for q in quotes],
@@ -995,6 +1000,34 @@ def proof_verify(intent_id: str, request: HttpRequest):
 def proof_verify_upload(pack: dict):
     """PUBLIC: verifies an uploaded pack against the pinned keys. Needs no secrets and changes no state."""
     return _verify_pinned(pack)
+
+
+class ReliabilityIn(Strict):
+    include_name: bool = False       # default: pseudonymous id only
+    share_amounts: bool = False      # default: amount bands, not exact amounts
+
+
+@app.post("/api/reliability/record")
+def reliability_create(body: ReliabilityIn, p: Principal = Depends(STUDENT)):
+    """Student only. Signs a payment-reliability record of the payments that completed the full pipeline with a verified
+    proof pack. It is not a credit score."""
+    rec = build_reliability_record(S.world, include_name=body.include_name, share_amounts=body.share_amounts)
+    S.reliability_last = rec
+    return rec
+
+
+@app.get("/api/reliability/mine")
+def reliability_mine(p: Principal = Depends(STUDENT)):
+    return {"record": S.reliability_last, "eligible_payments": len(eligible_payments(S.world))}
+
+
+@app.post("/api/reliability/verify")
+def reliability_verify(record: dict):
+    """PUBLIC: verifies a record against THIS server's pinned fingerprint and its proof packs. Needs no secrets, changes no state."""
+    res = verify_reliability_record(record, S.trusted_fingerprints(), lambda pid: S.world.proofs.get(pid) if isinstance(pid, str) else None,
+                                    pack_verifier=lambda pk: bool(_verify_pinned(pk).get("ok")))
+    res["pinned_fingerprint"] = S.world.trust_fingerprint()
+    return res
 
 
 @app.get("/api/audit")

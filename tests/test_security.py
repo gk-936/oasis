@@ -35,7 +35,8 @@ PUBLIC = [("get", "/api/health"), ("get", "/api/auth/config"), ("get", "/api/tru
 
 PROTECTED = [("get", "/api/state"), ("get", "/api/audit"), ("get", "/api/audit/verify"), ("get", "/api/proof/int_0001"),
              ("get", "/api/benchmark"), ("get", "/api/plans"), ("get", "/api/parent/pending"), ("get", "/api/redteam/log"),
-             ("get", "/api/demo/state"), ("get", "/api/approvers"), ("get", "/api/corridor/rules"),
+             ("get", "/api/demo/state"), ("get", "/api/approvers"), ("get", "/api/corridor/rules"), ("get", "/api/reliability/mine"),
+             ("post", "/api/reliability/record"),
              ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
              ("post", "/api/redteam"), ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"),
              ("post", "/api/plan/plan_001/execute"), ("post", "/api/plan/plan_001/consent"), ("post", "/api/rate-target"),
@@ -54,6 +55,7 @@ def test_public_endpoints_need_no_login(api_session):
         assert _call(c, m, p).status_code == 200, p
     assert c.get("/api/proof/int_9999/verify").status_code == 404            # public, and harmless: nothing to leak
     assert c.post("/api/proof/verify", json={"nonsense": 1}).json()["ok"] is False
+    assert c.post("/api/reliability/verify", json={"nonsense": 1}).json()["ok"] is False        # public too
 
 
 @pytest.mark.parametrize("method,path", PROTECTED)
@@ -67,12 +69,13 @@ FORBIDDEN = {
                ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"), ("post", "/api/rate-target"),
                ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"), ("post", "/api/demo/run"),
                ("post", "/api/recovery/approve"), ("post", "/api/spending/add"),
+               ("post", "/api/reliability/record"), ("get", "/api/reliability/mine"),
                ("get", "/api/audit"), ("get", "/api/redteam/log"), ("get", "/api/plans"), ("get", "/api/benchmark")],
     "judge": [("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
               ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"), ("post", "/api/plan/plan_001/consent"),
               ("post", "/api/rate-target"), ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"),
               ("post", "/api/demo/run"), ("post", "/api/recovery/approve"), ("post", "/api/device/register"),
-              ("post", "/api/spending/add")],
+              ("post", "/api/spending/add"), ("post", "/api/reliability/record"), ("get", "/api/reliability/mine")],
     "student": [("post", "/api/redteam"), ("get", "/api/redteam/log"), ("post", "/api/plan/plan_001/consent")],
 }
 

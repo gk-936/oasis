@@ -54,6 +54,8 @@ Do the 5-minute path, then the five tasks below, then skim [docs/security-eviden
 
 **4. Check a signed approval.** Log out and log in as **student**. In **Chat** press **Paste sample invoice**, send it, and approve the payment when asked: your browser signs the exact payment draft with a device key that never leaves the browser (you may be asked to set a device passphrase). Open the Proof tab: the approval shows the role, key id and signature, and `approvals_signed` passes. Now try to cheat: approve as parent with the student's session (403), or edit the draft in your browser's developer tools before approving (the signature no longer matches the payment, so it is refused). Expected: no payment without a valid signature over the exact payment.
 
+**4b. Check a payment record (optional).** As **student**, run Demo Run 1, open the Passport tab, press **Create record** on "Payment reliability record", then use **Check a record** and edit a date or amount before pressing **Verify record**: the per-check ticks turn into crosses. It is a sandbox record, not a credit score.
+
 **5. Read the evidence and rerun one test.** Open [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md): each claim maps to code, an exact test and the limits. Pick one and rerun it, for example:
 
 ```bash

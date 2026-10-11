@@ -670,6 +670,117 @@ function CorridorRules() {
   );
 }
 
+/* ------------------------------------------------------------------ Currency view */
+function CurrencyView({ s }) {
+  const cv = s.currency_view;
+  if (!cv) return null;
+  const hints = (s.triggers || []).filter((t) => t.kind === "rate_move" || t.kind === "rate_target" || t.kind === "shortfall");
+  const targets = s.autonomy?.targets || [];
+  return (
+    <div className="card" data-testid="currency-view">
+      <div className="hd"><h3>Balances by currency</h3><Mock /></div>
+      <div className="tbl"><table aria-label="Balances by currency"><thead><tr><th>Currency</th><th className="r">Holding</th><th className="r">Worth in ¥</th><th className="r">Exposure</th></tr></thead>
+        <tbody>{cv.holdings.map((h) => (
+          <tr key={h.currency}><td>{h.currency}</td><td className="r money">{h.currency === "INR" ? inr(h.amount, 2) : cny(h.amount, 2)}</td>
+            <td className="r money">{cny(h.value_cny, 2)}</td><td className="r num">{cv.exposure_pct[h.currency]}%</td></tr>))}</tbody></table></div>
+      <p>Total <b className="money">{cny(cv.total_cny, 2)}</b> or <b className="money">{inr(cv.total_inr, 2)}</b> at <b className="num">{cv.rate_cny_per_inr}</b> CNY per INR <RateBadge rates={s.rates} rate={s.rate_mid} /></p>
+      <p className="muted small">Valued at the mid rate, so a real conversion would return less after route spread and fees. Only INR and CNY are supported; there is no wallet in any other currency.</p>
+      <h4>Conversion timing</h4>
+      {hints.length ? hints.map((t, i) => <p key={i}><Pill status={t.kind} /> {t.message}</p>) : <p className="muted">No timing hints now. Oasis never predicts rates; it only acts on a rate target you set.</p>}
+      {targets.length > 0 && <p className="muted small">Your rate targets: {targets.map((t) => `convert ${cny(t.convert_cny)} at ≥ ${t.rate} (${label(t.status)})`).join("; ")}.</p>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ Payment reliability record */
+const RR_CHECKS = [
+  ["signature", "Signature valid (Ed25519 + ML-DSA-65)"],
+  ["key_pinned", "Signed by the pinned server key"],
+  ["record_hash", "Record is unchanged (hash matches)"],
+  ["summary_consistent", "Totals match the listed payments"],
+  ["on_time_consistent", "On-time flags match the dates"],
+  ["proofs_checked", "Every listed proof pack exists, verifies and matches its entry"],
+];
+const downloadJson = (obj, name) => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+function RecordSummary({ rec }) {
+  const sm = rec.summary;
+  return (
+    <div className="card" data-testid="rr-summary" style={{ marginTop: 8 }}>
+      <h4 style={{ marginTop: 0 }}>Payment reliability record <Mock>SANDBOX</Mock></h4>
+      <p>Student <code>{rec.student.name ? `${rec.student.name} · ` : ""}{rec.student.pseudonym}</code> · {rec.period.from ? `${fmtDate(rec.period.from)} to ${fmtDate(rec.period.to)}` : "no payments yet"}</p>
+      <p><b>{sm.on_time} of {sm.payments}</b> verified payments on time{sm.late ? `, ${sm.late} late` : ""}{sm.total_cny != null ? ` · total ${cny(sm.total_cny)}` : ""}</p>
+      {rec.payments.length > 0 && (
+        <div className="tbl"><table aria-label="Verified payments"><thead><tr><th>What</th><th>To</th><th className="r">Amount</th><th>Paid</th><th>Due</th><th>On time</th></tr></thead>
+          <tbody>{rec.payments.map((e) => (
+            <tr key={e.proof_id}><td>{label(e.obligation_type)}</td><td>{label(e.payee_type)}</td>
+              <td className="r">{e.amount_cny != null ? cny(e.amount_cny) : e.amount_band}</td><td>{fmtDate(e.paid_date)}</td><td>{fmtDate(e.due_date)}</td>
+              <td><Pill status={e.on_time ? "paid" : "frozen"}>{e.on_time ? "on time" : "late"}</Pill></td></tr>))}</tbody></table></div>)}
+      <ul className="feed">{rec.caveats.map((c, i) => <li key={i}>{c}</li>)}</ul>
+      <p className="muted small">Key fingerprint <Hash value={rec.trust_fingerprint} n={12} what="key fingerprint" /> · record <Hash value={rec.record_hash} n={12} what="record hash" /></p>
+    </div>
+  );
+}
+
+function ReliabilityVerify({ initial }) {
+  const [text, setText] = useState("");
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (initial) { setText(JSON.stringify(initial, null, 2)); setRes(null); } }, [initial]);
+  const go = async () => {
+    setBusy(true); setErr(null);
+    try { JSON.parse(text); setRes(await api("/reliability/verify", text)); announce("Record checked"); }
+    catch (e) { setErr(e instanceof SyntaxError ? new Error("That is not valid JSON.") : e); setRes(null); }
+    finally { setBusy(false); }
+  };
+  return (
+    <details><summary>Check a record (what a landlord or university would do)</summary>
+      <p className="muted small">Paste a record. The server checks the signature against its pinned key and looks up each listed proof pack. Edit a number first to see it fail. This changes no state.</p>
+      <label>Record JSON<textarea rows={8} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} data-testid="rr-verify-text" /></label>
+      <div className="row"><button className="ghost" disabled={busy || !text.trim()} onClick={go} data-testid="rr-verify-btn">Verify record</button>
+        {res && (res.ok ? <Pill status="verified">record verifies</Pill> : <Pill status="failed">record does NOT verify</Pill>)}</div>
+      {res && (
+        <ul className="feed" data-testid="rr-checks">{RR_CHECKS.map(([k, t]) => (
+          <li key={k}>{res[k] === true ? "✓" : res[k] === false ? "✗" : "–"} {t}{res[k] == null ? " (not checked)" : ""}</li>))}</ul>)}
+      {err && <ErrorBox error={err} onDismiss={() => setErr(null)} />}
+    </details>
+  );
+}
+
+function ReliabilityRecord() {
+  const [name, setName] = useState(false);
+  const [amounts, setAmounts] = useState(false);
+  const [rec, setRec] = useState(null);
+  const [n, setN] = useState(null);
+  const { busy, err, setErr, run } = useGuard();
+  useEffect(() => { let live = true; api("/reliability/mine").then((r) => { if (live) { setRec(r.record); setN(r.eligible_payments); } }).catch(() => {}); return () => { live = false; }; }, []);
+  const create = () => run(async () => { const r = await api("/reliability/record", { include_name: name, share_amounts: amounts }); setRec(r); setN(r.summary.payments); announce(`Record created with ${r.summary.payments} payments`); });
+  return (
+    <div className="card" data-testid="reliability-card">
+      <div className="hd"><h3>Payment reliability record</h3><Mock>SANDBOX</Mock></div>
+      <p className="muted">A signed list of the payments that went through the full Oasis checks with a verified proof pack, with whether each was paid by its due date. A landlord or university can verify it. <b>It is not a credit score, and no credit bureau accepts it.</b> Everything here is simulated.</p>
+      <p className="muted small">{n == null ? "" : `${n} payment(s) are eligible now. `}By default the record shows a pseudonymous id (not your name) and amount ranges.</p>
+      <div className="row">
+        <label className="check"><input type="checkbox" checked={name} onChange={(e) => setName(e.target.checked)} /> Include my name</label>
+        <label className="check"><input type="checkbox" checked={amounts} onChange={(e) => setAmounts(e.target.checked)} /> Show exact amounts</label>
+      </div>
+      <div className="row">
+        <button disabled={busy} onClick={create} data-testid="rr-create">Create record</button>
+        <button className="ghost" disabled={!rec} onClick={() => downloadJson(rec, "oasis-payment-reliability-record.json")} data-testid="rr-download">Download (JSON)</button>
+      </div>
+      <ErrorBox error={err} onDismiss={() => setErr(null)} />
+      {rec && <RecordSummary rec={rec} />}
+      <ReliabilityVerify initial={rec} />
+    </div>
+  );
+}
+
 function Passport({ s, refresh }) {
   if (!s) return <Skeleton rows={6} />;
   const p = s.passport;
@@ -708,6 +819,8 @@ function Passport({ s, refresh }) {
           </tbody></table></div>
         <p className="muted small">Rent of ¥6,000 by foreign card in a wallet costs {cny(s.last_mile_rent_6000.extra_cost_cny)} more than from a local account.</p>
       </div>
+      <CurrencyView s={s} />
+      <ReliabilityRecord />
       <AgentPlan s={s} refresh={refresh} />
       <Spending s={s} refresh={refresh} />
       <Autonomy s={s} refresh={refresh} />
@@ -724,7 +837,7 @@ function Passport({ s, refresh }) {
         <p className="muted small">Decoys are early detection; verification, signed intents and policy do the blocking.</p>
         {s.security_feed.length === 0 ? <p className="muted">No events yet.</p>
           : <ul className="feed">{s.security_feed.slice().reverse().map((e) => <li key={e.i}><code>#{e.i}</code> {label(e.kind)}</li>)}</ul>}
-        <p className="muted small">Reputation: {p.reputation.verified_on_time_payments} verified on-time payments.</p>
+        <p className="muted small">Counter: {p.reputation.verified_on_time_payments} verified payments completed (a simple count; due dates are checked in the reliability record).</p>
       </div>
     </section>
   );
