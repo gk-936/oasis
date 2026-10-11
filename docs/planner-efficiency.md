@@ -60,3 +60,69 @@ The final plan was valid in every case in every group, only because a fallback i
 - The failure mode the change did not touch: the model sometimes spends its whole call budget on tools and never proposes (2 of 11 new-format plans, 4 of 24 old).
 
 Decision: `v2` stays the default because it was at least as good on every comparison and cheaper per plan, and it is switchable to `v1`. No second change (schema or output-format compaction) was tried: the stopping rule was one or two changes, the budget was spent, and chasing further gains on these samples would be tuning to noise. Conclusion: the evidence suggests compact results help the original scenarios and does not show a gain on held-out ones. A repeat run on a fresh daily budget (at least 3 repeats of all 12 scenarios per format) is needed before calling it an improvement.
+
+## v3: calculator tools — protocol and pre-registered evaluation
+
+Status (2026-10-11): **built and tested offline; no live result exists.** `v2` stays the default. v3 is selected with `OASIS_PLANNER_FORMAT=v3` (or `AgenticPlanner(llm, fmt="v3")`, or `--format v3` in the evaluation CLI). `v1` and `v2` are byte-for-byte unchanged (snapshot test in `tests/test_planning_v3.py`, fixture `tests/snapshots/planner_v1_v2.json`, taken before the change).
+
+### Why
+
+In the live runs most validator errors were arithmetic (`amount_mismatch` 22 times, `insufficient_cny`, `unknown_route`): the model computed INR amounts, fees and rounding in its head. Plans also hit the token cap (22-25k tokens per 4-proposal plan). Principle: give the model calculators and make errors actionable, while the model still writes the plan. No code repairs a plan, so "model-only valid" stays a pure measurement. The validator rules, severities, scoring and fallback are untouched.
+
+### Protocol
+
+The model is offered three tools (v1/v2 offer seven; the v3 tool schemas are 1,908 characters against 2,748):
+
+| Tool | Fields | Result |
+|---|---|---|
+| `facts_sheet()` | none | obligations to fund (id, payee_id, exact `amount_cny`, `due`); `cny_needed` total, by month, by year; `balances`; `rate_target_reserve_inr`; `student_spendable_inr`; `cny_shortfall`; `inr_needed_est` and `inr_short_est` (cheapest non-bank route); `safe` (quota, left per calendar year, `new_year_starts`); `student` and `parent` (`remitted_inr_fy`, `lrs_left_inr`, `tcs_free_left_inr`; parent also `consent_needed`, `tcs_rate`); `routes` (id, days, fixed fee, pct fee, spread). Numbers only; 1.1k-1.5k characters in all 12 scenarios (about 300-400 tokens). |
+| `size_conversion(target_cny, route_id, convert_date, remitter?, due?)` | `target_cny` number, `route_id`, `convert_date` YYYY-MM-DD, `remitter` student (default) or parent, `due` optional | `send_inr` (smallest whole rupee delivering at least `target_cny` plus CNY 1.00 headroom, which covers 2-decimal rounding), `delivered_cny`, `arrives_on`, `effective_rate`, `on_time` and `latest_convert_date` when `due` is given, `safe` (year, room, fits, stage-rest date), `tcs_inr`, `lrs_ok`. A pure function of the world and the rates. |
+| `propose_plan(steps, rationale)` | unchanged | unchanged, except errors may carry `fix` |
+
+Neither new tool changes state or moves money (state-hash test); the toolbox only answers them in v3.
+
+`fix` (v3 presentation only; the error keeps its code, message, hint and step, and the validator itself never emits it; `oasis/planning/fixes.py`):
+
+| Error code | `fix` carries |
+|---|---|
+| `amount_mismatch` | `set.amount_cny` = the remaining amount |
+| `payee_mismatch`, `unknown_payee` | `set.payee_id` = the obligation's payee |
+| `late_payment` | `latest_date` and `set.date` |
+| `date_in_past` | `set.date` = today |
+| `duplicate_payment` | `remove_step` |
+| `obligation_unfunded` | `add_pay` with date, id, payee and exact amount |
+| `unknown_route` | `set.route_id` = best route that still arrives for the next payment |
+| `insufficient_cny` | `short_cny` and `add_convert` (cheapest on-time route; `send_inr` equals what `size_conversion` returns), or the earliest pay date when no route can arrive |
+| `insufficient_inr` | `over_inr`, `set.send_inr` reduced to the balance, `add_convert` for the parent that preserves the delivered CNY |
+| `rate_target_reserve` | same shape as `insufficient_inr`, for the INR the reserve is short |
+| `safe_quota_exceeded` | `max_send_inr`, `stage_on` (next 1 January), `set.send_inr`, `add_convert` for the rest with its `arrives_on`; or `set.date` when no room is left |
+| `route_too_slow` | `convert_by` (latest convert date for that route), `faster_route_ids`, `pay_date`, and the `set` that applies |
+
+Codes with no derivable correction (`bad_step`, `bad_date`, `bad_amount`, `lrs_exceeded`, ...) carry no `fix`. The tests apply the fix of each code above to a mutated plan and check that the code's error disappears (other errors may follow; that is the model's loop).
+
+Prompt: `SYSTEM_V3` is 1,089 characters against 2,201 for v2 (49%; the test limit is 60%). It says: call `facts_sheet` first, copy obligations exactly, size every conversion with `size_conversion`, never compute INR, propose once, apply each `fix` and change nothing else. The per-plan cap logic (`token_cap`, 8 calls, 4 proposals) and the deterministic fallback are exactly as before. The offline `DeterministicPlanner` is unchanged and gives identical plans under v1, v2 and v3.
+
+Offline proof that the protocol works: a scripted "model" in the tests (facts_sheet, then `size_conversion`, one proposal, then apply each `fix`) runs through `GroqLLM.chat_tools` with a fake client and produces a model-only valid plan in all 12 scenarios (1 to 3 proposals). This shows the protocol is workable, not that a real model will use it well.
+
+### Pre-registered evaluation
+
+Rule, fixed before any live v3 result: v3 becomes the default only if, pooled over the models that ran both formats, (A) its model-only valid rate beats v2's by at least 15 percentage points plus v2's observed spread (the widest max-minus-min of v2's per-repeat rates in any model cell; needs two complete repeats), and (B) the held-out scenarios do not regress (v3 held-out rate at least v2's). Otherwise v2 stays. The Fisher exact p is reported but is not part of the rule. The report prints the rule, and the verdict is `INCOMPLETE` until every compared cell has two complete repeats.
+
+Design: 12 scenarios (8 original + 4 `heldout_*`) x 2 repeats = 24 plans per format-model cell; four cells for two formats and two models. Temperature 0.3, a repeat-specific cache salt, per-plan cap 22,000 for both formats, and the fallback model pinned to the tested model (no cross-model contamination). Rows are keyed (format, model, repeat, scenario) in `eval/reports/planning_v3_rows.json`, written after every plan, and finished keys are skipped on re-run. A plan is not started unless the run cap leaves room for a whole per-plan cap, and a plan that ended on an API or quota error is discarded, not recorded.
+
+Commands (to run later, when the daily budget is back; each call is resumable):
+
+```
+export PYTHONPATH=.
+python -m eval.planning_v3 --format v3 --model qwen/qwen3.8-27b    --repeats 2 --cap 450000
+python -m eval.planning_v3 --format v2 --model qwen/qwen3.8-27b    --repeats 2 --cap 450000
+python -m eval.planning_v3 --format v3 --model openai/gpt-oss-120b --repeats 2 --cap 450000
+python -m eval.planning_v3 --format v2 --model openai/gpt-oss-120b --repeats 2 --cap 450000
+python -m eval.planning_v3 --report        # offline: re-render eval/reports/planning_v3.md and .json
+```
+
+Other options: `--rep N` runs one repeat, `--only id,id` selects scenarios, `--per-plan-cap N` sets the per-plan cap, and `OASIS_PLANNER_MODEL` sets the default model. Exit code 2 means the run cap was reached; 3 means the API or daily quota failed (call again later).
+
+Token budget (an estimate): v3 is aimed at 12-15k tokens per plan, so about 290-360k per v3 cell; v2 measured 15-20k per plan, so about 360-480k per v2 cell; about 1.3-1.7M tokens for all four cells. Budgets are per key: `OASIS_GROQ_DAILY_TOKENS` (default 180000) and `OASIS_GROQ_DAILY_REQUESTS` (default 900) apply to each key in `GROQ_API_KEY` separately (a comma-separated list), so keys times the daily budget decides how many days the run takes; one cell needs roughly 150-200 requests. The v3 token figure is a target, not a measurement.
+
+The report table (format x model) shows: model-only valid rate with per-repeat values and spread, final-valid rate (inflated by the fallback), fallback rate and reasons, validator errors by code, arithmetic-error share (`amount_mismatch`, `insufficient_cny`, `insufficient_inr`, `rate_target_reserve`, `safe_quota_exceeded`), mean proposals to valid, tokens, calls and seconds per plan, the v3-vs-v2 Fisher exact p (per model and pooled), held-out and per-scenario breakdowns, and the decision.

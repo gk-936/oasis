@@ -53,7 +53,7 @@ Copy `.env.example` to `.env` (git-ignored). **No key is needed**: with the defa
 ### Tests, benchmarks, evaluations, demo
 
 ```bash
-# 441 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
+# 494 tests (+2 skipped: live FISCO and live PQ-TLS), no network, no database file
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json
@@ -102,6 +102,8 @@ Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`,
 | Plan quality, Groq tool-calling planner | after the prompt change; 3 full repeats (temperature 0.3) | **live:** valid without fallback 4 of 8 (repeat 1), 2 of 8 (repeat 2) and 1 of 8 (repeat 3), min / mean / max 1 / 2.33 / 4; pooled 7 of 24 plans (29%); 17 fallbacks (10 token-cap stops, 4 no proposal within the call budget, 2 no valid plan after one proposal, 1 API 400); qwen/qwen3.8-27b answered last in 20 of 24 plans, openai/gpt-oss-120b 4; 463,343 tokens on 2026-10-11 over 3 of 4 keys. Before the change (1 run): 4/8 without fallback, 100,235 tokens | same |
 | Plan quality, Groq planner, compact tool results (v2) vs old (v1), plus 4 held-out scenarios | 1 repeat of 7 original scenarios and 4 held-out, temperature 0.3 | **live, tiny samples:** model-only valid 5 of 7 (v2) vs 6 of 21 (v1, 3 repeats) on the original scenarios (p about 0.08); held-out 3 of 4 vs 3 of 4 (no difference); tokens per plan 15,459 vs 20,809 on the originals; 230,613 tokens | `eval/reports/planning.md`, `docs/planner-efficiency.md` |
 | 90-day simulation (5 personas) | Oasis vs manual | **model:** fees saved CNY 1,542 to 2,963 per persona (mock fees, recalibrated rate) | `eval/reports/simulation.md` |
+
+- **Planner format v3 (calculator tools `facts_sheet` and `size_conversion`, numeric `fix` hints on validator errors, a prompt under half the length) is built and tested offline; its live evaluation is pending and v2 stays the default.** Pre-registered decision rule and commands: [docs/planner-efficiency.md](docs/planner-efficiency.md).
 
 Honest caveats:
 

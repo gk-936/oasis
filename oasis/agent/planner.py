@@ -20,7 +20,7 @@ from datetime import date, timedelta
 
 from ..mock.rates import ROUTES, delivered_amount
 from ..planning.routes import inr_needed
-from ..planning.tools import TOOL_SPECS, PlanningToolbox, compact, present
+from ..planning.tools import TOOL_SPECS, TOOL_SPECS_V3, PlanningToolbox, compact, present
 from ..planning.validator import required_obligations, safe_quota_inr, validate_plan
 
 MAX_ITERATIONS = 4          # proposals the validator will judge
@@ -158,8 +158,11 @@ def _repair(cons: dict, errors: list[dict]) -> bool:
 class DeterministicPlanner:
     name = "deterministic"
 
+    def __init__(self, fmt: str = "v2"):
+        self.fmt = fmt          # the plan does not depend on it; only whether the toolbox also attaches v3 `fix` hints
+
     def plan(self, world, goal: str = "") -> PlanResult:
-        tb = PlanningToolbox(world, MAX_ITERATIONS)
+        tb = PlanningToolbox(world, MAX_ITERATIONS, self.fmt)
         pas, obs = tb.call("read_passport"), tb.call("list_obligations")
         tb.call("get_rates")
         tb.call("forecast_runway")
@@ -199,6 +202,15 @@ SYSTEM = (
     "proposal is already valid. Rates are today's quote, never a prediction. Keep every message short.")
 
 
+# v3 (OASIS_PLANNER_FORMAT=v3): the model gets calculators instead of doing INR/fee/rounding arithmetic; see docs/planner-efficiency.md.
+SYSTEM_V3 = (
+    "You are Oasis's planning agent for a student paying fees in China. You only PROPOSE a plan; you never move money.\n"
+    "1. Call facts_sheet first. Pay every obligation in it exactly once, copying its id, payee_id and amount_cny exactly, on or before its due date and not before today.\n"
+    "2. For every conversion call size_conversion(target_cny, route_id, convert_date, remitter, due) and use its send_inr exactly. Never compute INR, fees or rounding yourself. target_cny is the CNY that conversion must deliver (facts_sheet shows cny_shortfall). Use only route ids from facts_sheet.\n"
+    "3. CNY arrives on convert date + route days and must be in the account on the pay date. The student's INR above the rate-target reserve cannot go negative: send the excess in a separate convert step with remitter 'parent'. At most the SAFE quota may be converted per calendar year: stage the rest on January 1 or later.\n"
+    "4. Propose the complete plan once with propose_plan. If it returns errors, apply each error's fix (exact numbers), change nothing else, and re-propose the complete plan. Keep every message short.")
+
+
 def _plan_from_text(text: str) -> dict | None:
     """Pull a {"steps": [...]} object out of a plain-text reply (a model that did not use the tool-call channel)."""
     m = re.search(r"\{.*\}", text, re.S)
@@ -212,7 +224,8 @@ def _plan_from_text(text: str) -> dict | None:
 
 
 def planner_format() -> str:
-    """'v2' (default): the model sees the trimmed tool results from `present`; 'v1': the full results (2026-10-11 runs)."""
+    """'v2' (default): the model sees the trimmed tool results from `present`; 'v1': the full results (2026-10-11 runs);
+    'v3': calculator tools (facts_sheet, size_conversion), `fix` hints on validator errors and a shorter prompt (evaluation pending)."""
     import os
     return os.environ.get("OASIS_PLANNER_FORMAT", "v2")
 
@@ -228,12 +241,14 @@ class AgenticPlanner:
     def __init__(self, llm, max_model_calls: int = MAX_MODEL_CALLS, token_cap: int | None = None, fmt: str | None = None):
         self.llm = llm
         self.fmt = fmt or planner_format()
+        self.system = SYSTEM_V3 if self.fmt == "v3" else SYSTEM
+        self.tool_specs = TOOL_SPECS_V3 if self.fmt == "v3" else TOOL_SPECS
         self.max_model_calls = max_model_calls
         self.token_cap = token_cap       # stop asking the model once this many tokens were spent on this plan
 
     def plan(self, world, goal: str = "") -> PlanResult:
-        tb = PlanningToolbox(world, MAX_ITERATIONS)
-        msgs: list[dict] = [{"role": "system", "content": SYSTEM},
+        tb = PlanningToolbox(world, MAX_ITERATIONS, self.fmt)
+        msgs: list[dict] = [{"role": "system", "content": self.system},
                             {"role": "user", "content": f"Today is {world.today.isoformat()}. Plan how to pay everything due"
                                                         + (f". Student's goal: {goal}" if goal else ".")}]
         tokens = calls = 0
@@ -246,7 +261,7 @@ class AgenticPlanner:
                     break
                 n_err = len(getattr(self.llm, "errors", []))
                 try:
-                    resp = self.llm.chat_tools(msgs, TOOL_SPECS)
+                    resp = self.llm.chat_tools(msgs, self.tool_specs)
                 finally:
                     for er in getattr(self.llm, "errors", [])[n_err:]:
                         tb.trace.append({"type": "model_error", **er})

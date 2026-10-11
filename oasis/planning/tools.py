@@ -12,7 +12,8 @@ from datetime import date
 from ..market import provenance
 from ..mock.rates import ROUTES, delivered_amount
 from ..trust import corridor
-from . import forecast
+from . import calc, forecast
+from .fixes import derive_fixes
 from .routes import quote_routes
 from .validator import (BANK, lrs_limit_inr, required_obligations, safe_quota_inr, validate_plan)
 
@@ -48,11 +49,27 @@ TOOL_SPECS = [
 ]
 
 
+# v3 (OASIS_PLANNER_FORMAT=v3): calculator tools. The model is offered only these three (a smaller schema than v1/v2);
+# the toolbox still answers the six read tools in v3 so nothing else changes.
+V3_TOOLS = ("facts_sheet", "size_conversion")
+TOOL_SPECS_V3 = [
+    _fn("facts_sheet", "Read-only. All planning numbers: obligations (exact amount_cny, payee_id, due), CNY needed, balances, "
+                       "rate-target reserve, SAFE room per year, remitter limits, INR shortfall estimate, routes."),
+    _fn("size_conversion", "Read-only calculator. Exact whole-rupee send_inr for a conversion to deliver target_cny (with headroom), "
+                           "plus arrival date, on_time vs due, SAFE room and TCS/LRS notes.",
+        {"target_cny": {"type": "number"}, "route_id": {"type": "string"}, "convert_date": _DATE,
+         "remitter": {"type": "string", "description": "student (default) or parent"}, "due": _DATE},
+        ["target_cny", "route_id", "convert_date"]),
+    TOOL_SPECS[-1],
+]
+
+
 class PlanningToolbox:
     """Serves the tools against one World. Keeps the proposals and validator verdicts for the trace."""
 
-    def __init__(self, world, max_iterations: int = 4):
+    def __init__(self, world, max_iterations: int = 4, fmt: str = "v2"):
         self.w = world
+        self.fmt = fmt                  # only "v3" changes behaviour here: it adds the calculator tools and error `fix` hints
         self.max_iterations = max_iterations
         self.trace: list[dict] = []
         self.proposals: list[dict] = []         # [{steps, rationale, validation}]
@@ -61,7 +78,8 @@ class PlanningToolbox:
     # -- dispatch ---------------------------------------------------------------------------------
     def call(self, name: str, args: dict | None = None) -> dict:
         args = args if isinstance(args, dict) else {}
-        fn = getattr(self, f"tool_{name}", None) if name in [t["function"]["name"] for t in TOOL_SPECS] else None
+        known = [t["function"]["name"] for t in TOOL_SPECS] + (list(V3_TOOLS) if self.fmt == "v3" else [])
+        fn = getattr(self, f"tool_{name}", None) if name in known else None
         if fn is None:
             res = {"error": f"unknown tool {name!r}", "tools": [t["function"]["name"] for t in TOOL_SPECS]}
         else:
@@ -140,6 +158,13 @@ class PlanningToolbox:
                 "monthly_burn_cny": burn, "burn_basis": basis, "runway_alert_months": p.rules.runway_alert_months,
                 "triggers": [{"kind": t.kind, "message": t.message} for t in forecast.triggers(p, w.rates, w.today, w.day_index)]}
 
+    # -- v3 calculators (read-only, pure) ---------------------------------------------------------
+    def tool_facts_sheet(self) -> dict:
+        return calc.facts_sheet(self.w)
+
+    def tool_size_conversion(self, target_cny: float, route_id: str, convert_date: str, remitter: str = "student", due: str | None = None) -> dict:
+        return calc.size_conversion(self.w, target_cny, route_id, convert_date, remitter, due)
+
     # -- proposal-only ----------------------------------------------------------------------------
     def tool_propose_plan(self, steps=None, rationale: str = "") -> dict:
         n = len(self.proposals) + 1
@@ -156,6 +181,10 @@ class PlanningToolbox:
             self.valid_proposal = prop
         slim = lambda e: {k: e[k] for k in ("code", "message", "hint", "step") if k in e}
         out = {"valid": v["valid"], "iteration": n, "errors": [slim(e) for e in v["errors"]]}
+        if self.fmt == "v3":
+            for e, fx in zip(out["errors"], derive_fixes(self.w, steps, v["errors"])):
+                if fx:
+                    e["fix"] = fx
         if v["valid"]:
             seen, ws = set(), []
             for x in v["warnings"]:
@@ -187,7 +216,7 @@ def _round(x, n=4):
 
 
 def present(name: str, res: dict, fmt: str = "v2") -> dict:
-    if fmt != "v2" or not isinstance(res, dict) or "error" in res:
+    if fmt not in ("v2", "v3") or not isinstance(res, dict) or "error" in res:
         return res
     if name == "read_passport":
         return {"today": res["today"], "balances": res["balances"], "safe_used_inr_by_year": res["safe_used_inr_by_year"],
@@ -216,6 +245,7 @@ def present(name: str, res: dict, fmt: str = "v2") -> dict:
         return {"runway_months_after_obligations": res["runway_months_after_obligations"], "monthly_burn_cny": res["monthly_burn_cny"],
                 "triggers": [t["message"] for t in res["triggers"]]}
     if name == "propose_plan":
-        out = {"valid": res["valid"], "errors": [{k: e[k] for k in ("code", "message", "hint", "step") if k in e} for e in res.get("errors", [])]}
+        keys = ("code", "message", "hint", "step") + (("fix",) if fmt == "v3" else ())
+        out = {"valid": res["valid"], "errors": [{k: e[k] for k in keys if k in e} for e in res.get("errors", [])]}
         return out
     return res
