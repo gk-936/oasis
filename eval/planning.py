@@ -16,7 +16,7 @@ from pathlib import Path
 
 from oasis import config
 from oasis.agent.planner import AgenticPlanner, DeterministicPlanner, build_record
-from oasis.planning.scenarios import SCENARIOS, build_scenario_world
+from oasis.planning.scenarios import ALL_SCENARIOS, HELDOUT, SCENARIOS, build_scenario_world
 
 REPORTS = Path(__file__).resolve().parent / "reports"
 DEFAULT_TOKEN_CAP = 60_000
@@ -24,7 +24,7 @@ PER_PLAN_CAP = 22_000   # 4 proposals x ~2.5k tokens of tool results + 8 calls r
 
 
 def run_scenario(sid: str, planner) -> dict:
-    s = SCENARIOS[sid]
+    s = ALL_SCENARIOS[sid]
     w = build_scenario_world(sid)
     t0 = time.time()
     rec = build_record(w, planner.plan(w, s.goal), s.goal)
@@ -33,6 +33,12 @@ def run_scenario(sid: str, planner) -> dict:
     props = [t for t in rec["trace"] if t["type"] == "proposal"]
     first_valid = next((t["iteration"] for t in props if t["validation"]["valid"]), None)
     model_props = [t for t in props]       # in a fallback the live model's proposals come first in the trace
+    cut = next((i for i, t in enumerate(rec["trace"]) if t["type"] == "fallback"), len(rec["trace"]))
+    err_counts: dict[str, int] = {}        # every validator error the LIVE MODEL's proposals drew (not the fallback planner's)
+    for t in rec["trace"][:cut]:
+        if t["type"] == "proposal":
+            for e in t["validation"]["errors"]:
+                err_counts[e["code"]] = err_counts.get(e["code"], 0) + 1
     return {
         "scenario": sid, "title": s.title, "tests": s.tests, "planner": rec["planner"], "model": rec["model"],
         "valid": rec["valid"], "fell_back": rec["fell_back"], "fallback_reason": rec["fallback_reason"],
@@ -43,6 +49,7 @@ def run_scenario(sid: str, planner) -> dict:
         "fees_cny": m.get("fees_cny"), "bank_fees_cny": m.get("bank_fees_cny"), "saved_vs_bank_cny": m.get("saved_vs_bank_cny"),
         "tcs_inr": m.get("tcs_inr", 0), "warnings": sorted({x["code"] for x in v.get("warnings", [])} - {"approval_expected"}),
         "first_errors": sorted({e["code"] for e in (props[0]["validation"]["errors"] if props else [])}),
+        "model_proposals": sum(1 for t in rec["trace"][:cut] if t["type"] == "proposal"), "error_counts": err_counts,
         "proposals": len(model_props), "tokens": rec["tokens"], "model_calls": rec["model_calls"],
         "seconds": round(time.time() - t0, 2), "steps": rec["steps"], "rationale": rec["rationale"][:500],
     }
@@ -101,6 +108,66 @@ def render_repeats(d: dict, title: str) -> list[str]:
     return L
 
 
+
+# --------------------------------------------------------------------------------------- tool-format experiment (2026-10-11)
+def _group(name: str, fmt: str, rows: list[dict]) -> dict:
+    from collections import Counter
+    k = len(rows)
+    mv = sum(r["model_valid_without_fallback"] for r in rows)
+    it = [r["iterations_to_valid"] for r in rows if r["iterations_to_valid"]]
+    full = all("error_counts" in r for r in rows)
+    ec: Counter = Counter()
+    for r in rows:
+        ec.update(r["error_counts"] if "error_counts" in r else {c: 1 for c in r["first_errors"]})
+    fb = Counter((r["fallback_reason"] or "").split(" (")[0].split(":")[0][:40] for r in rows if r["fell_back"])
+    reps = sorted({r["rep"] for r in rows})
+    return {"group": name, "format": fmt, "plans": k, "model_only_valid": mv, "model_only_valid_rate": round(mv / k, 3) if k else None,
+            "final_valid": sum(r["valid"] for r in rows), "fallbacks": k - mv, "fallback_reasons": dict(fb),
+            "error_counts": dict(ec), "error_counts_basis": "every proposal" if full else "first proposal only",
+            "mean_proposals_to_valid": round(sum(it) / len(it), 2) if it else None,
+            "tokens_per_plan": round(sum(r["tokens"] for r in rows) / k) if k else None,
+            "model_calls_per_plan": round(sum(r["model_calls"] for r in rows) / k, 2) if k else None,
+            "seconds_per_plan": round(sum(r["seconds"] for r in rows) / k) if k else None,
+            "per_repeat_model_valid": [[sum(r["model_valid_without_fallback"] for r in rows if r["rep"] == x), sum(1 for r in rows if r["rep"] == x)] for x in reps]}
+
+
+def experiment_summary(live_rows: list[dict], ex: dict) -> dict:
+    rows = ex["rows"]
+    new_o = [r for r in rows if r["format"] == "v2" and r["set"] == "original"]
+    sc = {r["scenario"] for r in new_o}
+    old_o = [r for r in live_rows if not r.get("skipped")]
+    old_h = [r for r in rows if r["format"] == "v1" and r["set"] == "heldout"]
+    new_h = [r for r in rows if r["format"] == "v2" and r["set"] == "heldout"]
+    old_o_same = [r for r in old_o if r["scenario"] in sc]
+    groups = [_group("original, old format, all 8 scenarios x 3 repeats", "v1", old_o),
+              _group(f"original, old format, the {len(sc)} scenarios that ran under v2 (x 3 repeats)", "v1", old_o_same),
+              _group(f"original, new format, {len(sc)} scenarios x 1 repeat", "v2", new_o),
+              _group("held-out, old format, 4 x 1", "v1", old_h), _group("held-out, new format, 4 x 1", "v2", new_h),
+              _group("pooled original (same scenarios) + held-out, old format", "v1", old_o_same + old_h),
+              _group("pooled original + held-out, new format", "v2", new_o + new_h)]
+    return {"date": "2026-10-11", "temperature": ex["temperature"], "per_plan_cap": ex["per_plan_cap"], "groups": groups,
+            "discarded_budget_artifact": ex.get("discarded_budget_artifact", []), "notes": ex.get("notes", [])}
+
+
+def render_experiment(e: dict) -> list[str]:
+    L = ["## Tool-result format experiment (old `v1` vs compact `v2`), 2026-10-11", "",
+         f"Same settings as the earlier live runs: temperature {e['temperature']}, per-plan cap {e['per_plan_cap']:,}, cache salt `planrep<N>`, "
+         "validator, scoring and fallback unchanged. Only what the model is shown changed (`oasis/planning/tools.py::present`). "
+         "Details and caveats: [docs/planner-efficiency.md](../../docs/planner-efficiency.md). **Sample sizes are tiny; read the spread and the caveats.**", "",
+         "| Group | Plans | Model-only valid | Final plan valid (with fallback) | Fallbacks (reasons) | Mean proposals to valid | Tokens / plan | Calls / plan | Seconds / plan | Validator errors by code |",
+         "|---|---|---|---|---|---|---|---|---|---|"]
+    for g in e["groups"]:
+        L.append(f"| {g['group']} | {g['plans']} | {g['model_only_valid']} ({(g['model_only_valid_rate'] or 0) * 100:.0f}%) | {g['final_valid']} of {g['plans']} | "
+                 f"{g['fallbacks']}: {', '.join(f'{k} {v}' for k, v in g['fallback_reasons'].items()) or '-'} | {g['mean_proposals_to_valid']} | "
+                 f"{g['tokens_per_plan']:,} | {g['model_calls_per_plan']} | {g['seconds_per_plan']} | "
+                 f"{', '.join(f'{k} {v}' for k, v in sorted(g['error_counts'].items())) or '-'} ({g['error_counts_basis']}) |")
+    L += ["", "Per-repeat model-only valid (valid out of plans): " + "; ".join(f"{g['group']}: {', '.join(f'{a}/{b}' for a, b in g['per_repeat_model_valid'])}" for g in e["groups"]), ""]
+    for n in e.get("notes", []):
+        L.append(f"- {n}")
+    L.append("")
+    return L
+
+
 def render(data: dict) -> str:
     L = ["# Plan-quality evaluation (agentic planning)", "",
          "Eight planning scenarios on MOCK data (`oasis/planning/scenarios.py`), scored by the deterministic plan validator "
@@ -141,6 +208,8 @@ def render(data: dict) -> str:
         for note in d.get("notes", []):
             L.append(f"- {note}")
         L.append("")
+    if data.get("experiment"):
+        L += render_experiment(data["experiment"])
     L += ["## Caveats", "",
           "- Eight hand-written scenarios; a pass here shows the planner and validator agree on these cases, not general optimality.",
           "- The validator checks feasibility and the stated rules; it does not search for the globally cheapest plan. 'Fees vs bank' compares with the typical bank route only.",

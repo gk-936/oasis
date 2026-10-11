@@ -174,3 +174,48 @@ def compact(res, limit: int = 3500) -> str:
     """Tool result as compact JSON for the model (bounded so a long run cannot blow the token budget)."""
     s = json.dumps(res, separators=(",", ":"), default=str)
     return s if len(s) <= limit else s[:limit] + '..."truncated"'
+
+
+# ----------------------------------------------------------------------------- compact presentation for the model
+# The toolbox (and so the trace, the UI and the deterministic planner) always works with the full results. The live
+# model is shown a trimmed view: only fields it can act on. Every field a validator error code needs in order to be
+# fixed (ids, exact amounts, dates, balances, quota, route ids and days, the error's own message/hint/step) is kept;
+# prose notes, provenance blocks, names and flags the model never uses are dropped. `PLANNER_FORMAT=v1` shows the
+# full results (the format used for the 2026-10-11 live runs).
+def _round(x, n=4):
+    return round(x, n) if isinstance(x, float) else x
+
+
+def present(name: str, res: dict, fmt: str = "v2") -> dict:
+    if fmt != "v2" or not isinstance(res, dict) or "error" in res:
+        return res
+    if name == "read_passport":
+        return {"today": res["today"], "balances": res["balances"], "safe_used_inr_by_year": res["safe_used_inr_by_year"],
+                "safe_quota_inr_per_year": res["safe_quota_inr_per_year"], "lrs_limit_inr_per_remitter": res["lrs_limit_inr_per_remitter"],
+                "remitted_inr_fy": res["remitted_inr_fy"],
+                "rate_targets": [{"rate": t.get("rate"), "convert_cny": t.get("convert_cny")} for t in res["rate_targets"]],
+                "income_not_arrived": [{"label": i.get("label"), "amount_cny": i.get("amount_cny"), "expected": i.get("expected")}
+                                       for i in res["income_not_arrived"]]}
+    if name == "list_obligations":
+        obs = res["obligations"]
+        return {"must_fund": [{"id": o["id"], "type": o["type"], "payee_id": o["payee_id"], "amount_cny": o["amount_cny"], "due": o["due"]}
+                              for o in obs if o["plan_must_fund"]],
+                "not_in_plan": [o["id"] for o in obs if not o["plan_must_fund"]]}
+    if name == "get_rates":
+        return {"mid_cny_per_inr": res["mid_cny_per_inr"],
+                "routes": [{"id": r["id"], "days": r["days"], "fixed_fee_inr": r["fixed_fee_inr"], "pct_fee": r["pct_fee"],
+                            "spread": r["spread"], **({"bank": True} if r["typical_bank"] else {})} for r in res["routes"]]}
+    if name == "get_routes":
+        return {"routes": [{"route_id": r["route_id"], "delivered_cny": r["delivered_cny"], "days": r["days"], "on_time": r["on_time"],
+                            **({"bank": True} if r["typical_bank"] else {})} for r in res["routes"]]}
+    if name == "check_corridor":
+        return {"findings": [{"rule": f["rule"], "severity": f["severity"], "message": f["message"]} for f in res["findings"]],
+                "remitter_inr_this_fy": res["remitter_inr_this_fy"], "tcs_threshold_inr": res["tcs_threshold_inr"],
+                "safe_remaining_inr_this_calendar_year": res["safe_remaining_inr_this_calendar_year"]}
+    if name == "forecast_runway":
+        return {"runway_months_after_obligations": res["runway_months_after_obligations"], "monthly_burn_cny": res["monthly_burn_cny"],
+                "triggers": [t["message"] for t in res["triggers"]]}
+    if name == "propose_plan":
+        out = {"valid": res["valid"], "errors": [{k: e[k] for k in ("code", "message", "hint", "step") if k in e} for e in res.get("errors", [])]}
+        return out
+    return res

@@ -1,5 +1,6 @@
 """Agentic planning: validator rules, the tool protocol, the offline planner, Groq tool calling (fake client), plan
 execution through the normal pipeline, and autonomous-recovery draft validation. No test uses the network."""
+import copy
 import json
 from datetime import date
 from types import SimpleNamespace
@@ -462,3 +463,112 @@ def test_only_repeat_runs_one_repeat_and_replaces_its_row(tmp_path, monkeypatch)
     assert len(r3) == len(SCENARIOS) and all(r["tokens"] == 10 for r in r3)       # old repeat-3 row replaced
     assert any(r["rep"] == 0 and r["tokens"] == 7 for r in rows)                   # other repeats untouched
     assert not any(r["rep"] == 1 for r in rows)
+
+
+# ------------------------------------------------------------------ compact tool results for the live model (format v2)
+def _valid_steps(sid):
+    from oasis.planning.scenarios import build_scenario_world
+    w = build_scenario_world(sid)
+    return w, [dict(s) for s in DeterministicPlanner().plan(w).steps]
+
+
+def test_compact_results_are_smaller_but_keep_every_fact_the_model_acts_on():
+    import json as _json
+    from oasis.planning.scenarios import build_scenario_world
+    from oasis.planning.tools import PlanningToolbox, present
+    for sid in ("rate_target", "late_scholarship", "shortfall"):
+        w = build_scenario_world(sid)
+        tb = PlanningToolbox(w)
+        full = {n: tb.call(n, a) for n, a in [("read_passport", {}), ("list_obligations", {}), ("get_rates", {}), ("forecast_runway", {}),
+                                               ("get_routes", {"send_inr": 200000, "due": "2026-11-15"}),
+                                               ("check_corridor", {"amount_inr": 200000, "purpose": "tuition"})]}
+        size = lambda x: len(_json.dumps(x, separators=(",", ":")))
+        small = {n: present(n, r, "v2") for n, r in full.items()}
+        assert sum(map(size, small.values())) < 0.7 * sum(map(size, full.values()))
+        assert all(present(n, r, "v1") is r for n, r in full.items())               # v1 is the untouched full result
+        p, o, rt, rn = small["read_passport"], small["list_obligations"], small["get_rates"], small["get_routes"]
+        fp = full["read_passport"]
+        for k in ("today", "balances", "safe_used_inr_by_year", "safe_quota_inr_per_year", "lrs_limit_inr_per_remitter", "remitted_inr_fy"):
+            assert p[k] == fp[k]
+        assert [(t["rate"], t["convert_cny"]) for t in p["rate_targets"]] == [(t["rate"], t["convert_cny"]) for t in fp["rate_targets"]]
+        assert [(i["amount_cny"], i["expected"]) for i in p["income_not_arrived"]] == [(i["amount_cny"], i["expected"]) for i in fp["income_not_arrived"]]
+        need = [x for x in full["list_obligations"]["obligations"] if x["plan_must_fund"]]
+        assert [(x["id"], x["payee_id"], x["amount_cny"], x["due"]) for x in o["must_fund"]] == [(x["id"], x["payee_id"], x["amount_cny"], x["due"]) for x in need]
+        assert set(o["not_in_plan"]) == {x["id"] for x in full["list_obligations"]["obligations"]} - {x["id"] for x in need}
+        assert {(r["id"], r["days"], r["fixed_fee_inr"], r["pct_fee"], r["spread"]) for r in rt["routes"]} == \
+               {(r["id"], r["days"], r["fixed_fee_inr"], r["pct_fee"], r["spread"]) for r in full["get_rates"]["routes"]}
+        assert rt["mid_cny_per_inr"] == full["get_rates"]["mid_cny_per_inr"]
+        assert {(r["route_id"], r["delivered_cny"], r["days"], r["on_time"]) for r in rn["routes"]} == \
+               {(r["route_id"], r["delivered_cny"], r["days"], r["on_time"]) for r in full["get_routes"]["routes"]}
+        assert sum(1 for r in rt["routes"] if r.get("bank")) == 1
+        assert small["check_corridor"]["safe_remaining_inr_this_calendar_year"] == full["check_corridor"]["safe_remaining_inr_this_calendar_year"]
+
+
+def test_compact_validator_errors_keep_code_message_hint_and_step_for_every_error_code():
+    from oasis.planning.tools import PlanningToolbox, present
+    seen = set()
+
+    def check(w, steps):
+        tb = PlanningToolbox(w)
+        res = tb.call("propose_plan", {"steps": steps, "rationale": "x"})
+        out = present("propose_plan", res, "v2")
+        assert out["valid"] == res["valid"]
+        assert out["errors"] == [{k: e[k] for k in ("code", "message", "hint", "step") if k in e} for e in res["errors"]]
+        for e, c in zip(out["errors"], res["errors"]):
+            assert e["code"] == c["code"] and e["message"] == c["message"] and e.get("hint") == c.get("hint") and e.get("step") == c.get("step")
+            seen.add(e["code"])
+
+    w, st = _valid_steps("shortfall")
+    pay = next(i for i, s in enumerate(st) if s["action"] == "pay")
+    conv = next(i for i, s in enumerate(st) if s["action"] == "convert")
+    mut = lambda f: (lambda c: (f(c), c)[1])(copy.deepcopy(st))
+    check(w, mut(lambda c: c[pay].update(amount_cny=c[pay]["amount_cny"] - 1)))                    # amount_mismatch
+    check(w, mut(lambda c: c[conv].update(route_id="nope")))                                       # unknown_route
+    check(w, mut(lambda c: c[pay].update(payee_id="payee_landlord_chen" if c[pay]["payee_id"] != "payee_landlord_chen" else "payee_univ_x")))   # payee_mismatch
+    check(w, mut(lambda c: c.pop(pay)))                                                            # obligation_unfunded
+    check(w, mut(lambda c: c.append(dict(c[pay]))))                                                # duplicate_payment
+    check(w, mut(lambda c: c[pay].update(date="2030-01-01")))                                      # late_payment
+    check(w, mut(lambda c: c[pay].update(date="2020-01-01")))                                      # date_in_past
+    check(w, mut(lambda c: c[conv].update(send_inr=c[conv]["send_inr"] * 20)))                     # insufficient_inr
+    check(w, [s for s in st if s["action"] == "pay"])                                              # insufficient_cny
+    check(w, [])                                                                                   # bad_step
+    w2, st2 = _valid_steps("safe_quota_tuition")
+    check(w2, [{**s, "date": "2026-10-13"} if s["action"] == "convert" else s for s in st2] +
+          [{"action": "convert", "date": "2026-10-13", "send_inr": 3_000_000, "route_id": next(s for s in st2 if s["action"] == "convert")["route_id"],
+            "remitter": "student"}])                                                                # safe_quota_exceeded
+    w3, st3 = _valid_steps("rate_target")
+    check(w3, [{**s, "send_inr": s["send_inr"] * 1.12} if s["action"] == "convert" else s for s in st3])      # rate_target_reserve or insufficient_inr
+    assert {"amount_mismatch", "unknown_route", "payee_mismatch", "obligation_unfunded", "duplicate_payment", "late_payment", "date_in_past",
+            "insufficient_inr", "insufficient_cny", "bad_step", "safe_quota_exceeded"} <= seen, seen
+
+
+def test_agentic_planner_sends_the_compact_results_by_default_and_the_full_ones_for_v1():
+    from oasis.planning.scenarios import build_scenario_world
+    import json as _json
+
+    class Spy:
+        name = "groq"
+        errors: list = []
+
+        def __init__(self):
+            self.seen = []
+
+        def chat_tools(self, msgs, tools):
+            self.seen.append([m for m in msgs if m["role"] == "tool"])
+            if len(self.seen) == 1:
+                return {"tool_calls": [{"id": "a", "name": "list_obligations", "arguments": {}}], "tokens": 10, "model": "m"}
+            return {"content": "", "tool_calls": [], "tokens": 10, "model": "m"}
+
+    for fmt, key in (("v2", "must_fund"), ("v1", "obligations")):
+        spy = Spy()
+        AgenticPlanner(spy, fmt=fmt).plan(build_scenario_world("shortfall"))
+        assert key in _json.loads(spy.seen[1][0]["content"])
+
+
+def test_heldout_scenarios_are_separate_from_the_original_eight_and_feasible():
+    from oasis.planning.scenarios import ALL_SCENARIOS, HELDOUT, SCENARIOS, build_scenario_world
+    assert len(SCENARIOS) == 8 and len(HELDOUT) == 4 and all(k.startswith("heldout_") for k in HELDOUT)
+    assert set(ALL_SCENARIOS) == set(SCENARIOS) | set(HELDOUT)
+    for sid in HELDOUT:
+        r = DeterministicPlanner().plan(build_scenario_world(sid))
+        assert r.valid, sid

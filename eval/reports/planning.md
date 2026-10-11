@@ -101,6 +101,28 @@ Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`;
 - 4 fallback(s) (SAFE-quota tuition; Parent remitter crossing TCS; Five obligations; Urgent deposit) were triggered by the per-plan token cap protecting the free-tier budget, not by a model that gave up: those plans were still being revised. The reported plan is then the deterministic one.
 - Urgent deposit was cut by the remaining run budget, not the nominal 18,000 per-plan cap: it was the last scenario and only 7,094 of the 75,000-token run cap was left (per-plan cap 7,094), so its fallback reflects my budget, not the model. Earlier-run rows (shortfall, SAFE-quota tuition, parent TCS) used a per-plan cap of at most 14,000 (the effective cap was min(14,000, remaining run budget)); the 5 newer rows used 18,000.
 
+## Tool-result format experiment (old `v1` vs compact `v2`), 2026-10-11
+
+Same settings as the earlier live runs: temperature 0.3, per-plan cap 22,000, cache salt `planrep<N>`, validator, scoring and fallback unchanged. Only what the model is shown changed (`oasis/planning/tools.py::present`). Details and caveats: [docs/planner-efficiency.md](../../docs/planner-efficiency.md). **Sample sizes are tiny; read the spread and the caveats.**
+
+| Group | Plans | Model-only valid | Final plan valid (with fallback) | Fallbacks (reasons) | Mean proposals to valid | Tokens / plan | Calls / plan | Seconds / plan | Validator errors by code |
+|---|---|---|---|---|---|---|---|---|---|
+| original, old format, all 8 scenarios x 3 repeats | 24 | 7 (29%) | 24 of 24 | 17: the model never proposed a plan 4, token cap reached 10, no valid plan after 1 proposal(s) 2, RuntimeError 1 | 1.71 | 19,306 | 6.33 | 155 | amount_mismatch 9, insufficient_cny 1, insufficient_inr 6, rate_target_reserve 1, safe_quota_exceeded 1, unknown_route 5 (first proposal only) |
+| original, old format, the 7 scenarios that ran under v2 (x 3 repeats) | 21 | 6 (29%) | 21 of 21 | 15: the model never proposed a plan 4, token cap reached 9, no valid plan after 1 proposal(s) 2 | 1.83 | 20,809 | 6.76 | 164 | amount_mismatch 9, insufficient_cny 1, insufficient_inr 6, rate_target_reserve 1, safe_quota_exceeded 1, unknown_route 5 (first proposal only) |
+| original, new format, 7 scenarios x 1 repeat | 7 | 5 (71%) | 7 of 7 | 2: the model never proposed a plan 1, no valid plan after 2 proposal(s) 1 | 2.2 | 15,459 | 6.14 | 106 | amount_mismatch 18, duplicate_payment 1, insufficient_cny 2, rate_target_reserve 1, unknown_route 2 (every proposal) |
+| held-out, old format, 4 x 1 | 4 | 3 (75%) | 4 of 4 | 1: token cap reached 1 | 1.67 | 13,848 | 4.75 | 115 | insufficient_cny 2 (every proposal) |
+| held-out, new format, 4 x 1 | 4 | 3 (75%) | 4 of 4 | 1: the model never proposed a plan 1 | 2.33 | 16,752 | 6.0 | 122 | amount_mismatch 4, insufficient_cny 3 (every proposal) |
+| pooled original (same scenarios) + held-out, old format | 25 | 9 (36%) | 25 of 25 | 16: the model never proposed a plan 4, token cap reached 10, no valid plan after 1 proposal(s) 2 | 1.78 | 19,696 | 6.44 | 156 | amount_mismatch 9, insufficient_cny 3, insufficient_inr 6, rate_target_reserve 1, safe_quota_exceeded 1, unknown_route 5 (first proposal only) |
+| pooled original + held-out, new format | 11 | 8 (73%) | 11 of 11 | 3: the model never proposed a plan 2, no valid plan after 2 proposal(s) 1 | 2.25 | 15,929 | 6.09 | 112 | amount_mismatch 22, duplicate_payment 1, insufficient_cny 5, rate_target_reserve 1, unknown_route 2 (every proposal) |
+
+Per-repeat model-only valid (valid out of plans): original, old format, all 8 scenarios x 3 repeats: 4/8, 2/8, 1/8; original, old format, the 7 scenarios that ran under v2 (x 3 repeats): 3/7, 2/7, 1/7; original, new format, 7 scenarios x 1 repeat: 5/7; held-out, old format, 4 x 1: 3/4; held-out, new format, 4 x 1: 3/4; pooled original (same scenarios) + held-out, old format: 6/11, 2/7, 1/7; pooled original + held-out, new format: 8/11
+
+- Spend: 230,613 new tokens on 2026-10-11 (key fingerprints: ceef6c23 80,651; a1d412ac 149,962; 499b1366 0; d40d45b2 0), 19 plans plus one re-run, under the ~250k cap.
+- Not run for lack of budget: a second repeat of the new format, and the urgent-deadline scenario in the new format. The old-format comparison for the original scenarios is the three repeats already recorded (24 plans, 2026-10-11, other key state).
+- One new-format plan (multiple_obligations) was first stopped at 12,362 tokens by the run-level cap, not by the model; that row was discarded as a budget artifact and the plan resumed (its first calls replay from the disk cache, so its tokens are recorded as 12,362 + 4,730 and its seconds cover only the resumed part).
+- Old-format error counts for the original scenarios exist only for the first proposal; all other groups count every validator error the live model drew.
+- Fisher exact tests (two-sided, uncorrected): original same scenarios new 5/7 vs old 6/21 gives p about 0.076; pooled new 8/11 vs old 9/25 gives p about 0.070. Neither is conclusive. The held-out result is 3/4 vs 3/4: no measurable difference.
+
 ## Caveats
 
 - Eight hand-written scenarios; a pass here shows the planner and validator agree on these cases, not general optimality.

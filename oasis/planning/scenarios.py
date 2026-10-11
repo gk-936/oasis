@@ -94,8 +94,58 @@ SCENARIOS: dict[str, PlanScenario] = {s.id: s for s in [
 ]}
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Held-out scenarios (added 2026-10-11 for the planner token-efficiency experiment). Written from first principles
+# BEFORE any live result of the prompt/tool-format change was seen; never used to tune the prompt, tools or validator.
+# They live in their own dict so the original eight (SCENARIOS) and the UI picker are unchanged.
+def _h_shared_landlord(w: World) -> None:
+    w.passport.set_balance("INR", 700000)
+    _obs(w, ("obl_rent_a", "rent", LAND, 6000, "2026-11-01"), ("obl_rent_b", "rent", LAND, 5000, "2026-11-01"),
+         ("obl_rent_a2", "rent", LAND, 6000, "2026-12-01"), ("obl_rent_b2", "rent", LAND, 5000, "2026-12-01"))
+
+
+def _h_year_boundary(w: World) -> None:
+    w.passport.set_balance("INR", 3_000_000)
+    _obs(w, ("obl_tuition_1", "tuition", UNIV, 350000, "2027-01-25"))
+
+
+def _h_scholarship_target(w: World) -> None:
+    w.passport.set_balance("INR", 420000)
+    w.passport.expected_income = [{"label": "Scholarship stipend", "amount_cny": 15000, "expected": "2026-10-05", "received": False}]
+    w.passport.rules.rate_targets.append({"id": "rt_01", "pair": "INR-CNY", "rate": 0.0720, "convert_cny": 10000,
+                                          "status": "watching", "created": "2026-10-12"})
+    _obs(w, ("obl_rent_1", "rent", LAND, 6000, "2026-11-01"), ("obl_tuition_1", "tuition", UNIV, 30000, "2026-11-20"))
+
+
+def _h_deposit_rent_tuition(w: World) -> None:
+    w.passport.set_balance("INR", 700000)
+    _obs(w, ("obl_deposit_1", "deposit", LAND, 8000, "2026-10-16"), ("obl_rent_1", "rent", LAND, 6000, "2026-11-01"),
+         ("obl_tuition_1", "tuition", UNIV, 28000, "2026-11-25"), ("obl_rent_2", "rent", LAND, 6000, "2026-12-01"))
+
+
+HELDOUT: dict[str, PlanScenario] = {s.id: s for s in [
+    PlanScenario("heldout_shared_landlord", "Held-out: two tenants, one landlord",
+                 "The student's rent and a flatmate's share, both owed to the same landlord payee, on two dates; INR 7 lakh.",
+                 "Pay all the rent due.", "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+                 _h_shared_landlord),
+    PlanScenario("heldout_year_boundary", "Held-out: tuition across the SAFE year boundary",
+                 "A CNY 350,000 fee due 2027-01-25; INR 30 lakh in the account, so the parent must cover a shortfall.",
+                 "Pay the tuition.", "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+                 _h_year_boundary),
+    PlanScenario("heldout_scholarship_target", "Held-out: late scholarship and a rate target",
+                 "A CNY 15,000 stipend has not arrived; a pending target reserves INR for CNY 10,000 at 0.0720; INR 4.2 lakh.",
+                 "Pay rent and tuition without disturbing my rate target.", "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+                 _h_scholarship_target),
+    PlanScenario("heldout_deposit_rent_tuition", "Held-out: deposit, rent and tuition on a thin margin",
+                 "A CNY 8,000 deposit due in four days, then rent, tuition and more rent; INR 7 lakh against about INR 6.9 lakh needed.",
+                 "Pay everything on time at the lowest cost.", "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+                 _h_deposit_rent_tuition),
+]}
+ALL_SCENARIOS: dict[str, PlanScenario] = {**SCENARIOS, **HELDOUT}
+
+
 def build_scenario_world(scenario_id: str, llm=None) -> World:
-    s = SCENARIOS[scenario_id]
+    s = ALL_SCENARIOS[scenario_id]
     w = World(Features.full(), llm or OfflineLLM(susceptible=True), seed=7, deterministic=True, autonomy=False)
     s.build(w)
     w.sync_balances()

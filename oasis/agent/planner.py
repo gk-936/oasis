@@ -20,7 +20,7 @@ from datetime import date, timedelta
 
 from ..mock.rates import ROUTES, delivered_amount
 from ..planning.routes import inr_needed
-from ..planning.tools import TOOL_SPECS, PlanningToolbox, compact
+from ..planning.tools import TOOL_SPECS, PlanningToolbox, compact, present
 from ..planning.validator import required_obligations, safe_quota_inr, validate_plan
 
 MAX_ITERATIONS = 4          # proposals the validator will judge
@@ -211,16 +211,23 @@ def _plan_from_text(text: str) -> dict | None:
     return d if isinstance(d, dict) and isinstance(d.get("steps"), list) else None
 
 
-def _tool_message(tc_id: str, res: dict) -> dict:
-    return {"role": "tool", "tool_call_id": tc_id, "content": compact(res)}
+def planner_format() -> str:
+    """'v2' (default): the model sees the trimmed tool results from `present`; 'v1': the full results (2026-10-11 runs)."""
+    import os
+    return os.environ.get("OASIS_PLANNER_FORMAT", "v2")
+
+
+def _tool_message(tc_id: str, res: dict, name: str = "", fmt: str = "v1") -> dict:
+    return {"role": "tool", "tool_call_id": tc_id, "content": compact(present(name, res, fmt) if name else res)}
 
 
 class AgenticPlanner:
     """Groq native tool calling over the same toolbox. Falls back to the deterministic plan, and says so."""
     name = "groq-tools"
 
-    def __init__(self, llm, max_model_calls: int = MAX_MODEL_CALLS, token_cap: int | None = None):
+    def __init__(self, llm, max_model_calls: int = MAX_MODEL_CALLS, token_cap: int | None = None, fmt: str | None = None):
         self.llm = llm
+        self.fmt = fmt or planner_format()
         self.max_model_calls = max_model_calls
         self.token_cap = token_cap       # stop asking the model once this many tokens were spent on this plan
 
@@ -272,7 +279,7 @@ class AgenticPlanner:
                             args = {**args, "steps": json.loads(args["steps"])}
                         except ValueError:
                             pass
-                    msgs.append(_tool_message(t["id"], tb.call(t["name"], args)))
+                    msgs.append(_tool_message(t["id"], tb.call(t["name"], args), t["name"], self.fmt))
         except Exception as e:  # noqa: BLE001 - QuotaExhausted, auth, network: the deterministic plan is the floor
             reason = f"{type(e).__name__}: {str(e)[:200]}"
         if tb.valid_proposal:
