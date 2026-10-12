@@ -567,3 +567,20 @@ def test_tcs_warning_reads_the_rate_from_the_data_file(monkeypatch):
     rules["rules"]["tcs_by_purpose"]["education"]["status"] = "confirmed-primary"
     v = validate_plan(w, rec["steps"])
     assert "UNCONFIRMED" not in next(x["message"] for x in v.warnings if x["code"] == "tcs")   # a primary-confirmed row would not
+
+
+def test_security_headers_on_api_and_static(api_client):
+    for path in ("/api/health", "/"):
+        h = api_client.get(path).headers
+        assert h["x-content-type-options"] == "nosniff"
+        assert h["x-frame-options"] == "DENY"
+        assert h["referrer-policy"] == "no-referrer"
+        assert "frame-ancestors 'none'" in h["content-security-policy"]
+        assert "script-src 'self'" in h["content-security-policy"]
+        assert "unsafe-eval" not in h["content-security-policy"]
+        assert "strict-transport-security" not in h      # plain http: HSTS would be wrong
+
+
+def test_hsts_only_when_secure(api_client, monkeypatch):
+    monkeypatch.setenv("OASIS_COOKIE_SECURE", "1")
+    assert "max-age" in api_client.get("/api/health").headers["strict-transport-security"]

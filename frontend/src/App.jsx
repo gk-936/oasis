@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { deviceOf, lockDevice, unlockDevice } from "./crypto.js";
 import { api, markSession, setApiHandlers, short4 } from "./api.js";
+import { assertPasskey, passkeysSupported, registerPasskey } from "./passkey.js";
 import { MockBanner } from "./common.jsx";
 import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as applyLang, t, tl, useLang } from "./i18n/index.js";
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
@@ -36,7 +37,8 @@ function LangPicker({ role }) {
 }
 
 async function startSession(role, passcode) {
-  await api("/auth/login", { role, passcode });
+  const step = await api("/auth/login", { role, passcode });
+  if (step.mfa_required) await assertPasskey(step);                 // second factor: the server issues no session until it verifies
   const me = await api("/auth/me");
   if (role === "student" || role === "parent") {
     const d = await unlockDevice(role, passcode);                 // private key stays in this browser
@@ -167,6 +169,7 @@ export default function App() {
             {auth && <>
               <span className={`rolebadge ${auth.role}`} title={t("app.role.title")}>{tl("role", auth.role)}</span>
               {needsKey && dev && <span className="muted small" title={t("app.devkey.title")}>{t("app.devkey")} <code>{short4(dev.keyId)}</code></span>}
+              {passkeysSupported() && <button className="ghost" title={t("app.passkey.title")} onClick={() => registerPasskey().then(() => announce(t("app.passkey.done"))).catch((x) => setErr(x))}>{t("app.passkey")}</button>}
               {auth.role === "student" && <button className="ghost" onClick={() => api("/reset", {}).then(() => { announce(t("app.reset.announce")); refresh(); }).catch(setErr)}>{t("app.reset")}</button>}
               <button className="ghost" onClick={logout}>{t("app.logout")}</button>
             </>}

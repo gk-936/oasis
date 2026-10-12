@@ -10,3 +10,4 @@ groq>=0.30
 pytest>=8
 python-multipart>=0.0.9
 gmssl>=3.2
+webauthn>=2.5          # passkey second factor (OASIS_REQUIRE_PASSKEY=1)

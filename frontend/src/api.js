@@ -27,7 +27,7 @@ export const api = async (path, body) => {
       msg = formatDetail(j.detail ?? msg);
     } catch { /* plain text */ }
     if (typeof msg !== "string") msg = JSON.stringify(msg);
-    const authPath = path.startsWith("/auth/login") || path === "/auth/me";
+    const authPath = path.startsWith("/auth/login") || path.startsWith("/auth/passkey/login") || path === "/auth/me";
     if (!authPath && (r.status === 401 || (r.status === 403 && code === "role_not_allowed"))) handlers.unauth(r.status);   // other 403s (bad signature, cross-origin) stay inline
     if (r.status === 410) handlers.expired();
     throw new ApiError(r.status, msg || r.statusText, r.headers.get("Retry-After"), code);

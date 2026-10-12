@@ -68,6 +68,7 @@ from ..trust.keyfile import default_session_secret_path, load_or_create_secret
 from ..trust.keystore import fingerprint, load_or_create_signer
 from ..world import Features, World
 from .auth import COOKIE, ROLES, Auth, Principal, judge_mode
+from .passkeys import PasskeyError, PasskeyService
 from .ratelimit import RateLimiter
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -156,6 +157,30 @@ async def guard(request: HttpRequest, call_next):
     return response
 
 
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+       "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
+
+
+@app.middleware("http")
+async def security_headers(request: HttpRequest, call_next):
+    """Browser-side protections on EVERY response, including the static UI and early refusals (registered after `guard`, so it
+    wraps it). CSP/framing: the UI is same-origin only and cannot be embedded; the interactive API docs (off in judge mode)
+    load a CDN script, so they are exempt from the CSP. HSTS only over https (it is meaningless, and harmful to cache, over
+    plain http on localhost)."""
+    response = await call_next(request)
+    h = response.headers
+    h.setdefault("X-Content-Type-Options", "nosniff")
+    h.setdefault("X-Frame-Options", "DENY")
+    h.setdefault("Referrer-Policy", "no-referrer")
+    h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+    h.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    if request.url.path not in DOCS_PATHS and not request.url.path.startswith("/docs/"):
+        h.setdefault("Content-Security-Policy", CSP)
+    if request.url.scheme == "https" or os.environ.get("OASIS_COOKIE_SECURE") == "1":
+        h.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
 _ROLE_ERR = re.compile(r"role may not do this", re.I)
 _SIG_ERR = re.compile(r"signature|signed approval", re.I)
 
@@ -236,6 +261,7 @@ class Session:
         # A persistent session (SQLite file) also gets persistent trust keys, so proof packs verify after a restart and
         # the published fingerprint stays stable. An in-memory session (tests) gets fresh in-memory keys.
         self.signer = load_or_create_signer(key_path) if persistent else None
+        self.passkeys = PasskeyService((kdir / "passkeys.json" if kdir else config.DATA_DIR / "passkeys.json") if persistent else None)
         self.approvers = ApproverRegistry()      # public keys of the real approvers' devices; private keys stay in browsers
         self.attempts_path = Path(attempts_path or os.environ.get("OASIS_ATTEMPTS_FILE") or config.DATA_DIR / "redteam_attempts.jsonl")
         jm = judge_mode()
@@ -488,6 +514,11 @@ class LoginIn(Strict):
     passcode: str
 
 
+class PasskeyFinishIn(Strict):
+    challenge_id: str = Field(max_length=64)
+    credential: dict                # the WebAuthn credential JSON from navigator.credentials.create()/get()
+
+
 class DeviceIn(Strict):
     public_key: str                 # base64 Ed25519 public key; the private key never leaves the browser
 
@@ -562,10 +593,66 @@ def login(body: LoginIn, request: HttpRequest, response: Response, return_token:
         S.login_limiter.record(key)
         raise HTTPException(401, "wrong role or passcode")
     token, p = res
-    response.set_cookie(COOKIE, token, max_age=S.auth.ttl_s, httponly=True, samesite="strict",
-                        secure=_cookie_secure(request), path="/")
+    if S.passkeys.must_use(p.role):          # second factor: no cookie until the passkey assertion verifies
+        return S.passkeys.login_begin(p.role, _rp(request)[0], token, p)
+    _set_session_cookie(response, request, token)
     out = {"role": p.role, "expires_at": datetime.fromtimestamp(p.exp, timezone.utc).isoformat(timespec="seconds")}
     if return_token:           # for scripts/CLI that cannot keep a cookie jar; the browser UI never asks for it
+        out["token"] = token
+    return out
+
+
+def _rp(request: HttpRequest) -> tuple[str, str]:
+    """WebAuthn relying-party id and origin: OASIS_WEBAUTHN_RP_ID / OASIS_WEBAUTHN_ORIGIN when set (public deployment behind a
+    proxy), otherwise derived from the Host header of this request."""
+    host = request.headers.get("host", "localhost")
+    rp_id = os.environ.get("OASIS_WEBAUTHN_RP_ID") or host.rsplit(":", 1)[0].strip("[]")
+    return rp_id, os.environ.get("OASIS_WEBAUTHN_ORIGIN") or f"{request.url.scheme}://{host}"
+
+
+def _set_session_cookie(response: Response, request: HttpRequest, token: str) -> None:
+    response.set_cookie(COOKIE, token, max_age=S.auth.ttl_s, httponly=True, samesite="strict",
+                        secure=_cookie_secure(request), path="/")
+
+
+@app.get("/api/auth/passkey/status")
+def passkey_status(p: Principal = Depends(ANY)):
+    return {"registered": S.passkeys.count(p.role), "required_at_login": S.passkeys.must_use(p.role)}
+
+
+@app.post("/api/auth/passkey/register/begin")
+def passkey_register_begin(request: HttpRequest, p: Principal = Depends(ANY)):
+    try:
+        return S.passkeys.register_begin(p.role, _rp(request)[0])
+    except PasskeyError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/auth/passkey/register/finish")
+def passkey_register_finish(body: PasskeyFinishIn, request: HttpRequest, p: Principal = Depends(ANY)):
+    rp_id, origin = _rp(request)
+    try:
+        out = S.passkeys.register_finish(p.role, body.challenge_id, body.credential, rp_id, origin)
+    except PasskeyError as e:
+        raise HTTPException(400, str(e))
+    S.world.audit.append("passkey_registered", {"role": p.role, "count": out["count"]})
+    return out
+
+
+@app.post("/api/auth/passkey/login/finish")
+def passkey_login_finish(body: PasskeyFinishIn, request: HttpRequest, response: Response, return_token: bool = False):
+    key = f"login:{_client(request)}"
+    if S.login_limiter.blocked(key):
+        raise HTTPException(429, "too many failed logins; wait a minute", headers={"Retry-After": str(S.login_limiter.retry_after(key))})
+    rp_id, origin = _rp(request)
+    try:
+        token, p = S.passkeys.login_finish(body.challenge_id, body.credential, rp_id, origin)
+    except PasskeyError as e:
+        S.login_limiter.record(key)
+        raise HTTPException(401, str(e))
+    _set_session_cookie(response, request, token)
+    out = {"role": p.role, "expires_at": datetime.fromtimestamp(p.exp, timezone.utc).isoformat(timespec="seconds")}
+    if return_token:
         out["token"] = token
     return out
 

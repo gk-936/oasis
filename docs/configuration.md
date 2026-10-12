@@ -30,6 +30,7 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | `OASIS_ANCHOR` | local simulation | `fisco` uses the 4-node local FISCO BCOS test chain |
 | `OASIS_DB` | `data/oasis.db` | SQLite location; `:memory:` for none |
 | `OASIS_DATA_DIR` | `data/` | base directory for the LLM cache, rate cache and other defaults (`/data` in the Docker image) |
+| `OASIS_REQUIRE_PASSKEY` | unset | `1` makes a role that has registered a passkey (WebAuthn: fingerprint, face, phone or security key) prove it after the passcode before a session is issued; a role with no passkey can still log in by passcode to enrol one, so enrol before exposing the server. `OASIS_WEBAUTHN_RP_ID` / `OASIS_WEBAUTHN_ORIGIN` override the values derived from the Host header (needed behind a proxy). Public keys only, in `data/passkeys.json`; verification by py_webauthn, not independently audited |
 | `OASIS_COOKIE_SECURE` | unset | `1` forces the `Secure` flag on the session cookie (it is also set automatically for https requests, including `X-Forwarded-Proto: https` from a trusted proxy) |
 | `OASIS_ALLOWED_ORIGINS` | unset | extra exact origins (comma-separated, e.g. `https://oasis.example.com`) accepted by the Origin/CSRF check behind a proxy that rewrites `Host` |
 | `OASIS_TRUST_FORWARDED_HOST` | unset | `1` also accepts `X-Forwarded-Host` as the public host in the Origin check (the Docker entrypoint sets it when `FORWARDED_ALLOW_IPS` is set) |
