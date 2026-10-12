@@ -5,7 +5,7 @@ import { t, tl, tm } from "../i18n/index.js";
 import { announce, cny, ErrorBox, fmtDate, Hash, inr, Loading, Mock, Pill, R } from "../ui.jsx";
 
 /* ------------------------------------------------------------------ Oasis Trust Pass (portable payment reputation) */
-const TP_CHECKS = ["signature", "key_pinned", "credential_hash", "not_expired", "disclosures_valid", "proofs_checked"];
+const TP_CHECKS = ["signature", "key_pinned", "credential_hash", "not_expired", "disclosures_valid", "proofs_checked", "zk_valid"];
 const THRESHOLD_IDS = ["on_time_pct_min", "history_months_min", "payments_min"];
 
 export const claimText = (c) => {
@@ -14,6 +14,8 @@ export const claimText = (c) => {
   if (c.id === "volume_band") return t("cp.claim.volume_band", { band: v.band ? tm(v.band) : t("misc.na") });
   return t(`cp.claim.${c.id}`, v);
 };
+
+export const zkText = (z) => t(z.kind === "rate" ? "cp.zk.stmt.rate" : z.kind === "count" ? "cp.zk.stmt.count" : "cp.zk.stmt.bad", { k: z.k });
 
 export const verifyUrl = (code) => `${window.location.origin}/?verify=${encodeURIComponent(code)}`;
 
@@ -33,11 +35,15 @@ export function VerifyResult({ res }) {
       {res.ok && <>
         <h4>{t("cp.verify.sees")}</h4>
         <ul className="feed">{res.claims.map((c) => <li key={c.id}>✓ {claimText(c)}</li>)}</ul>
+        {res.zk_claims?.length > 0 && <>
+          <h4>{t("cp.verify.zk")}</h4>
+          <ul className="feed" data-testid="cp-zk-claims">{res.zk_claims.map((z, i) => <li key={i}>{z.verified ? "✓" : "✗"} {zkText(z)}</li>)}</ul>
+        </>}
         <p className="muted small">{t("cp.verify.counts", { shown: res.revealed.length, hidden: res.hidden })}{res.audience ? ` · ${t("cp.audience.is", { a: res.audience })}` : ""} · {t("cp.valid", { date: fmtDate(res.valid_until) })}</p>
         {res.revealed.length > 0 && <ul className="feed">{res.revealed.map((e) => (
           <li key={e.proof_id}>{tl("type", e.obligation_type)} · {cny(e.amount_cny)} · {fmtDate(e.paid_date)} · {e.on_time ? t("rr.ontime") : t("rr.late.pill")}</li>))}</ul>}
       </>}
-      <ul className="feed" data-testid="cp-checks">{TP_CHECKS.map((k) => (
+      <ul className="feed" data-testid="cp-checks">{TP_CHECKS.filter((k) => k !== "zk_valid" || res.zk_claims?.length > 0).map((k) => (
         <li key={k}>{res[k] === true ? "✓" : res[k] === false ? "✗" : "–"} {t(`cp.check.${k}`)}{res[k] == null ? ` ${t("rr.notchecked")}` : ""}</li>))}</ul>
     </div>
   );
@@ -74,15 +80,24 @@ export function TrustPass() {
   const [holder, setHolder] = useState(null);
   const [reveal, setReveal] = useState({});
   const [shared, setShared] = useState(null);
+  const [zkProofs, setZkProofs] = useState([]);
+  const [zkPct, setZkPct] = useState(90);
+  const [zkMin, setZkMin] = useState(2);
   const { busy, err, setErr, run } = useGuard();
   const load = useCallback(() => api("/trust-pass/claims").then(setInfo).catch(setErr), [setErr]);
   useEffect(() => { load(); }, [load]);
   const issue = () => run(async () => {
     const claims = Object.keys(pick).filter((k) => pick[k] && (!THRESHOLD_IDS.includes(k) || th[k]));
     const h = await api("/trust-pass/issue", { claims, thresholds: th, audience: audience.trim() || null });
-    setHolder(h); setReveal({}); setShared(null); announce(t("cp.announce.issued"));
+    setHolder(h); setReveal({}); setShared(null); setZkProofs([]); announce(t("cp.announce.issued"));
   });
-  const presentation = holder && { credential: holder.credential, disclosures: holder.disclosures.filter((_, i) => reveal[i]) };
+  const presentation = holder && { credential: holder.credential, disclosures: holder.disclosures.filter((_, i) => reveal[i]),
+    ...(zkProofs.length ? { zk_proofs: zkProofs } : {}) };
+  // Zero-knowledge threshold: the server builds the proof from the openings only this student holds; it refuses a false claim.
+  const addZk = (kind, k) => run(async () => {
+    const p = await api("/trust-pass/zk-prove", { credential: holder.credential, openings: holder.zk_openings, kind, k });
+    setZkProofs((cur) => [...cur.filter((x) => !(x.kind === kind && x.k === k)), p].slice(0, 6)); setShared(null); announce(t("cp.announce.zk"));
+  });
   const share = () => run(async () => { const r = await api("/trust-pass/share", { presentation }); setShared(r); announce(t("cp.announce.shared")); });
   if (!info) return <div className="card"><h3>{t("cp.title")}</h3>{err ? <ErrorBox error={err} onRetry={load} /> : <Loading />}</div>;
   // a ratio over zero payments ("rent 0 of 0") or zero months is not worth claiming
@@ -129,6 +144,19 @@ export function TrustPass() {
               </span>
             </li>))}</ul>)}
         <p className="muted small">{t("cp.sharing", { shown: presentation.disclosures.length, hidden: holder.disclosures.length - presentation.disclosures.length })} · {t("rr.fingerprint")} <Hash value={holder.credential.trust_fingerprint} n={12} what={t("hash.fingerprint")} /></p>
+        <h4>{t("cp.zk.title")}</h4>
+        <p className="muted small">{t("cp.zk.note")}</p>
+        {holder.zk_openings ? <>
+          <div className="row">
+            <label>{t("cp.zk.rate")}<input type="number" min={1} max={100} value={zkPct} onChange={(e) => setZkPct(+e.target.value)} data-testid="cp-zk-pct" /></label>
+            <button className="ghost" disabled={busy || !(zkPct >= 1 && zkPct <= 100)} onClick={() => addZk("rate", zkPct)} style={{ alignSelf: "flex-end" }} data-testid="cp-zk-add-rate">{t("cp.zk.add")}</button>
+            <label>{t("cp.zk.count")}<input type="number" min={1} value={zkMin} onChange={(e) => setZkMin(+e.target.value)} data-testid="cp-zk-min" /></label>
+            <button className="ghost" disabled={busy || !(zkMin >= 1)} onClick={() => addZk("count", zkMin)} style={{ alignSelf: "flex-end" }} data-testid="cp-zk-add-count">{t("cp.zk.add")}</button>
+          </div>
+          {zkProofs.length === 0 ? <p className="muted small">{t("cp.zk.none")}</p> : (
+            <ul className="feed" data-testid="cp-zk-list">{zkProofs.map((z) => (
+              <li key={`${z.kind}-${z.k}`}>✓ {zkText(z)}{" "}<button className="ghost" onClick={() => { setZkProofs(zkProofs.filter((x) => x !== z)); setShared(null); }}>{t("cp.zk.remove")}</button></li>))}</ul>)}
+        </> : <p className="muted small">{t("cp.zk.nocommit")}</p>}
         <h4>{t("cp.step3")}</h4>
         <div className="row">
           <button disabled={busy} onClick={share} data-testid="cp-share">{t("cp.share")}</button>

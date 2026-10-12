@@ -1356,6 +1356,23 @@ def trust_issue(body: TrustIssueIn, p: Principal = Depends(STUDENT)):
     return holder
 
 
+class TrustZkIn(Strict):
+    credential: dict
+    openings: dict                  # the holder's private counts and blinding factors, from the issue response
+    kind: str = Field(max_length=8)
+    k: int = Field(ge=1, le=100000)
+
+
+@app.post("/api/trust-pass/zk-prove")
+def trust_zk_prove(body: TrustZkIn, p: Principal = Depends(STUDENT)):
+    """Student only: one zero-knowledge threshold claim ('at least 94% on time', 'at least 5 payments') for a credential the
+    student holds. Refused (400) if the record does not meet it. The counts never leave the student's own request."""
+    try:
+        return tp.zk_prove(body.credential, body.openings, body.kind, body.k)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.post("/api/trust-pass/share")
 def trust_share(body: TrustShareIn, p: Principal = Depends(STUDENT)):
     """Student only. Stores a presentation that verifies against this server, under a short code for a QR."""

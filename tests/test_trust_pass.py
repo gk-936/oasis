@@ -213,3 +213,86 @@ def test_api_share_and_public_check(api_client):
     bad["credential"]["audience"] = "Someone else"
     assert api_client.post("/api/trust-pass/share", json={"presentation": bad}).status_code == 400
     assert public.post("/api/trust-pass/share", json={"presentation": pres}).status_code == 401
+
+
+# ---------------------------------------------------------------------------------------------- zero-knowledge thresholds
+def _zk(holder, kind, k):
+    return cp.zk_prove(holder["credential"], holder["zk_openings"], kind, k)
+
+
+def test_zk_threshold_any_value_chosen_at_presentation_time():
+    w = _paid_world()                                     # 2 of 2 on time
+    holder = cp.issue(w, ["no_late"])
+    cred = holder["credential"]
+    assert cred["zk"]["c_on"] and "30000" not in str(cred["zk"]) and "openings" not in str(cred)
+    pres = cp.present(holder, zk_proofs=[_zk(holder, "rate", 100), _zk(holder, "count", 2)])
+    r = _verify(w, pres)
+    assert r["ok"] and r["zk_valid"] and [z["verified"] for z in r["zk_claims"]] == [True, True]
+    assert "100%" in r["zk_claims"][0]["statement"] and "revealing" in r["zk_claims"][0]["statement"]
+    with pytest.raises(ValueError):
+        _zk(holder, "count", 3)                           # the record has 2 payments: refused, not faked
+
+
+def test_zk_late_payment_cannot_claim_full_rate():
+    w = _paid_world(late_tuition=True)                    # 1 of 2 on time
+    holder = cp.issue(w, ["on_time_all"])
+    assert _verify(w, cp.present(holder, zk_proofs=[_zk(holder, "rate", 50)]))["ok"]
+    with pytest.raises(ValueError):
+        _zk(holder, "rate", 51)
+
+
+def test_zk_proof_is_bound_to_the_credential_and_audience():
+    w = _paid_world()
+    h1 = cp.issue(w, ["no_late"], audience="Landlord A")
+    h2 = cp.issue(w, ["no_late"], audience="Landlord B")
+    proof = _zk(h1, "rate", 100)
+    assert _verify(w, cp.present(h1, zk_proofs=[proof]))["ok"]
+    moved = _verify(w, cp.present(h2, zk_proofs=[proof]))              # replayed to another landlord's credential
+    assert not moved["ok"] and moved["zk_claims"][0]["verified"] is False
+    with pytest.raises(ValueError):
+        cp.zk_prove(h2["credential"], h1["zk_openings"], "rate", 100)  # openings of another credential do not match
+
+
+def test_zk_tampered_or_unsigned_commitments_fail():
+    w = _paid_world()
+    holder = cp.issue(w, ["no_late"])
+    pres = cp.present(holder, zk_proofs=[_zk(holder, "rate", 100)])
+    forged = copy.deepcopy(pres)
+    forged["zk_proofs"][0]["k"] = 99                                   # relabel the statement
+    assert not _verify(w, forged)["ok"]
+    swapped = copy.deepcopy(pres)
+    other = cp.issue(w, ["no_late"])
+    swapped["credential"]["zk"] = other["credential"]["zk"]            # swap in other commitments: signature breaks
+    assert not _verify(w, swapped)["signature"]
+    assert not _verify(w, {**pres, "zk_proofs": [pres["zk_proofs"][0]] * 7})["ok"]   # more proofs than allowed
+
+
+def test_zk_missing_for_credentials_without_payments_and_old_ones():
+    w = World(Features.full(), OfflineLLM(susceptible=True))
+    holder = cp.issue(w, ["no_late"])
+    assert holder["credential"]["zk"] is None and holder["zk_openings"] is None
+    with pytest.raises(ValueError):
+        _zk(holder, "rate", 90)
+    assert _verify(w, cp.present(holder))["ok"]
+
+
+def test_api_zk_prove_flow(api_client, as_role, api_session):
+    from auth_helpers import Approver
+    api_session.S.world.ledger.accounts["acct_student_cny"].balance += 100000
+    api_session.S.world.sync_balances()
+    me = Approver(api_client, "student")
+    for text in (rent(), tuition()):
+        o = api_client.post("/api/intake", json={"text": text}).json()
+        if o["status"] == "held":
+            o = me.approve(o["pending_id"]).json()
+        assert o["status"] == "paid", o
+    h = api_client.post("/api/trust-pass/issue", json={"claims": ["no_late"], "audience": "Landlord"}).json()
+    assert h["zk_openings"] and h["credential"]["zk"]
+    ok = api_client.post("/api/trust-pass/zk-prove", json={"credential": h["credential"], "openings": h["zk_openings"], "kind": "rate", "k": 100})
+    assert ok.status_code == 200, ok.text
+    pres = {"credential": h["credential"], "disclosures": [], "zk_proofs": [ok.json()]}
+    v = api_client.post("/api/trust-pass/verify", json=pres).json()
+    assert v["zk_valid"] and v["zk_claims"][0]["verified"]
+    bad = api_client.post("/api/trust-pass/zk-prove", json={"credential": h["credential"], "openings": h["zk_openings"], "kind": "count", "k": 999})
+    assert bad.status_code == 400
+    assert as_role("parent").post("/api/trust-pass/zk-prove", json={"credential": h["credential"], "openings": h["zk_openings"], "kind": "rate", "k": 90}).status_code == 403

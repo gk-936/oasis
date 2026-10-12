@@ -19,6 +19,10 @@ Mechanics (SD-JWT-style salted commitments):
   revealed payment against a signed digest (and its proof pack) and learns nothing about the hidden ones but their count.
 - An optional audience ("Landlord, Room 1203") is inside the signature, and the credential expires after VALID_DAYS.
 
+- Zero-knowledge thresholds (`zk.py`): the signed credential also holds Pedersen commitments to the on-time and total payment counts.
+  At presentation time the holder can prove ANY threshold ("at least 94% on time", "at least 5 payments") without revealing the
+  counts, and without the issuer having pre-signed that threshold. The proof is bound to this credential and audience.
+
 It is NOT a credit score and no credit bureau accepts it. It is evidence for a concrete request (a lower deposit, no
 guarantor, a first student card); see `suggested_asks`.
 """
@@ -28,6 +32,7 @@ import secrets
 from datetime import date, timedelta
 
 from ..trust.crypto import HybridSigner, sha256_hex, verify_hybrid
+from . import zk
 from ..trust.keystore import fingerprint
 from .reliability import _canon, _entry_from_pack, _entry_matches_pack, amount_band, eligible_payments, pseudonym
 
@@ -195,25 +200,63 @@ def issue(world, claim_ids, audience: str | None = None, thresholds: dict | None
             v = exact[c]
         claims.append({"id": c, "value": v, "statement": statement(c, v)})
     disclosures = [{"salt": secrets.token_hex(16), "entry": e} for e in entries]
+    zk_pub = zk_priv = None
+    if entries:
+        zk_pub, zk_priv = zk.commit_counts(sum(1 for e in entries if e["on_time"]), len(entries))
     body = {
         "version": 1, "type": CREDENTIAL_TYPE, "issued_at": world.now_iso(), "clock": "simulated",
         "valid_from": today.isoformat(), "valid_until": (today + timedelta(days=VALID_DAYS)).isoformat(),
         "subject": {"pseudonym": pseudonym(world.passport.student.id, fp)}, "audience": aud,
         "claims": claims,
-        "commitments": sorted(_digest(d) for d in disclosures),
+        "commitments": sorted(_digest(d) for d in disclosures), "zk": zk_pub,
         "caveats": list(CAVEATS), "trust_fingerprint": fp,
     }
     body["credential_hash"] = sha256_hex(_canon(body))
     cred = {**body, "signatures": signer.sign(_canon(body)), "public_keys": keys}
     world.audit.append("trust_pass_issued", {"credential_hash": body["credential_hash"], "claims": ids,
                                             "payments": len(entries), "audience_set": aud is not None})
-    return {"credential": cred, "disclosures": disclosures, "suggested_asks": suggested_asks(exact)}
+    return {"credential": cred, "disclosures": disclosures, "zk_openings": zk_priv, "suggested_asks": suggested_asks(exact)}
 
 
-def present(holder: dict, reveal: list[int] | None = None) -> dict:
+MAX_ZK_PROOFS = 6
+
+
+def _zk_ctx(cred: dict) -> bytes:
+    return f"{cred.get('credential_hash')}|{cred.get('audience') or ''}".encode()
+
+
+def zk_statement(kind: str, k: int) -> str:
+    return (f"At least {k}% of payments were on time (proved without revealing the counts)" if kind == "rate"
+            else f"At least {k} payments (proved without revealing the exact number)")
+
+
+def zk_prove(credential: dict, openings: dict, kind: str, k: int) -> dict:
+    """Holder side: one zero-knowledge threshold claim for this credential and audience. Raises ValueError if the record does
+    not meet it (an honest prover cannot prove a false statement), or if the openings do not match the signed commitments."""
+    pub = credential.get("zk")
+    if not pub or not isinstance(openings, dict):
+        raise ValueError("this Trust Pass has no committed counts (issue a new one after at least one payment)")
+    try:
+        if zk.commit(int(openings["on"]), int(openings["r_on"], 16)).hex() != pub["c_on"] or                 zk.commit(int(openings["tot"]), int(openings["r_tot"], 16)).hex() != pub["c_tot"]:
+            raise ValueError("the private openings do not match this credential")
+        if kind == "rate":
+            c = zk.prove_rate(pub, openings, int(k), _zk_ctx(credential))
+        elif kind == "count":
+            c = zk.prove_count(pub, openings, int(k), _zk_ctx(credential))
+        else:
+            raise ValueError("kind must be 'rate' or 'count'")
+    except (KeyError, TypeError) as e:
+        raise ValueError("malformed openings") from e
+    return c
+
+
+def present(holder: dict, reveal: list[int] | None = None, zk_proofs: list[dict] | None = None) -> dict:
     ds = holder["disclosures"]
     picked = sorted({i for i in (reveal or []) if isinstance(i, int) and 0 <= i < len(ds)})
-    return {"credential": holder["credential"], "disclosures": [ds[i] for i in picked]}
+    out = {"credential": holder["credential"], "disclosures": [ds[i] for i in picked]}
+    if zk_proofs:
+        out["zk_proofs"] = list(zk_proofs)[:MAX_ZK_PROOFS]
+    return out
 
 
 # ------------------------------------------------------------------ share codes (for the QR / public verify page)
@@ -239,7 +282,7 @@ def verify_presentation(pres, trusted_fingerprints=None, today: str | None = Non
     except Exception:
         return {"malformed": True, "signature": False, "key_pinned": False if trusted_fingerprints is not None else None,
                 "credential_hash": False, "fingerprint_matches": False, "not_expired": False, "disclosures_valid": False,
-                "proofs_checked": None, "claims": [], "revealed": [], "hidden": None, "ok": False}
+                "proofs_checked": None, "zk_claims": [], "zk_valid": False, "claims": [], "revealed": [], "hidden": None, "ok": False}
 
 
 def _verify(pres, trusted, today, lookup, pack_verifier) -> dict:
@@ -268,12 +311,19 @@ def _verify(pres, trusted, today, lookup, pack_verifier) -> dict:
         c["proofs_checked"] = None
     else:
         c["proofs_checked"] = all(_entry_matches_pack(d["entry"], lookup, True, pack_verifier, trusted) for d in ds)
+    zp = pres.get("zk_proofs") or []
+    if not isinstance(zp, list) or len(zp) > MAX_ZK_PROOFS:
+        raise ValueError("zk_proofs")
+    c["zk_claims"] = [{"kind": z.get("kind"), "k": z.get("k"),
+                       "statement": zk_statement(z.get("kind"), int(z.get("k"))) if z.get("kind") in ("rate", "count") else "unreadable",
+                       "verified": bool(cred.get("zk")) and zk.verify_claim(cred["zk"], z, _zk_ctx(cred))} for z in zp]
+    c["zk_valid"] = all(z["verified"] for z in c["zk_claims"])
     c["claims"] = [{"id": x["id"], "value": x["value"], "statement": x["statement"]} for x in cred["claims"]]
     c["revealed"] = [d["entry"] for d in ds]
     c["hidden"] = len(commits) - len(ds)
     c["audience"] = cred.get("audience")
     c["valid_until"] = cred.get("valid_until")
     base = ("signature", "fingerprint_matches", "credential_hash", "not_expired", "disclosures_valid")
-    c["consistent"] = all(c[k] for k in base) and c["proofs_checked"] is not False
+    c["consistent"] = all(c[k] for k in base) and c["proofs_checked"] is not False and c["zk_valid"]
     c["ok"] = c["consistent"] and c["key_pinned"] is True
     return c

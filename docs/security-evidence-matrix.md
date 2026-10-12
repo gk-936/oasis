@@ -42,3 +42,11 @@ Full suite on 2026-10-11: `437 passed, 2 skipped in 22.73s (re-run on 2026-10-11
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 437 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
+
+## Zero-knowledge threshold claims (Trust Pass)
+
+| Claim | Code | Test | Limits |
+|---|---|---|---|
+| A holder can prove "at least k% of payments on time" or "at least k payments" without revealing the counts, for any k chosen at presentation time | `oasis/proof/zk.py`, `trust_pass.zk_prove`, `trust_pass._verify` | `tests/test_zk.py`, `tests/test_trust_pass.py -k zk` | Textbook construction (Pedersen + bit-wise OR-proofs, Fiat-Shamir), checked by tests including forgery attempts; not independently audited. Proofs are linear-size (about 2.7 KB). The issuer is still trusted for the committed numbers. Hides the counts, not the existence of the credential. |
+| A proof cannot be moved to another credential, audience or threshold | challenge hashes credential hash, audience and statement | `test_bound_to_context_statement_and_commitments`, `test_zk_proof_is_bound_to_the_credential_and_audience` | A verifier who is shown the proof can show it to a third party along with the same credential; the audience binding stops reuse only where the audience is checked by a human. |
+
