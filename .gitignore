@@ -54,3 +54,6 @@ data/rates_cache.tmp
 
 # the Docker env template is documentation, not a secret
 !.env.docker.example
+
+data/passkeys.json
+**/passkeys.json

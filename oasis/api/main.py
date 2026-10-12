@@ -262,7 +262,8 @@ class Session:
         # A persistent session (SQLite file) also gets persistent trust keys, so proof packs verify after a restart and
         # the published fingerprint stays stable. An in-memory session (tests) gets fresh in-memory keys.
         self.signer = load_or_create_signer(key_path) if persistent else None
-        self.passkeys = PasskeyService((kdir / "passkeys.json" if kdir else config.DATA_DIR / "passkeys.json") if persistent else None)
+        pk_dir = kdir or (Path(self.db_path).parent if self.store else config.DATA_DIR)      # beside the database / keys, so a fresh sandbox starts with none
+        self.passkeys = PasskeyService(pk_dir / "passkeys.json" if persistent else None)
         self.approvers = ApproverRegistry()      # public keys of the real approvers' devices; private keys stay in browsers
         self.attempts_path = Path(attempts_path or os.environ.get("OASIS_ATTEMPTS_FILE") or config.DATA_DIR / "redteam_attempts.jsonl")
         jm = judge_mode()
