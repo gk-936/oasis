@@ -145,7 +145,9 @@ class OasisAgent:
         if cred is None and fields.get("payee_name"):
             cred = w.registry.lookup_by_name(fields["payee_name"])
         now = w.now.timestamp()
-        return {"registry_known": cred is not None, "registry_account": cred.account_ref if cred else None,
+        from ..screening import sanctions        # public OFAC snapshot; evidence only (see screening.py)
+        hits = sanctions().screen(fields.get("payee_name") or "") if fields.get("payee_name") else []
+        return {"sanctions_hits": hits, "registry_known": cred is not None, "registry_account": cred.account_ref if cred else None,
                 "amount_inr": self._inr(amount) if amount else 0.0,
                 "approval_threshold_inr": w.passport.rules.parent_coapproval_above_inr,
                 "recent": [{"payee_id": h["payee_id"], "amount_inr": h["amount_inr"],

@@ -59,6 +59,7 @@ from ..passport.currency import currency_view
 from ..proof import trust_pass as tp
 from ..proof.pack import verify_proof_pack
 from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
+from ..screening import screen_payee
 from ..storage import SqliteStore
 from ..chain.anchor import Anchor, LocalAnchorChain
 from ..trust.approvals import ApproverRegistry
@@ -517,6 +518,18 @@ class LoginIn(Strict):
 class PasskeyFinishIn(Strict):
     challenge_id: str = Field(max_length=64)
     credential: dict                # the WebAuthn credential JSON from navigator.credentials.create()/get()
+
+
+class ScreenIn(Strict):
+    name: str = Field(max_length=200)
+    account: str | None = Field(default=None, max_length=64)
+    ifsc: str | None = Field(default=None, max_length=16)
+
+
+@app.post("/api/screen")
+def screen(body: ScreenIn, p: Principal = Depends(ANY)):
+    """Public-data checks on a payee (OFAC snapshot, card Luhn/length, IFSC shape). Evidence only; not a compliance clearance."""
+    return screen_payee(body.name, body.account, body.ifsc)
 
 
 class DeviceIn(Strict):

@@ -125,6 +125,11 @@ def heuristic_risk(fields: dict, text: str, known_names: list[str], known_accoun
             if len(nt & kt) >= 2 and len(nt & kt) / len(nt | kt) >= 0.5:
                 flags.append((0.40, f"payee name partly matches known payee '{k}' (possible impersonation)"))
                 break
+    for hit in ctx.get("sanctions_hits", [])[:1]:         # OFAC snapshot, fuzzy name match: evidence for review, never a block
+        if hit["type"] == "entity":
+            flags.append((0.55, f"payee name matches OFAC sanctions-list entity '{hit['name']}' (possible match, needs review)"))
+        else:
+            flags.append((0.30, f"payee name matches OFAC-listed individual '{hit['name']}' (common names give false matches; review with other signs)"))
     pid, acct = fields.get("payee_id"), fields.get("account_ref")
     reg_acct = ctx.get("registry_account")
     if acct and "registry_known" in ctx:
