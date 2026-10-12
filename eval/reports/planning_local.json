@@ -1,0 +1,144 @@
+{
+ "cells": {
+  "phi4-mini | v4": {
+   "plans": 24,
+   "model_only_valid": 7,
+   "pass1": 1,
+   "final_valid": 24,
+   "fallbacks": 17,
+   "fallback_reasons": {
+    "no valid plan after proposals": 17
+   },
+   "error_counts": {
+    "route_too_slow": 12,
+    "insufficient_cny": 84,
+    "safe_quota_exceeded": 17,
+    "insufficient_inr": 38,
+    "rate_target_reserve": 5,
+    "bad_amount": 2,
+    "obligation_unfunded": 2,
+    "duplicate_payment": 20
+   },
+   "errors_total": 180,
+   "arithmetic_errors": 144,
+   "arithmetic_share": 0.8,
+   "mean_proposals_to_valid": 2.57,
+   "tokens_per_plan": 9922.0,
+   "seconds_per_plan": 39.7,
+   "calls_per_plan": 3.58,
+   "heldout": [
+    1,
+    8
+   ],
+   "original": [
+    6,
+    16
+   ],
+   "heldout_pass1": [
+    0,
+    8
+   ],
+   "original_pass1": [
+    1,
+    16
+   ],
+   "gv": [
+    2,
+    24
+   ],
+   "gv_heldout": [
+    1,
+    8
+   ],
+   "gv_extra_seconds": 21.4,
+   "gv_mean_samples": 2.92,
+   "truncated_calls": 0,
+   "max_prompt_tokens": 5978,
+   "gpu_pct": [
+    100
+   ],
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 12,
+     "valid": 3
+    },
+    {
+     "rep": 1,
+     "plans": 12,
+     "valid": 4
+    }
+   ]
+  },
+  "qwen3.5:4b | v4": {
+   "plans": 24,
+   "model_only_valid": 19,
+   "pass1": 4,
+   "final_valid": 24,
+   "fallbacks": 5,
+   "fallback_reasons": {
+    "no valid plan after proposals": 5
+   },
+   "error_counts": {
+    "insufficient_cny": 35,
+    "insufficient_inr": 9,
+    "safe_quota_exceeded": 5,
+    "rate_target_reserve": 3,
+    "bad_amount": 2,
+    "obligation_unfunded": 4,
+    "route_too_slow": 3
+   },
+   "errors_total": 61,
+   "arithmetic_errors": 52,
+   "arithmetic_share": 0.8524590163934426,
+   "mean_proposals_to_valid": 2.37,
+   "tokens_per_plan": 8253.0,
+   "seconds_per_plan": 55.7,
+   "calls_per_plan": 2.71,
+   "heldout": [
+    6,
+    8
+   ],
+   "original": [
+    13,
+    16
+   ],
+   "heldout_pass1": [
+    1,
+    8
+   ],
+   "original_pass1": [
+    3,
+    16
+   ],
+   "gv": [
+    9,
+    24
+   ],
+   "gv_heldout": [
+    4,
+    8
+   ],
+   "gv_extra_seconds": 29.5,
+   "gv_mean_samples": 2.54,
+   "truncated_calls": 0,
+   "max_prompt_tokens": 4200,
+   "gpu_pct": [
+    100
+   ],
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 12,
+     "valid": 10
+    },
+    {
+     "rep": 1,
+     "plans": 12,
+     "valid": 9
+    }
+   ]
+  }
+ },
+ "no_tools": []
+}

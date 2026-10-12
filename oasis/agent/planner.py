@@ -225,7 +225,8 @@ def _plan_from_text(text: str) -> dict | None:
 
 def planner_format() -> str:
     """'v2' (default): the model sees the trimmed tool results from `present`; 'v1': the full results (2026-10-11 runs);
-    'v3': calculator tools (facts_sheet, size_conversion), `fix` hints on validator errors and a shorter prompt (evaluation pending)."""
+    'v3': calculator tools (facts_sheet, size_conversion), `fix` hints on validator errors and a shorter prompt (evaluation pending);
+    'v4' (exploratory, local Ollama models only): one schema-constrained JSON plan, validator errors with `fix` hints for revisions."""
     import os
     return os.environ.get("OASIS_PLANNER_FORMAT", "v2")
 
@@ -247,6 +248,9 @@ class AgenticPlanner:
         self.token_cap = token_cap       # stop asking the model once this many tokens were spent on this plan
 
     def plan(self, world, goal: str = "") -> PlanResult:
+        if self.fmt == "v4":        # exploratory 'constrained JSON' format (needs an LLM with generate_json, i.e. OllamaLLM)
+            from .planner_v4 import ConstrainedPlanner
+            return ConstrainedPlanner(self.llm, token_cap=self.token_cap).plan(world, goal)
         tb = PlanningToolbox(world, MAX_ITERATIONS, self.fmt)
         msgs: list[dict] = [{"role": "system", "content": self.system},
                             {"role": "user", "content": f"Today is {world.today.isoformat()}. Plan how to pay everything due"
@@ -299,7 +303,7 @@ class AgenticPlanner:
             reason = f"{type(e).__name__}: {str(e)[:200]}"
         if tb.valid_proposal:
             vp = tb.valid_proposal
-            return PlanResult(vp["steps"], True, vp["validation"], vp["rationale"] or "", f"groq-tools", model, len(tb.proposals),
+            return PlanResult(vp["steps"], True, vp["validation"], vp["rationale"] or "", f"{getattr(self.llm, 'name', 'groq')}-tools", model, len(tb.proposals),
                               trace=tb.trace, tokens=tokens, model_calls=calls)
         reason = reason or (f"no valid plan after {len(tb.proposals)} proposal(s)" if tb.proposals else "the model never proposed a plan")
         fb = DeterministicPlanner().plan(world, goal)
@@ -312,7 +316,7 @@ class AgenticPlanner:
 
 def make_planner(llm):
     """Live tool-calling planner when the LLM supports it; otherwise the deterministic one (no network)."""
-    if hasattr(llm, "chat_tools") and getattr(llm, "name", "") == "groq":
+    if hasattr(llm, "chat_tools") and getattr(llm, "name", "") in ("groq", "ollama"):
         return AgenticPlanner(llm)
     return DeterministicPlanner()
 

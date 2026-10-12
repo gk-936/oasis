@@ -57,6 +57,17 @@ GROQ_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_GROQ_DAILY_TOKENS", "180000"))
 GROQ_DAILY_REQUEST_BUDGET = int(os.getenv("OASIS_GROQ_DAILY_REQUESTS", "900"))
 GROQ_MAX_RETRIES = int(os.getenv("OASIS_GROQ_MAX_RETRIES", "4"))
 
+# Local models via Ollama (OASIS_LLM=ollama): no key, loopback only by default. See docs/configuration.md.
+OLLAMA_URL = os.getenv("OASIS_OLLAMA_URL", "http://127.0.0.1:11434")
+OLLAMA_MODEL = os.getenv("OASIS_OLLAMA_MODEL", "qwen3.5:4b")
+OLLAMA_NUM_CTX = int(os.getenv("OASIS_OLLAMA_NUM_CTX", "8192"))
+OLLAMA_KEEP_ALIVE = os.getenv("OASIS_OLLAMA_KEEP_ALIVE", "5m")
+OLLAMA_TIMEOUT = float(os.getenv("OASIS_OLLAMA_TIMEOUT", "300"))
+OLLAMA_RETRIES = int(os.getenv("OASIS_OLLAMA_RETRIES", "2"))
+_mm = os.getenv("OASIS_OLLAMA_MMAP", "")
+OLLAMA_USE_MMAP = None if _mm == "" else _mm == "1"      # unset: Ollama's default; 0 keeps host RAM use low on small machines
+OLLAMA_ALLOW_REMOTE = os.getenv("OASIS_OLLAMA_ALLOW_REMOTE", "0") == "1"
+
 # Persistence for the API session: a SQLite file, or ":memory:" / "" for in-memory only.
 DB_PATH = os.getenv("OASIS_DB") or str(DATA_DIR / "oasis.db")
 

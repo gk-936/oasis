@@ -1015,4 +1015,7 @@ def make_llm(provider: str | None = None, susceptible: bool = True, **kw) -> LLM
     provider = provider or config.LLM_PROVIDER
     if provider == "groq" and config.GROQ_API_KEY:
         return GroqLLM(susceptible=susceptible, **kw)
+    if provider == "ollama":            # local model, planner interface only (extraction/explanations stay deterministic)
+        from .ollama_llm import OllamaLLM
+        return OllamaLLM(susceptible=susceptible, **kw)
     return OfflineLLM(susceptible=susceptible)

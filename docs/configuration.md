@@ -6,11 +6,16 @@ The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approv
 
 ## LLM configuration
 
-By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser, risk scorer and explainer, so demos, tests and benchmarks are reproducible with no network. This is the no-network path; there is no local-model or OCR fallback (both deliberately dropped). **No key is needed.** To use Groq, copy `.env.example` to `.env` (git-ignored, never commit it) and set `GROQ_API_KEY` (a free key is enough). Real environment variables override `.env`.
+By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser, risk scorer and explainer, so demos, tests and benchmarks are reproducible with no network. This is the no-network path; there is no OCR fallback (deliberately dropped). A local model through Ollama is available as an **exploratory, opt-in planner provider** (`OASIS_LLM=ollama`, below); it is not the default and the other LLM jobs (extraction, explanations) stay deterministic under it. **No key is needed.** To use Groq, copy `.env.example` to `.env` (git-ignored, never commit it) and set `GROQ_API_KEY` (a free key is enough). Real environment variables override `.env`.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `OASIS_LLM` | `offline` | `groq` to use Groq |
+| `OASIS_LLM` | `offline` | `groq` to use Groq; `ollama` to use a LOCAL model for the planner only (no key; see the Ollama rows below; extraction, risk and explanations stay on the deterministic parser) |
+| `OASIS_PLANNER_FORMAT` | `v2` | planner format: `v1`, `v2` (default), `v3` (calculator tools, evaluation incomplete) or `v4` (schema-constrained JSON, exploratory, Ollama only) |
+| `OASIS_OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama server. Only loopback hosts are accepted unless `OASIS_OLLAMA_ALLOW_REMOTE=1`, so prompts never leave the machine |
+| `OASIS_OLLAMA_MODEL` | `qwen3.5:4b` | an INSTALLED local model (the adapter never pulls one). `-cloud` models and `gemini*` are refused: Ollama proxies them to a third party |
+| `OASIS_OLLAMA_NUM_CTX` | `8192` | context window sent with every call. Ollama's own default is smaller and truncates silently; 8192 fits the longest planner prompt and keeps the KV cache of a 3-5B model on a 6 GB GPU |
+| `OASIS_OLLAMA_KEEP_ALIVE` / `_TIMEOUT` / `_RETRIES` | `5m` / `300` s / `2` | how long the model stays loaded after a call (`0` unloads at once), request timeout (a cold load of a 4B model takes about 15 s), retries on 5xx and timeouts |
 | `GROQ_API_KEY` | - | the only key needed (text and image intake). Accepts a **comma-separated list** (`key1,key2,...`): the adapter keeps one client per key and moves to the next key when one reaches its daily limit (or its local daily budget); per-minute 429s are waited out on the same key. `QuotaExhausted` only when every key is spent. Usage is tracked per key fingerprint (8-char sha256) in `data/llm_cache/usage.json`; key values are never logged |
 | `OASIS_AGENT_MODEL` | `qwen/qwen3.8-27b` | Groq **preview** model; accepts images; may be retired at short notice |
 | `OASIS_FALLBACK_MODEL` | `openai/gpt-oss-120b` | production model, used automatically if the agent model errors (retired/404, daily limit); no vision |
