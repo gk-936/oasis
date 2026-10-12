@@ -245,6 +245,7 @@ export default {
   "audit.autonomous_action": "autonomous action",
   "audit.canary_tripped": "canary tripped",
   "audit.conversion": "conversion",
+  "audit.flightpath": "FlightPath check",
   "audit.declined": "declined",
   "audit.device_registered": "device registered",
   "audit.executor_refused": "executor refused",

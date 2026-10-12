@@ -87,7 +87,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 729 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 738 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
@@ -143,6 +143,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
+| [docs/flightpath.md](docs/flightpath.md) | FlightPath: pre-transfer checks, recipient-amount route comparison, simulated transfer lifecycle, delay/short-credit detection, no-blind-resend recovery; simulation benchmark and its limits (core only, no UI tab yet) |
 | [docs/real-inputs.md](docs/real-inputs.md) | real invoice intake (email file, Telegram bot, mailbox watcher): setup, safety rules, where each works (Telegram is blocked in mainland China), what was and was not tested live |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |
 | [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |

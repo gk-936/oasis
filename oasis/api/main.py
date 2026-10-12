@@ -51,6 +51,7 @@ from ..agent.replay import MODES, fixture_info
 from ..demo import DemoRunner, new_demo_world
 from ..market import provenance
 from ..planning import spending
+from ..flightpath import core as fpath
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
@@ -1540,6 +1541,26 @@ def audit(p: Principal = Depends(STUDENT_JUDGE)):
 def audit_verify(p: Principal = Depends(VIEWERS)):
     r = verify_chain(S.world.audit.entries)
     return {**r.__dict__, "ok": r.ok, "head": S.world.audit.head()}
+
+
+# ------------------------------------------------------------------ FlightPath (advisory; moves no money)
+class FlightPathIn(BaseModel):
+    required_cny: float = Field(gt=0)
+    due_in_days: int | None = None
+
+
+@app.post("/api/flightpath/compare")
+def flightpath_compare(body: FlightPathIn, p: Principal = Depends(STUDENT_JUDGE)):
+    today = S.world.today
+    due = today + timedelta(days=body.due_in_days) if body.due_in_days is not None else None
+    return {"label": "MOCK rates and deductions", "options": jsonable_encoder(
+        [{**o.__dict__, "route": o.route.name, "route_id": o.route.id} for o in fpath.compare_routes(S.world.rates, body.required_cny, today, due)])}
+
+
+@app.get("/api/flightpath/benchmark")
+def flightpath_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
+    f = REPORTS / "flightpath.json"
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
 # ------------------------------------------------------------------ evaluation + demo

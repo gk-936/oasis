@@ -244,6 +244,7 @@ export default {
   "audit.autonomous_action": "自主操作",
   "audit.canary_tripped": "诱饵警报触发",
   "audit.conversion": "兑换",
+  "audit.flightpath": "FlightPath 检查",
   "audit.declined": "已拒绝",
   "audit.device_registered": "设备已注册",
   "audit.executor_refused": "执行器拒绝",
