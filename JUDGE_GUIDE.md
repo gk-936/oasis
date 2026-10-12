@@ -60,12 +60,21 @@ Do the 5-minute path, then the five tasks below, then skim [docs/security-eviden
 
 **4d. Multi-currency (optional, 1 minute).** Passport tab, card "Balances by currency": convert some INR to USD or EUR with **Get quote** then **Convert**; the new balance appears, valued in yuan and rupees, and the 60-day coverage line says whether the yuan on hand covers what is due.
 
+**4c-zk. Prove a threshold without revealing the numbers (optional, 1 minute).** In the Trust Pass card, after issuing, use "Prove without revealing (zero-knowledge)": add "at least 100% on time" and "at least 2 payments", then share or verify. The verifier page shows the proved claims and a "zero-knowledge proofs verify" tick but not the counts. Ask for something the record does not meet (say 999 payments): refused. Edit a proof or the threshold in the pasted JSON: the check fails. It is a from-the-textbook construction, not audited.
+
+**4e. Send a real email (optional, 2 minutes).** As **student**, open Chat, press "Upload email (.eml)" and choose `eval/samples/email/forged.eml` (a sender-authentication failure, a Reply-To on another domain, a free-mail sender and hidden instruction text, with the account swapped), then `eval/samples/email/genuine.eml`. Expected: the forged one is `rejected` with the channel evidence listed and a risk score near 0.98; the genuine one is `held` and shows an Approve button (sign it as in task 4). Telegram and a mailbox watcher also exist but need a token or mailbox: see [docs/real-inputs.md](docs/real-inputs.md).
+
+**4f. Sanctions screening (optional, 1 minute).** In Chat paste an invoice whose payee is `Mahan Air` (an OFAC-listed entity), any account, CNY 8,000. Expected: not paid; the evidence includes "payee name matches OFAC sanctions-list entity ... (possible match, needs review)". It is evidence for review from a snapshot of one public list, not a compliance clearance.
+
+**4g. Passkey second factor (optional).** Start with `OASIS_REQUIRE_PASSKEY=1`, log in as student, press "Add passkey" in the header, log out and in again: the passcode alone no longer opens a session. Needs a browser with a platform authenticator or a security key.
+
 **5. Read the evidence and rerun one test.** Open [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md): each claim maps to code, an exact test and the limits. Pick one and rerun it, for example:
 
 ```bash
 PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_security.py::test_unauthenticated_is_401
 PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_judge_pack.py        # per-judge sandboxes and judge mode
 PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_trust_pass.py        # Trust Pass, selective disclosure, multi-currency
+PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_zk.py tests/test_intake_email.py tests/test_screening.py   # zero-knowledge proofs, email intake, sanctions
 PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  # everything (offline; the 2 skips are live-service tests)
 ```
 

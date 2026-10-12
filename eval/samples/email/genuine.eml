@@ -1,0 +1,12 @@
+From: "University X Finance Office" <finance@univx.example>
+Subject: Tuition invoice
+Authentication-Results: mx.univx.example; spf=pass; dkim=pass; dmarc=pass
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Payee: University X Finance Office
+Payee ID: payee_univ_x
+Account: 6228480000001234
+Amount: CNY 30,000
+Purpose: tuition
+Due: 2026-11-15

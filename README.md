@@ -21,7 +21,9 @@ Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a 
 - **Languages.** The interface and the server's plain-language explanations come in English (default) and Simplified Chinese (picker on the login screen and in the header; a student's choice is saved in the Passport); machine-drafted Chinese, see `docs/i18n-glossary.md`.
 - **Gets parent co-approval in Tamil, Hindi, Chinese or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
 - **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
-- **Builds a payment reputation from day one: the Oasis Trust Pass (credit building, not a credit score).** Most students arrive with no credit file at all, and none travels across the border. From the payments that passed the full checks, Arjun issues a signed Trust Pass he holds himself: he picks claims ("3 of 3 paid on time", "all to registry-verified payees"), or only thresholds ("at least 90% on time") that hide the exact numbers, and chooses which payments, if any, to reveal (salted commitments, selective disclosure). He names the verifier ("Landlord, Room 1203", sealed into the signature) and shows a QR code; the landlord's phone opens a login-free page that re-verifies every signature. The pass suggests what it can support asking for (a lower deposit, no guarantor). A clean streak also proposes a higher parent co-approval limit that only the parent can accept. Not a bureau report: it cannot be padded by "paying rent" to a friend, because every payment went to a registry-verified payee. The simpler signed **payment-reliability record** is still there too.
+- **Builds a payment reputation from day one: the Oasis Trust Pass (credit building, not a credit score).** Most students arrive with no credit file at all, and none travels across the border. From the payments that passed the full checks, Arjun issues a signed Trust Pass he holds himself: he picks claims ("3 of 3 paid on time", "all to registry-verified payees"), or only thresholds ("at least 90% on time") that hide the exact numbers, and chooses which payments, if any, to reveal (salted commitments, selective disclosure). He can also prove **any** threshold in zero knowledge ("at least 94% on time", "at least 5 payments") without revealing the counts and without Oasis pre-signing that number: the signed pass holds commitments to the counts and the proof is bound to this credential and audience; a false claim cannot be proved. He names the verifier ("Landlord, Room 1203", sealed into the signature) and shows a QR code; the landlord's phone opens a login-free page that re-verifies every signature. The pass suggests what it can support asking for (a lower deposit, no guarantor). A clean streak also proposes a higher parent co-approval limit that only the parent can accept. Not a bureau report: it cannot be padded by "paying rent" to a friend, because every payment went to a registry-verified payee. The simpler signed **payment-reliability record** is still there too.
+- **Sends the invoice the way it really arrives.** Besides pasting text or a photo, Arjun uploads a real email (.eml) or forwards it to a Telegram bot or a watched mailbox (optional; see [docs/real-inputs.md](docs/real-inputs.md)). Oasis reads the message's own headers: a forged test email (sender authentication failed, Reply-To on another domain, free-mail sender, hidden instruction text) scores risk 0.98 and is rejected at the verify step, while the genuine one scores 0 and waits for his signature. The channel adds evidence, never authority.
+- **Screens payees against a public sanctions list.** Payee names are fuzzy-matched against a snapshot of the US OFAC list (17,515 entries); a close match is evidence that sends the payment to review, never an automatic block, and a clean result is not a compliance clearance.
 - **Manages money in six currencies at live rates.** INR, CNY, USD, EUR, GBP and AUD balances, each valued in yuan and rupees at real ECB mid rates, with exposure per currency, an in-app converter (wallet fee and saving versus a typical bank shown up front; mock pricing) and a check that the yuan on hand covers everything due in the next 60 days.
 - **Acts on his behalf within small limits:** a rate-target conversion and a recurring bill (Tier-1 autonomy), then shows a **savings receipt** (CNY 1,313.66 in the demo) and the Student Financial Passport.
 
@@ -44,6 +46,8 @@ Cited external facts (sources, dates and gaps: [docs/problem-evidence.md](docs/p
 | Proposes and revises a payment plan by calling read-only tools | Verifies the recipient against an independent registry; applies policy rules R01-R17 |
 | Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them exactly at execution, keeps the audit chain and proof packs |
 
+**Also in the code, not the AI:** a small trained fraud-risk model (logistic regression, pure Python, optional via `OASIS_ML_RISK=1`, escalate-only, explainable weights). Measured once on the hidden set it ranks documents slightly better than the hand-set rules (AUC 0.80 against 0.75) but flags no extra attack (13 of 28 against 14 of 28), so it is reported as modest, not as a detection gain ([docs/results.md](docs/results.md)).
+
 **Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%). The final plan is always valid only because a fallback to the deterministic plan takes over. Calculator tools (planner format v3) were evaluated live on 2026-10-12 but the comparison is incomplete (quota ran out), so v2 stays the default. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log.
 
 ## Results at a glance
@@ -58,16 +62,18 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
 | Planner v3 vs v2 (live, incomplete) | gpt-oss-120b v3 14 of 24 valid (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 of 24 plans; no verdict, v2 stays default |
-| Tests | 645 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Trained risk model vs rules (hidden set) | AUC 0.804 vs 0.747; attacks flagged 13/28 vs 14/28; legit flagged 0/12 both | Synthetic training data from the same team; hidden set small and partly burned; off by default |
+| Tests | 729 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
 
-Full list of 20 below.
+Full list of 24 below.
 
 - **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
 - **Weak unaided AI planning:** 7 of 24 live plans valid; the fallback makes the final plan valid.
 - **Benchmarks are partly by construction:** same team wrote attacks and defences; humans are simulated.
-- **Demo-grade security setup:** shared passcodes, no MFA, plaintext keys unless a passphrase is set.
+- **Demo-grade security setup:** shared passcodes, plaintext keys unless a passphrase is set; passkeys (optional second factor), the zero-knowledge proofs and the email checks are not independently audited.
+- **Real channels untested live:** the Telegram bot and mailbox watcher were tested against fake servers; Telegram is blocked in mainland China.
 - **Translations are machine-drafted:** Chinese, Tamil and Hindi wording is unreviewed by native speakers; English is the official text.
 - **Regulatory figures are researched, not confirmed** by a bank or counsel; not legal advice.
 
@@ -81,7 +87,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 645 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 729 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
@@ -137,6 +143,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
+| [docs/real-inputs.md](docs/real-inputs.md) | real invoice intake (email file, Telegram bot, mailbox watcher): setup, safety rules, where each works (Telegram is blocked in mainland China), what was and was not tested live |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |
 | [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |
 | [JUDGE_GUIDE.md](JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge to try to break Oasis, offline, one command |
@@ -149,7 +156,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 
 ## Known limitations
 
-1. **Authentication is demo-grade.** Roles use shared passcodes with no per-person accounts or MFA, and approver device keys are trust-on-first-use ([security self-assessment][sec]).
+1. **Authentication is demo-grade.** Roles use shared passcodes with no per-person accounts, and approver device keys are trust-on-first-use. An optional passkey (WebAuthn) second factor exists (`OASIS_REQUIRE_PASSKEY=1`, off by default; a role can enrol its first passkey with the passcode alone); it was tested with a software authenticator and a virtual one in Chrome, not a hardware key, and is not independently audited ([security self-assessment][sec]).
 2. **Key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.** Otherwise the keys under `data/keys/` rely on OS permissions only, so set the passphrase before any recorded demo ([hardening][sec-hard]).
 3. **FISCO BCOS is a 4-node local test chain** (real FISCO BCOS 3.17.1, all nodes on one host), opt-in via `OASIS_ANCHOR=fisco`. It shows the integration, not decentralised trust, and Oasis does NOT claim the on-chain challenge bonus (that is Topic F; Oasis is Topic C) ([FISCO BCOS notes][fisco]).
 4. **PQ-TLS was tested only with an OpenSSL client** (OpenSSL 3.5.9 negotiated X25519MLKEM768 via Caddy). It was not tested in browsers, the certificate is classical, and the app itself still serves plain HTTP ([PQ-TLS evidence][pq]).
@@ -167,8 +174,12 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
 17. **Tamil, Hindi and Chinese (zh-CN) text is machine-drafted: the parent approval wording and the Chinese interface and server messages have not been reviewed by native speakers.** English is the default and the competition's official language; see `docs/i18n-glossary.md`.
 18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
-19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed. The same holds for the **Trust Pass**: it is a server-signed sandbox credential, not a credit score; no lender is obliged to accept it; threshold claims are attested by the server (not zero-knowledge proofs); the QR code locates a copy stored on this server, so an independent verifier should also take the JSON file and check the signature against the pinned key; and the payee level shown is the registry level at issue time ([technical documentation][tech], sections 15 and 18).
+19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed. The same holds for the **Trust Pass**: it is a server-signed sandbox credential, not a credit score; no lender is obliged to accept it; the preset threshold claims are attested by the server, while the optional zero-knowledge threshold proofs (any threshold, counts hidden) are a from-the-textbook construction that is not independently audited and still trust the server for the committed counts; the QR code locates a copy stored on this server, so an independent verifier should also take the JSON file and check the signature against the pinned key; and the payee level shown is the registry level at issue time ([technical documentation][tech], sections 15 and 18).
 20. **Remittances and payments cover one corridor, INR to CNY.** The wallet holds and converts six currencies (INR, CNY, USD, EUR, GBP, AUD), but sending money abroad, the corridor rules, routes and obligations are INR to CNY only. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).
+21. **Sanctions screening is a snapshot of one public list.** It uses the US OFAC SDN list (17,515 entries, retrieved 2026-10-12) with fuzzy matching on Latin-script names; a hit is evidence for review and a clean result is not a compliance clearance, common names give false matches, the card and IFSC checks are format checks only, and the Chinese bank-prefix table is unofficial ([technical documentation][tech], section 21).
+22. **The real inbound channels were not tested live.** The email upload was tested in Chrome; the Telegram bot and the IMAP watcher only against fake servers (no bot token or mailbox was available), Telegram is blocked in mainland China without a VPN, and an uploaded email can carry any Authentication-Results header ([real inputs][inputs]).
+23. **The trained risk model is modest.** On the hidden set it ranks documents slightly better than the rules (AUC 0.80 against 0.75) but flags no extra attack, its synthetic training data was written by the same team as the rules, and it is off unless `OASIS_ML_RISK=1` ([results][results]).
+24. **Nothing is hosted and the container is not built.** Judges run the one-command script locally; the Docker image and the hosted-security checklist were written and checked statically only, and the app has not been load-tested.
 
 [sec]: docs/security-self-assessment.md
 [sec-hard]: docs/security-self-assessment.md#hardening-added-2026-10-10
@@ -179,6 +190,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 [hidden]: eval/reports/benchmark_hidden_prefix.md
 [plan]: eval/reports/planning.md
 [regsrc]: docs/regulatory-sources.md
+[inputs]: docs/real-inputs.md
 [results]: docs/results.md
 
 ## Licence and third-party components
@@ -192,6 +204,8 @@ Oasis is released under the [MIT licence](LICENSE). Dependencies (read from inst
 | PyNaCl, Groq SDK, python-multipart | Apache-2.0 |
 | cryptography | Apache-2.0 OR BSD-3-Clause |
 | gmssl (optional SM2/SM3) | BSD |
+| py_webauthn (passkeys), pypdf (optional, PDF text) | BSD-3-Clause |
+| cbor2 (via py_webauthn) | MIT |
 | Frontend build-time transitive packages (`node_modules`) | MIT (55), ISC (5), Apache-2.0 (1), BSD-3-Clause (1), CC-BY-4.0 (1: `caniuse-lite` browser-support data, attribution required, build-time only, not shipped in `dist`) |
 
 Groq models (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`) are used as a hosted service under Groq's terms and are not redistributed. Licences of every transitive Python package were not exhaustively audited.

@@ -132,6 +132,12 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/health`, `/api/auth/config` | public: liveness; login screen config (never a passcode) |
 | POST | `/api/auth/login`, `/api/auth/logout`; GET `/api/auth/me` | role + passcode -> session cookie; revoke; who am I (200 `{"role": null}` when logged out, so the UI probe is not an error) |
 | POST | `/api/device/register` | student/parent registers the public half of their Ed25519 device key |
+| POST | `/api/intake/email` | student: a real email (.eml upload) through the same pipeline; sender-authentication results, a diverging Reply-To and hidden text become risk evidence only |
+| GET | `/api/intake/channels` | student: which real channels are on (email upload always; Telegram and IMAP when configured); no secret is returned |
+| POST | `/api/intake/telegram/pair`, `/api/intake/telegram/unpair` | student: one-time pairing code for the Telegram bot; unpair all chats |
+| POST | `/api/screen` | any role: public-data checks on a payee (OFAC snapshot, Chinese card Luhn/length/prefix, IFSC shape); evidence, not a clearance |
+| GET/POST | `/api/auth/passkey/status`, `/register/begin`, `/register/finish`, `/login/finish` | passkey (WebAuthn) enrolment and second login factor (`OASIS_REQUIRE_PASSKEY=1`) |
+| POST | `/api/trust-pass/zk-prove` | student: one zero-knowledge threshold claim (rate or count) for a Trust Pass the student holds; refused if the record does not meet it |
 | GET | `/api/corridor/rules` | any role: every corridor rule with value, source, retrieved date, confidence and status (confirmed-primary / researched-secondary / unconfirmed) |
 | GET | `/api/approvers` | registered approver public keys (any role) |
 | POST | `/api/plan/{plan_id}/consent` | parent only: signed consent to a parent-remitted conversion step |
@@ -187,7 +193,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 
 ```
 oasis/
-  agent/        llm.py (offline / Groq / vision), i18n.py + zh_messages.py + localize.py + parent.py (Tamil/Hindi/English/Chinese), pipeline.py
+  agent/        ml_risk.py (+ ml_risk_model.json: small trained risk model), llm.py (offline / Groq / vision), i18n.py + zh_messages.py + localize.py + parent.py (Tamil/Hindi/English/Chinese), pipeline.py
                 (six steps, layer switches), autonomy.py (Tier-1: rate targets, recurring bills),
                 planner.py (agentic tool-calling planner: offline + Groq), plan_exec.py (accept/run a plan through the
                 pipeline), recovery.py (autonomous recovery draft + validation)
@@ -196,7 +202,9 @@ oasis/
                 tools.py (planner tool protocol), validator.py (deterministic plan validator), scenarios.py
   trust/        crypto (Signer interface: Ed25519 + ML-DSA-65 hybrid by default; optional SM2/SM3 via gmssl; PQ-TLS tested with an OpenSSL client against Caddy: docs/pq-tls.md), verification ramp, intents,
                 policy engine, corridor rules (rules/inr_cny.yaml), executor, canaries, audit chain
-  proof/        proof packs + standalone verifier; reliability.py (payment-reliability record); trust_pass.py (Trust Pass)
+  proof/        proof packs + standalone verifier; reliability.py (payment-reliability record); trust_pass.py (Trust Pass); zk.py (zero-knowledge thresholds)
+  intake/       mail.py (RFC 822 parsing + provenance), telegram.py (bot, pairing), imap_poll.py (mailbox watcher)
+  screening.py  OFAC sanctions snapshot + card/IFSC checks; reference/ofac_sdn.json.gz
   chain/        anchoring interface: LocalAnchorChain (simulated, default); FiscoAnchor (4-node local test chain, real FISCO BCOS 3.17.1, OASIS_ANCHOR=fisco)
   market/       live_rates.py (ECB via Frankfurter, fawazahmed0 via jsDelivr; cache; MOCK fallback; INR->CNY + USD crosses)
   mock/         rates/routes, sandbox ledger, payee registry (WeIdentity-style), wallet/QR fees, fx.py (wallet FX table + MOCK pricing)
@@ -309,3 +317,28 @@ Code: `oasis/proof/trust_pass.py`; API in section 6; UI: Passport tab card "Oasi
 **Earned autonomy.** The current on-time streak maps to a proposed parent co-approval threshold (streak 0/2/4/8 → INR 50,000/75,000/100,000/150,000; any late payment resets the streak). Oasis only proposes; the parent accepts on the Parent tab (`POST /api/trust-pass/ladder/accept`, parent role only), which updates `rules.parent_coapproval_above_inr` and writes `autonomy_level_raised` to the audit chain.
 
 **Limits.** A sandbox credential over simulated payments, signed by one server; not a credit score and accepted by no bureau, bank or regulator. Claims are attested by the server, not zero-knowledge proofs. The payee level is the registry level at issue time. The due date comes from the invoice the student supplied (as in section 15). README Known limitation 19.
+
+## 19. Security response headers
+
+Every response (API, static UI and early refusals) carries `Content-Security-Policy` (same-origin only, no inline script, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy` (camera, microphone, geolocation and payment off), `Cross-Origin-Opener-Policy: same-origin` and `X-Content-Type-Options: nosniff`; HSTS is added only over https (or with `OASIS_COOKIE_SECURE=1`). The interactive API docs are exempt from the CSP because they load a CDN script (and are off in judge mode). Tests: `tests/test_security.py`; checked in real Chrome with no CSP violations.
+
+## 20. Passkeys (WebAuthn) as a second login factor
+
+Opt-in with `OASIS_REQUIRE_PASSKEY=1`. After a correct passcode, a role that has a registered passkey receives a challenge instead of a cookie; the cookie is issued only after a valid assertion (`oasis/api/passkeys.py`, verification by py_webauthn). Only public keys are stored (`passkeys.json` beside the database, git-ignored); challenges are single-use and expire after 5 minutes; the signature counter is checked so a cloned authenticator is refused; a failed second factor counts toward the failed-login limit. A role with no passkey yet can still log in by passcode to enrol one, so enrol before exposing the server. The relying-party id and origin come from the Host header, or `OASIS_WEBAUTHN_RP_ID` / `OASIS_WEBAUTHN_ORIGIN` behind a proxy. The UI has an "Add passkey" header button and a second login step. Tested with a software P-256 authenticator (11 tests) and Chrome with a virtual authenticator; not tested with a hardware key; not independently audited.
+
+## 21. Sanctions screening and bank-identifier checks
+
+`oasis/screening.py` screens a payee name against a snapshot of the public US Treasury OFAC SDN list (`oasis/reference/ofac_sdn.json.gz`: 17,515 individuals and entities with aliases, vessels and aircraft dropped, retrieved 2026-10-12; refresh with `python tools/fetch_reference.py`). Matching is fuzzy on sorted, accent-folded tokens with a 0.90 similarity threshold. An entity hit adds risk 0.55 (reaches the hold threshold, which sends the payment to review); an individual hit adds 0.30, because common names such as "Zhang Wei" do match. It is evidence for the policy engine, never an automatic block, and a clean result is not a compliance clearance. Also: Luhn, length and issuer-prefix checks for Chinese bank cards (the prefix table is unofficial and short) and an IFSC shape check, exposed with the screen at `POST /api/screen`; these are information for the student, not payment rules, because the sandbox's demo accounts are not real card numbers. The 84 benchmark and hidden-set payees produce no hits, so earlier results are unchanged. Tests: `tests/test_screening.py`.
+
+## 22. A small trained fraud-risk model
+
+`oasis/agent/ml_risk.py` is a logistic regression in pure Python (no new dependency) over the rule scorer's indicators, a few text-shape numbers and hashed words; the shipped weights (`ml_risk_model.json`) can be read feature by feature, and `explain` lists the strongest contributions. With `OASIS_ML_RISK=1` its score is combined as max(rules, model), so it can only escalate; off by default. `eval/ml_risk_train.py` records the real pipeline inputs for each document, trains on the visible scenarios plus a synthetic corpus written by the team, evaluates once on the hidden set (nothing was tuned on it) and writes `eval/reports/ml_risk.md`: hidden AUC 0.804 against 0.747 for the rules, attacks flagged at 0.5: 13 of 28 against 14 of 28, legit flagged 0 of 12 for both. Half of the hidden attacks are not visible in the document text at all (replay, a changed approver, a mislabelled purpose, encoded instructions); the registry, policy and signed-intent layers stop those. Modest and reported as such.
+
+## 23. Real invoice intake (email, Telegram, mailbox)
+
+See [real-inputs.md](real-inputs.md). `oasis/intake/mail.py` parses real RFC 822 messages (headers, plain and HTML bodies with hidden text kept and flagged, text, PDF and image attachments, Authentication-Results SPF/DKIM/DMARC, Reply-To mismatch, free-mail sender); `Request.channel` carries the provenance into the risk scorer and is stored with pending approvals; the channel adds evidence and never authority, so a payment still needs the student's signed approval. The Telegram bot (`oasis/intake/telegram.py`) needs a one-time pairing code, rate-limits strangers, replies in plain text with account numbers masked and scrubs the token from errors; the IMAP watcher (`oasis/intake/imap_poll.py`) needs a sender allow-list and, by default, an SPF/DKIM/DMARC pass, marks mail read before processing and never auto-replies. Both are started as threads from the app lifespan only when configured. Tested with fake servers; not tested against live Telegram or a live mailbox. Telegram is blocked in mainland China without a VPN.
+
+## 24. Zero-knowledge threshold proofs for the Trust Pass
+
+`oasis/proof/zk.py`: Pedersen commitments on edwards25519 (libsodium via PyNaCl) to the on-time and total payment counts are inside the signed credential. At presentation time the holder proves any threshold ("at least k% on time", "at least k payments") without revealing the counts: the verifier derives the commitment to `100*on - k*tot` (or `tot - k`) from the signed commitments, and a 20-bit range proof (bit commitments with Cramer-Damgard-Schoenmakers OR-proofs, made non-interactive with Fiat-Shamir over the credential hash, audience and statement) shows it is not negative. A false claim cannot be proved, and a proof cannot be moved to another credential, audience or threshold. Proofs are about 2.7 KB (linear in the bit length, not Bulletproofs). Endpoint `POST /api/trust-pass/zk-prove`; the proved claims and a "zero-knowledge proofs verify" check show on the public verify page. Tests: `tests/test_zk.py` (15, including forgery attempts) and `tests/test_trust_pass.py`. A from-the-textbook implementation checked by tests, not independently audited; the issuer is still trusted for the committed numbers.
+
