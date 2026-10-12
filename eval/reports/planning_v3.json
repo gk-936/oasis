@@ -1,0 +1,264 @@
+{
+ "cells": {
+  "v2 | openai/gpt-oss-120b": {
+   "plans": 2,
+   "model_only_valid": 1,
+   "model_only_rate": 0.5,
+   "final_valid": 2,
+   "fallbacks": 1,
+   "fallback_reasons": {
+    "malformed tool call": 1
+   },
+   "error_counts": {},
+   "errors_total": 0,
+   "arithmetic_errors": 0,
+   "arithmetic_share": null,
+   "mean_proposals_to_valid": 1.0,
+   "tokens_per_plan": 4898.0,
+   "calls_per_plan": 3.5,
+   "seconds_per_plan": 22.0,
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 2,
+     "model_only_valid": 1,
+     "complete": false
+    }
+   ],
+   "complete_repeats": 0,
+   "rate_min": null,
+   "rate_max": null,
+   "spread_pp": null,
+   "heldout": [
+    0,
+    0
+   ],
+   "original": [
+    1,
+    2
+   ],
+   "other_model_rows": 0
+  },
+  "v2 | qwen/qwen3.8-27b": {
+   "plans": 24,
+   "model_only_valid": 4,
+   "model_only_rate": 0.16666666666666666,
+   "final_valid": 24,
+   "fallbacks": 20,
+   "fallback_reasons": {
+    "malformed tool call": 15,
+    "never proposed": 1,
+    "no valid plan after proposals": 4
+   },
+   "error_counts": {
+    "amount_mismatch": 22,
+    "insufficient_cny": 14,
+    "insufficient_inr": 5,
+    "rate_target_reserve": 2
+   },
+   "errors_total": 43,
+   "arithmetic_errors": 43,
+   "arithmetic_share": 1.0,
+   "mean_proposals_to_valid": 3.5,
+   "tokens_per_plan": 10787.0,
+   "calls_per_plan": 4.25,
+   "seconds_per_plan": 91.0,
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 12,
+     "model_only_valid": 2,
+     "complete": true
+    },
+    {
+     "rep": 1,
+     "plans": 12,
+     "model_only_valid": 2,
+     "complete": true
+    }
+   ],
+   "complete_repeats": 2,
+   "rate_min": 0.16666666666666666,
+   "rate_max": 0.16666666666666666,
+   "spread_pp": 0.0,
+   "heldout": [
+    1,
+    8
+   ],
+   "original": [
+    3,
+    16
+   ],
+   "other_model_rows": 0
+  },
+  "v3 | openai/gpt-oss-120b": {
+   "plans": 24,
+   "model_only_valid": 14,
+   "model_only_rate": 0.5833333333333334,
+   "final_valid": 24,
+   "fallbacks": 10,
+   "fallback_reasons": {
+    "stopped without a plan": 1,
+    "no valid plan after proposals": 4,
+    "malformed tool call": 1,
+    "never proposed": 4
+   },
+   "error_counts": {
+    "insufficient_inr": 5,
+    "safe_quota_exceeded": 1,
+    "insufficient_cny": 3
+   },
+   "errors_total": 9,
+   "arithmetic_errors": 9,
+   "arithmetic_share": 1.0,
+   "mean_proposals_to_valid": 1.07,
+   "tokens_per_plan": 10349.0,
+   "calls_per_plan": 6.25,
+   "seconds_per_plan": 57.0,
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 12,
+     "model_only_valid": 8,
+     "complete": true
+    },
+    {
+     "rep": 1,
+     "plans": 12,
+     "model_only_valid": 6,
+     "complete": true
+    }
+   ],
+   "complete_repeats": 2,
+   "rate_min": 0.5,
+   "rate_max": 0.6666666666666666,
+   "spread_pp": 16.666666666666664,
+   "heldout": [
+    4,
+    8
+   ],
+   "original": [
+    10,
+    16
+   ],
+   "other_model_rows": 0
+  },
+  "v3 | qwen/qwen3.8-27b": {
+   "plans": 24,
+   "model_only_valid": 4,
+   "model_only_rate": 0.16666666666666666,
+   "final_valid": 24,
+   "fallbacks": 20,
+   "fallback_reasons": {
+    "malformed tool call": 20
+   },
+   "error_counts": {
+    "insufficient_inr": 3,
+    "insufficient_cny": 1,
+    "unknown_route": 2,
+    "amount_mismatch": 4
+   },
+   "errors_total": 10,
+   "arithmetic_errors": 8,
+   "arithmetic_share": 0.8,
+   "mean_proposals_to_valid": 2.25,
+   "tokens_per_plan": 3493.0,
+   "calls_per_plan": 2.67,
+   "seconds_per_plan": 41.0,
+   "per_repeat": [
+    {
+     "rep": 0,
+     "plans": 12,
+     "model_only_valid": 2,
+     "complete": true
+    },
+    {
+     "rep": 1,
+     "plans": 12,
+     "model_only_valid": 2,
+     "complete": true
+    }
+   ],
+   "complete_repeats": 2,
+   "rate_min": 0.16666666666666666,
+   "rate_max": 0.16666666666666666,
+   "spread_pp": 0.0,
+   "heldout": [
+    1,
+    8
+   ],
+   "original": [
+    3,
+    16
+   ],
+   "other_model_rows": 0
+  }
+ },
+ "comparisons": {
+  "openai/gpt-oss-120b": {
+   "v3": [
+    14,
+    24
+   ],
+   "v2": [
+    1,
+    2
+   ],
+   "delta_pp": 8.333333333333337,
+   "fisher_p": 1.0,
+   "heldout_v3": [
+    4,
+    8
+   ],
+   "heldout_v2": [
+    0,
+    0
+   ]
+  },
+  "qwen/qwen3.8-27b": {
+   "v3": [
+    4,
+    24
+   ],
+   "v2": [
+    4,
+    24
+   ],
+   "delta_pp": 0.0,
+   "fisher_p": 1.0,
+   "heldout_v3": [
+    1,
+    8
+   ],
+   "heldout_v2": [
+    1,
+    8
+   ]
+  },
+  "pooled": {
+   "v3": [
+    18,
+    48
+   ],
+   "v2": [
+    5,
+    26
+   ],
+   "delta_pp": 18.269230769230766,
+   "fisher_p": 0.12251991659622323,
+   "heldout_v3": [
+    5,
+    16
+   ],
+   "heldout_v2": [
+    1,
+    8
+   ]
+  }
+ },
+ "decision": {
+  "verdict": "INCOMPLETE",
+  "reason": "needs every compared cell (v2 and v3, each model) to have at least two complete repeats of all 12 scenarios",
+  "delta_pp": 18.269230769230766
+ }
+}

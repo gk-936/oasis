@@ -39,7 +39,7 @@ Cited external facts (sources, dates and gaps: [docs/problem-evidence.md](docs/p
 | Proposes and revises a payment plan by calling read-only tools | Verifies the recipient against an independent registry; applies policy rules R01-R17 |
 | Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them exactly at execution, keeps the audit chain and proof packs |
 
-**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%). The final plan is always valid only because a fallback to the deterministic plan takes over. Calculator tools (planner format v3) are built and tested offline; their live evaluation is pending. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log.
+**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%). The final plan is always valid only because a fallback to the deterministic plan takes over. Calculator tools (planner format v3) were evaluated live on 2026-10-12 but the comparison is incomplete (quota ran out), so v2 stays the default. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log.
 
 ## Results at a glance
 
@@ -52,6 +52,7 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Live model vs injections | Model followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
+| Planner v3 vs v2 (live, incomplete) | gpt-oss-120b v3 14 of 24 valid (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 of 24 plans; no verdict, v2 stays default |
 | Tests | 588 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
@@ -152,7 +153,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 7. **Money is stored as floats rounded to whole fen.** Fine for a sandbox; production would use `Decimal`, and corridor checks use one hard-coded USD/INR of 88.0.
 8. **Demo Run 2 catches the forged invoice at step 3 (Verify), not step 5.** The step 5 intent-mismatch catch is shown by the rewritten-payment-instructions attack ([technical documentation][tech]).
 9. **Humans in the benchmark are simulated, and the same team wrote the attacks and the defences.** The scripted student and parent approve only requests consistent with the Passport, so 100% results are partly by construction; the blind hidden set mitigates this partly but is now partly burned, because its failures were fixed afterwards ([hidden-set report][hidden]).
-10. **Live results are small samples.** Live model-only planning was valid in 7 of 24 plans (29%) and the live injection test covered 18 runs (0 followed), so neither is a robustness claim; the final plan is always valid only because the fallback is the deterministic plan ([all live numbers][results]).
+10. **Live results are small samples.** Live model-only planning was valid in 7 of 24 plans (29%) and the live injection test covered 18 runs (0 followed), so neither is a robustness claim; the final plan is always valid only because the fallback is the deterministic plan ([all live numbers][results]). Planner v3 versus v2 live evaluation (2026-10-12) is INCOMPLETE, so no verdict: the daily token quota on all four keys ran out before the last cell, and only 2 of its 24 plans ran. Model-only valid / final-valid / fallback / tokens per plan: v3 qwen3.8-27b 4 of 24 (17%) / 24 of 24 / 83% (all malformed tool calls) / 3,493; v2 qwen3.8-27b 4 of 24 (17%) / 24 of 24 / 83% / 10,787; v3 gpt-oss-120b 14 of 24 (58%) / 24 of 24 / 42% / 10,349; v2 gpt-oss-120b 1 of 2 plans. Samples are small, v2 stays the default, and final-valid is high only because of the deterministic fallback (docs/planner-efficiency.md).
 11. **The risk scorer is heuristic and was tuned on the benchmark itself (in-sample).** The optional LLM scorer can only escalate, and neither scorer can see poisoned tool output (0/6), which only intent binding stops.
 12. **Regulatory figures were researched on 2026-10-11, several from secondary sources, and are not confirmed by a bank or counsel.** LRS and the SAFE quota were read on primary pages, TCS and the WeChat Pay fee from secondary ones; confirm each figure with an authorised dealer bank, as this is not legal advice ([regulatory sources][regsrc]).
 13. **Rate limiting and tokens are per process.** The login throttle and the session and executor token stores reset on restart and do not work across several workers.

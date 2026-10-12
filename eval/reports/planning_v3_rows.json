@@ -1,0 +1,5635 @@
+{
+ "temperature": 0.3,
+ "scenarios": [
+  "shortfall",
+  "tight_runway",
+  "safe_quota_tuition",
+  "late_scholarship",
+  "parent_tcs",
+  "rate_target",
+  "multiple_obligations",
+  "urgent_deadline",
+  "heldout_shared_landlord",
+  "heldout_year_boundary",
+  "heldout_scholarship_target",
+  "heldout_deposit_rent_tuition"
+ ],
+ "rows": [
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 2,
+   "iterations_to_valid": 2,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 3,
+   "send_inr": 606344.0,
+   "delivered_cny": 42003.12,
+   "fees_cny": 419.13,
+   "bank_fees_cny": 2188.06,
+   "saved_vs_bank_cny": 1768.93,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 2,
+   "tokens": 0,
+   "model_calls": 4,
+   "seconds": 0.06,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "remitter": "student",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 412938
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 106344
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert 6000 CNY via 1-day route for deposit; 36000 CNY via 3-day route funded by student (412,938 INR) plus parent (106,344 INR); all arrive before due dates.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 1,
+   "send_inr": 604742.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 309.16,
+   "bank_fees_cny": 1847.68,
+   "saved_vs_bank_cny": 1538.52,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 0,
+   "model_calls": 2,
+   "seconds": 2.31,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 604742.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 0,
+   "model_calls": 5,
+   "seconds": 30.07,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.0,
+   "delivered_cny": 36001.03,
+   "fees_cny": 328.97,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2885,
+   "model_calls": 2,
+   "seconds": 40.51,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 366000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 153267.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 2,
+   "iterations_to_valid": 2,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 434514.0,
+   "delivered_cny": 30002.07,
+   "fees_cny": 398.27,
+   "bank_fees_cny": 1542.83,
+   "saved_vs_bank_cny": 1144.56,
+   "tcs_inr": 6690.28,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "route_not_cheapest",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 2,
+   "tokens": 6247,
+   "model_calls": 4,
+   "seconds": 47.5,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 50000
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 384514
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Student converts 50000 INR; parent remits 384514 INR (consent needed) via route_inr_cny_2; pay tuition 30000 CNY on 11-15.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2961,
+   "model_calls": 2,
+   "seconds": 43.74,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 1,
+   "send_inr": 748535.0,
+   "delivered_cny": 52001.06,
+   "fees_cny": 369.44,
+   "bank_fees_cny": 2247.08,
+   "saved_vs_bank_cny": 1877.63,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 0,
+   "model_calls": 2,
+   "seconds": 25.64,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 748535.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-18",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 4000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 5 obligation(s) 2 days before each due date; fund the CNY shortfall of 52,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 1,
+   "send_inr": 521046.0,
+   "delivered_cny": 36001.04,
+   "fees_cny": 453.42,
+   "bank_fees_cny": 1615.21,
+   "saved_vs_bank_cny": 1161.79,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 2905,
+   "model_calls": 2,
+   "seconds": 41.72,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 521046.0,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-13",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 317158.0,
+   "delivered_cny": 22001.05,
+   "fees_cny": 188.59,
+   "bank_fees_cny": 1048.89,
+   "saved_vs_bank_cny": 860.3,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 2980,
+   "model_calls": 2,
+   "seconds": 46.16,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 317158.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 22,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 1710,
+   "model_calls": 2,
+   "seconds": 30.94,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.11,
+   "delivered_cny": 36001.04,
+   "fees_cny": 328.96,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr",
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2906,
+   "model_calls": 2,
+   "seconds": 21.3,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 281111.11,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 238156.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 138,889 for rate targets) covers INR 281,111; the parent would remit INR 238,156, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 691018.0,
+   "delivered_cny": 48001.06,
+   "fees_cny": 345.32,
+   "bank_fees_cny": 2087.32,
+   "saved_vs_bank_cny": 1741.99,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3106,
+   "model_calls": 2,
+   "seconds": 16.67,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 691018.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-15",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 48,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 3,
+   "iterations_to_valid": 3,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 3,
+   "send_inr": 608343.0,
+   "delivered_cny": 42001.05,
+   "fees_cny": 561.06,
+   "bank_fees_cny": 2193.61,
+   "saved_vs_bank_cny": 1632.55,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "route_not_cheapest"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 3,
+   "error_counts": {
+    "insufficient_inr": 1,
+    "insufficient_cny": 1
+   },
+   "proposals": 3,
+   "tokens": 12391,
+   "model_calls": 5,
+   "seconds": 83.69,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 412938
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 108373
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 87032
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert 42000 CNY shortfall via route_inr_cny_2 arriving 10-13; student funds 412938+87032 INR, parent funds 108373 INR shortfall.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 1,
+   "send_inr": 604742.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 309.16,
+   "bank_fees_cny": 1847.68,
+   "saved_vs_bank_cny": 1538.52,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 2947,
+   "model_calls": 2,
+   "seconds": 39.73,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 604742.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 4907,
+   "model_calls": 3,
+   "seconds": 52.71,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.0,
+   "delivered_cny": 36001.03,
+   "fees_cny": 328.97,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2885,
+   "model_calls": 2,
+   "seconds": 56.44,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 366000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 153267.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 432741.0,
+   "delivered_cny": 30001.07,
+   "fees_cny": 275.22,
+   "bank_fees_cny": 1537.9,
+   "saved_vs_bank_cny": 1262.68,
+   "tcs_inr": 6654.82,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 1688,
+   "model_calls": 2,
+   "seconds": 21.87,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 50000,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 382741.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 30,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 50,000; the parent would remit INR 382,741, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 6024,
+   "model_calls": 3,
+   "seconds": 68.97,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 1,
+   "send_inr": 748535.0,
+   "delivered_cny": 52001.06,
+   "fees_cny": 369.44,
+   "bank_fees_cny": 2247.08,
+   "saved_vs_bank_cny": 1877.63,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3148,
+   "model_calls": 2,
+   "seconds": 41.33,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 748535.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-18",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 4000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 5 obligation(s) 2 days before each due date; fund the CNY shortfall of 52,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 1,
+   "send_inr": 521046.0,
+   "delivered_cny": 36001.04,
+   "fees_cny": 453.42,
+   "bank_fees_cny": 1615.21,
+   "saved_vs_bank_cny": 1161.79,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 2905,
+   "model_calls": 2,
+   "seconds": 42.24,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 521046.0,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-13",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 2,
+   "iterations_to_valid": 2,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 2,
+   "send_inr": 318784.0,
+   "delivered_cny": 22002.0,
+   "fees_cny": 301.4,
+   "bank_fees_cny": 1221.38,
+   "saved_vs_bank_cny": 919.97,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "route_not_cheapest"
+   ],
+   "first_errors": [
+    "amount_mismatch",
+    "unknown_route"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "unknown_route": 2,
+    "amount_mismatch": 4
+   },
+   "proposals": 2,
+   "tokens": 9235,
+   "model_calls": 4,
+   "seconds": 70.42,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-15",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 5000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-15",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 5000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen"
+    }
+   ],
+   "rationale": "Two student conversions via fast route_inr_cny_2, each delivering 11001 CNY with headroom, arriving before the Nov 1 and Dec 1 rent due dates.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 5988,
+   "model_calls": 4,
+   "seconds": 72.75,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.11,
+   "delivered_cny": 36001.04,
+   "fees_cny": 328.96,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr",
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2906,
+   "model_calls": 2,
+   "seconds": 35.33,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 281111.11,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 238156.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 138,889 for rate targets) covers INR 281,111; the parent would remit INR 238,156, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 691018.0,
+   "delivered_cny": 48001.06,
+   "fees_cny": 345.32,
+   "bank_fees_cny": 2087.32,
+   "saved_vs_bank_cny": 1741.99,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3106,
+   "model_calls": 2,
+   "seconds": 49.75,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 691018.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-15",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 48,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 3805,
+   "model_calls": 2,
+   "seconds": 52.03,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 500000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 105542.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 500,000; the parent would remit INR 105,542, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 1,
+   "send_inr": 604742.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 309.16,
+   "bank_fees_cny": 1847.68,
+   "saved_vs_bank_cny": 1538.52,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3816,
+   "model_calls": 2,
+   "seconds": 54.07,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 604742.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 11227,
+   "model_calls": 5,
+   "seconds": 112.14,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.0,
+   "delivered_cny": 36001.03,
+   "fees_cny": 328.97,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 3822,
+   "model_calls": 2,
+   "seconds": 54.08,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 366000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 153267.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 432741.0,
+   "delivered_cny": 30001.07,
+   "fees_cny": 275.22,
+   "bank_fees_cny": 1537.9,
+   "saved_vs_bank_cny": 1262.68,
+   "tcs_inr": 6654.82,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 7169,
+   "model_calls": 4,
+   "seconds": 83.8,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 50000,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 382741.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 30,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 50,000; the parent would remit INR 382,741, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 0,
+   "model_calls": 2,
+   "seconds": 9.71,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 4,
+   "iterations_to_valid": 4,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 2,
+   "send_inr": 1000000.0,
+   "delivered_cny": 69433.5,
+   "fees_cny": 530.5,
+   "bank_fees_cny": 3113.5,
+   "saved_vs_bank_cny": 2583.0,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter",
+    "route_not_cheapest",
+    "tcs_near"
+   ],
+   "first_errors": [
+    "amount_mismatch"
+   ],
+   "model_proposals": 4,
+   "error_counts": {
+    "amount_mismatch": 5,
+    "insufficient_cny": 1,
+    "insufficient_inr": 1
+   },
+   "proposals": 4,
+   "tokens": 17267,
+   "model_calls": 7,
+   "seconds": 95.45,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 980000
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 20000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 4000,
+     "date": "2026-10-20",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen"
+    }
+   ],
+   "rationale": "One conversion on the cheapest route (inr_cny_3) arriving 2026-10-15, before the first due date; funds all five obligations.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 1,
+   "send_inr": 521046.0,
+   "delivered_cny": 36001.04,
+   "fees_cny": 453.42,
+   "bank_fees_cny": 1615.21,
+   "saved_vs_bank_cny": 1161.79,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3748,
+   "model_calls": 2,
+   "seconds": 41.4,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 521046.0,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-13",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 3,
+   "iterations_to_valid": 3,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 2,
+   "send_inr": 330000.0,
+   "delivered_cny": 22838.5,
+   "fees_cny": 249.62,
+   "bank_fees_cny": 1252.53,
+   "saved_vs_bank_cny": 1002.91,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [
+    "amount_mismatch"
+   ],
+   "model_proposals": 3,
+   "error_counts": {
+    "amount_mismatch": 4,
+    "insufficient_cny": 2
+   },
+   "proposals": 3,
+   "tokens": 18407,
+   "model_calls": 6,
+   "seconds": 90.94,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 165000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 5000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 165000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 5000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen"
+    }
+   ],
+   "rationale": "Two conversions on the cheapest fast route (inr_cny_3, 3 days): first arrives 10/15 to fund the 11/01 rent, second arrives 11/15 to fund the 12/01 rent. Total delivered CNY ~22,838 covers all four obligations with headroom.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model never proposed a plan",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 20648,
+   "model_calls": 8,
+   "seconds": 172.01,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 4 proposal(s)",
+   "iterations": 6,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.11,
+   "delivered_cny": 36001.04,
+   "fees_cny": 328.96,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "amount_mismatch",
+    "insufficient_inr",
+    "rate_target_reserve"
+   ],
+   "model_proposals": 4,
+   "error_counts": {
+    "amount_mismatch": 2,
+    "insufficient_inr": 1,
+    "rate_target_reserve": 1,
+    "insufficient_cny": 3
+   },
+   "proposals": 6,
+   "tokens": 22041,
+   "model_calls": 7,
+   "seconds": 177.58,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 281111.11,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 238156.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 138,889 for rate targets) covers INR 281,111; the parent would remit INR 238,156, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 691018.0,
+   "delivered_cny": 48001.06,
+   "fees_cny": 345.32,
+   "bank_fees_cny": 2087.32,
+   "saved_vs_bank_cny": 1741.99,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3839,
+   "model_calls": 2,
+   "seconds": 52.78,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 691018.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-15",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 48,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 3803,
+   "model_calls": 2,
+   "seconds": 38.64,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 500000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 105542.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 500,000; the parent would remit INR 105,542, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 1,
+   "send_inr": 604742.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 309.16,
+   "bank_fees_cny": 1847.68,
+   "saved_vs_bank_cny": 1538.52,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 6147,
+   "model_calls": 3,
+   "seconds": 72.13,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 604742.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 6286,
+   "model_calls": 3,
+   "seconds": 55.75,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 3 proposal(s)",
+   "iterations": 5,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.0,
+   "delivered_cny": 36001.03,
+   "fees_cny": 328.97,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "amount_mismatch",
+    "insufficient_inr"
+   ],
+   "model_proposals": 3,
+   "error_counts": {
+    "amount_mismatch": 2,
+    "insufficient_inr": 1,
+    "insufficient_cny": 2
+   },
+   "proposals": 5,
+   "tokens": 24893,
+   "model_calls": 8,
+   "seconds": 167.59,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 366000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 153267.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 432741.0,
+   "delivered_cny": 30001.07,
+   "fees_cny": 275.22,
+   "bank_fees_cny": 1537.9,
+   "saved_vs_bank_cny": 1262.68,
+   "tcs_inr": 6654.82,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 2138,
+   "model_calls": 2,
+   "seconds": 37.0,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 50000,
+     "route_id": "route_inr_cny_2",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 382741.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 30,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 50,000; the parent would remit INR 382,741, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 3831,
+   "model_calls": 2,
+   "seconds": 52.69,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 2,
+   "iterations_to_valid": 2,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 4,
+   "send_inr": 608638.0,
+   "delivered_cny": 42004.16,
+   "fees_cny": 578.59,
+   "bank_fees_cny": 2362.4,
+   "saved_vs_bank_cny": 1783.81,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 2,
+   "tokens": 12913,
+   "model_calls": 7,
+   "seconds": 30.93,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-14",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 325876
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-14",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 108638
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert student amount within INR limit and parent covers shortfall.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 4,
+   "iterations_to_valid": 4,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 2,
+   "send_inr": 1000000.0,
+   "delivered_cny": 69433.5,
+   "fees_cny": 530.5,
+   "bank_fees_cny": 3113.5,
+   "saved_vs_bank_cny": 2583.0,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter",
+    "route_not_cheapest",
+    "tcs_near"
+   ],
+   "first_errors": [
+    "amount_mismatch"
+   ],
+   "model_proposals": 4,
+   "error_counts": {
+    "amount_mismatch": 5,
+    "insufficient_cny": 1,
+    "insufficient_inr": 1
+   },
+   "proposals": 4,
+   "tokens": 24051,
+   "model_calls": 7,
+   "seconds": 188.22,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 980000
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_3",
+     "send_inr": 20000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 4000,
+     "date": "2026-10-20",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen"
+    }
+   ],
+   "rationale": "Student converts 980,000 INR on the cheapest route (inr_cny_3) arriving 10-15; parent funds the shortfall with a second conversion on the same route, arriving before the first due date.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 3,
+   "send_inr": 608373.0,
+   "delivered_cny": 42003.13,
+   "fees_cny": 561.08,
+   "bank_fees_cny": 2193.7,
+   "saved_vs_bank_cny": 1632.62,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "route_not_cheapest"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 7508,
+   "model_calls": 5,
+   "seconds": 57.72,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-20",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-10",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000
+    }
+   ],
+   "rationale": "Convert just enough INR for each due CNY, then pay on due dates.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model stopped without a valid plan",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "safe_quota_exceeded"
+   ],
+   "model_proposals": 1,
+   "error_counts": {
+    "safe_quota_exceeded": 1
+   },
+   "proposals": 2,
+   "tokens": 12400,
+   "model_calls": 7,
+   "seconds": 35.93,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 1 proposal(s)",
+   "iterations": 3,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.0,
+   "delivered_cny": 36001.03,
+   "fees_cny": 328.97,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 1,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 3,
+   "tokens": 13846,
+   "model_calls": 8,
+   "seconds": 47.45,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 366000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 153267.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 366,000; the parent would remit INR 153,267, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 1,
+   "send_inr": 434249.0,
+   "delivered_cny": 30001.03,
+   "fees_cny": 380.77,
+   "bank_fees_cny": 1374.12,
+   "saved_vs_bank_cny": 993.36,
+   "tcs_inr": 7684.98,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "route_not_cheapest",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 4673,
+   "model_calls": 4,
+   "seconds": 35.09,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-14",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert needed CNY via parent then pay tuition before due",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "groq-tools",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 3,
+   "iterations_to_valid": 3,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 1,
+   "send_inr": 550000.0,
+   "delivered_cny": 38002.54,
+   "fees_cny": 477.66,
+   "bank_fees_cny": 1695.63,
+   "saved_vs_bank_cny": 1217.97,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [
+    "amount_mismatch"
+   ],
+   "model_proposals": 3,
+   "error_counts": {
+    "amount_mismatch": 2,
+    "insufficient_cny": 1
+   },
+   "proposals": 3,
+   "tokens": 16148,
+   "model_calls": 6,
+   "seconds": 128.9,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 550000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-14",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "One student conversion on the 1-day route covers deposit and tuition with headroom; both paid on time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 317158.0,
+   "delivered_cny": 22001.05,
+   "fees_cny": 188.59,
+   "bank_fees_cny": 1048.89,
+   "saved_vs_bank_cny": 860.3,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3833,
+   "model_calls": 2,
+   "seconds": 56.54,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 317158.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 22,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 1 proposal(s)",
+   "iterations": 3,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_cny"
+   ],
+   "model_proposals": 1,
+   "error_counts": {
+    "insufficient_cny": 2
+   },
+   "proposals": 3,
+   "tokens": 15802,
+   "model_calls": 8,
+   "seconds": 114.32,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 5,
+   "send_inr": 754357.0,
+   "delivered_cny": 52005.25,
+   "fees_cny": 772.58,
+   "bank_fees_cny": 2935.11,
+   "saved_vs_bank_cny": 2162.53,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "route_not_cheapest"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 12740,
+   "model_calls": 7,
+   "seconds": 84.61,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_3",
+     "remitter": "student",
+     "send_inr": 58332
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_1",
+     "remitter": "student",
+     "send_inr": 434839
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-20",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 4000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Convert needed CNY early via cheapest routes, then pay each obligation on its due date.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 521311.0,
+   "delivered_cny": 36002.08,
+   "fees_cny": 470.92,
+   "bank_fees_cny": 1783.91,
+   "saved_vs_bank_cny": 1312.99,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 5366,
+   "model_calls": 4,
+   "seconds": 34.35,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-14",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000
+    }
+   ],
+   "rationale": "Convert INR to cover deposit then tuition, then pay each on due date.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 2 proposal(s)",
+   "iterations": 4,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_cny",
+    "insufficient_inr"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "insufficient_inr": 1,
+    "insufficient_cny": 2
+   },
+   "proposals": 4,
+   "tokens": 22380,
+   "model_calls": 8,
+   "seconds": 178.53,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 2,
+   "send_inr": 318784.0,
+   "delivered_cny": 22002.0,
+   "fees_cny": 301.4,
+   "bank_fees_cny": 1221.38,
+   "saved_vs_bank_cny": 919.97,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 5631,
+   "model_calls": 4,
+   "seconds": 23.92,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-30",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-30",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000.0
+    }
+   ],
+   "rationale": "Convert needed CNY just before each rent due and pay all rent obligations on time.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 1 proposal(s)",
+   "iterations": 3,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 1,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 3,
+   "tokens": 13856,
+   "model_calls": 8,
+   "seconds": 84.73,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 3,
+   "send_inr": 521577.0,
+   "delivered_cny": 36003.19,
+   "fees_cny": 488.42,
+   "bank_fees_cny": 1952.62,
+   "saved_vs_bank_cny": 1464.19,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 9900,
+   "model_calls": 6,
+   "seconds": 14.26,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-18",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 193967
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-18",
+     "route_id": "route_inr_cny_2",
+     "remitter": "parent",
+     "send_inr": 240548
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-20",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Split tuition conversion between student and parent to stay within spendable INR and preserve rate\u2011target reserve; rent conversion early.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 3 proposal(s)",
+   "iterations": 5,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.11,
+   "delivered_cny": 36001.04,
+   "fees_cny": 328.96,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "amount_mismatch",
+    "rate_target_reserve"
+   ],
+   "model_proposals": 3,
+   "error_counts": {
+    "amount_mismatch": 2,
+    "rate_target_reserve": 1,
+    "insufficient_cny": 2
+   },
+   "proposals": 5,
+   "tokens": 25757,
+   "model_calls": 8,
+   "seconds": 153.7,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 281111.11,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 238156.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 138,889 for rate targets) covers INR 281,111; the parent would remit INR 238,156, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 4,
+   "send_inr": 695435.0,
+   "delivered_cny": 48004.18,
+   "fees_cny": 651.23,
+   "bank_fees_cny": 2603.48,
+   "saved_vs_bank_cny": 1952.25,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "route_not_cheapest"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 9982,
+   "model_calls": 6,
+   "seconds": 57.02,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 115994
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-16",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-02",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 405317
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-25",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-30",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Convert just enough INR for each CNY payment using the cheapest fast route, then pay each obligation on its due date.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "deterministic (fallback)",
+   "model": "qwen/qwen3.8-27b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['qwen/qwen3.8-27b']: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_re",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 691018.0,
+   "delivered_cny": 48001.06,
+   "fees_cny": 345.32,
+   "bank_fees_cny": 2087.32,
+   "saved_vs_bank_cny": 1741.99,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 3837,
+   "model_calls": 2,
+   "seconds": 54.2,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 691018.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-15",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 48,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v2",
+   "model_requested": "qwen/qwen3.8-27b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['openai/gpt-oss-120b']: Error code: 400 - {'error': {'message': 'Failed to parse tool call arguments as JSON', 'type': 'invalid_request_error', 'code': 'tool_use_failed', 'failed_",
+   "iterations": 3,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 1,
+   "error_counts": {
+    "insufficient_inr": 1
+   },
+   "proposals": 3,
+   "tokens": 11515,
+   "model_calls": 7,
+   "seconds": 102.86,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 500000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 105542.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 500,000; the parent would remit INR 105,542, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 3,
+   "send_inr": 608373.0,
+   "delivered_cny": 42003.13,
+   "fees_cny": 561.08,
+   "bank_fees_cny": 2193.7,
+   "saved_vs_bank_cny": 1632.62,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 7506,
+   "model_calls": 5,
+   "seconds": 58.59,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-24",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-14",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Convert just enough INR for each CNY payment, then pay on due dates, staying within SAFE quota and keeping remaining INR.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "safe_quota_tuition",
+   "title": "SAFE-quota tuition",
+   "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model never proposed a plan",
+   "iterations": 1,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 2,
+   "send_inr": 5753305.0,
+   "delivered_cny": 400001.04,
+   "fees_cny": 2523.19,
+   "bank_fees_cny": 16316.14,
+   "saved_vs_bank_cny": 13792.95,
+   "tcs_inr": 95066.1,
+   "warnings": [
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 14838,
+   "model_calls": 8,
+   "seconds": 93.32,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 4400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 1353305.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 400000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 400,000 with 2 conversion(s) on the cheapest route that arrives in time. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "late_scholarship",
+   "title": "Late scholarship",
+   "tests": "Do not count on the missing stipend; fund the gap another way.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 3,
+   "send_inr": 521576.0,
+   "delivered_cny": 36003.12,
+   "fees_cny": 488.42,
+   "bank_fees_cny": 1952.61,
+   "saved_vs_bank_cny": 1464.19,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 12296,
+   "model_calls": 7,
+   "seconds": 74.99,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 87062
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 278738
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 155776
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert needed CNY on 2026-10-31 so it arrives by 2026-11-01; student covers rent and part of tuition, parent covers shortfall; then pay obligations on due dates.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "parent_tcs",
+   "title": "Parent remitter crossing TCS",
+   "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 1,
+   "send_inr": 434249.0,
+   "delivered_cny": 30001.03,
+   "fees_cny": 380.77,
+   "bank_fees_cny": 1374.12,
+   "saved_vs_bank_cny": 993.36,
+   "tcs_inr": 7684.98,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "route_not_cheapest",
+    "tcs"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 2771,
+   "model_calls": 3,
+   "seconds": 17.53,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-20",
+     "remitter": "parent",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert via fast route then pay tuition before due",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "rate_target",
+   "title": "Rate target to protect",
+   "tests": "Keep the INR the rate target needs unconverted.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model never proposed a plan",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.71,
+   "delivered_cny": 42001.06,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 14691,
+   "model_calls": 8,
+   "seconds": 91.89,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 349285.71,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 256257.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 285,714 for rate targets) covers INR 349,286; the parent would remit INR 256,257, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "multiple_obligations",
+   "title": "Five obligations",
+   "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 5,
+   "obligations": 5,
+   "conversions": 5,
+   "send_inr": 753565.0,
+   "delivered_cny": 52005.25,
+   "fees_cny": 717.17,
+   "bank_fees_cny": 2932.91,
+   "saved_vs_bank_cny": 2215.74,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 10212,
+   "model_calls": 6,
+   "seconds": 41.07,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 58130
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-20",
+     "obligation_id": "obl_hostel_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 4000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Convert just enough INR for each CNY payment using cheapest fast route, then pay on due dates.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "urgent_deadline",
+   "title": "Urgent deposit",
+   "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 521311.0,
+   "delivered_cny": 36002.08,
+   "fees_cny": 470.92,
+   "bank_fees_cny": 1783.91,
+   "saved_vs_bank_cny": 1312.99,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 5397,
+   "model_calls": 4,
+   "seconds": 26.75,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 87062
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-14",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-13",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 434249
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Convert INR to cover deposit then tuition, then pay each on due date.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_shared_landlord",
+   "title": "Held-out: two tenants, one landlord",
+   "tests": "Pay each of the four obligations once, in its own exact amount, to the shared payee; do not merge or split them.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 2,
+   "send_inr": 318784.0,
+   "delivered_cny": 22002.0,
+   "fees_cny": 301.4,
+   "bank_fees_cny": 1221.38,
+   "saved_vs_bank_cny": 919.97,
+   "tcs_inr": 0.0,
+   "warnings": [],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 5591,
+   "model_calls": 4,
+   "seconds": 27.65,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-31",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_a",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_b",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000
+    },
+    {
+     "action": "convert",
+     "date": "2026-11-30",
+     "route_id": "route_inr_cny_2",
+     "remitter": "student",
+     "send_inr": 159392
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_a2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000
+    },
+    {
+     "action": "pay",
+     "date": "2026-12-01",
+     "obligation_id": "obl_rent_b2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 5000
+    }
+   ],
+   "rationale": "Convert just enough INR for each month's rent and pay on due dates.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_year_boundary",
+   "title": "Held-out: tuition across the SAFE year boundary",
+   "tests": "Stage conversions across 2026 and 2027 within the SAFE quota and use the parent for the INR the student lacks.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model never proposed a plan",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 1,
+   "obligations": 1,
+   "conversions": 3,
+   "send_inr": 5035144.0,
+   "delivered_cny": 350001.05,
+   "fees_cny": 2277.76,
+   "bank_fees_cny": 14489.37,
+   "saved_vs_bank_cny": 12211.6,
+   "tcs_inr": 60702.88,
+   "warnings": [
+    "low_runway",
+    "parent_remitter",
+    "safe_quota_near",
+    "tcs"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 13108,
+   "model_calls": 8,
+   "seconds": 63.25,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 3000000,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 1400000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "convert",
+     "date": "2027-01-01",
+     "send_inr": 635144.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2027-01-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 350000.0
+    }
+   ],
+   "rationale": "Pay 1 obligation(s) 2 days before each due date; fund the CNY shortfall of 350,000 with 3 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 3,000,000; the parent would remit INR 1,400,000, which needs the parent's consent. Staged: INR 4,400,000 now (the SAFE quota leaves INR 4,400,000 this calendar year), the rest from January. The student's own INR (after keeping INR 0 for rate targets) covers INR 0; the parent woul",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_scholarship_target",
+   "title": "Held-out: late scholarship and a rate target",
+   "tests": "Ignore the missing stipend, keep the target's INR unconverted, fund the gap from the parent.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "the model never proposed a plan",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 2,
+   "obligations": 2,
+   "conversions": 2,
+   "send_inr": 519267.11,
+   "delivered_cny": 36001.04,
+   "fees_cny": 328.96,
+   "bank_fees_cny": 1778.23,
+   "saved_vs_bank_cny": 1449.27,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "late_income_ignored",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr",
+    "rate_target_reserve"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 9166,
+   "model_calls": 8,
+   "seconds": 49.44,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 281111.11,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 238156.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-18",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 2 obligation(s) 2 days before each due date; fund the CNY shortfall of 36,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 138,889 for rate targets) covers INR 281,111; the parent would remit INR 238,156, which needs the parent's consent.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "heldout_deposit_rent_tuition",
+   "title": "Held-out: deposit, rent and tuition on a thin margin",
+   "tests": "A fast route for the urgent deposit, cheap routes for the rest, no INR overdraft.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "no valid plan after 2 proposal(s)",
+   "iterations": 3,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 4,
+   "obligations": 4,
+   "conversions": 1,
+   "send_inr": 691018.0,
+   "delivered_cny": 48001.06,
+   "fees_cny": 345.32,
+   "bank_fees_cny": 2087.32,
+   "saved_vs_bank_cny": 1741.99,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway"
+   ],
+   "first_errors": [
+    "insufficient_cny"
+   ],
+   "model_proposals": 2,
+   "error_counts": {
+    "insufficient_cny": 1,
+    "insufficient_inr": 1
+   },
+   "proposals": 3,
+   "tokens": 16679,
+   "model_calls": 8,
+   "seconds": 100.69,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 691018.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-15",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 8000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-23",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 28000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-29",
+     "obligation_id": "obl_rent_2",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    }
+   ],
+   "rationale": "Pay 4 obligation(s) 2 days before each due date; fund the CNY shortfall of 48,000 with 1 conversion(s) on the cheapest route that arrives in time.",
+   "format": "v3",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 1,
+   "set": "heldout",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "shortfall",
+   "title": "Arrival shortfall (the demo student)",
+   "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+   "planner": "deterministic (fallback)",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": true,
+   "fallback_reason": "RuntimeError: Groq unavailable on ['openai/gpt-oss-120b']: Error code: 400 - {'error': {'message': 'Failed to parse tool call arguments as JSON', 'type': 'invalid_request_error', 'code': 'tool_use_failed', 'failed_",
+   "iterations": 2,
+   "iterations_to_valid": null,
+   "model_valid_without_fallback": false,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 2,
+   "send_inr": 605542.0,
+   "delivered_cny": 42001.01,
+   "fees_cny": 365.13,
+   "bank_fees_cny": 2017.87,
+   "saved_vs_bank_cny": 1652.74,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "parent_remitter"
+   ],
+   "first_errors": [
+    "insufficient_inr"
+   ],
+   "model_proposals": 0,
+   "error_counts": {},
+   "proposals": 2,
+   "tokens": 3703,
+   "model_calls": 3,
+   "seconds": 9.73,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 500000.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "student"
+    },
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "send_inr": 105542.0,
+     "route_id": "route_inr_cny_3",
+     "remitter": "parent"
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-23",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-10-30",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen",
+     "amount_cny": 6000.0
+    },
+    {
+     "action": "pay",
+     "date": "2026-11-13",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x",
+     "amount_cny": 30000.0
+    }
+   ],
+   "rationale": "Pay 3 obligation(s) 2 days before each due date; fund the CNY shortfall of 42,000 with 2 conversion(s) on the cheapest route that arrives in time. The student's own INR (after keeping INR 0 for rate targets) covers INR 500,000; the parent would remit INR 105,542, which needs the parent's consent.",
+   "format": "v2",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  },
+  {
+   "scenario": "tight_runway",
+   "title": "Tight runway",
+   "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+   "planner": "groq-tools",
+   "model": "openai/gpt-oss-120b",
+   "valid": true,
+   "fell_back": false,
+   "fallback_reason": null,
+   "iterations": 1,
+   "iterations_to_valid": 1,
+   "model_valid_without_fallback": true,
+   "deadlines_met": 3,
+   "obligations": 3,
+   "conversions": 1,
+   "send_inr": 610000.0,
+   "delivered_cny": 42150.16,
+   "fees_cny": 527.88,
+   "bank_fees_cny": 1862.28,
+   "saved_vs_bank_cny": 1334.4,
+   "tcs_inr": 0.0,
+   "warnings": [
+    "low_runway",
+    "route_not_cheapest"
+   ],
+   "first_errors": [],
+   "model_proposals": 1,
+   "error_counts": {},
+   "proposals": 1,
+   "tokens": 6092,
+   "model_calls": 4,
+   "seconds": 33.37,
+   "steps": [
+    {
+     "action": "convert",
+     "date": "2026-10-12",
+     "remitter": "student",
+     "route_id": "route_inr_cny_2",
+     "send_inr": 610000
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-10-25",
+     "obligation_id": "obl_deposit_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 6000,
+     "date": "2026-11-01",
+     "obligation_id": "obl_rent_1",
+     "payee_id": "payee_landlord_chen"
+    },
+    {
+     "action": "pay",
+     "amount_cny": 30000,
+     "date": "2026-11-15",
+     "obligation_id": "obl_tuition_1",
+     "payee_id": "payee_univ_x"
+    }
+   ],
+   "rationale": "Convert once via fastest cheap route, then pay each obligation on due date.",
+   "format": "v2",
+   "model_requested": "openai/gpt-oss-120b",
+   "rep": 0,
+   "set": "original",
+   "run_date": "2026-10-12",
+   "per_plan_cap": 22000
+  }
+ ]
+}

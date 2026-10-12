@@ -80,7 +80,7 @@ The final plan was valid in all 24 only because the fallback is the deterministi
 | Pooled | 8 of 11 | 9 of 25 |
 | Tokens per plan (originals) | 15,459 | 20,809 |
 
-Planner format v3 (calculator tools `facts_sheet` and `size_conversion`, numeric `fix` hints on validator errors, a prompt under half the length) is built and tested offline; its live evaluation is pending and v2 stays the default. Pre-registered decision rule and commands: [planner-efficiency.md](planner-efficiency.md).
+Planner format v3 (calculator tools `facts_sheet` and `size_conversion`, numeric `fix` hints on validator errors, a prompt under half the length) was evaluated live on 2026-10-12 but the comparison is INCOMPLETE (daily quota ran out; the v2 gpt-oss-120b cell has 2 of 24 plans), so v2 stays the default. Model-only valid: v3 gpt-oss-120b 14 of 24 (58%), v3 qwen3.8-27b 4 of 24 (17%), v2 qwen3.8-27b 4 of 24 (17%); pooled v3 18/48 vs v2 5/26, Fisher p = 0.123. Small samples; table in [planner-efficiency.md](planner-efficiency.md). Pre-registered decision rule and commands: [planner-efficiency.md](planner-efficiency.md).
 
 ## 5. Student-outcome simulation (a model with stated assumptions)
 

@@ -63,7 +63,7 @@ Decision: `v2` stays the default because it was at least as good on every compar
 
 ## v3: calculator tools — protocol and pre-registered evaluation
 
-Status (2026-10-11): **built and tested offline; no live result exists.** `v2` stays the default. v3 is selected with `OASIS_PLANNER_FORMAT=v3` (or `AgenticPlanner(llm, fmt="v3")`, or `--format v3` in the evaluation CLI). `v1` and `v2` are byte-for-byte unchanged (snapshot test in `tests/test_planning_v3.py`, fixture `tests/snapshots/planner_v1_v2.json`, taken before the change).
+Status (2026-10-12): **live evaluation INCOMPLETE; the pre-registered verdict is INCOMPLETE and `v2` stays the default.** Three of the four cells finished (24 plans each); the fourth (v2 with gpt-oss-120b) has 2 of 24 plans because the daily token quota of all four keys ran out. v3 is selected with `OASIS_PLANNER_FORMAT=v3` (or `AgenticPlanner(llm, fmt="v3")`, or `--format v3` in the evaluation CLI). `v1` and `v2` are byte-for-byte unchanged (snapshot test in `tests/test_planning_v3.py`, fixture `tests/snapshots/planner_v1_v2.json`, taken before the change).
 
 ### Why
 
@@ -126,3 +126,28 @@ Other options: `--rep N` runs one repeat, `--only id,id` selects scenarios, `--p
 Token budget (an estimate): v3 is aimed at 12-15k tokens per plan, so about 290-360k per v3 cell; v2 measured 15-20k per plan, so about 360-480k per v2 cell; about 1.3-1.7M tokens for all four cells. Budgets are per key: `OASIS_GROQ_DAILY_TOKENS` (default 180000) and `OASIS_GROQ_DAILY_REQUESTS` (default 900) apply to each key in `GROQ_API_KEY` separately (a comma-separated list), so keys times the daily budget decides how many days the run takes; one cell needs roughly 150-200 requests. The v3 token figure is a target, not a measurement.
 
 The report table (format x model) shows: model-only valid rate with per-repeat values and spread, final-valid rate (inflated by the fallback), fallback rate and reasons, validator errors by code, arithmetic-error share (`amount_mismatch`, `insufficient_cny`, `insufficient_inr`, `rate_target_reserve`, `safe_quota_exceeded`), mean proposals to valid, tokens, calls and seconds per plan, the v3-vs-v2 Fisher exact p (per model and pooled), held-out and per-scenario breakdowns, and the decision.
+
+### Live results (2026-10-12, partial)
+
+Full report: `eval/reports/planning_v3.md`. 12 scenarios x 2 repeats, temperature 0.3, scored by the deterministic validator. No planner, prompt, cap, validator, scenario or rule was changed after seeing results.
+
+| Format | Model | Plans | Model-only valid | Per repeat | Final valid | Fallbacks | Tokens / plan | Calls / plan | Seconds / plan |
+|---|---|---|---|---|---|---|---|---|---|
+| v3 | gpt-oss-120b | 24 | 14 (58%) | 8/12, 6/12 (17 pp spread) | 24 of 24 | 10 (42%): never proposed 4, no valid plan after proposals 4, malformed tool call 1, stopped without a plan 1 | 10,349 | 6.25 | 57 |
+| v2 | gpt-oss-120b | 2 of 24 | 1 of 2 | incomplete | 2 of 2 | 1 (malformed tool call) | 4,898 | 3.5 | 22 |
+| v3 | qwen3.8-27b | 24 | 4 (17%) | 2/12, 2/12 | 24 of 24 | 20 (83%): all malformed tool calls (Groq 400 "Failed to call a function") | 3,493 | 2.67 | 41 |
+| v2 | qwen3.8-27b | 24 | 4 (17%) | 2/12, 2/12 | 24 of 24 | 20 (83%): malformed tool call 15, no valid plan after proposals 4, never proposed 1 | 10,787 | 4.25 | 91 |
+
+Arithmetic errors (validator errors where the number was wrong, every proposal): v2 qwen 43 of 43 (100%), v3 qwen 8 of 10 (80%; the other two were `unknown_route`), v3 gpt-oss 9 of 9 (100%), v2 gpt-oss 0. Fisher exact two-sided: qwen v3 vs v2 4/24 vs 4/24, p = 1.000; gpt-oss 14/24 vs 1/2, p = 1.000 (uninformative); pooled 18/48 (38%) vs 5/26 (19%), delta +18 pp, p = 0.123. Held-out model-only valid: pooled v3 5/16, v2 1/8 (qwen 1/8 vs 1/8; gpt-oss v3 4/8, no v2 held-out plan yet).
+
+Pre-registered verdict: **INCOMPLETE.** The rule needs two complete repeats in every compared cell, and the v2 gpt-oss cell has 2 of 24 plans. The observed pooled delta (+18 pp) is only just above 15 pp, the v2 spread is 0 pp for qwen and unknown for gpt-oss, and the pooled delta is carried by gpt-oss v3 against a 2-plan v2 baseline, so it should not be read as passing the rule (p = 0.123). Plainly: nothing here shows v3 is better for qwen3.8-27b (identical 17%; its failures are dominated by Groq rejecting the model's own tool-call generation, which neither format fixes), and v3 on gpt-oss-120b looks plausible (58%) but has no v2 baseline of comparable size. v3 does cut tokens per plan on qwen (3,493 against 10,787), mostly because malformed calls end the plan early, so that is not evidence of efficiency at equal validity. Token and time figures include rate-limit waits.
+
+Per key (UTC day 2026-10-12, all runs that day including earlier work): fingerprint 499b1366 181.6k tokens, d40d45b2 182.4k, ceef6c23 181.4k, a1d412ac 163.4k; all four were at the 180k daily guard at the end.
+
+To finish (needs a fresh daily quota, about 250-350k tokens for the remaining 22 plans):
+
+```
+export PYTHONPATH=. OASIS_GROQ_DAILY_TOKENS=180000 OASIS_GROQ_DAILY_REQUESTS=900 OASIS_GROQ_MAX_RETRIES=8
+python -m eval.planning_v3 --format v2 --model openai/gpt-oss-120b --repeats 2 --cap 450000
+python -m eval.planning_v3 --report
+```

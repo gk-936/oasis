@@ -70,6 +70,8 @@ def fallback_class(reason: str | None) -> str:
         return "never proposed"
     if r.startswith("no valid plan after"):
         return "no valid plan after proposals"
+    if "tool_use_failed" in r or "failed to call a function" in r:
+        return "malformed tool call"          # the model's own generation was invalid (Groq 400): a model failure, not quota
     if "stopped without" in r:
         return "stopped without a plan"
     if r:
