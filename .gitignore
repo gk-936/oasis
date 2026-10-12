@@ -51,3 +51,6 @@ tools/tmp/
 # live exchange-rate cache (written when OASIS_RATES=live)
 data/rates_cache.json
 data/rates_cache.tmp
+
+# the Docker env template is documentation, not a secret
+!.env.docker.example

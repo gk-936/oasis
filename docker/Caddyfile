@@ -1,0 +1,18 @@
+# HTTPS front for the compose `tls` profile (UNTESTED end to end).
+# OASIS_DOMAIN=oasis.example.com  => Caddy obtains and renews a Let's Encrypt certificate automatically
+#                                    (needs public DNS for the name and ports 80 and 443 reachable from the internet).
+# OASIS_DOMAIN unset / localhost  => Caddy's internal CA: browsers warn until you trust it. Fine for trying it out.
+#
+# Post-quantum note: Caddy built with Go >= 1.24 offers the hybrid X25519MLKEM768 key exchange by default to clients that
+# support it (current Chrome/Firefox/Edge), with no configuration. Unlike tools/caddy/Caddyfile (the local demo), this file does
+# NOT force "curves x25519mlkem768", because that would lock out every client without ML-KEM. To require it, add inside the
+# site block:   tls { curves x25519mlkem768 }   and read docs/pq-tls.md (and verify the Go version of the caddy:2 image).
+{
+	admin off
+}
+
+{$OASIS_DOMAIN:localhost} {
+	encode zstd gzip
+	# Caddy sets X-Forwarded-For/-Proto/-Host and keeps the original Host header, which the app's Origin check relies on.
+	reverse_proxy oasis:8000
+}

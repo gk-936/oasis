@@ -1,0 +1,68 @@
+# Oasis: docker compose up -d --build         (reads .env.docker; copy .env.docker.example first)
+# With HTTPS via Caddy (UNTESTED end to end, see docs/deployment-docker.md):  docker compose --profile tls up -d --build
+# State lives in the named volume `oasis-data` (database + keys). `docker compose down -v` DELETES it.
+name: oasis
+
+services:
+  oasis:
+    build:
+      context: .
+    image: oasis:latest
+    env_file: .env.docker
+    environment:
+      # the compose network below; the proxy (Caddy) lives in it. Override in .env.docker for another proxy.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-172.30.77.0/24}
+    ports:
+      - "${OASIS_BIND:-127.0.0.1}:${OASIS_PORT:-8000}:8000"
+    volumes:
+      - oasis-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    networks:
+      - oasis-net
+
+  # Optional HTTPS front (profile `tls`). UNTESTED end to end: written from the Caddy docs, not run on this machine.
+  caddy:
+    profiles: ["tls"]
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      oasis:
+        condition: service_healthy
+    environment:
+      OASIS_DOMAIN: ${OASIS_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - oasis-net
+
+volumes:
+  oasis-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  oasis-net:
+    ipam:
+      config:
+        - subnet: 172.30.77.0/24

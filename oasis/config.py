@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
+DATA_DIR = Path(os.environ["OASIS_DATA_DIR"]) if os.environ.get("OASIS_DATA_DIR") else ROOT / "data"   # /data in the container
 RULES_DIR = Path(__file__).resolve().parent / "trust" / "rules"
 
 

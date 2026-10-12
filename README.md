@@ -52,7 +52,7 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Live model vs injections | Model followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
-| Tests | 573 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Tests | 588 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
 
@@ -75,10 +75,12 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 573 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 588 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
+
+**Hosting (Docker):** `docker compose up -d --build` runs an offline, single-worker container that refuses the public demo passcodes; see [docs/deployment-docker.md](docs/deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
 
 ## Login and roles
 
@@ -135,6 +137,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) | what is working code and what is MOCK |
 | [docs/execution-evidence.md](docs/execution-evidence.md) | sandbox logs and reports, how to regenerate them |
 | [docs/planner-efficiency.md](docs/planner-efficiency.md) | planner format experiments (v1, v2, v3) |
+| [docs/deployment-docker.md](docs/deployment-docker.md) | Docker image, compose (+ optional Caddy TLS), hosting options, hosted-security checklist, backup and reset |
 | [docs/pq-tls.md](docs/pq-tls.md) / [docs/fisco-bcos.md](docs/fisco-bcos.md) | post-quantum TLS recipe; FISCO BCOS local-chain anchoring |
 | [PROGRESS.md](PROGRESS.md) | build ledger |
 

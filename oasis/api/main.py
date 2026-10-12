@@ -90,6 +90,31 @@ MAX_UPLOAD = 12_000_000          # bytes for the image upload
 _STATE_LOCK = threading.Lock()   # a thread lock (not asyncio): it also serialises requests served from different event loops
 
 
+def _env_origins() -> set[str]:
+    """OASIS_ALLOWED_ORIGINS: extra exact origins (comma-separated, e.g. https://oasis.example.com) for a public deployment."""
+    return {o.strip().rstrip("/") for o in os.environ.get("OASIS_ALLOWED_ORIGINS", "").split(",") if o.strip()}
+
+
+def _origin_allowed(origin: str, request: HttpRequest) -> bool:
+    """Same-host check for the Origin header. Behind a TLS-terminating proxy that rewrites Host, the public host is also
+    accepted from X-Forwarded-Host, but ONLY when OASIS_TRUST_FORWARDED_HOST=1 (the operator says a proxy sets it) or from
+    the exact-origin allow-list OASIS_ALLOWED_ORIGINS. Unset, behaviour is the plain same-host check."""
+    host = origin.split("://", 1)[-1]
+    if host == request.headers.get("host") or origin.rstrip("/") in _env_origins():
+        return True
+    if os.environ.get("OASIS_TRUST_FORWARDED_HOST") == "1":
+        fwd = (request.headers.get("x-forwarded-host") or "").split(",")[0].strip()
+        return bool(fwd) and host == fwd
+    return False
+
+
+def _cookie_secure(request: HttpRequest) -> bool:
+    """Secure flag for the session cookie: always when OASIS_COOKIE_SECURE=1; otherwise when the request arrived over https
+    (behind a proxy that is the scheme uvicorn derives from X-Forwarded-Proto for trusted proxies only: --forwarded-allow-ips).
+    Plain http://localhost keeps a non-Secure cookie."""
+    return os.environ.get("OASIS_COOKIE_SECURE") == "1" or request.url.scheme == "https"
+
+
 @app.middleware("http")
 async def guard(request: HttpRequest, call_next):
     """Cross-cutting protections for every request.
@@ -105,7 +130,7 @@ async def guard(request: HttpRequest, call_next):
         return JSONResponse({"detail": "not found"}, status_code=404)
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         origin = request.headers.get("origin")
-        if origin and origin != "null" and origin not in CORS_ORIGINS and origin.split("://", 1)[-1] != request.headers.get("host"):
+        if origin and origin != "null" and origin not in CORS_ORIGINS and not _origin_allowed(origin, request):
             return JSONResponse({"detail": "cross-origin request refused"}, status_code=403)
         if origin == "null":
             return JSONResponse({"detail": "cross-origin request refused"}, status_code=403)
@@ -531,7 +556,7 @@ def login(body: LoginIn, request: HttpRequest, response: Response, return_token:
         raise HTTPException(401, "wrong role or passcode")
     token, p = res
     response.set_cookie(COOKIE, token, max_age=S.auth.ttl_s, httponly=True, samesite="strict",
-                        secure=request.url.scheme == "https", path="/")
+                        secure=_cookie_secure(request), path="/")
     out = {"role": p.role, "expires_at": datetime.fromtimestamp(p.exp, timezone.utc).isoformat(timespec="seconds")}
     if return_token:           # for scripts/CLI that cannot keep a cookie jar; the browser UI never asks for it
         out["token"] = token

@@ -24,6 +24,11 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | `OASIS_RATES` | mock | `live` uses the real ECB reference rate (badge live / STALE / MOCK); see [live-rates.md](live-rates.md) |
 | `OASIS_ANCHOR` | local simulation | `fisco` uses the 4-node local FISCO BCOS test chain |
 | `OASIS_DB` | `data/oasis.db` | SQLite location; `:memory:` for none |
+| `OASIS_DATA_DIR` | `data/` | base directory for the LLM cache, rate cache and other defaults (`/data` in the Docker image) |
+| `OASIS_COOKIE_SECURE` | unset | `1` forces the `Secure` flag on the session cookie (it is also set automatically for https requests, including `X-Forwarded-Proto: https` from a trusted proxy) |
+| `OASIS_ALLOWED_ORIGINS` | unset | extra exact origins (comma-separated, e.g. `https://oasis.example.com`) accepted by the Origin/CSRF check behind a proxy that rewrites `Host` |
+| `OASIS_TRUST_FORWARDED_HOST` | unset | `1` also accepts `X-Forwarded-Host` as the public host in the Origin check (the Docker entrypoint sets it when `FORWARDED_ALLOW_IPS` is set) |
+| `FORWARDED_ALLOW_IPS`, `PORT` | `127.0.0.1`, `8000` | read by the Docker command: proxy addresses whose `X-Forwarded-*` headers uvicorn believes (per-IP rate limits, https detection), and the listen port. See [deployment-docker.md](deployment-docker.md) |
 
 Model IDs were checked against console.groq.com/docs/models on 2026-10-10. `qwen/qwen3-32b` and `qwen/qwen3.6-27b` are retired. The Groq adapter rate-limits itself, backs off on 429 (honouring `retry-after`), keeps a daily budget on disk, caches every response on disk (`data/llm_cache/`; cache hits cost nothing) and falls back to the second model. If Groq is unavailable the offline parser is the floor. Unit tests use a fake client; the adapter, image intake and the benchmark have also been run live (2026-10-10).
 
