@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import re
 import time
 import unicodedata
@@ -151,6 +152,25 @@ def heuristic_risk(fields: dict, text: str, known_names: list[str], known_accoun
     for w, _ in flags:
         p *= 1 - w
     return RiskAssessment(round(1 - p, 3), [m for _, m in flags])
+
+
+_ML = None
+
+
+def ml_escalate(h: RiskAssessment, fields, text, known_names, known_accounts, expected_amount, ctx) -> RiskAssessment:
+    """OASIS_ML_RISK=1: also score with the small trained model (`ml_risk.py`) and keep the HIGHER of the two scores, so it can
+    only escalate. Off by default; if the model file is missing the rule score stands unchanged."""
+    global _ML
+    if os.environ.get("OASIS_ML_RISK") != "1":
+        return h
+    from .ml_risk import MLRisk
+    _ML = _ML or MLRisk()
+    if not _ML.available:
+        return h
+    p, why = _ML.score(fields, text, known_names, known_accounts, expected_amount, ctx)
+    if p <= h.score + 1e-9:
+        return h
+    return RiskAssessment(round(p, 3), h.evidence + [f"trained risk model p={p:.2f}: {', '.join(why) or 'overall pattern'}"], h.components)
 
 
 class LLM(ABC):
@@ -411,7 +431,8 @@ class OfflineLLM(LLM):
         return Extraction(f, conf, translation, injected, followed, tokens)
 
     def risk(self, fields, text, known_names, known_accounts, expected_amount, ctx=None):
-        return heuristic_risk(fields, text, known_names, known_accounts, expected_amount, ctx)
+        return ml_escalate(heuristic_risk(fields, text, known_names, known_accounts, expected_amount, ctx),
+                           fields, text, known_names, known_accounts, expected_amount, ctx)
 
     def explain(self, kind: str, ctx: dict, language: str = "en") -> str:
         return explain_template(kind, ctx, language)
@@ -895,7 +916,8 @@ class GroqLLM(OfflineLLM):
         """Heuristic scorer; with `llm_risk` (live mode only) also an LLM scorer, combined as max(heuristic, llm).
         The LLM can therefore only ESCALATE. If its call fails or is unusable the heuristic score stands and the failure
         is recorded in `components` and `risk_stats`."""
-        h = heuristic_risk(fields, text, known_names, known_accounts, expected_amount, ctx)
+        h = ml_escalate(heuristic_risk(fields, text, known_names, known_accounts, expected_amount, ctx),
+                        fields, text, known_names, known_accounts, expected_amount, ctx)
         if not self.llm_risk:
             return h
         from ..trust.policy import RISK_HOLD

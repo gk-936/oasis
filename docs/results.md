@@ -103,3 +103,16 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 ## 7. Scripted demo (offline, repeats exactly)
 
 `eval/reports/demo.md`. Run 1 (legitimate): Arjun's plan is valid after 2 proposals and saves CNY 1,653 vs a typical bank route; the savings receipt totals CNY 1,313.66; 4 proof packs, audit chain intact, money lost 0. Run 2 (attack): the forged invoice, rewritten payment instructions and hidden-page injection are all stopped; money lost CNY 0. Audit-chain heads are listed in [execution-evidence.md](execution-evidence.md).
+
+## Trained fraud-risk model vs the rule scorer (optional, `OASIS_ML_RISK=1`)
+
+A small logistic regression (pure Python) trained on the visible scenarios plus a synthetic corpus, evaluated once on the 40-case hidden set; full table and per-category breakdown in [eval/reports/ml_risk.md](../eval/reports/ml_risk.md).
+
+| Scorer (threshold 0.5) | Hidden attacks flagged | Hidden legit flagged | Hidden AUC |
+|---|---|---|---|
+| Rules (hand-set) | 14 / 28 | 0 / 12 | 0.747 |
+| Trained model | 13 / 28 | 0 / 12 | 0.804 |
+| Combined (max, escalate only) | 14 / 28 | 0 / 12 | 0.804 |
+
+Reading it honestly: the model ranks documents slightly better (AUC 0.75 to 0.80) but does not flag more attacks at the threshold. Half of the hidden attacks are flagged by neither scorer because they are not visible in the text (replay, changed approver, mislabelled purpose, encoded instructions); the registry, policy and signed-intent layers stop those, which is why the end-to-end block rate does not depend on this scorer. The synthetic training data was written by the same team as the rules, and the hidden set is small and partly burned. The model is not used unless `OASIS_ML_RISK=1`.
+
