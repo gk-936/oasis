@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { api, short4, signedApprove, useGuard } from "../api.js";
+import { api, short4, signedApprove, upload, useGuard } from "../api.js";
 import { ApprovalActions, Card, Outcome, SAMPLE_INVOICE, TOPUP_TEXT } from "../common.jsx";
 import { t, tl } from "../i18n/index.js";
 import { ErrorBox, Mock, cny } from "../ui.jsx";
@@ -7,6 +7,35 @@ import { ErrorBox, Mock, cny } from "../ui.jsx";
 /* Messages the UI writes itself are stored as {k, vars} and translated when drawn, so they follow a language switch;
    the agent's own replies (r.reply) arrive already written in the language of the request. */
 const GREETING = { role: "oasis", k: "chat.greeting" };
+
+/* Other ways to send an invoice: forwarded from a phone (Telegram) or a watched mailbox. Server-configured; nothing secret is shown. */
+function Channels() {
+  const [c, setC] = useState(null);
+  const [code, setCode] = useState(null);
+  const { busy, err, setErr, run } = useGuard();
+  const load = () => api("/intake/channels").then(setC).catch(setErr);
+  useEffect(() => { load(); }, []);
+  if (!c) return err ? <ErrorBox error={err} onRetry={load} /> : null;
+  const pair = () => run(async () => { setCode(await api("/intake/telegram/pair", {})); });
+  const unpair = () => run(async () => { await api("/intake/telegram/unpair", {}); setCode(null); await load(); });
+  return (
+    <details className="card" data-testid="channels">
+      <summary><b>{t("ch.title")}</b></summary>
+      <p className="muted small">{t("ch.intro")}</p>
+      <ul className="feed">
+        <li>{t("ch.email")}</li>
+        <li>{c.telegram.configured ? t("ch.tg.on", { n: c.telegram.paired_chats }) : t("ch.tg.off")}
+          {c.telegram.configured && <> <button className="ghost" disabled={busy} onClick={pair} data-testid="tg-pair">{t("ch.tg.pair")}</button>
+            {c.telegram.paired_chats > 0 && <button className="ghost" disabled={busy} onClick={unpair}>{t("ch.tg.unpair")}</button>}</>}
+          {code && <p data-testid="tg-code"><code>/pair {code.code}</code> <span className="muted small">{t("ch.tg.code", { m: Math.round(code.expires_in / 60) })}</span></p>}
+          {c.telegram.last_error && <p className="muted small">{t("ch.err", { e: c.telegram.last_error })}</p>}</li>
+        <li>{c.imap.configured ? t("ch.imap.on", { senders: c.imap.allowed_senders.join(", "), p: c.imap.processed, i: c.imap.ignored }) : t("ch.imap.off")}
+          {c.imap.last_error && <p className="muted small">{t("ch.err", { e: c.imap.last_error })}</p>}</li>
+      </ul>
+      <ErrorBox error={err} onDismiss={() => setErr(null)} />
+    </details>
+  );
+}
 
 export function Chat({ refresh, openProof, s }) {
   const [log, setLog] = useState([GREETING]);
@@ -50,6 +79,15 @@ export function Chat({ refresh, openProof, s }) {
     const o = await api("/intake", { remitter: "parent", text: TOPUP_TEXT });
     say({ role: "oasis", k: "chat.topup", vars: { status: o.status }, outcome: o }); refresh();
   });
+  const fileRef = useRef(null);
+  const sendEmail = (file) => run(async () => {
+    if (!file) return;
+    say({ role: "student", k: "chat.email.said", vars: { name: file.name } }); setThinking(true);
+    try {
+      const o = await upload("/intake/email", file);
+      say({ role: "oasis", k: "chat.email.checked", vars: { status: o.status, notes: (o.intake_notes || []).join("; ") }, outcome: o });
+    } finally { setThinking(false); refresh(); if (fileRef.current) fileRef.current.value = ""; }
+  });
   const recover = (o) => run(async () => {
     const r = await api("/recovery/approve", { obligation: o.recovery?.safe_plan?.obligation });
     say({ role: "oasis", k: "chat.recovered", vars: { n: r.canaries_cleared } }); refresh();
@@ -57,7 +95,7 @@ export function Chat({ refresh, openProof, s }) {
   const text = (m) => {
     if (!m.k) return m.text;
     const v = m.vars?.status ? { ...m.vars, status: tl("status", m.vars.status) } : m.vars;
-    return t(m.k, v);
+    return t(m.k, v) + (m.k === "chat.email.checked" && m.vars?.notes ? ` (${m.vars.notes})` : "");
   };
   return (
     <section aria-labelledby="chat-h" className="stack">
@@ -98,7 +136,10 @@ export function Chat({ refresh, openProof, s }) {
         <button className="ghost" disabled={busy} onClick={() => setMsg(SAMPLE_INVOICE)}>{t("chat.sample")}</button>
         <button className="ghost" disabled={busy} onClick={() => send(t("chat.ask.msg"))}>{t("chat.ask")}</button>
         <button className="ghost" disabled={busy} onClick={topup}>{t("chat.topup.btn")} <Mock /></button>
+        <button className="ghost" disabled={busy} onClick={() => fileRef.current?.click()} data-testid="chat-email-btn">{t("chat.email.btn")}</button>
+        <input ref={fileRef} type="file" accept=".eml,message/rfc822" hidden data-testid="chat-email-file" onChange={(e) => sendEmail(e.target.files?.[0])} />
       </div>
+      <Channels />
     </section>
   );
 }

@@ -17,6 +17,7 @@ Unauthenticated -> 401, wrong role -> 403.
 """
 from __future__ import annotations
 import asyncio
+from contextlib import asynccontextmanager
 import hashlib
 import json
 import math
@@ -59,6 +60,7 @@ from ..passport.currency import currency_view
 from ..proof import trust_pass as tp
 from ..proof.pack import verify_proof_pack
 from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
+from ..intake.telegram import PairingStore, summarize as chat_summary
 from ..screening import screen_payee
 from ..storage import SqliteStore
 from ..chain.anchor import Anchor, LocalAnchorChain
@@ -86,7 +88,14 @@ JUDGE_REDTEAM_PER_MINUTE = 10    # OASIS_JUDGE_MODE=1: tighter limits
 JUDGE_LOGIN_FAILS_PER_MINUTE = 5
 DOCS_PATHS = ("/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect")
 
-app = FastAPI(title="Oasis API", version="0.3.0")
+@asynccontextmanager
+async def _lifespan(_app):
+    start_channels()                     # Telegram / IMAP threads, only for the channels configured in the environment
+    yield
+    CHANNELS["stop"].set()
+
+
+app = FastAPI(title="Oasis API", version="0.3.0", lifespan=_lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 CORS_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
@@ -143,7 +152,7 @@ async def guard(request: HttpRequest, call_next):
             n = int(request.headers.get("content-length") or 0)
         except ValueError:
             n = MAX_UPLOAD + 1
-        if n > (MAX_UPLOAD if path == "/api/intake/image" else MAX_BODY):
+        if n > (MAX_UPLOAD if path in ("/api/intake/image", "/api/intake/email") else MAX_BODY):
             return JSONResponse({"detail": "request body too large"}, status_code=413)
     if path == "/api/health" or not path.startswith("/api/"):
         return await call_next(request)
@@ -264,6 +273,7 @@ class Session:
         self.signer = load_or_create_signer(key_path) if persistent else None
         pk_dir = kdir or (Path(self.db_path).parent if self.store else config.DATA_DIR)      # beside the database / keys, so a fresh sandbox starts with none
         self.passkeys = PasskeyService(pk_dir / "passkeys.json" if persistent else None)
+        self.tg_store = PairingStore(pk_dir / "telegram_pairing.json" if persistent else None)
         self.approvers = ApproverRegistry()      # public keys of the real approvers' devices; private keys stay in browsers
         self.attempts_path = Path(attempts_path or os.environ.get("OASIS_ATTEMPTS_FILE") or config.DATA_DIR / "redteam_attempts.jsonl")
         jm = judge_mode()
@@ -369,13 +379,14 @@ class Session:
 def _request_to(r: Request) -> dict:
     return {"text": r.text, "source": r.source, "purpose_hint": r.purpose_hint, "remitter": r.remitter,
             "recurring": r.recurring, "tool_poison": r.tool_poison, "draft": r.draft, "pay_again": r.pay_again,
-            "signed_approvals": list(r.signed_approvals)}
+            "signed_approvals": list(r.signed_approvals), "channel": r.channel}
 
 
 def _request_from(d: dict) -> Request:
     return Request(d["text"], source=d["source"], purpose_hint=d.get("purpose_hint"), remitter=d["remitter"],
                    recurring=d.get("recurring", False), tool_poison=d.get("tool_poison"), draft=d.get("draft"),
-                   pay_again=bool(d.get("pay_again", False)), signed_approvals=tuple(d.get("signed_approvals", [])))
+                   pay_again=bool(d.get("pay_again", False)), signed_approvals=tuple(d.get("signed_approvals", [])),
+                   channel=d.get("channel"))
 
 
 S = Session()
@@ -793,11 +804,116 @@ def reset(p: Principal = Depends(STUDENT)):
 
 # ------------------------------------------------------------------ pipeline
 def _intake(body: IntakeIn) -> dict:
-    req = Request(body.text, source=body.source, remitter=body.remitter)
+    return _run_intake(Request(body.text, source=body.source, remitter=body.remitter))
+
+
+def _run_intake(req: Request, notes: list[str] | None = None) -> dict:
+    """Shared by the paste box, image, email and Telegram intake: one pipeline, one pending-approval store."""
     o = _out(S.agent.handle(req))
     o["pending_id"] = _store_pending(req, o)
+    if req.channel:
+        o["channel"] = req.channel
+    if notes:
+        o["intake_notes"] = notes
     S.save()
     return o
+
+
+def _vision_reader():
+    llm = S.world.llm if isinstance(S.world.llm, GroqLLM) else None
+    try:
+        v = VisionExtractor(llm)
+    except VisionUnavailable:
+        return None
+    return v.to_text
+
+
+# ------------------------------------------------------------------ real inbound channels (Telegram bot, IMAP mailbox)
+CHANNELS: dict = {"telegram": None, "imap": None, "stop": threading.Event(), "threads": []}
+
+
+def _inbound(text: str, channel: dict, notes: list) -> str:
+    """Called from the channel threads: same pipeline, same single-writer lock as an HTTP request. Returns a chat summary."""
+    with _STATE_LOCK:
+        o = _run_intake(Request(text, source=channel["kind"], remitter="student", channel=channel), notes)
+        lang = ui_lang(S.world.passport.student.language) or "en"
+    return chat_summary(loc.localize_outcome(o, lang))
+
+
+def start_channels() -> None:
+    """Start the Telegram bot / IMAP poller threads for the channels that are configured in the environment. Idempotent."""
+    from ..intake.imap_poll import ImapPoller
+    from ..intake.telegram import TelegramBot
+    if CHANNELS["threads"]:
+        return
+    stop = CHANNELS["stop"]
+    stop.clear()
+    vision = _vision_reader()
+    tok = os.environ.get("OASIS_TELEGRAM_TOKEN")
+    if tok:
+        CHANNELS["telegram"] = bot = TelegramBot(tok, _inbound, S.tg_store, vision=vision)
+
+        def run_bot():
+            while not stop.is_set():
+                if bot.poll_once(timeout=20) == 0 and bot.last_error:
+                    stop.wait(5)
+        CHANNELS["threads"].append(threading.Thread(target=run_bot, name="oasis-telegram", daemon=True))
+    host = os.environ.get("OASIS_IMAP_HOST")
+    if host:
+        allowed = {a for a in os.environ.get("OASIS_IMAP_ALLOWED_SENDERS", "").split(",") if a.strip()}
+        CHANNELS["imap"] = poller = ImapPoller(host, os.environ.get("OASIS_IMAP_USER", ""), os.environ.get("OASIS_IMAP_PASSWORD", ""),
+                                              _inbound, allowed, vision=vision,
+                                              require_auth=os.environ.get("OASIS_IMAP_REQUIRE_AUTH", "1") != "0")
+        every = max(15, int(os.environ.get("OASIS_IMAP_INTERVAL_S", "60")))
+
+        def run_imap():
+            while not stop.is_set():
+                poller.poll_once()
+                stop.wait(every)
+        CHANNELS["threads"].append(threading.Thread(target=run_imap, name="oasis-imap", daemon=True))
+    for t in CHANNELS["threads"]:
+        t.start()
+
+
+@app.get("/api/intake/channels")
+def intake_channels(p: Principal = Depends(STUDENT)):
+    """Which real channels are on (never any secret): the email upload is always available; Telegram and IMAP need env config."""
+    bot, imap = CHANNELS["telegram"], CHANNELS["imap"]
+    return {"email_upload": True,
+            "telegram": {"configured": bot is not None, "paired_chats": S.tg_store.count(),
+                         "processed": bot.processed if bot else 0, "last_error": bot.last_error if bot else None},
+            "imap": {"configured": imap is not None, "allowed_senders": sorted(imap.allowed) if imap else [],
+                     "require_auth": imap.require_auth if imap else None, "processed": imap.processed if imap else 0,
+                     "ignored": imap.ignored if imap else 0, "last_error": imap.last_error if imap else None,
+                     "recent": imap.results[-5:] if imap else []}}
+
+
+@app.post("/api/intake/telegram/pair")
+def telegram_pair(p: Principal = Depends(STUDENT)):
+    if CHANNELS["telegram"] is None:
+        raise HTTPException(400, "Telegram is not configured on this server (set OASIS_TELEGRAM_TOKEN)")
+    S.world.audit.append("telegram_pair_code_issued", {})
+    return S.tg_store.new_code()
+
+
+@app.post("/api/intake/telegram/unpair")
+def telegram_unpair(p: Principal = Depends(STUDENT)):
+    S.tg_store.clear()
+    S.world.audit.append("telegram_unpaired", {})
+    return {"paired_chats": 0}
+
+
+@app.post("/api/intake/email")
+async def intake_email(file: UploadFile = File(...), remitter: str = "student", p: Principal = Depends(STUDENT), ui: str = UI):
+    """A real email as a .eml file (in a mail client: Save as / Download message). Same pipeline as the paste box; the
+    sender's authentication results, a diverging Reply-To and hidden text become risk evidence, never authority."""
+    from ..intake.mail import MAX_RAW, parse_eml
+    data = await file.read(MAX_RAW + 1)
+    try:
+        pm = parse_eml(data, vision=_vision_reader())
+    except ValueError as e:
+        raise HTTPException(413 if "large" in str(e) else 400, str(e))
+    return loc.localize_outcome(_run_intake(Request(pm.text, source="email", remitter=remitter, channel=pm.channel), pm.notes), ui)
 
 
 @app.post("/api/intake")

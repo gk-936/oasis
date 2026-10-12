@@ -42,7 +42,9 @@ PROTECTED = [("get", "/api/state"), ("get", "/api/audit"), ("get", "/api/audit/v
              ("post", "/api/plan/plan_001/execute"), ("post", "/api/plan/plan_001/consent"), ("post", "/api/rate-target"),
              ("post", "/api/autonomy/tick"), ("post", "/api/spending/add"), ("post", "/api/demo/start"),
              ("post", "/api/demo/run"), ("post", "/api/demo/reset"), ("post", "/api/device/register"),
-             ("post", "/api/recovery/approve"), ("post", "/api/auth/logout"), ("post", "/api/student/language")]
+             ("post", "/api/recovery/approve"), ("post", "/api/auth/logout"), ("post", "/api/student/language"),
+             ("post", "/api/intake/email"), ("post", "/api/screen"), ("get", "/api/auth/passkey/status"),
+             ("post", "/api/auth/passkey/register/begin")]
 
 
 def _call(c, method, path):
@@ -65,13 +67,13 @@ def test_unauthenticated_is_401(api_session, method, path):
 
 # role -> (method, path) it must NOT be allowed to call (403)
 FORBIDDEN = {
-    "parent": [("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/reset"), ("post", "/api/redteam"),
+    "parent": [("post", "/api/intake/email"), ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/reset"), ("post", "/api/redteam"),
                ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"), ("post", "/api/rate-target"),
                ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"), ("post", "/api/demo/run"),
                ("post", "/api/recovery/approve"), ("post", "/api/spending/add"),
                ("post", "/api/reliability/record"), ("get", "/api/reliability/mine"), ("post", "/api/student/language"),
                ("get", "/api/audit"), ("get", "/api/redteam/log"), ("get", "/api/plans"), ("get", "/api/benchmark")],
-    "judge": [("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
+    "judge": [("post", "/api/intake/email"), ("post", "/api/intake"), ("post", "/api/chat"), ("post", "/api/approve"), ("post", "/api/pay-again"), ("post", "/api/reset"),
               ("post", "/api/plan"), ("post", "/api/plan/plan_001/accept"), ("post", "/api/plan/plan_001/consent"),
               ("post", "/api/rate-target"), ("post", "/api/autonomy/tick"), ("post", "/api/demo/start"),
               ("post", "/api/demo/run"), ("post", "/api/recovery/approve"), ("post", "/api/device/register"),

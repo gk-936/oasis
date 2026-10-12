@@ -57,3 +57,7 @@ data/rates_cache.tmp
 
 data/passkeys.json
 **/passkeys.json
+data/telegram_pairing.json
+**/telegram_pairing.json
+data/telegram_pairing.json
+**/telegram_pairing.json

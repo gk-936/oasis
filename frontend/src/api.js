@@ -35,6 +35,21 @@ export const api = async (path, body) => {
   try { return await r.json(); } catch { throw new ApiError(502, t("err.unreadable")); }
 };
 
+/** Upload one file as multipart (email intake); same language header and error handling as `api`. */
+export const upload = async (path, file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  let r;
+  try { r = await fetch(`/api${path}`, { method: "POST", headers: { "X-Oasis-Lang": getLang() }, body: fd }); }
+  catch { throw new ApiError(0, "Network error"); }
+  if (!r.ok) {
+    let msg = await r.text().catch(() => "");
+    try { msg = formatDetail(JSON.parse(msg).detail ?? msg); } catch { /* plain text */ }
+    throw new ApiError(r.status, (typeof msg === "string" ? msg : JSON.stringify(msg)) || r.statusText);
+  }
+  try { return await r.json(); } catch { throw new ApiError(502, t("err.unreadable")); }
+};
+
 // Signed approvals: the device key signs the exact draft; the server verifies against the role's registered public key.
 export const signedApprove = (role, id, draft) => api("/approve", { pending_id: id, ...signApproval(role, draft) });
 export const markSession = (on) => { try { on ? localStorage.setItem("oasis.session", "1") : localStorage.removeItem("oasis.session"); } catch { /* storage blocked */ } };

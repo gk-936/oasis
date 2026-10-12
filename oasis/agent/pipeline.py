@@ -66,6 +66,7 @@ class Request:
     draft: dict | None = None        # {"nonce","not_after"} fixed when the payment was first held, so approvers sign one draft
     pay_again: bool = False          # the student explicitly confirmed paying a suspected duplicate a second time (R17)
     genuine: dict | None = None      # benchmark only: the document's genuine (pre-injection) fields, from the scenario
+    channel: dict | None = None      # real inbound channel provenance (email headers, sender); risk evidence only
 
 
 @dataclass
@@ -273,8 +274,10 @@ class OasisAgent:
         instalment = ob is not None and 0.5 < amount < ob.remaining - 0.5
         out.label = "stop" if out.canary_hits else ("matches_known" if ob and abs(ob.remaining - amount) < 0.5
                                                     else "new_or_changed")
-        risk = w.llm.risk(fields, req.text, names, accounts, (amount if instalment else ob.remaining) if ob else None,
-                          self._risk_ctx(fields, amount))
+        rctx = self._risk_ctx(fields, amount)
+        if req.channel:
+            rctx["channel"] = req.channel
+        risk = w.llm.risk(fields, req.text, names, accounts, (amount if instalment else ob.remaining) if ob else None, rctx)
         out.risk = {"score": risk.score, "evidence": risk.evidence}
         if risk.components is not None:
             out.risk["components"] = risk.components

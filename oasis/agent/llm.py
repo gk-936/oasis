@@ -130,6 +130,17 @@ def heuristic_risk(fields: dict, text: str, known_names: list[str], known_accoun
             flags.append((0.55, f"payee name matches OFAC sanctions-list entity '{hit['name']}' (possible match, needs review)"))
         else:
             flags.append((0.30, f"payee name matches OFAC-listed individual '{hit['name']}' (common names give false matches; review with other signs)"))
+    ch = ctx.get("channel") or {}
+    if ch.get("kind") == "email":          # provenance of a real inbound email: evidence only (see intake/mail.py)
+        bad = sorted(k for k, v in (ch.get("auth") or {}).items() if v in ("fail", "softfail", "permerror"))
+        if bad:
+            flags.append((0.35, f"email failed sender authentication ({', '.join(bad)})"))
+        if ch.get("reply_to_differs"):
+            flags.append((0.40, f"Reply-To points to a different domain ({ch.get('reply_to_domain')}) than the sender"))
+        if ch.get("freemail_sender") and name and (_tokens(ch.get("sender_name") or "") & _tokens(name)):
+            flags.append((0.30, "payee-style sender name used from a free-mail address"))
+        if ch.get("hidden_text"):
+            flags.append((0.30, "email contains text styled to be invisible"))
     pid, acct = fields.get("payee_id"), fields.get("account_ref")
     reg_acct = ctx.get("registry_account")
     if acct and "registry_known" in ctx:
