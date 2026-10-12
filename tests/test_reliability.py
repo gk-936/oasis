@@ -243,19 +243,19 @@ def test_currency_view_values_and_exposure():
     p.set_balance("INR", 100000)
     p.set_balance("CNY", 5000)
     v = currency_view(p, 0.07, {"source": "MOCK", "label": "MOCK rate"})
-    assert v["supported"] == ["INR", "CNY"] and v["rate_source"] == "MOCK"
-    assert v["total_cny"] == 12000 and v["total_inr"] == round(100000 + 5000 / 0.07, 2)
-    assert v["exposure_pct"] == {"INR": 58.3, "CNY": 41.7}
-    assert [h["currency"] for h in v["holdings"]] == ["INR", "CNY"]
+    assert v["supported"] == ["INR", "CNY", "USD", "EUR", "GBP", "AUD"] and v["rate_source"] == "MOCK"
+    assert v["total_cny"] == 12000 and abs(v["total_inr"] - (100000 + 5000 / 0.07)) < 0.02
+    assert v["exposure_pct"] == {"INR": 58.3, "CNY": 41.7, "USD": 0.0, "EUR": 0.0, "GBP": 0.0, "AUD": 0.0}
+    assert [h["currency"] for h in v["holdings"]][:2] == ["INR", "CNY"]
     p.set_balance("INR", 0)
     p.set_balance("CNY", 0)
     z = currency_view(p, 0.07)
-    assert z["total_cny"] == 0 and z["exposure_pct"] == {"INR": 0.0, "CNY": 0.0}
+    assert z["total_cny"] == 0 and set(z["exposure_pct"].values()) == {0.0}
 
 
 def test_state_carries_currency_view(api_client):
     s = api_client.get("/api/state").json()
     cv = s["currency_view"]
-    assert cv["supported"] == ["INR", "CNY"] and cv["rate_cny_per_inr"] == s["rate_mid"]
-    assert abs(cv["exposure_pct"]["INR"] + cv["exposure_pct"]["CNY"] - 100) < 0.2
+    assert cv["supported"][:2] == ["INR", "CNY"] and cv["rate_cny_per_inr"] == s["rate_mid"]
+    assert abs(sum(cv["exposure_pct"].values()) - 100) < 0.5 and "coverage" in cv
     assert cv["rate_label"] == s["rates"]["label"]

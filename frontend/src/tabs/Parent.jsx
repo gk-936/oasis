@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api, short4, signedApprove, useGuard } from "../api.js";
 import { signConsent } from "../crypto.js";
 import { DraftBox } from "../common.jsx";
+import { EarnedAutonomy } from "./trustpass.jsx";
 import { t, tl, useLang } from "../i18n/index.js";
 import { Empty, ErrorBox, Skeleton, announce, cny, fmtDate, inr } from "../ui.jsx";
 
@@ -11,10 +12,13 @@ export function Parent({ refresh, role }) {
   const [pick, setPick] = useState(null);                  // null = the parent's own language (Tamil), or Chinese when the interface is Chinese
   const lang = pick ?? (ui === "zh" ? "zh" : "ta");
   const [loadErr, setLoadErr] = useState(null);
+  const [ladder, setLadder] = useState(null);
   const { busy, err, setErr, run } = useGuard();
   const isParent = role === "parent";
   const load = useCallback((l) => api(`/parent/pending?lang=${l}`).then((x) => { setD(x); setLoadErr(null); }).catch(setLoadErr), []);
   useEffect(() => { load(lang); }, [load, lang, ui]);
+  useEffect(() => { if (role === "student" || role === "parent") api("/trust-pass/ladder").then(setLadder).catch(() => setLadder(null)); }, [ui, role]);
+  const acceptLadder = () => run(async () => { setLadder(await api("/trust-pass/ladder/accept", {})); announce(t("ea.announce")); refresh(); });
   const act = (p, approve) => run(async () => {
     if (approve) await signedApprove("parent", p.id, p.draft); else await api("/approve", { pending_id: p.id, approve: false });
     announce(approve ? t("parent.announce.signed") : t("parent.announce.declined"));
@@ -52,6 +56,7 @@ export function Parent({ refresh, role }) {
           <p className="muted" lang={lang}>{p.labels.nomove}</p>
         </div>
       ))}
+      {ladder && <div className="card"><EarnedAutonomy ladder={ladder} onAccept={isParent ? acceptLadder : null} busy={busy} /></div>}
       {d.plan_consents?.length > 0 && (
         <div className="card"><h4 style={{ marginTop: 0 }}>{t("parent.consents.title")}</h4>
           {d.plan_consents.map((c) => (

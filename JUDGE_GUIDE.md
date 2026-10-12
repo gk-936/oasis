@@ -20,7 +20,7 @@ scripts\start_judge.ps1            # Windows PowerShell
 bash scripts/start_judge.sh        # macOS, Linux, Git Bash
 ```
 
-The script sets `OASIS_LLM=offline` (a deterministic parser, no network, no key), `OASIS_RATES=mock`, creates a **fresh sandbox database** under `data/judge_sandbox/` (deleted and recreated at every start), serves the existing UI and prints the URL (default http://127.0.0.1:8000; options `-Port` / `--port`, `-DataDir` / `--data-dir`) and the logins. It contains no secrets.
+The script sets `OASIS_LLM=offline` (a deterministic parser, no network, no key), `OASIS_RATES=mock` (repeatable numbers; the hosted Docker image uses real ECB rates instead, fetched by the server), creates a **fresh sandbox database** under `data/judge_sandbox/` (deleted and recreated at every start), serves the existing UI and prints the URL (default http://127.0.0.1:8000; options `-Port` / `--port`, `-DataDir` / `--data-dir`) and the logins. It contains no secrets.
 
 ## Log in
 
@@ -56,11 +56,16 @@ Do the 5-minute path, then the five tasks below, then skim [docs/security-eviden
 
 **4b. Check a payment record (optional).** As **student**, run Demo Run 1, open the Passport tab, press **Create record** on "Payment reliability record", then use **Check a record** and edit a date or amount before pressing **Verify record**: the per-check ticks turn into crosses. It is a sandbox record, not a credit score.
 
+**4c. Issue a Trust Pass and verify it like a landlord (optional, 3 minutes).** As **student**, run Demo Run 1, open the Passport tab, card "Oasis Trust Pass". Tick a few claims (try a threshold such as "at least 90% paid on time", which hides the exact count), type an audience such as `Landlord, Room 1203`, press **Issue Trust Pass**, tick one payment to reveal, then **Create QR for the verifier**. Scan the QR with your phone (or open the link in a private window): a login-free page re-verifies every signature and shows only the claims, the revealed payment and how many are hidden. Then open **Check a Trust Pass by pasting it**, change the audience, an amount or `valid_until` in the JSON and check again: it fails. Ask for a threshold the record does not meet: refused. As **parent**, the Parent tab shows the earned co-approval limit; only the parent can accept it. It is a sandbox credential, not a credit score.
+
+**4d. Multi-currency (optional, 1 minute).** Passport tab, card "Balances by currency": convert some INR to USD or EUR with **Get quote** then **Convert**; the new balance appears, valued in yuan and rupees, and the 60-day coverage line says whether the yuan on hand covers what is due.
+
 **5. Read the evidence and rerun one test.** Open [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md): each claim maps to code, an exact test and the limits. Pick one and rerun it, for example:
 
 ```bash
 PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_security.py::test_unauthenticated_is_401
 PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_judge_pack.py        # per-judge sandboxes and judge mode
+PYTHONPATH=. .venv/Scripts/python -m pytest -q tests/test_trust_pass.py        # Trust Pass, selective disclosure, multi-currency
 PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  # everything (offline; the 2 skips are live-service tests)
 ```
 
@@ -70,7 +75,8 @@ PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  
 
 | Real code, runs on your machine | MOCK (simulated, labelled in the UI) |
 |---|---|
-| The six-step pipeline, policy rules R01 to R17, verification ramp, hybrid signed intents (Ed25519 + ML-DSA-65), the intent-enforcing executor, canary tripwires, hash-chained audit log, proof packs and the verifier, role logins and browser-signed approvals, encryption of the database at rest | All money, balances, rails, route fees and spreads, the payee registry, wallet spending, the simulated student and parent in the red-team console, the clock, and the anchoring chain (a local simulation by default; a real FISCO BCOS chain is opt-in and was a 4-node local test chain) |
+| The six-step pipeline, policy rules R01 to R17, verification ramp, hybrid signed intents (Ed25519 + ML-DSA-65), the intent-enforcing executor, canary tripwires, hash-chained audit log, proof packs and the verifier, role logins and browser-signed approvals, encryption of the database at rest | All money, balances, rails, route fees and spreads, wallet conversion fees, the payee registry, wallet spending, the simulated student and parent in the red-team console, the clock, and the anchoring chain (a local simulation by default; a real FISCO BCOS chain is opt-in and was a 4-node local test chain) |
+| Exchange rates in the hosted image: real ECB reference rates for INR, CNY, USD, EUR, GBP and AUD, fetched by the server (cached; badge live / STALE / MOCK) | The judge scripts and the scripted demo use a mock snapshot of the real rate so numbers repeat |
 | The corridor rules engine: LRS, TCS and SAFE-quota awareness | The figures behind it are **researched, not bank-confirmed**: see the "Corridor rules & sources" card in the Passport tab (student login) and [docs/regulatory-sources.md](docs/regulatory-sources.md) |
 
 Not claimed anywhere: a licence, regulator approval, real settlement, an independent audit, certification, or that the benchmark proves robustness (the same team wrote the attacks and the defences; the 40-case hidden set is partly burned). See "Known limitations" in the [README](README.md).

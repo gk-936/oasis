@@ -26,7 +26,7 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` | demo passcodes | role passcodes; `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults |
 | `OASIS_JUDGE_MODE` | `0` | `1` (set by the judge start scripts) refuses default passcodes unless `OASIS_ALLOW_DEMO_PASSCODES=1`, switches off `/docs`, tightens limits |
 | `OASIS_KEY_PASSPHRASE` | unset | wraps key files with scrypt+AES-GCM |
-| `OASIS_RATES` | mock | `live` uses the real ECB reference rate (badge live / STALE / MOCK); see [live-rates.md](live-rates.md) |
+| `OASIS_RATES` | mock (`live` in the Docker image) | `live` uses real ECB reference rates for INR→CNY and the USD, EUR, GBP and AUD wallet crosses, fetched server-side and cached 1 hour (badge live / STALE / MOCK); the scripted demo always uses the mock; see [live-rates.md](live-rates.md) |
 | `OASIS_ANCHOR` | local simulation | `fisco` uses the 4-node local FISCO BCOS test chain |
 | `OASIS_DB` | `data/oasis.db` | SQLite location; `:memory:` for none |
 | `OASIS_DATA_DIR` | `data/` | base directory for the LLM cache, rate cache and other defaults (`/data` in the Docker image) |

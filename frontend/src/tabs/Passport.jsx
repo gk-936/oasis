@@ -4,6 +4,7 @@ import { Card, RateBadge } from "../common.jsx";
 import { has, t, tl, tm, tp, useLang } from "../i18n/index.js";
 import { announce, cny, Empty, ErrorBox, fmt, fmtDate, Hash, inr, Loading, Mock, pct, Pill, R, Skeleton } from "../ui.jsx";
 import { AgentPlan } from "./plan.jsx";
+import { TrustPass } from "./trustpass.jsx";
 
 /* ------------------------------------------------------------------ Spending + Tier-1 autonomy */
 function Spending({ s, refresh }) {
@@ -125,21 +126,55 @@ function CorridorRules() {
   );
 }
 
-/* ------------------------------------------------------------------ Currency view */
-function CurrencyView({ s }) {
+/* ------------------------------------------------------------------ Currency view + wallet conversion */
+const money = (h, n, d = 2) => (h.currency === "INR" ? inr(n, d) : h.currency === "CNY" ? cny(n, d) : `${h.symbol}${fmt(n, d)}`);
+
+function Converter({ cv, refresh }) {
+  const [from, setFrom] = useState("INR");
+  const [to, setTo] = useState("USD");
+  const [amount, setAmount] = useState("10000");
+  const [q, setQ] = useState(null);
+  const { busy, err, setErr, run } = useGuard();
+  const body = () => ({ amount: parseFloat(amount) || 0, from, to });
+  const quote = () => run(async () => setQ(await api("/fx/quote", body())));
+  const convert = () => run(async () => { const r = await api("/fx/convert", body()); setQ(null); announce(t("fx.announce", { amount: fmt(r.received, 2), to: r.to })); refresh(); });
+  const sel = (v, set) => <select value={v} onChange={(e) => { set(e.target.value); setQ(null); }}>{cv.supported.map((c) => <option key={c} value={c}>{c}</option>)}</select>;
+  return (
+    <>
+      <h4>{t("fx.title")}</h4>
+      <div className="row">
+        <label style={{ flex: "1 1 110px" }}>{t("fx.amount")}<input inputMode="decimal" value={amount} onChange={(e) => { setAmount(e.target.value); setQ(null); }} /></label>
+        <label style={{ flex: "0 1 90px" }}>{t("fx.from")}{sel(from, setFrom)}</label>
+        <label style={{ flex: "0 1 90px" }}>{t("fx.to")}{sel(to, setTo)}</label>
+        <button className="ghost" disabled={busy} onClick={quote} style={{ alignSelf: "flex-end" }} data-testid="fx-quote">{t("fx.quote")}</button>
+      </div>
+      {q && <p>{R("fx.result", { got: fmt(q.received, 2), to: q.to, rate: q.rate, fee: fmt(q.fee, 2), from: q.from, saved: fmt(q.saved, 2) })}{" "}
+        <button disabled={busy} onClick={convert} data-testid="fx-convert">{t("fx.convert")}</button></p>}
+      <ErrorBox error={err} onDismiss={() => setErr(null)} />
+      <p className="muted small">{t("fx.note")}</p>
+    </>
+  );
+}
+
+function CurrencyView({ s, refresh }) {
   const cv = s.currency_view;
   if (!cv) return null;
   const hints = (s.triggers || []).filter((x) => x.kind === "rate_move" || x.kind === "rate_target" || x.kind === "shortfall");
   const targets = s.autonomy?.targets || [];
+  const rows = cv.holdings.filter((h) => h.amount > 0 || h.currency === "INR" || h.currency === "CNY");
+  const cov = cv.coverage;
   return (
     <div className="card" data-testid="currency-view">
       <div className="hd"><h3>{t("cur.title")}</h3><Mock /></div>
       <div className="tbl"><table aria-label={t("cur.title")}><thead><tr><th>{t("cur.currency")}</th><th className="r">{t("cur.holding")}</th><th className="r">{t("cur.worth")}</th><th className="r">{t("cur.exposure")}</th></tr></thead>
-        <tbody>{cv.holdings.map((h) => (
-          <tr key={h.currency}><td>{h.currency}</td><td className="r money">{h.currency === "INR" ? inr(h.amount, 2) : cny(h.amount, 2)}</td>
+        <tbody>{rows.map((h) => (
+          <tr key={h.currency}><td>{h.currency}</td><td className="r money">{money(h, h.amount)}</td>
             <td className="r money">{cny(h.value_cny, 2)}</td><td className="r num">{cv.exposure_pct[h.currency]}%</td></tr>))}</tbody></table></div>
       <p>{R("cur.total", { cny: cny(cv.total_cny, 2), inr: inr(cv.total_inr, 2), rate: cv.rate_cny_per_inr })} <RateBadge rates={s.rates} rate={s.rate_mid} /></p>
+      {cov && <p>{cov.shortfall_cny > 0 ? <Pill status="shortfall" /> : <Pill status="paid">{t("cur.covered.pill")}</Pill>}{" "}
+        {R(cov.shortfall_cny > 0 ? "cur.short" : "cur.covered", { due: cny(cov.due_cny), have: cny(cov.cny_on_hand), short: cny(cov.shortfall_cny), days: cov.days })}</p>}
       <p className="muted small">{t("cur.note")}</p>
+      <Converter cv={cv} refresh={refresh} />
       <h4>{t("cur.timing")}</h4>
       {hints.length ? hints.map((x, i) => <p key={i}><Pill status={x.kind} /> {x.message}</p>) : <p className="muted">{t("cur.timing.none")}</p>}
       {targets.length > 0 && <p className="muted small">{t("cur.targets", { list: targets.map((x) => t("cur.target.item", { amount: cny(x.convert_cny), rate: x.rate, status: tl("status", x.status) })).join(t("misc.semicolon")) })}</p>}
@@ -236,7 +271,7 @@ export function Passport({ s, refresh }) {
       <div className="card">
         <div className="hd"><h3>{t("pass.balances")}</h3><Mock /></div>
         <div className="kpis">{p.balances.map((b) => (
-          <div className="kpi" key={b.currency}><div className="k">{b.currency}</div><div className="v">{b.currency === "INR" ? inr(b.amount, 2) : cny(b.amount, 2)}</div></div>))}</div>
+          <div className="kpi" key={b.currency}><div className="k">{b.currency}</div><div className="v">{money({ currency: b.currency, symbol: s.currency_view?.holdings.find((h) => h.currency === b.currency)?.symbol || "" }, b.amount)}</div></div>))}</div>
         <p className="muted">{R("pass.runway", { m: s.runway_months, burn: cny(s.burn.monthly_cny), basis: s.burn.basis })}</p>
         <p><RateBadge rates={s.rates} rate={s.rate_mid} /></p>
         <p className="muted small">{t("pass.simdate", { date: fmtDate(s.now) })} {tm(s.rates?.spreads_and_fees) || ""} {t("rate.foot")}</p>
@@ -265,7 +300,8 @@ export function Passport({ s, refresh }) {
           </tbody></table></div>
         <p className="muted small">{t("pass.lastmile", { extra: cny(s.last_mile_rent_6000.extra_cost_cny) })}</p>
       </div>
-      <CurrencyView s={s} />
+      <CurrencyView s={s} refresh={refresh} />
+      <TrustPass />
       <ReliabilityRecord />
       <AgentPlan s={s} refresh={refresh} />
       <Spending s={s} refresh={refresh} />

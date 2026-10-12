@@ -1,7 +1,7 @@
-"""Multi-currency FX for the sandbox wallet: INR, CNY and USD.
+"""Multi-currency FX for the sandbox wallet: INR, CNY, USD, EUR, GBP and AUD.
 
-MOCK data. The USD->CNY level is a frozen snapshot of the ECB reference cross rate of 2026-10-09 (1 USD = 6.6921 CNY,
-Frankfurter), or the live value when OASIS_RATES=live (see oasis/market/live_fx.py). INR is tied to the world's own
+The USD->CNY level is a frozen snapshot of the ECB reference cross rate of 2026-10-09 (1 USD = 6.6921 CNY, Frankfurter);
+with OASIS_RATES=live, USD/EUR/GBP/AUD come live from the same ECB response as the INR->CNY mid (oasis/market/live_rates.py). INR is tied to the world's own
 INR->CNY mid rate (mock sine path or live ECB) so a wallet INR->CNY quote and the planner agree on the mid rate.
 
 A wallet conversion pays an illustrative mock spread and a fixed fee. These are NOT any real provider's prices. The
@@ -12,10 +12,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-CURRENCIES = ("INR", "CNY", "USD")
-SYMBOLS = {"INR": "₹", "CNY": "¥", "USD": "$"}
+CURRENCIES = ("INR", "CNY", "USD", "EUR", "GBP", "AUD")
+SYMBOLS = {"INR": "₹", "CNY": "¥", "USD": "$", "EUR": "€", "GBP": "£", "AUD": "A$"}
 
 USD_CNY_SNAPSHOT = 6.6921          # ECB cross, 2026-10-09 (frozen; MOCK when used offline)
+# Units per 1 USD: frozen ECB reference crosses of 2026-10-09 (Frankfurter). Offline fallback only, not a live quote.
+USD_CROSS_SNAPSHOT = {"EUR": 0.892379, "GBP": 0.756407, "AUD": 1.432447}
 WALLET_SPREAD = 0.006              # MOCK: fraction below mid taken by the wallet
 WALLET_FIXED_FEE_USD = 1.5         # MOCK: fixed fee, expressed in USD and converted to the source currency
 BANK_SPREAD = 0.030                # MOCK typical-bank comparison
@@ -45,11 +47,21 @@ class FxQuote:
                 "mock": "spread and fees are illustrative MOCK values, not a provider's prices"}
 
 
-def per_usd(cny_per_inr: float, usd_cny: float = USD_CNY_SNAPSHOT) -> dict[str, float]:
-    """Units of each currency per 1 USD. INR follows the world's INR->CNY mid so the two views agree."""
-    if cny_per_inr <= 0 or usd_cny <= 0:
+def per_usd(cny_per_inr: float, usd_cny: float = USD_CNY_SNAPSHOT, crosses: dict | None = None) -> dict[str, float]:
+    """Units of each currency per 1 USD. INR follows the world's INR->CNY mid so the two views agree. `crosses` (live
+    units per USD for CNY/EUR/GBP/AUD, from the same provider response as the mid) replaces the frozen snapshot."""
+    t = {"USD": 1.0, "CNY": float(usd_cny), **USD_CROSS_SNAPSHOT}
+    if crosses:
+        t.update({k: float(v) for k, v in crosses.items() if k in t and k != "USD"})
+    if cny_per_inr <= 0 or t["CNY"] <= 0:
         raise FxError("non-positive reference rate")
-    return {"USD": 1.0, "CNY": float(usd_cny), "INR": float(usd_cny) / float(cny_per_inr)}
+    t["INR"] = t["CNY"] / float(cny_per_inr)
+    return t
+
+
+def table_for(rates, day: int = 0) -> dict[str, float]:
+    """The conversion table for a rates object: live crosses when available, else the snapshot."""
+    return per_usd(rates.mid(day), crosses=getattr(rates, "usd_crosses", lambda d: None)(day))
 
 
 def mid(src: str, dst: str, table: dict[str, float]) -> float:

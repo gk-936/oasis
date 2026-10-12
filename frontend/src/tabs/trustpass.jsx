@@ -1,0 +1,189 @@
+import React, { useCallback, useEffect, useState } from "react";
+import qrcode from "qrcode-generator";
+import { api, downloadJson, useGuard } from "../api.js";
+import { t, tl, tm } from "../i18n/index.js";
+import { announce, cny, ErrorBox, fmtDate, Hash, inr, Loading, Mock, Pill, R } from "../ui.jsx";
+
+/* ------------------------------------------------------------------ Oasis Trust Pass (portable payment reputation) */
+const TP_CHECKS = ["signature", "key_pinned", "credential_hash", "not_expired", "disclosures_valid", "proofs_checked"];
+const THRESHOLD_IDS = ["on_time_pct_min", "history_months_min", "payments_min"];
+
+export const claimText = (c) => {
+  const v = c.value || {};
+  if (c.id === "no_late") return t(v.value ? "cp.claim.no_late" : "cp.claim.some_late");
+  if (c.id === "volume_band") return t("cp.claim.volume_band", { band: v.band ? tm(v.band) : t("misc.na") });
+  return t(`cp.claim.${c.id}`, v);
+};
+
+export const verifyUrl = (code) => `${window.location.origin}/?verify=${encodeURIComponent(code)}`;
+
+function Qr({ text }) {
+  const q = qrcode(0, "M");
+  q.addData(text);
+  q.make();
+  // createSvgTag builds the SVG from the module grid only; `text` never reaches the markup.
+  return <div className="qr" role="img" aria-label={t("cp.qr.aria")} dangerouslySetInnerHTML={{ __html: q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }) }} />;
+}
+
+/* What the landlord or bank sees: used both inside the app and on the public ?verify= page. */
+export function VerifyResult({ res }) {
+  return (
+    <div data-testid="cp-result">
+      <p className="big">{res.ok ? <Pill status="verified">{t("cp.verify.ok")}</Pill> : <Pill status="failed">{t("cp.verify.bad")}</Pill>}</p>
+      {res.ok && <>
+        <h4>{t("cp.verify.sees")}</h4>
+        <ul className="feed">{res.claims.map((c) => <li key={c.id}>✓ {claimText(c)}</li>)}</ul>
+        <p className="muted small">{t("cp.verify.counts", { shown: res.revealed.length, hidden: res.hidden })}{res.audience ? ` · ${t("cp.audience.is", { a: res.audience })}` : ""} · {t("cp.valid", { date: fmtDate(res.valid_until) })}</p>
+        {res.revealed.length > 0 && <ul className="feed">{res.revealed.map((e) => (
+          <li key={e.proof_id}>{tl("type", e.obligation_type)} · {cny(e.amount_cny)} · {fmtDate(e.paid_date)} · {e.on_time ? t("rr.ontime") : t("rr.late.pill")}</li>))}</ul>}
+      </>}
+      <ul className="feed" data-testid="cp-checks">{TP_CHECKS.map((k) => (
+        <li key={k}>{res[k] === true ? "✓" : res[k] === false ? "✗" : "–"} {t(`cp.check.${k}`)}{res[k] == null ? ` ${t("rr.notchecked")}` : ""}</li>))}</ul>
+    </div>
+  );
+}
+
+function PasteVerify({ initial }) {
+  const [text, setText] = useState("");
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (initial) { setText(JSON.stringify(initial, null, 2)); setRes(null); } }, [initial]);
+  const go = async () => {
+    setBusy(true); setErr(null);
+    try { JSON.parse(text); setRes(await api("/trust-pass/verify", text)); announce(t("cp.announce.checked")); }
+    catch (e) { setErr(e instanceof SyntaxError ? new Error(t("err.badjson")) : e); setRes(null); }
+    finally { setBusy(false); }
+  };
+  return (
+    <details><summary>{t("cp.verify.summary")}</summary>
+      <p className="muted small">{t("cp.verify.intro")}</p>
+      <label>{t("cp.verify.label")}<textarea rows={8} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} data-testid="cp-verify-text" /></label>
+      <div className="row"><button className="ghost" disabled={busy || !text.trim()} onClick={go} data-testid="cp-verify-btn">{t("cp.verify.btn")}</button></div>
+      {res && <VerifyResult res={res} />}
+      {err && <ErrorBox error={err} onDismiss={() => setErr(null)} />}
+    </details>
+  );
+}
+
+export function TrustPass() {
+  const [info, setInfo] = useState(null);
+  const [pick, setPick] = useState({ on_time_all: true, verified_payees: true, no_late: true });
+  const [th, setTh] = useState({});
+  const [audience, setAudience] = useState("");
+  const [holder, setHolder] = useState(null);
+  const [reveal, setReveal] = useState({});
+  const [shared, setShared] = useState(null);
+  const { busy, err, setErr, run } = useGuard();
+  const load = useCallback(() => api("/trust-pass/claims").then(setInfo).catch(setErr), [setErr]);
+  useEffect(() => { load(); }, [load]);
+  const issue = () => run(async () => {
+    const claims = Object.keys(pick).filter((k) => pick[k] && (!THRESHOLD_IDS.includes(k) || th[k]));
+    const h = await api("/trust-pass/issue", { claims, thresholds: th, audience: audience.trim() || null });
+    setHolder(h); setReveal({}); setShared(null); announce(t("cp.announce.issued"));
+  });
+  const presentation = holder && { credential: holder.credential, disclosures: holder.disclosures.filter((_, i) => reveal[i]) };
+  const share = () => run(async () => { const r = await api("/trust-pass/share", { presentation }); setShared(r); announce(t("cp.announce.shared")); });
+  if (!info) return <div className="card"><h3>{t("cp.title")}</h3>{err ? <ErrorBox error={err} onRetry={load} /> : <Loading />}</div>;
+  // a ratio over zero payments ("rent 0 of 0") or zero months is not worth claiming
+  const exact = info.claims.filter((c) => !(c.value?.of === 0 || (c.id === "history_months" && !c.value.months) || (c.id === "volume_band" && !c.value.band)));
+  return (
+    <div className="card wide" data-testid="trust-pass">
+      <div className="hd"><h3>{t("cp.title")}</h3><Mock>{t("mock.sandbox")}</Mock></div>
+      <p>{R("cp.pitch")}</p>
+      <ul className="feed">{["cp.diff.1", "cp.diff.2", "cp.diff.3"].map((k) => <li key={k}>{R(k)}</li>)}</ul>
+      <h4>{t("cp.step1")}</h4>
+      <ul className="choices">{exact.map((c) => (
+        <li key={c.id}><label className="check"><input type="checkbox" checked={!!pick[c.id]} onChange={(e) => setPick({ ...pick, [c.id]: e.target.checked })} data-testid={`cp-claim-${c.id}`} /> {claimText(c)}</label></li>))}</ul>
+      <p className="muted small">{t("cp.threshold.intro")}</p>
+      <ul className="choices">{THRESHOLD_IDS.map((id) => (
+        <li key={id}><label className="check"><input type="checkbox" checked={!!pick[id]} onChange={(e) => setPick({ ...pick, [id]: e.target.checked })} data-testid={`cp-claim-${id}`} /> {t(`cp.threshold.${id}`)}</label>{" "}
+          <select aria-label={t(`cp.threshold.${id}`)} value={th[id] ?? ""} onChange={(e) => setTh({ ...th, [id]: e.target.value ? +e.target.value : undefined })}>
+            <option value="">–</option>
+            {info.thresholds[id].map((o) => <option key={o.at_least} value={o.at_least} disabled={!o.met}>{o.at_least}{o.met ? "" : ` (${t("cp.threshold.notmet")})`}</option>)}
+          </select></li>))}</ul>
+      <div className="row">
+        <label className="grow">{t("cp.audience")}<input value={audience} maxLength={80} placeholder={t("cp.audience.ph")} onChange={(e) => setAudience(e.target.value)} /></label>
+        <button disabled={busy || !Object.values(pick).some(Boolean)} onClick={issue} style={{ alignSelf: "flex-end" }} data-testid="cp-issue">{t("cp.issue")}</button>
+      </div>
+      <ErrorBox error={err} onDismiss={() => setErr(null)} />
+      {info.suggested_asks.length > 0 && <>
+        <h4>{t("cp.asks")}</h4>
+        <ul className="feed">{info.suggested_asks.map((a) => <li key={a}>{t(`cp.ask.${a}`)}</li>)}</ul>
+        <p className="muted small">{t("cp.asks.note")}</p>
+      </>}
+      {holder && <>
+        <h4>{t("cp.step2")}</h4>
+        <p className="muted small">{t("cp.step2.note", { days: info.valid_days })}</p>
+        {holder.disclosures.length === 0 ? <p className="muted">{t("cp.nopayments")}</p> : (
+          <ul className="reveal-list" aria-label={t("cp.step2")}>{holder.disclosures.map((d, i) => (
+            <li key={i}>
+              <label className="reveal-main">
+                <input type="checkbox" checked={!!reveal[i]} onChange={(e) => { setReveal({ ...reveal, [i]: e.target.checked }); setShared(null); }} />
+                <span><b>{tl("type", d.entry.obligation_type)}</b> <span className="money">{cny(d.entry.amount_cny)}</span>
+                  <span className="muted small"> · {t("rr.col.paid")} {fmtDate(d.entry.paid_date)}</span></span>
+              </label>
+              <span className="reveal-pills">
+                <Pill status={d.entry.payee_level || "verified"}>{tl("level", d.entry.payee_level || "verified_full")}</Pill>
+                <Pill status={d.entry.on_time ? "paid" : "frozen"}>{d.entry.on_time ? t("rr.ontime") : t("rr.late.pill")}</Pill>
+              </span>
+            </li>))}</ul>)}
+        <p className="muted small">{t("cp.sharing", { shown: presentation.disclosures.length, hidden: holder.disclosures.length - presentation.disclosures.length })} · {t("rr.fingerprint")} <Hash value={holder.credential.trust_fingerprint} n={12} what={t("hash.fingerprint")} /></p>
+        <h4>{t("cp.step3")}</h4>
+        <div className="row">
+          <button disabled={busy} onClick={share} data-testid="cp-share">{t("cp.share")}</button>
+          <button className="ghost" onClick={() => downloadJson(presentation, "oasis-trust-pass.json")} data-testid="cp-download">{t("cp.download")}</button>
+        </div>
+        {shared && (
+          <div className="qr-box" data-testid="cp-qr">
+            <Qr text={verifyUrl(shared.code)} />
+            <div>
+              <p>{t("cp.qr.text")}</p>
+              <p className="small"><a href={verifyUrl(shared.code)} target="_blank" rel="noreferrer">{verifyUrl(shared.code)}</a></p>
+              <p className="muted small">{t("cp.qr.note", { date: fmtDate(shared.valid_until) })}</p>
+            </div>
+          </div>)}
+      </>}
+      <PasteVerify initial={presentation} />
+      <EarnedAutonomy ladder={info.ladder} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ public page opened by the QR: no login */
+export function VerifyPage({ code }) {
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => { api(`/trust-pass/check/${encodeURIComponent(code)}`).then(setRes).catch(setErr); }, [code]);
+  useEffect(() => { document.title = `${t("cp.public.title")} · Oasis`; }, []);
+  return (
+    <main id="main" className="app" style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+      <div className="card" data-testid="verify-page">
+        <div className="hd"><h2 style={{ margin: 0 }}>{t("cp.public.title")}</h2><Mock>{t("mock.sandbox")}</Mock></div>
+        <p className="muted">{t("cp.public.intro")}</p>
+        {!res && !err && <Loading />}
+        {err && <ErrorBox error={err.status === 404 ? new Error(t("cp.public.notfound")) : err} />}
+        {res && <VerifyResult res={res} />}
+        <p className="muted small">{t("cp.public.foot")}</p>
+      </div>
+    </main>
+  );
+}
+
+/* ------------------------------------------------------------------ Earned autonomy ladder (student view; the parent accepts) */
+export function EarnedAutonomy({ ladder, onAccept, busy }) {
+  if (!ladder) return null;
+  return (
+    <div data-testid="earned-autonomy">
+      <h4>{t("ea.title")}</h4>
+      <p>{R("ea.now", { level: ladder.level, streak: ladder.streak, cur: inr(ladder.current_threshold_inr) })}</p>
+      <ul className="feed">{ladder.levels.map((l) => (
+        <li key={l.level}>{l.level <= ladder.level ? "✓" : "○"} {t("ea.level", { level: l.level, n: l.needs_streak, th: inr(l.threshold_inr) })}</li>))}</ul>
+      {ladder.proposal
+        ? <p><Pill status="held">{t("ea.proposal.pill")}</Pill> {t("ea.proposal", { th: inr(ladder.earned_threshold_inr) })}{" "}
+          {onAccept && <button disabled={busy} onClick={onAccept} data-testid="ea-accept">{t("ea.accept")}</button>}</p>
+        : ladder.next && <p className="muted">{t("ea.next", { n: ladder.next.needs_streak - ladder.streak, th: inr(ladder.next.threshold_inr) })}</p>}
+      <p className="muted small">{t("ea.note")}</p>
+    </div>
+  );
+}

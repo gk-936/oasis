@@ -53,7 +53,10 @@ from ..planning import spending
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
+from ..mock.fx import FxError, quote as fx_quote, table_for
+from ..passport import currency as currency_mod
 from ..passport.currency import currency_view
+from ..proof import trust_pass as tp
 from ..proof.pack import verify_proof_pack
 from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
 from ..storage import SqliteStore
@@ -246,6 +249,7 @@ class Session:
         self.redteam_boxes: OrderedDict[str, RedTeamBox] = OrderedDict()     # judge session id -> sandbox (LRU, bounded)
         self.chat: list[dict] = []
         self.reliability_last = None
+        self.trust_shares: dict[str, dict] = {}   # QR code -> shared Trust Pass presentation
         snap = self.store.load() if self.store else None
         if snap:
             self.approvers.load(snap["kv"].get("approvers", []))
@@ -259,6 +263,7 @@ class Session:
             self.pending = {k: {"request": _request_from(v["request"]), "signed": dict(v.get("signed", {})),
                                 "required": v["required"], "outcome": v["outcome"]}
                             for k, v in snap["kv"].get("pending", {}).items()}
+            self.trust_shares = dict(snap["kv"].get("trust_shares", {}))
         self.agent = OasisAgent(self.world)
         self.redteam_boxes = OrderedDict()                 # every judge's sandbox starts fresh with the student's reset
         self._rt_default = RedTeamBox(self.signer)          # fallback world (no judge session); never persisted
@@ -287,6 +292,7 @@ class Session:
             self.store.clear()
         self.pending, self.demo, self.chat = {}, None, []
         self.reliability_last = None
+        self.trust_shares = {}
         lang = self.world.passport.student.language
         self._build()
         self.world.passport.student.language = lang         # the interface language is the student's, not part of the sandbox
@@ -325,6 +331,7 @@ class Session:
             return
         snap = self.world.snapshot()
         snap["kv"]["approvers"] = self.approvers.public_view()
+        snap["kv"]["trust_shares"] = self.trust_shares
         snap["kv"]["pending"] = {k: {"request": _request_to(v["request"]), "signed": v["signed"],
                                      "required": v["required"], "outcome": jsonable_encoder(v["outcome"])}
                                  for k, v in self.pending.items()}
@@ -653,7 +660,8 @@ def state(p: Principal = Depends(VIEWERS), ui: str = UI):
         "passport": {**p_.model_dump(), "recipients": {k: v.model_dump() for k, v in p_.recipients.items() if k not in decoys}},
         "rate_mid": w.rates.mid(w.day_index),
         "rates": provenance(w.rates, w.day_index),
-        "currency_view": currency_view(p_, w.rates.mid(w.day_index), provenance(w.rates, w.day_index)),
+        "currency_view": currency_view(p_, w.rates.mid(w.day_index), provenance(w.rates, w.day_index), w.today,
+                                       w.rates.usd_crosses(w.day_index)),
         "routes": [{"id": q.route.id, "name": q.route.name, "delivered_cny_per_100k_inr": q.delivered_cny,
                     "days": q.arrives_in_days, "reliability": q.route.reliability, "cost_vs_mid_pct": q.cost_vs_mid_pct,
                     "typical_bank": q.route.typical_bank} for q in quotes],
@@ -1180,6 +1188,113 @@ def reliability_verify(record: dict):
                                     pack_verifier=lambda pk: bool(_verify_pinned(pk).get("ok")))
     res["pinned_fingerprint"] = S.world.trust_fingerprint()
     return res
+
+
+# ------------------------------------------------------------------ multi-currency wallet (MOCK pricing)
+class FxIn(Strict):
+    amount: float
+    src: str = Field(alias="from", max_length=3)
+    dst: str = Field(alias="to", max_length=3)
+
+
+@app.post("/api/fx/quote")
+def fx_quote_ep(body: FxIn, p: Principal = Depends(STUDENT)):
+    try:
+        return fx_quote(body.amount, body.src, body.dst, table_for(S.world.rates, S.world.day_index)).to_dict()
+    except FxError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/fx/convert")
+def fx_convert(body: FxIn, p: Principal = Depends(STUDENT)):
+    """Student only: moves money between the student's OWN sandbox balances, so it never pays anyone. Audited."""
+    try:
+        rec = currency_mod.convert(S.world, body.amount, body.src, body.dst)
+    except FxError as e:
+        raise HTTPException(400, str(e))
+    S.save()
+    return rec
+
+
+# ------------------------------------------------------------------ Trust Pass (portable payment reputation)
+class TrustIssueIn(Strict):
+    claims: list[str] = Field(max_length=len(tp.CLAIMS))
+    thresholds: dict[str, int] = Field(default_factory=dict, max_length=len(tp.THRESHOLDS))
+    audience: str | None = Field(default=None, max_length=tp.MAX_AUDIENCE)
+
+
+class TrustShareIn(Strict):
+    presentation: dict
+
+
+def _tp_verify(pres) -> dict:
+    res = tp.verify_presentation(pres, S.trusted_fingerprints(), S.world.today.isoformat(),
+                                 lambda pid: S.world.proofs.get(pid) if isinstance(pid, str) else None,
+                                 pack_verifier=lambda pk: bool(_verify_pinned(pk).get("ok")))
+    res["pinned_fingerprint"] = S.world.trust_fingerprint()
+    return res
+
+
+@app.get("/api/trust-pass/claims")
+def trust_claims(p: Principal = Depends(STUDENT)):
+    w = S.world
+    c = tp.compute_claims(tp._entries(w), w.today.isoformat())
+    return {"claims": [{"id": k, "value": v, "statement": tp.statement(k, v)} for k, v in c.items()],
+            "thresholds": tp.threshold_options(c), "suggested_asks": tp.suggested_asks(c), "ladder": tp.ladder(w),
+            "valid_days": tp.VALID_DAYS}
+
+
+@app.post("/api/trust-pass/issue")
+def trust_issue(body: TrustIssueIn, p: Principal = Depends(STUDENT)):
+    """Student only. Returns the holder copy; the salts in `disclosures` are what lets the student reveal payments later."""
+    try:
+        holder = tp.issue(S.world, body.claims, body.audience, body.thresholds)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    S.save()
+    return holder
+
+
+@app.post("/api/trust-pass/share")
+def trust_share(body: TrustShareIn, p: Principal = Depends(STUDENT)):
+    """Student only. Stores a presentation that verifies against this server, under a short code for a QR."""
+    res = _tp_verify(body.presentation)
+    if not res["ok"]:
+        raise HTTPException(400, "only a presentation that verifies against this server can be shared")
+    code = tp.share(S.trust_shares, body.presentation, S.world.today.isoformat())
+    S.save()
+    return {"code": code, "valid_until": body.presentation["credential"]["valid_until"]}
+
+
+@app.get("/api/trust-pass/check/{code}")
+def trust_check(code: str):
+    """PUBLIC (what the QR opens): re-verifies the shared presentation now. The code only locates it."""
+    hit = S.trust_shares.get(code) if len(code) <= 32 else None
+    if hit is None:
+        raise HTTPException(404, "unknown or expired code")
+    return _tp_verify(hit["presentation"])
+
+
+@app.post("/api/trust-pass/verify")
+def trust_verify(pres: dict):
+    """PUBLIC: verifies a pasted Trust Pass presentation against THIS server's pinned key and simulated clock."""
+    return _tp_verify(pres)
+
+
+@app.get("/api/trust-pass/ladder")
+def trust_ladder(p: Principal = Depends(STUDENT_PARENT)):
+    return tp.ladder(S.world)
+
+
+@app.post("/api/trust-pass/ladder/accept")
+def trust_ladder_accept(p: Principal = Depends(PARENT)):
+    """Parent only: accepting the earned threshold is the parent's decision; the student cannot raise it."""
+    try:
+        r = tp.accept_ladder(S.world)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    S.save()
+    return r
 
 
 @app.get("/api/audit")

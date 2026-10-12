@@ -70,7 +70,7 @@ def test_dockerfile_copies_no_secrets_or_state():
     env = " ".join(a for k, a in DOCKERFILE if k == "ENV")
     for var in ("OASIS_PASS_", "OASIS_KEY_PASSPHRASE", "GROQ_API_KEY", "OASIS_ALLOW_DEMO_PASSCODES"):
         assert var not in env, f"{var} must come from the run-time environment, not the image"
-    for needed in ("OASIS_LLM=offline", "OASIS_RATES=mock", "OASIS_ANCHOR=local", "OASIS_DB=/data/",
+    for needed in ("OASIS_LLM=offline", "OASIS_RATES=live", "OASIS_ANCHOR=local", "OASIS_DB=/data/",
                    "OASIS_DATA_KEY=/data/", "OASIS_TRUST_KEY=/data/", "OASIS_SESSION_SECRET_FILE=/data/"):
         assert needed in env
     assert any(k == "VOLUME" and "/data" in a for k, a in DOCKERFILE)

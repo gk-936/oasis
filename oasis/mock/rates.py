@@ -40,6 +40,10 @@ class MockRates:
     def mid(self, day: int = 0) -> float:
         return round(self.BASE * (1 + 0.012 * math.sin((day + self.seed) / 6.0)), 6)
 
+    def usd_crosses(self, day: int = 0) -> dict | None:
+        """Units per 1 USD for the non-INR wallet currencies. None offline: oasis/mock/fx.py uses its frozen snapshot."""
+        return None
+
     def route_rate(self, route: Route, day: int = 0) -> float:
         return self.mid(day) * (1 - route.rate_spread)
 

@@ -27,7 +27,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
     OASIS_HOSTED=1 \
     OASIS_LLM=offline \
     OASIS_EXTRACT=deterministic \
-    OASIS_RATES=mock \
+    OASIS_RATES=live \
     OASIS_ANCHOR=local \
     OASIS_JUDGE_MODE=1 \
     # everything stateful lives under /data (a volume): database, keys, session secret, red-team attempts log

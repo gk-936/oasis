@@ -146,3 +146,35 @@ def test_factory_and_provenance(tmp_path, monkeypatch):
     monkeypatch.setenv("OASIS_RATES", "live")
     assert isinstance(make_rates(cache_path=tmp_path / "x.json", transport=Fake()), LiveRates)
     assert type(make_rates(mode="mock")) is MockRates
+
+
+# ---------------------------------------------------------------------------------------------- live USD/EUR/GBP/AUD crosses
+def test_frankfurter_crosses_feed_the_wallet_table(tmp_path):
+    from oasis.mock import fx
+    body = json.dumps({"date": "2026-10-09", "rates": {"INR": 90.0, "CNY": 7.8, "USD": 1.16, "GBP": 0.87, "AUD": 1.76}})
+    r = make(tmp_path, Fake(bodies={"frankfurter": body}))
+    c = r.usd_crosses(0)
+    assert c == {"CNY": pytest.approx(7.8 / 1.16, abs=1e-5), "EUR": pytest.approx(1 / 1.16, abs=1e-5),
+                 "GBP": pytest.approx(0.87 / 1.16, abs=1e-5), "AUD": pytest.approx(1.76 / 1.16, abs=1e-5)}
+    t = fx.table_for(r)
+    assert t["EUR"] == c["EUR"] and t["INR"] == pytest.approx(t["CNY"] / r.mid(0))
+
+
+def test_fawaz_crosses_and_garbage_crosses_fall_back_to_the_snapshot(tmp_path):
+    from oasis.mock import fx
+    fawaz = json.dumps({"date": "2026-10-09", "inr": {"cny": 0.08, "usd": 0.0119, "eur": 0.0102, "gbp": 0.0089, "aud": 0.018}})
+    r = make(tmp_path, Fake(bodies={"frankfurter": "down", "jsdelivr": fawaz}))
+    assert r.quote(0).source == "fawazahmed0" and r.usd_crosses(0)["EUR"] == pytest.approx(0.0102 / 0.0119, abs=1e-5)
+    bad = json.dumps({"date": "2026-10-09", "rates": {"INR": 90.0, "CNY": 7.8, "USD": 1.16, "GBP": 900, "AUD": 1.76}})
+    r2 = make(tmp_path / "b", Fake(bodies={"frankfurter": bad}))
+    assert r2.mid(0) == pytest.approx(7.8 / 90, abs=1e-5) and r2.usd_crosses(0) is None          # mid kept, crosses rejected
+    assert fx.table_for(r2)["GBP"] == fx.USD_CROSS_SNAPSHOT["GBP"]
+    assert MockRates().usd_crosses(0) is None
+
+
+def test_old_cache_without_crosses_still_loads(tmp_path):
+    p = tmp_path / "rates_cache.json"
+    p.write_text(json.dumps({"latest": {"rate": 0.07, "source": "frankfurter", "fetched_at": "2026-10-10T11:30:00Z",
+                                        "as_of": "2026-10-09", "stale": False}, "latest_ts": T0, "history": {}}))
+    r = LiveRates(cache_path=p, transport=Fake(fail=True), clock=Clock())
+    assert r.mid(0) == 0.07 and r.usd_crosses(0) is None

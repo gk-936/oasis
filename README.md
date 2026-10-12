@@ -4,7 +4,11 @@
 Built for the 2026 Shenzhen FinTechathon, International Track, **Topic C: Cross-border & Student Finance Assistant**. Hero corridor: an Indian student arriving in Shenzhen (INR to CNY).
 Oasis keeps a Student Financial Passport and proposes a payment plan with an AI model; deterministic code checks, signs, enforces and records every payment.
 
-> All money, fees, payment rails, registry identities and balances are **simulated sandbox data**, labelled MOCK in the UI. The INR to CNY rate is a mock snapshot by default and the real ECB reference rate only with `OASIS_RATES=live`. See [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
+> All money, fees, payment rails, registry identities and balances are **simulated sandbox data**, labelled MOCK in the UI. Exchange rates are **real**: the hosted Docker image fetches ECB reference rates server-side (`OASIS_RATES=live`, cached, with a labelled MOCK fallback if the server is offline); local runs and tests default to a mock snapshot so results repeat. See [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
+
+## The pain point we close
+
+**A forged invoice or a "my bank account has changed" message must never be able to redirect a student's tuition or rent.** Governments and universities warn students about exactly this (cited below). In Oasis the account that gets paid always comes from an independent payee registry, never from the document; a changed account triggers re-verification; and every payment is bound to a signed intent the executor enforces exactly. On our benchmark that is 100% of 32 attacks blocked and CNY 0 lost (a forged tuition invoice alone: CNY 30,000 saved), with every legitimate payment completed. Around that core, Oasis covers the rest of Topic C: cheaper remittance routes, deadline-aware tuition and rent plans, multi-currency balances at live rates, and a portable payment reputation (the Trust Pass) built from those same verified payments.
 
 ## A student story: Arjun
 
@@ -17,7 +21,8 @@ Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a 
 - **Languages.** The interface and the server's plain-language explanations come in English (default) and Simplified Chinese (picker on the login screen and in the header; a student's choice is saved in the Passport); machine-drafted Chinese, see `docs/i18n-glossary.md`.
 - **Gets parent co-approval in Tamil, Hindi, Chinese or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
 - **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
-- **Builds a payment record (credit building, not a credit score).** Each payment that went through the full checks with a verified proof pack can be put in a signed **payment-reliability record** (on time or late, pseudonymous by default, amount ranges unless he opts in) that a landlord or university can verify. It is not a credit score and no bureau accepts it; it is a verifiable record from a sandbox.
+- **Builds a payment reputation from day one: the Oasis Trust Pass (credit building, not a credit score).** Most students arrive with no credit file at all, and none travels across the border. From the payments that passed the full checks, Arjun issues a signed Trust Pass he holds himself: he picks claims ("3 of 3 paid on time", "all to registry-verified payees"), or only thresholds ("at least 90% on time") that hide the exact numbers, and chooses which payments, if any, to reveal (salted commitments, selective disclosure). He names the verifier ("Landlord, Room 1203", sealed into the signature) and shows a QR code; the landlord's phone opens a login-free page that re-verifies every signature. The pass suggests what it can support asking for (a lower deposit, no guarantor). A clean streak also proposes a higher parent co-approval limit that only the parent can accept. Not a bureau report: it cannot be padded by "paying rent" to a friend, because every payment went to a registry-verified payee. The simpler signed **payment-reliability record** is still there too.
+- **Manages money in six currencies at live rates.** INR, CNY, USD, EUR, GBP and AUD balances, each valued in yuan and rupees at real ECB mid rates, with exposure per currency, an in-app converter (wallet fee and saving versus a typical bank shown up front; mock pricing) and a check that the yuan on hand covers everything due in the next 60 days.
 - **Acts on his behalf within small limits:** a rate-target conversion and a recurring bill (Tier-1 autonomy), then shows a **savings receipt** (CNY 1,313.66 in the demo) and the Student Financial Passport.
 
 Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
@@ -53,7 +58,7 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
 | Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
 | Planner v3 vs v2 (live, incomplete) | gpt-oss-120b v3 14 of 24 valid (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 of 24 plans; no verdict, v2 stays default |
-| Tests | 588 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Tests | 645 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Top limitations
 
@@ -76,12 +81,12 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 588 tests, no network
+# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 645 tests, no network
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
 
-**Hosting (Docker):** `docker compose up -d --build` runs an offline, single-worker container that refuses the public demo passcodes; see [docs/deployment-docker.md](docs/deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
+**Hosting (Docker):** `docker compose up -d --build` runs a single-worker container that refuses the public demo passcodes and fetches live ECB exchange rates server-side (judges' browsers never call the rate API; if the server cannot reach it the rate badge says MOCK and everything still works); see [docs/deployment-docker.md](docs/deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
 
 ## Login and roles
 
@@ -148,7 +153,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 2. **Key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.** Otherwise the keys under `data/keys/` rely on OS permissions only, so set the passphrase before any recorded demo ([hardening][sec-hard]).
 3. **FISCO BCOS is a 4-node local test chain** (real FISCO BCOS 3.17.1, all nodes on one host), opt-in via `OASIS_ANCHOR=fisco`. It shows the integration, not decentralised trust, and Oasis does NOT claim the on-chain challenge bonus (that is Topic F; Oasis is Topic C) ([FISCO BCOS notes][fisco]).
 4. **PQ-TLS was tested only with an OpenSSL client** (OpenSSL 3.5.9 negotiated X25519MLKEM768 via Caddy). It was not tested in browsers, the certificate is classical, and the app itself still serves plain HTTP ([PQ-TLS evidence][pq]).
-5. **Much of the world is mock data.** Route spreads and fees, payment rails and the payee registry are mock; exchange rates can be live (`OASIS_RATES=live`) with a mock fallback ([real vs simulated][rvs]).
+5. **Much of the world is mock data.** Route spreads and fees, wallet conversion fees, payment rails and the payee registry are mock; exchange rates are live in the Docker image (`OASIS_RATES=live`, cached, MOCK fallback) and mock by default locally. The scripted Demo tab always uses the mock rate so it repeats exactly ([real vs simulated][rvs]).
 6. **There is no API to real banks, and WeIdentity is not integrated.** The registry is made of WeIdentity-style demo credentials, and nothing is ever sent to a real bank ([real vs simulated][rvs]).
 7. **Money is stored as floats rounded to whole fen.** Fine for a sandbox; production would use `Decimal`, and corridor checks use one hard-coded USD/INR of 88.0.
 8. **Demo Run 2 catches the forged invoice at step 3 (Verify), not step 5.** The step 5 intent-mismatch catch is shown by the rewritten-payment-instructions attack ([technical documentation][tech]).
@@ -162,8 +167,8 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 16. **Parser and duplicate-check gaps.** An amount written as `1e5` is read as `1` (visible in the draft the student signs), and duplicates of invoices older than 30 days are caught only through the paid-obligation check.
 17. **Tamil, Hindi and Chinese (zh-CN) text is machine-drafted: the parent approval wording and the Chinese interface and server messages have not been reviewed by native speakers.** English is the default and the competition's official language; see `docs/i18n-glossary.md`.
 18. **Demo keys are public and seeded.** While a demo world is active the server pins their fingerprint, so a pack forged with the public demo seeds would verify during the demo (`GET /api/trust/fingerprint` reports `demo_keys: true`).
-19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed ([technical documentation][tech], section 15).
-20. **Only INR and CNY are supported.** Balances, rates, rules and routes cover INR to CNY only; there is no wallet in another currency. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).
+19. **The payment-reliability record is a sandbox statement, not a credit product.** It is signed by this server's key over simulated payments and simulated dates, is not a credit score, and no credit bureau, bank or regulator accepts it. The due date comes from the invoice the student supplied and is not inside the proof pack, so only the server's signature vouches for it. Only payments that went through the full pipeline with a verified proof pack are listed. The same holds for the **Trust Pass**: it is a server-signed sandbox credential, not a credit score; no lender is obliged to accept it; threshold claims are attested by the server (not zero-knowledge proofs); the QR code locates a copy stored on this server, so an independent verifier should also take the JSON file and check the signature against the pinned key; and the payee level shown is the registry level at issue time ([technical documentation][tech], sections 15 and 18).
+20. **Remittances and payments cover one corridor, INR to CNY.** The wallet holds and converts six currencies (INR, CNY, USD, EUR, GBP, AUD), but sending money abroad, the corridor rules, routes and obligations are INR to CNY only. Another corridor needs its own rules file (`oasis/trust/rules/*.yaml`) and its own route fees in the mock layer ([technical documentation][tech], section 16).
 
 [sec]: docs/security-self-assessment.md
 [sec-hard]: docs/security-self-assessment.md#hardening-added-2026-10-10
@@ -182,7 +187,7 @@ Oasis is released under the [MIT licence](LICENSE). Dependencies (read from inst
 
 | Component | Licence |
 |---|---|
-| FastAPI, Pydantic, PyYAML, pytest, React 18, React DOM, Vite 5, @vitejs/plugin-react, httptools, watchfiles | MIT |
+| FastAPI, Pydantic, PyYAML, pytest, React 18, React DOM, Vite 5, @vitejs/plugin-react, httptools, watchfiles, qrcode-generator | MIT |
 | Starlette, Uvicorn, HTTPX, python-dotenv, websockets | BSD-3-Clause |
 | PyNaCl, Groq SDK, python-multipart | Apache-2.0 |
 | cryptography | Apache-2.0 OR BSD-3-Clause |

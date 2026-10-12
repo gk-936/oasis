@@ -1,7 +1,10 @@
 # Live exchange rates
 
-Oasis can use a real INR to CNY mid-market rate instead of the simulated sine curve. It is **off by default**
-(`OASIS_RATES=mock`) so tests, the benchmark and the scripted demo stay deterministic. Set `OASIS_RATES=live` to enable it.
+Oasis can use a real INR to CNY mid-market rate instead of the simulated sine curve, plus real USD, EUR, GBP and AUD
+crosses for the multi-currency wallet. It is **on in the Docker image** (`OASIS_RATES=live`) and **off by default
+locally** (`OASIS_RATES=mock`) so tests, the benchmark and the judge scripts stay deterministic; the scripted demo always
+uses the mock. The rate is fetched by the server, so a user's own network (for example a judge in mainland China) never
+needs to reach the providers; only the host does, and if it cannot, the cached or MOCK fallback keeps everything working.
 Code: `oasis/market/live_rates.py`; factory `make_rates()`.
 
 ## Sources
@@ -15,14 +18,20 @@ Checked but not used: open.er-api.com (ExchangeRate-API open endpoint) is free b
 a link back, and is rate limited per IP; fine as a future third source.
 
 ECB publishes INR and CNY, each against EUR (there is no direct ECB INR/CNY pair). The primary path requests
-`base=EUR&symbols=INR,CNY` and computes the cross rate itself: `CNY per INR = CNY_per_EUR / INR_per_EUR`.
+`base=EUR&symbols=INR,CNY,USD,GBP,AUD` and computes the cross rate itself: `CNY per INR = CNY_per_EUR / INR_per_EUR`.
+From the same response it derives the wallet crosses as units per USD (`X_per_EUR / USD_per_EUR`, and EUR = `1 / USD_per_EUR`);
+the secondary source does the same from its `inr` table (`inr->x / inr->usd`). Each cross is range-checked
+(CNY 4 to 12, EUR 0.5 to 1.5, GBP 0.4 to 1.3, AUD 0.9 to 2.5 per USD); if any is missing or implausible, the crosses fall
+back to the frozen ECB snapshot of 2026-10-09 in `oasis/mock/fx.py` while the live INR→CNY mid is kept. Checked live on
+2026-10-12: both providers answered and agreed within about 0.1%.
 The secondary source quotes INR/CNY directly. The two differ by a few basis points to ~0.5 percent
 (ECB is a once-daily fixing; the other is an aggregated daily snapshot), which is far below the mock route spreads (0.4 to 3 percent).
 
 ## What is real and what is not
 
-* Real: the mid-market INR to CNY rate (today and past days).
-* Mock, and labelled so: every route's rate spread, fixed and percentage fees, delivery days and reliability.
+* Real: the mid-market INR to CNY rate (today and past days) and the USD, EUR, GBP and AUD wallet crosses.
+* Mock, and labelled so: every route's rate spread, fixed and percentage fees, delivery days and reliability, and the
+  wallet conversion spread and fee.
   They are applied on top of the live mid exactly as before.
 * Not done, by design: **no rate prediction**. Day offsets in the future (the simulation clock runs ahead of real time)
   reuse the latest live rate held flat. Past offsets (`day_index < 0`, used by the 7-day rate-move trigger) call the

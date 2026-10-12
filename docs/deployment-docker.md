@@ -55,7 +55,7 @@ Set secrets at run time, never in the image. The full annotated list is `.env.do
 | `OASIS_KEY_PASSPHRASE` | unset (warning) | wraps the key files; needed at every start |
 | `OASIS_JUDGE_MODE` | `1` | `0` for personal use (`/docs` on, looser limits) |
 | `OASIS_LLM` / `GROQ_API_KEY` | `offline` / unset | live mode sends text to Groq; not for a public instance |
-| `OASIS_RATES` / `OASIS_ANCHOR` | `mock` / `local` | keep for a hosted sandbox |
+| `OASIS_RATES` / `OASIS_ANCHOR` | `live` / `local` | `live` fetches real ECB rates server-side (cached; MOCK fallback if unreachable); set `mock` for repeatable demo numbers |
 | `OASIS_HOSTED` | `1` | `0` skips the entrypoint's hosted-mode checks (the app's own checks still apply) |
 | `PORT` | `8000` | injected by many hosts |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` (compose: its own subnet) | proxy addresses/CIDRs whose `X-Forwarded-*` headers are believed |

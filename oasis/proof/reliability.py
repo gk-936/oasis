@@ -119,6 +119,7 @@ def eligible_payments(world) -> list[dict]:
             continue
         seen.add(pid)
         out.append({"pack": pack, "obligation_type": ob.type, "payee_type": rec.payee_type,
+                    "payee_level": getattr(rec.verification.level, "value", rec.verification.level),
                     "paid_date": h["date"], "due_date": ob.due})
     return out
 

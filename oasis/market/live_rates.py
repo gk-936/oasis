@@ -22,7 +22,10 @@ from ..mock.rates import MockRates
 
 TTL_SECONDS = 3600
 RETRY_BACKOFF_SECONDS = 60          # after a total network failure, do not hammer the network on every mid() call
-FRANKFURTER = "https://api.frankfurter.dev/v1/{when}?base=EUR&symbols=INR,CNY"
+FRANKFURTER = "https://api.frankfurter.dev/v1/{when}?base=EUR&symbols=INR,CNY,USD,GBP,AUD"
+CROSS_CURRENCIES = ("CNY", "EUR", "GBP", "AUD")    # quoted as units per 1 USD (see oasis/mock/fx.py)
+# Plausible units-per-USD bands; a value outside is treated as garbage and the mock snapshot is used instead.
+CROSS_BOUNDS = {"CNY": (4.0, 12.0), "EUR": (0.5, 1.5), "GBP": (0.4, 1.3), "AUD": (0.9, 2.5)}
 FAWAZ = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{when}/v1/currencies/inr.json"
 
 SOURCE_LABELS = {
@@ -48,6 +51,7 @@ class RateQuote:
     fetched_at: str        # UTC ISO-8601, when we fetched it
     as_of: str             # provider's own date (ISO date); "" for MOCK
     stale: bool = False    # True when served from cache after a failed refresh
+    crosses: dict | None = None   # units per 1 USD for CROSS_CURRENCIES, from the same response; None = mock snapshot
 
     def label(self) -> str:
         if self.source == "MOCK":
@@ -65,15 +69,32 @@ def cross_rate(inr_per_eur: float, cny_per_eur: float) -> float:
     return cny_per_eur / inr_per_eur
 
 
-def _parse_frankfurter(text: str) -> tuple[float, str]:
+def _checked_crosses(c: dict) -> dict | None:
+    """Keep the crosses only if every one is present and plausible; otherwise None (the mock snapshot is used)."""
+    try:
+        out = {k: round(float(c[k]), 6) for k in CROSS_CURRENCIES}
+    except (KeyError, TypeError, ValueError):
+        return None
+    return out if all(CROSS_BOUNDS[k][0] < v < CROSS_BOUNDS[k][1] for k, v in out.items()) else None
+
+
+def _parse_frankfurter(text: str) -> tuple[float, str, dict | None]:
     d = json.loads(text)
     r = d["rates"]
-    return cross_rate(float(r["INR"]), float(r["CNY"])), str(d["date"])
+    usd = float(r.get("USD") or 0)
+    crosses = None
+    if usd > 0 and "GBP" in r and "AUD" in r:
+        crosses = _checked_crosses({"CNY": float(r["CNY"]) / usd, "EUR": 1 / usd, "GBP": float(r["GBP"]) / usd,
+                                    "AUD": float(r["AUD"]) / usd})
+    return cross_rate(float(r["INR"]), float(r["CNY"])), str(d["date"]), crosses
 
 
-def _parse_fawaz(text: str) -> tuple[float, str]:
+def _parse_fawaz(text: str) -> tuple[float, str, dict | None]:
     d = json.loads(text)
-    return float(d["inr"]["cny"]), str(d["date"])
+    q = d["inr"]
+    usd = float(q.get("usd") or 0)
+    crosses = _checked_crosses({k: float(q[k.lower()]) / usd for k in CROSS_CURRENCIES if k.lower() in q}) if usd > 0 else None
+    return float(q["cny"]), str(d["date"]), crosses
 
 
 _PROVIDERS = (("frankfurter", FRANKFURTER, _parse_frankfurter), ("fawazahmed0", FAWAZ, _parse_fawaz))
@@ -126,10 +147,10 @@ class LiveRates(MockRates):
         """Try primary then secondary. `when` is 'latest' or an ISO date. None if both fail or are malformed."""
         for name, url, parse in _PROVIDERS:
             try:
-                rate, as_of = parse(self.transport(url.format(when=when)))
+                rate, as_of, crosses = parse(self.transport(url.format(when=when)))
                 if not (0.01 < rate < 1.0):          # sanity: INR→CNY is ~0.07; reject garbage
                     raise ValueError(f"implausible rate {rate}")
-                return RateQuote(round(rate, 6), name, _now_iso(), as_of)
+                return RateQuote(round(rate, 6), name, _now_iso(), as_of, crosses=crosses)
             except Exception:  # network, HTTP, JSON, schema: all just mean "try the next source"
                 continue
         return None
@@ -188,10 +209,14 @@ class LiveRates(MockRates):
     def mid(self, day: int = 0) -> float:
         return self.quote(day).rate
 
+    def usd_crosses(self, day: int = 0) -> dict | None:
+        return self.quote(day).crosses
+
     def provenance(self) -> dict:
         """For the API state field `rates`: what the UI badge shows."""
         q = self.last_quote or self.quote(0)
-        return {**asdict(q), "mode": "mock" if q.source == "MOCK" else "live", "label": q.label(),
+        d = {k: v for k, v in asdict(q).items() if k != "crosses"}   # the badge shows the INR->CNY mid only
+        return {**d, "mode": "mock" if q.source == "MOCK" else "live", "label": q.label(),
                 "spreads_and_fees": FEES_NOTE}
 
 
@@ -206,4 +231,5 @@ def provenance(rates: MockRates, day: int = 0) -> dict:
     if isinstance(rates, LiveRates):
         return rates.provenance()
     q = RateQuote(rates.mid(day), "MOCK", _now_iso(), "")
-    return {**asdict(q), "mode": "mock", "label": q.label(), "spreads_and_fees": FEES_NOTE}
+    d = {k: v for k, v in asdict(q).items() if k != "crosses"}
+    return {**d, "mode": "mock", "label": q.label(), "spreads_and_fees": FEES_NOTE}
