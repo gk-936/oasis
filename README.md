@@ -103,6 +103,7 @@ Demo passcodes (public, from `.env.example`; set `OASIS_PASS_*` for anything rea
 | student | `student-demo` | intake, chat, plans, rate targets, signed approvals, the scripted demo, reset |
 | parent | `parent-demo` | signed approval of top-ups, sees only their own items |
 | judge | `judge-demo` | read-only views and the rate-limited red-team console |
+| Break it | tab for judge and student | live fraud challenge: rule + why-card verdict and a deterministic attacker generator with scoreboard (MOCK), see [docs/breakit.md](docs/breakit.md) |
 
 Approvals are signed by browser-held Ed25519 device keys. Details: [docs/technical-documentation.md](docs/technical-documentation.md) section 11.
 
