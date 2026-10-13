@@ -1,0 +1,72 @@
+{
+  "label": "MOCK: seeded synthetic cohorts",
+  "seed": 11,
+  "rows": [
+    {
+      "pool_size": 1,
+      "total_volume_cny": 22956.57,
+      "matched_volume_cny": 0,
+      "matched_pct": 0.0,
+      "cost_alone_cny": 295.47,
+      "cost_netted_cny": 295.47,
+      "saving_cny": 0.0,
+      "saving_pct": 0.0
+    },
+    {
+      "pool_size": 2,
+      "total_volume_cny": 36504.82,
+      "matched_volume_cny": 16141.67,
+      "matched_pct": 44.2,
+      "cost_alone_cny": 332.0,
+      "cost_netted_cny": 68.61,
+      "saving_cny": 263.39,
+      "saving_pct": 79.33
+    },
+    {
+      "pool_size": 10,
+      "total_volume_cny": 127693.75,
+      "matched_volume_cny": 34602.94,
+      "matched_pct": 27.1,
+      "cost_alone_cny": 1353.49,
+      "cost_netted_cny": 592.94,
+      "saving_cny": 760.55,
+      "saving_pct": 56.19
+    },
+    {
+      "pool_size": 50,
+      "total_volume_cny": 844634.91,
+      "matched_volume_cny": 189635.52,
+      "matched_pct": 22.5,
+      "cost_alone_cny": 8455.94,
+      "cost_netted_cny": 4865.31,
+      "saving_cny": 3590.63,
+      "saving_pct": 42.46
+    },
+    {
+      "pool_size": 200,
+      "total_volume_cny": 3243411.04,
+      "matched_volume_cny": 968080.93,
+      "matched_pct": 29.8,
+      "cost_alone_cny": 32675.87,
+      "cost_netted_cny": 14544.05,
+      "saving_cny": 18131.81,
+      "saving_pct": 55.49
+    },
+    {
+      "pool_size": 1000,
+      "total_volume_cny": 15543271.68,
+      "matched_volume_cny": 4056891.59,
+      "matched_pct": 26.1,
+      "cost_alone_cny": 157881.99,
+      "cost_netted_cny": 81640.06,
+      "saving_cny": 76241.93,
+      "saving_pct": 48.29
+    }
+  ],
+  "caveats": [
+    "Synthetic demand; real pools are thinner and lopsided.",
+    "CNY->INR cost assumed equal to the mirror INR->CNY route (MOCK).",
+    "Real netting needs a licensed counterparty and regulatory approval; nothing here moves money.",
+    "Only payee-verified, approved payments with >=2 days to deadline enter the pool."
+  ]
+}

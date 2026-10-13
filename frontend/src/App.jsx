@@ -8,6 +8,7 @@ import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
 import { FlightPath } from "./tabs/FlightPath.jsx";
 import { Chat } from "./tabs/Chat.jsx";
 import { Demo } from "./tabs/Demo.jsx";
+import { Netting } from "./tabs/Netting.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
 import { Parent } from "./tabs/Parent.jsx";
 import { Passport } from "./tabs/Passport.jsx";
@@ -16,7 +17,10 @@ import { RedTeam } from "./tabs/RedTeam.jsx";
 import { BreakIt } from "./tabs/BreakIt.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath"],\n  parent: ["parent", "proof"],\n  judge: ["redteam", "breakit", "proof", "numbers", "flightpath"],\n};
+  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath", "netting"],
+  parent: ["parent", "proof"],
+  judge: ["redteam", "breakit", "proof", "numbers", "flightpath", "netting"],
+};
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
 
@@ -193,6 +197,7 @@ export default function App() {
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
             {tab === "numbers" && <Numbers />}
             {tab === "flightpath" && <FlightPath />}
+            {tab === "netting" && <Netting />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>
