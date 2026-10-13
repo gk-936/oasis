@@ -5,6 +5,7 @@ import { assertPasskey, passkeysSupported, registerPasskey } from "./passkey.js"
 import { MockBanner } from "./common.jsx";
 import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as applyLang, t, tl, useLang } from "./i18n/index.js";
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
+import { EvidencePassport } from "./tabs/EvidencePassport.jsx";
 import { Chat } from "./tabs/Chat.jsx";
 import { Demo } from "./tabs/Demo.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
@@ -14,7 +15,7 @@ import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "proof", "numbers"],
+  student: ["demo", "chat", "passport", "parent", "proof", "evp", "numbers"],
   parent: ["parent", "proof"],
   judge: ["redteam", "proof", "numbers"],
 };
@@ -191,7 +192,8 @@ export default function App() {
             {tab === "parent" && <Parent refresh={refresh} role={auth.role} />}
             {tab === "redteam" && <RedTeam onProof={openProof} />}
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
-            {tab === "numbers" && <Numbers />}
+            {tab === "evp" && <EvidencePassport />}
+      {tab === "numbers" && <Numbers />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>

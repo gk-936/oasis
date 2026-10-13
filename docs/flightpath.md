@@ -16,4 +16,4 @@ API (advisory, moves no money): `POST /api/flightpath/compare`, `GET /api/flight
 ## Limits
 - Rails, deductions and delays are MOCK. Results are simulation results, not validated against real transfers.
 - The baseline is a deliberately naive strategy (cheapest route on paper, no pre-checks, retry on delay). The benchmark's deduction model is my own: real deductions are drawn uniformly in [0, worst case] and FlightPath's expected value is set to half the worst case. That consistency is by construction, so the amount-error figure (4.43 vs 4.9 CNY) shows the mechanism works, not accuracy on real rails.
-- Not built yet: Financial Digital Twin, Payment Evidence Passport (roadmap only).
+- Not built yet: Financial Digital Twin (roadmap only). The Payment Evidence Passport is built: see [evidence-passport.md](evidence-passport.md).
