@@ -13,11 +13,18 @@ import { Parent } from "./tabs/Parent.jsx";
 import { Passport } from "./tabs/Passport.jsx";
 import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
+import { BreakIt } from "./tabs/BreakIt.jsx";
 
 const TABS_BY_ROLE = {
+<<<<<<< HEAD
   student: ["demo", "chat", "passport", "parent", "proof", "numbers", "flightpath"],
   parent: ["parent", "proof"],
   judge: ["redteam", "proof", "numbers", "flightpath"],
+=======
+  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers"],
+  parent: ["parent", "proof"],
+  judge: ["redteam", "breakit", "proof", "numbers"],
+>>>>>>> worktree-agent-ae7f5a55aa8879a22
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
@@ -191,6 +198,7 @@ export default function App() {
             {tab === "passport" && <Passport s={s} refresh={refresh} />}
             {tab === "parent" && <Parent refresh={refresh} role={auth.role} />}
             {tab === "redteam" && <RedTeam onProof={openProof} />}
+            {tab === "breakit" && <BreakIt />}
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
             {tab === "numbers" && <Numbers />}
             {tab === "flightpath" && <FlightPath />}
