@@ -42,7 +42,7 @@ from .. import config
 from ..agent import localize as loc
 from ..agent.i18n import LANGS, UI_LANGS, lang_from_accept, ui_lang
 from ..agent.zh_messages import route_zh
-from ..agent.llm import GroqLLM, VisionExtractor, VisionUnavailable, explain_template, make_llm
+from ..agent.llm import LiveLLM, VisionExtractor, VisionUnavailable, explain_template, make_llm
 from ..agent.parent import parent_view
 from ..agent.pipeline import OasisAgent, Request
 from ..agent import plan_exec
@@ -52,6 +52,7 @@ from ..demo import DemoRunner, new_demo_world
 from ..market import provenance
 from ..planning import spending
 from ..flightpath import core as fpath
+from ..mock.rates import ROUTES
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
@@ -289,6 +290,7 @@ class Session:
         self.chat: list[dict] = []
         self.reliability_last = None
         self.trust_shares: dict[str, dict] = {}   # QR code -> shared Trust Pass presentation
+        self.journeys: dict[str, fpath.Journey] = {}   # FlightPath journeys (MOCK rail events); persisted in kv "flightpath"
         snap = self.store.load() if self.store else None
         if snap:
             self.approvers.load(snap["kv"].get("approvers", []))
@@ -297,12 +299,14 @@ class Session:
     def _build(self, snap: dict | None = None, world: World | None = None) -> None:
         self.world = world or World(Features.full(), make_llm(), store=self.store, autonomy=True, signer=self.signer,
                                     approvers=self.approvers, sim_devices=False)    # real humans only: no simulated devices
+        self.journeys = {}
         if snap:
             self.world.restore(snap)
             self.pending = {k: {"request": _request_from(v["request"]), "signed": dict(v.get("signed", {})),
                                 "required": v["required"], "outcome": v["outcome"]}
                             for k, v in snap["kv"].get("pending", {}).items()}
             self.trust_shares = dict(snap["kv"].get("trust_shares", {}))
+            self.journeys = {k: fpath.journey_from_dict(v) for k, v in snap["kv"].get("flightpath", {}).items()}
         self.agent = OasisAgent(self.world)
         self.redteam_boxes = OrderedDict()                 # every judge's sandbox starts fresh with the student's reset
         self._rt_default = RedTeamBox(self.signer)          # fallback world (no judge session); never persisted
@@ -371,6 +375,7 @@ class Session:
         snap = self.world.snapshot()
         snap["kv"]["approvers"] = self.approvers.public_view()
         snap["kv"]["trust_shares"] = self.trust_shares
+        snap["kv"]["flightpath"] = {k: fpath.journey_to_dict(v) for k, v in self.journeys.items()}
         snap["kv"]["pending"] = {k: {"request": _request_to(v["request"]), "signed": v["signed"],
                                      "required": v["required"], "outcome": jsonable_encoder(v["outcome"])}
                                  for k, v in self.pending.items()}
@@ -764,8 +769,8 @@ def state(p: Principal = Depends(VIEWERS), ui: str = UI):
     sp = spending.summarize(p_)
     return loc.localize_state(jsonable_encoder({
         "mock_note": MOCK_NOTE, "role": p.role,
-        "llm": w.llm.name, "agent_model": config.AGENT_MODEL if w.llm.name == "groq" else None,
-        "fallback_model": config.FALLBACK_MODEL if w.llm.name == "groq" else None,
+        "llm": w.llm.name, "agent_model": config.AGENT_MODEL if w.llm.name == "bedrock" else None,
+        "fallback_model": config.FALLBACK_MODEL if w.llm.name == "bedrock" else None,
         "persistence": {"enabled": S.store is not None, "path": S.db_path if S.store else None,
                         "encrypted_at_rest": S.store is not None},
         "demo": {"active": S.demo is not None, "run": S.demo.run if S.demo else None, "mode": S.demo.mode if S.demo else None},
@@ -821,7 +826,7 @@ def _run_intake(req: Request, notes: list[str] | None = None) -> dict:
 
 
 def _vision_reader():
-    llm = S.world.llm if isinstance(S.world.llm, GroqLLM) else None
+    llm = S.world.llm if isinstance(S.world.llm, LiveLLM) else None
     try:
         v = VisionExtractor(llm)
     except VisionUnavailable:
@@ -924,11 +929,11 @@ def intake(body: IntakeIn, p: Principal = Depends(STUDENT), ui: str = UI):
 
 @app.post("/api/intake/image")
 async def intake_image(file: UploadFile = File(...), remitter: str = "student", p: Principal = Depends(STUDENT), ui: str = UI):
-    """Image intake via the Groq agent model. If the image cannot be read the result is a low-confidence hold
+    """Image intake via the agent model. If the image cannot be read the result is a low-confidence hold
     asking the student to paste the text or confirm the fields; nothing is guessed."""
     data = await file.read()
     try:
-        llm = S.world.llm if isinstance(S.world.llm, GroqLLM) else None
+        llm = S.world.llm if isinstance(S.world.llm, LiveLLM) else None
         text = VisionExtractor(llm).to_text(data, file.content_type or "image/png")   # image is not stored
     except VisionUnavailable as e:
         req = Request("", source="screenshot", remitter=remitter)
@@ -1137,7 +1142,7 @@ def plan_scenarios(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
 def plan_create(body: PlanIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """The agent builds a plan by calling read-only tools and revising from the validator's errors. It is a PROPOSAL:
     nothing is paid or converted until the student accepts it, and executing it goes through the normal pipeline."""
-    live = body.live and isinstance(S.world.llm, GroqLLM)
+    live = body.live and isinstance(S.world.llm, LiveLLM)
     if body.scenario:
         if body.scenario not in SCENARIOS:
             raise HTTPException(400, f"unknown scenario {body.scenario!r}; use one of {sorted(SCENARIOS)}")
@@ -1557,6 +1562,103 @@ def flightpath_compare(body: FlightPathIn, p: Principal = Depends(STUDENT_JUDGE)
         [{**o.__dict__, "route": o.route.name, "route_id": o.route.id} for o in fpath.compare_routes(S.world.rates, body.required_cny, today, due)])}
 
 
+class PrecheckIn(BaseModel):
+    route_id: str
+    payee_verified: bool
+    details_match: bool = True
+    docs_complete: bool = True
+    due_in_days: int | None = None
+
+
+class JourneyIn(BaseModel):
+    route_id: str
+    required_cny: float = Field(gt=0)
+    send_inr: float = Field(gt=0)
+    due_in_days: int | None = None
+
+
+class SimulateIn(BaseModel):
+    event: str
+    short_cny: float = Field(default=25.0, ge=0)
+
+
+class RefundIn(BaseModel):
+    confirmed: bool = True
+
+
+def _route(route_id: str):
+    r = next((r for r in ROUTES if r.id == route_id), None)
+    if r is None:
+        raise HTTPException(404, "unknown route")
+    return r
+
+
+def _journey(jid: str) -> fpath.Journey:
+    j = S.journeys.get(jid)
+    if j is None:
+        raise HTTPException(404, "unknown journey")
+    return j
+
+
+def _verdict(j: fpath.Journey) -> dict:
+    f = fpath.reconcile(j, S.world.day_index)
+    a = fpath.advise(j, f)
+    fpath.audit_event(S.world.audit, j, f, a)
+    return {"journey": jsonable_encoder(fpath.journey_to_dict(j)), "finding": jsonable_encoder(f.__dict__),
+            "advice": jsonable_encoder(a.__dict__), "label": "MOCK rail events; advisory only, moves no money"}
+
+
+@app.post("/api/flightpath/precheck")
+def flightpath_precheck(body: PrecheckIn, p: Principal = Depends(STUDENT)):
+    today = S.world.today
+    due = today + timedelta(days=body.due_in_days) if body.due_in_days is not None else None
+    w = fpath.precheck(payee_verified=body.payee_verified, details_match=body.details_match, docs_complete=body.docs_complete,
+                       route=_route(body.route_id), today=today, due=due)
+    return {"warnings": [x.__dict__ for x in w], "blocked": any(x.severity == "block" for x in w)}
+
+
+@app.get("/api/flightpath/journeys")
+def flightpath_journeys(p: Principal = Depends(STUDENT_JUDGE)):
+    return {"journeys": [jsonable_encoder(fpath.journey_to_dict(j)) for j in S.journeys.values()]}
+
+
+@app.post("/api/flightpath/journeys")
+def flightpath_create(body: JourneyIn, p: Principal = Depends(STUDENT)):
+    _route(body.route_id)
+    jid = f"jny_{len(S.journeys) + 1:04d}"
+    due_day = S.world.day_index + body.due_in_days if body.due_in_days is not None else None
+    S.journeys[jid] = fpath.Journey(jid, body.route_id, body.send_inr, body.required_cny, due_day)
+    S.world.audit.append("flightpath_journey", {"journey": jid, "route": body.route_id, "required_cny": body.required_cny})
+    S.save()
+    return _verdict(S.journeys[jid])
+
+
+@app.post("/api/flightpath/journeys/{jid}/simulate")
+def flightpath_simulate(jid: str, body: SimulateIn, p: Principal = Depends(STUDENT)):
+    """Layer a MOCK rail event (credit / delay / reject / short_credit) on the journey. Never touches the ledger."""
+    j = _journey(jid)
+    try:
+        fpath.simulate_event(j, body.event, S.world.day_index, body.short_cny)
+    except fpath.TransitionError as e:
+        raise HTTPException(409, str(e))
+    S.save()
+    return _verdict(j)
+
+
+@app.post("/api/flightpath/journeys/{jid}/refund")
+def flightpath_refund(jid: str, body: RefundIn, p: Principal = Depends(STUDENT)):
+    j = _journey(jid)
+    j.refund_confirmed = body.confirmed
+    S.save()
+    return _verdict(j)
+
+
+@app.get("/api/flightpath/journeys/{jid}/advice")
+def flightpath_advice(jid: str, p: Principal = Depends(STUDENT_JUDGE)):
+    """Reconcile and advise. Advisory only: a new payment must go through the normal request, policy and approval path."""
+    return _verdict(_journey(jid))
+
+
 @app.get("/api/flightpath/benchmark")
 def flightpath_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
     f = REPORTS / "flightpath.json"
@@ -1586,7 +1688,7 @@ def benchmark(p: Principal = Depends(STUDENT_JUDGE)):
 @app.post("/api/demo/start")
 def demo_start(body: DemoIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Reset to the scripted demo world (fixed seed, fixed MOCK data) and return the step list. `mode` "offline" (default)
-    uses the offline LLM; "live" replays recorded qwen/qwen3.8-27b responses from the fixture (no network)."""
+    uses the offline LLM; "live" replays recorded Claude Haiku responses from the fixture (no network)."""
     return loc.localize_demo_info(_demo_start(body), ui)
 
 

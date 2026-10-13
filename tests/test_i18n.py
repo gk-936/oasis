@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from auth_helpers import new_client
 from oasis.agent import i18n, localize, zh_messages
-from oasis.agent.llm import GroqLLM, explain_template
+from oasis.agent.llm import LiveLLM, explain_template
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "frontend" / "src"
@@ -122,7 +122,7 @@ def test_every_dynamic_key_family_is_covered():
         "cfg": {"baseline", "+verification", "+intents+policy", "full"},
         "conf": {"high", "medium-high", "medium", "low-medium", "n/a"},
         "pipe": {"understand", "plan", "verify", "commit", "execute", "prove"},
-        "tab": {"demo", "chat", "passport", "parent", "redteam", "proof", "numbers"},
+        "tab": {"demo", "chat", "passport", "parent", "redteam", "proof", "numbers", "flightpath"},
         "req": {"risk_review", "out_of_band_verification", "duplicate_confirmation", "corrected_cny_invoice", "verification"},
         "rr.check": {"signature", "key_pinned", "record_hash", "summary_consistent", "on_time_consistent", "proofs_checked"},
         "rules.status": {"confirmed-primary", "researched-secondary", "unconfirmed"},
@@ -273,7 +273,7 @@ def test_live_model_rewrite_in_chinese_must_keep_every_number(tmp_path):
         class C:
             chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: SimpleNamespace(
                 choices=[SimpleNamespace(message=SimpleNamespace(content=reply))], usage=SimpleNamespace(total_tokens=10))))
-        return GroqLLM(client=C(), cache_dir=tmp_path / d, sleep=lambda s: None, rpm=0)
+        return LiveLLM(client=C(), cache_dir=tmp_path / d, sleep=lambda s: None, rpm=0)
 
     template = explain_template("parent_approval", ctx, "zh")
     assert "71,000" in template and "6,000" in template

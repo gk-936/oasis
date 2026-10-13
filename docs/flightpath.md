@@ -11,7 +11,7 @@ Code: `oasis/flightpath/core.py`. Benchmark: `python -m eval.flightpath_bench` -
 | Reconcile | `reconcile`: flags delay (past route time + grace) and short-credit versus the required amount |
 | Recover | `advise`: wait / support case / investigate shortfall. **Never resends** while the first transfer is unresolved; a new payment needs a rejection **and** a confirmed refund, then re-enters policy and approval |
 
-API (advisory, moves no money): `POST /api/flightpath/compare`, `GET /api/flightpath/benchmark`.
+API (advisory, moves no money): `POST /api/flightpath/compare`, `GET /api/flightpath/benchmark`, `POST /api/flightpath/precheck`, `GET|POST /api/flightpath/journeys`, `POST .../journeys/{id}/simulate` (MOCK delay / reject / short credit), `POST .../refund`, `GET .../advice`. Journeys persist and each verdict is written to the audit chain. UI: the FlightPath tab.
 
 ## Limits
 - Rails, deductions and delays are MOCK. Results are simulation results, not validated against real transfers.

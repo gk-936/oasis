@@ -181,3 +181,35 @@ def audit_event(audit, j: Journey, f: Finding, a: Advice) -> None:
     if audit is not None:
         audit.append("flightpath", {"journey": j.id, "stage": j.stage, "finding": f.code, "action": a.action,
                                     "resend_allowed": a.resend_allowed})
+
+
+# ---------------------------------------------------------------- 6. sandbox events and persistence
+def journey_to_dict(j: Journey) -> dict:
+    return {**j.__dict__, "history": list(j.history)}
+
+
+def journey_from_dict(d: dict) -> Journey:
+    return Journey(**d)
+
+
+SIM_EVENTS = ("credit", "delay", "reject", "short_credit")
+
+
+def simulate_event(j: Journey, event: str, day: int, short_cny: float = 25.0) -> Journey:
+    """MOCK rail event layered on a journey (the sandbox ledger itself is instant). Walks the legal states, never skips one."""
+    if event not in SIM_EVENTS:
+        raise TransitionError(f"unknown event {event!r}")
+    if j.stage == "prepared":
+        advance(j, "checks_complete", day)
+    if j.stage == "checks_complete":
+        advance(j, "submitted", day)
+    if j.stage == "submitted":
+        advance(j, "processing", day)
+    if event == "delay":
+        advance(j, "delayed", day, note="simulated provider delay")
+    elif event == "reject":
+        advance(j, "rejected", day, note="simulated rejection")
+    else:
+        got = j.required_cny if event == "credit" else round(j.required_cny - short_cny, 2)
+        advance(j, "credited", day, credited_cny=got, note=f"simulated {event}")
+    return j

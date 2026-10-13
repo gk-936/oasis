@@ -5,6 +5,7 @@ import { assertPasskey, passkeysSupported, registerPasskey } from "./passkey.js"
 import { MockBanner } from "./common.jsx";
 import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as applyLang, t, tl, useLang } from "./i18n/index.js";
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
+import { FlightPath } from "./tabs/FlightPath.jsx";
 import { Chat } from "./tabs/Chat.jsx";
 import { Demo } from "./tabs/Demo.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
@@ -14,9 +15,9 @@ import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "proof", "numbers"],
+  student: ["demo", "chat", "passport", "parent", "proof", "numbers", "flightpath"],
   parent: ["parent", "proof"],
-  judge: ["redteam", "proof", "numbers"],
+  judge: ["redteam", "proof", "numbers", "flightpath"],
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
@@ -192,6 +193,7 @@ export default function App() {
             {tab === "redteam" && <RedTeam onProof={openProof} />}
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
             {tab === "numbers" && <Numbers />}
+            {tab === "flightpath" && <FlightPath />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>
