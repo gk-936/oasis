@@ -6,6 +6,7 @@ import { MockBanner } from "./common.jsx";
 import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as applyLang, t, tl, useLang } from "./i18n/index.js";
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
 import { FlightPath } from "./tabs/FlightPath.jsx";
+import { EvidencePassport } from "./tabs/EvidencePassport.jsx";
 import { Chat } from "./tabs/Chat.jsx";
 import { Demo } from "./tabs/Demo.jsx";
 import { Netting } from "./tabs/Netting.jsx";
@@ -18,7 +19,7 @@ import { RedTeam } from "./tabs/RedTeam.jsx";
 import { BreakIt } from "./tabs/BreakIt.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath", "netting", "twin"],
+  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath", "netting", "twin", "evp"],
   parent: ["parent", "proof"],
   judge: ["redteam", "breakit", "proof", "numbers", "flightpath", "netting", "twin"],
 };
@@ -200,6 +201,8 @@ export default function App() {
             {tab === "flightpath" && <FlightPath />}
             {tab === "netting" && <Netting />}
             {tab === "twin" && <Twin />}
+            {tab === "evp" && <EvidencePassport />}
+      {tab === "numbers" && <Numbers />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>

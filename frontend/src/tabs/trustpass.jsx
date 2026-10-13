@@ -19,7 +19,7 @@ export const zkText = (z) => t(z.kind === "rate" ? "cp.zk.stmt.rate" : z.kind ==
 
 export const verifyUrl = (code) => `${window.location.origin}/?verify=${encodeURIComponent(code)}`;
 
-function Qr({ text }) {
+export function Qr({ text }) {
   const q = qrcode(0, "M");
   q.addData(text);
   q.make();

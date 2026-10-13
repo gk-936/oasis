@@ -62,6 +62,7 @@ from ..passport import currency as currency_mod
 from ..passport.currency import currency_view
 from ..proof import trust_pass as tp
 from ..proof import vc_export
+from ..proof import evidence_passport as evp
 from ..proof.pack import verify_proof_pack
 from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
 from ..intake.telegram import PairingStore, summarize as chat_summary
@@ -1799,6 +1800,78 @@ def netting_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
 def twin_run(seed: int = 7, paths: int = twin.DEFAULT_PATHS, p: Principal = Depends(STUDENT_JUDGE)):
     paths = max(50, min(paths, 2000))
     return twin.run_twin(S.world.passport, S.world.rates, S.world.today, seed=seed, paths=paths)
+# ------------------------------------------------------------------ Payment Evidence Passport (signed, QR-verifiable; rail is MOCK)
+class EvpIssueIn(Strict):
+    intent_id: str = Field(max_length=64)
+    outcome: str = Field(default="credited", max_length=16)       # MOCK rail result: credited | short | delayed
+    credited_cny: float | None = Field(default=None, ge=0)
+
+
+class EvpShareIn(Strict):
+    passport: dict
+
+
+def _evp_verify(pas) -> dict:
+    w = S.world
+    res = evp.verify(pas, S.trusted_fingerprints(), _evp_registry_fps(),
+                     S.pinned_approver_keys(), None,
+                     lambda i, h: any(i < len(x.audit.entries) and x.audit.entries[i]["hash"] == h for x in [w, *S.redteam_worlds()]))
+    res["pinned_fingerprint"] = w.trust_fingerprint()
+    return res
+
+
+def _evp_registry_fps() -> set[str]:
+    return {fingerprint(x.registry.issuer_public_keys()) for x in [S.world, *S.redteam_worlds()]}
+
+
+@app.get("/api/evidence-passport/payments")
+def evp_payments(p: Principal = Depends(STUDENT)):
+    """Student only: executed payments to registry-verified payees that an Evidence Passport can be issued for."""
+    w = S.world
+    return {"mock": "reconciliation outcome is simulated (MOCK rail)", "outcomes": list(evp.OUTCOMES),
+            "payments": [{"intent_id": i, "amount": pk["intent"]["amount"], "currency": pk["intent"]["currency"],
+                          "payee_id": pk["intent"]["payee_id"], "purpose": pk["intent"].get("purpose")}
+                         for i, pk in w.proofs.items() if w.registry.lookup(pk["intent"].get("payee_id"))]}
+
+
+@app.post("/api/evidence-passport/issue")
+def evp_issue(body: EvpIssueIn, p: Principal = Depends(STUDENT)):
+    try:
+        out = evp.issue(S.world, body.intent_id, body.outcome, body.credited_cny)
+    except KeyError:
+        raise HTTPException(404, "no such executed payment")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    S.save()
+    return out
+
+
+@app.post("/api/evidence-passport/share")
+def evp_share(body: EvpShareIn, p: Principal = Depends(STUDENT)):
+    """Student only: keeps a passport that verifies against this server under a short code for a QR."""
+    if not _evp_verify(body.passport)["ok"]:
+        raise HTTPException(400, "only a passport that verifies against this server can be shared")
+    tp.share(S.trust_shares, {"credential": {"valid_until": "9999-12-31"}}, S.world.today.isoformat())   # prunes and bounds the store
+    S.trust_shares.popitem()
+    code = "e" + secrets.token_urlsafe(9)
+    S.trust_shares[code] = {"passport": body.passport, "valid_until": "9999-12-31"}
+    S.save()
+    return {"code": code}
+
+
+@app.get("/api/evidence-passport/check/{code}")
+def evp_check(code: str):
+    """PUBLIC (what the QR opens): re-verifies the shared passport now. The code only locates it."""
+    hit = S.trust_shares.get(code) if len(code) <= 32 and code.startswith("e") else None
+    if hit is None or "passport" not in hit:
+        raise HTTPException(404, "unknown or expired code")
+    return _evp_verify(hit["passport"])
+
+
+@app.post("/api/evidence-passport/verify")
+def evp_verify(pas: dict):
+    """PUBLIC: verifies a pasted passport against THIS server's pinned keys. Needs no secrets, changes no state."""
+    return _evp_verify(pas)
 
 
 # ------------------------------------------------------------------ evaluation + demo
