@@ -143,6 +143,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
+| [docs/peer-netting.md](docs/peer-netting.md) | Peer netting (MOCK simulation): matches INR to CNY payers against CNY to INR payers at mid-rate, residual routed normally; saving grows with pool size, 0 for a pool of one; synthetic cohorts, needs a licensed counterparty in reality |
 | [docs/flightpath.md](docs/flightpath.md) | FlightPath: pre-transfer checks, recipient-amount route comparison, simulated transfer lifecycle, delay/short-credit detection, no-blind-resend recovery; simulation benchmark and its limits (core only, no UI tab yet) |
 | [docs/real-inputs.md](docs/real-inputs.md) | real invoice intake (email file, Telegram bot, mailbox watcher): setup, safety rules, where each works (Telegram is blocked in mainland China), what was and was not tested live |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |

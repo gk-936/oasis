@@ -1563,6 +1563,27 @@ def flightpath_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
+# ------------------------------------------------------------------ Peer netting (MOCK simulation; moves no money)
+class NettingIn(BaseModel):
+    pool_size: int = Field(default=50, ge=1, le=2000)
+
+
+@app.post("/api/netting/simulate")
+def netting_simulate(body: NettingIn, p: Principal = Depends(STUDENT_JUDGE)):
+    from eval.netting_bench import cohort
+    from ..netting.core import net
+    r = net(cohort(body.pool_size))
+    r["payments"] = r["payments"][:20]      # keep the payload small
+    r["matches"] = r["matches"][:20]
+    return r
+
+
+@app.get("/api/netting/benchmark")
+def netting_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
+    f = REPORTS / "netting.json"
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
 # ------------------------------------------------------------------ evaluation + demo
 @app.get("/api/benchmark")
 def benchmark(p: Principal = Depends(STUDENT_JUDGE)):

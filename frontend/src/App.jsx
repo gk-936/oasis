@@ -7,6 +7,7 @@ import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as app
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
 import { Chat } from "./tabs/Chat.jsx";
 import { Demo } from "./tabs/Demo.jsx";
+import { Netting } from "./tabs/Netting.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
 import { Parent } from "./tabs/Parent.jsx";
 import { Passport } from "./tabs/Passport.jsx";
@@ -14,9 +15,9 @@ import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "proof", "numbers"],
+  student: ["demo", "chat", "passport", "parent", "proof", "numbers", "netting"],
   parent: ["parent", "proof"],
-  judge: ["redteam", "proof", "numbers"],
+  judge: ["redteam", "proof", "numbers", "netting"],
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
@@ -192,6 +193,7 @@ export default function App() {
             {tab === "redteam" && <RedTeam onProof={openProof} />}
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
             {tab === "numbers" && <Numbers />}
+            {tab === "netting" && <Netting />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>
