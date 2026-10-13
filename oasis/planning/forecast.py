@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from ..mock.rates import MockRates
+from ..passport.currency import obligation_cny
 from ..passport.models import Passport
 from . import spending
 from .spending import REFERENCE_COSTS_CNY
@@ -33,7 +34,7 @@ def monthly_burn(passport: Passport, history_cny: list[float] | None = None) -> 
 
 def runway_months(passport: Passport, rates: MockRates, day_index: int = 0, history_cny=None) -> float:
     """Months the money lasts after pending obligations are covered."""
-    pending = sum(o.remaining for o in passport.obligations if o.status in ("pending", "planned", "partially_paid")
+    pending = sum(obligation_cny(o, rates, day_index) for o in passport.obligations if o.status in ("pending", "planned", "partially_paid")
                   and o.type in ("tuition", "rent", "deposit"))
     free = cny_equivalent(passport, rates, day_index) - pending
     burn, _ = monthly_burn(passport, history_cny)
@@ -49,7 +50,7 @@ def triggers(passport: Passport, rates: MockRates, today: date, day_index: int =
     for o in sorted(passport.obligations, key=lambda o: o.due):
         if o.status not in ("pending", "planned"):
             continue
-        committed += o.amount
+        committed += obligation_cny(o, rates, day_index, remaining=False)
         days = (date.fromisoformat(o.due) - today).days
         if days <= WARNING_WINDOW_DAYS and committed > available:
             out.append(Trigger("shortfall", f"{o.type} of CNY {o.amount:,.0f} due in {days} days; "

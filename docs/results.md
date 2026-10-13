@@ -32,7 +32,7 @@ Attack block rate (strict pass criteria), baseline / +verification / +intents+po
 
 The two lower no-policy figures are honest: the extractor now reads the stated currency and the whole account, so cases that used to pass by accident (unreadable fields) are now stopped only by the policy layer; every attack case now stops for a real reason (`extract_low_confidence` is no longer how any of them passes). The visible benchmark is unchanged. The set is partly burned, because its failures were fixed afterwards.
 
-## 3. Live benchmark (Groq, live-agent extraction)
+## 3. Live benchmark (earlier Groq-hosted run, kept as history; Groq has been removed)
 
 Report: `eval/reports/benchmark_live.md`. Extraction by a live model, 3 repeats (temperature 0, then 0.4 and 0.4, distinct cache salts) over six injection-bearing scenarios, LLM risk scorer on.
 
@@ -103,3 +103,19 @@ A small logistic regression (pure Python) trained on the visible scenarios plus 
 
 Reading it honestly: the model ranks documents slightly better (AUC 0.75 to 0.80) but does not flag more attacks at the threshold. Half of the hidden attacks are flagged by neither scorer because they are not visible in the text (replay, changed approver, mislabelled purpose, encoded instructions); the registry, policy and signed-intent layers stop those, which is why the end-to-end block rate does not depend on this scorer. The synthetic training data was written by the same team as the rules, and the hidden set is small and partly burned. The model is not used unless `OASIS_ML_RISK=1`.
 
+## Fresh attack set (2026-10-13)
+
+Report: `eval/reports/benchmark_fresh_prefix.md` (first run, unchanged) and `benchmark_fresh.md` (after fixes); data and honesty notes in `eval/fresh/README.md`.
+49 new cases in categories the visible suite and hidden set lack (bidi override, JSON / CSV / table invoices, two accounts in one invoice, instalment redirect, wallet payee and others), written by an AI
+assistant that had read parts of the defence code: fresh, not blind.
+
+| Run | Config | Attack block rate | Money lost (CNY) | Genuine requests completed |
+|---|---|---|---|---|
+| First run | baseline | 57.6% | 281,000 | 75.0% |
+| First run | full | 97.0% (32 of 33) | 0 | 75.0% (12 of 16) |
+| After fixes | baseline | 51.5% | 371,000 | 100% |
+| After fixes | full | 100% (33 of 33) | 0 | 93.8% (15 of 16) |
+
+The fixes are general extractor capabilities (JSON, CSV and header-row table layouts, European amounts, a bare separator that crashed `parse_amount`), covered by `tests/test_extraction_layouts.py`.
+The unprotected baseline loses MORE after the fix because it now understands more layouts, so more attacker-account invoices reach it; the full configuration is unaffected. The remaining miss (`fl_table_1`)
+omits the purpose, so the corridor check holds it and asks. Out of sample, the risk scorers (`risk_fresh.md`) flag 16 of 30 attack documents with no false flags (AUC 0.81 rules, 0.92 trained model).

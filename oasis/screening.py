@@ -1,7 +1,7 @@
 """Public-data checks on a payee: sanctions-list screening and bank-identifier sanity checks.
 
 Sanctions: the US Treasury OFAC SDN list, a snapshot stored in `oasis/reference/ofac_sdn.json.gz` (refresh with
-`python tools/fetch_reference.py`). A name that matches an entry closely produces EVIDENCE for the risk scorer and a human
+`python tools/fetch_reference.py`), plus the UN / UK / EU consolidated lists in `sanctions_extra.json.gz` (`tools/fetch_extra_sanctions.py`). A name that matches an entry closely produces EVIDENCE for the risk scorer and a human
 review; it is never an automatic block, and a clean result is NOT a compliance clearance (one list, one snapshot, Latin names
 only, fuzzy matching). Bank identifiers: Luhn and length for Chinese bank cards, shape of an Indian IFSC code. A failed card
 check is information for the student, not a payment rule: the sandbox's own demo accounts are not real card numbers.
@@ -15,6 +15,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 DATA = Path(__file__).with_name("reference") / "ofac_sdn.json.gz"
+EXTRA = Path(__file__).with_name("reference") / "sanctions_extra.json.gz"      # UN + UK + EU consolidated lists (tools/fetch_extra_sanctions.py)
 MATCH_THRESHOLD = 0.90
 _PUNCT = re.compile(r"[^\w\s]", re.U)
 _STOP = {"the", "of", "and", "co", "ltd", "limited", "inc", "llc", "company", "corp", "corporation"}
@@ -27,25 +28,35 @@ def _norm_tokens(name: str) -> list[str]:
 
 
 class Sanctions:
-    def __init__(self, path: Path | None = None):
+    def __init__(self, path: Path | None = None, extra: Path | None = None):
+        """By default the OFAC SDN snapshot plus, when present, the UN / UK / EU snapshot. An explicit `path` loads only that file
+        (tests), unless `extra` is given as well."""
         self.meta: dict = {}
         self._rows: list[tuple[list[str], dict, str]] = []
         self._index: dict[str, list[int]] = {}
-        try:
-            with gzip.open(path or DATA, "rt", encoding="utf-8") as f:
-                doc = json.load(f)
-        except (OSError, ValueError):
-            return
-        self.meta = {k: doc.get(k) for k in ("source", "retrieved", "count")}
-        for e in doc.get("entries", []):
-            for nm, kind in [(e["name"], "name")] + [(a, "alias") for a in e.get("aliases", [])]:
-                toks = _norm_tokens(nm)
-                if not toks:
-                    continue
-                i = len(self._rows)
-                self._rows.append((toks, e, kind))
-                for t in set(toks) - _STOP:
-                    self._index.setdefault(t, []).append(i)
+        files = [path or DATA] + ([extra] if extra else [EXTRA] if path is None and EXTRA.exists() else [])
+        lists: dict[str, dict] = {}
+        for k, fp in enumerate(files):
+            try:
+                with gzip.open(fp, "rt", encoding="utf-8") as f:
+                    doc = json.load(f)
+            except (OSError, ValueError):
+                continue
+            if k == 0:
+                self.meta = {key: doc.get(key) for key in ("source", "retrieved", "count")}
+            lists.update(doc.get("lists") or {"OFAC": {"count": doc.get("count"), "retrieved": doc.get("retrieved")}})
+            for e in doc.get("entries", []):
+                e.setdefault("list", "OFAC")
+                for nm, kind in [(e["name"], "name")] + [(a, "alias") for a in e.get("aliases", [])]:
+                    toks = _norm_tokens(nm)
+                    if not toks:
+                        continue
+                    i = len(self._rows)
+                    self._rows.append((toks, e, kind))
+                    for t in set(toks) - _STOP:
+                        self._index.setdefault(t, []).append(i)
+        if lists:
+            self.meta["lists"] = lists
 
     @property
     def available(self) -> bool:
@@ -65,7 +76,7 @@ class Sanctions:
             score = SequenceMatcher(None, qs, " ".join(toks)).ratio()
             if score >= threshold and (e["uid"] not in hits or score > hits[e["uid"]]["score"]):
                 hits[e["uid"]] = {"uid": e["uid"], "name": e["name"], "type": e["type"], "program": e["program"],
-                                  "score": round(score, 3), "matched": kind}
+                                  "score": round(score, 3), "matched": kind, "list": e.get("list", "OFAC")}
         return sorted(hits.values(), key=lambda h: -h["score"])[:limit]
 
 
@@ -117,7 +128,7 @@ def ifsc_check(code: str) -> dict:
 def screen_payee(name: str, account: str | None = None, ifsc: str | None = None) -> dict:
     s = sanctions()
     out = {"sanctions": {"available": s.available, "hits": s.screen(name) if s.available else [], "list": s.meta,
-                         "caveat": "OFAC SDN snapshot only, fuzzy name match; no hit is not a clearance and a hit is a prompt to review, not a finding"}}
+                         "caveat": "snapshots of the " + " / ".join((s.meta.get("lists") or {"OFAC": 0}).keys()) + " public lists only, fuzzy name match on Latin script; no hit is not a clearance and a hit is a prompt to review, not a finding"}}
     if account:
         out["card"] = cn_card_check(account)
     if ifsc:

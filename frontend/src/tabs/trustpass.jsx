@@ -86,6 +86,12 @@ export function TrustPass() {
   const { busy, err, setErr, run } = useGuard();
   const load = useCallback(() => api("/trust-pass/claims").then(setInfo).catch(setErr), [setErr]);
   useEffect(() => { load(); }, [load]);
+  // Credit growth pre-fills the form with the evidence an opportunity needs; the student still reviews and issues it.
+  useEffect(() => {
+    const on = (e) => { const d = e.detail; setPick(Object.fromEntries(d.claims.map((c) => [c, true]))); setTh(d.thresholds || {}); setAudience(d.audience || ""); setHolder(null); document.querySelector('[data-testid="trust-pass"]')?.scrollIntoView({ behavior: "smooth" }); };
+    window.addEventListener("oasis:tp-prefill", on);
+    return () => window.removeEventListener("oasis:tp-prefill", on);
+  }, []);
   const issue = () => run(async () => {
     const claims = Object.keys(pick).filter((k) => pick[k] && (!THRESHOLD_IDS.includes(k) || th[k]));
     const h = await api("/trust-pass/issue", { claims, thresholds: th, audience: audience.trim() || null });

@@ -118,7 +118,7 @@ Codes with no derivable correction (`bad_step`, `bad_date`, `bad_amount`, `lrs_e
 
 Prompt: `SYSTEM_V3` is 1,089 characters against 2,201 for v2 (49%; the test limit is 60%). It says: call `facts_sheet` first, copy obligations exactly, size every conversion with `size_conversion`, never compute INR, propose once, apply each `fix` and change nothing else. The per-plan cap logic (`token_cap`, 8 calls, 4 proposals) and the deterministic fallback are exactly as before. The offline `DeterministicPlanner` is unchanged and gives identical plans under v1, v2 and v3.
 
-Offline proof that the protocol works: a scripted "model" in the tests (facts_sheet, then `size_conversion`, one proposal, then apply each `fix`) runs through `GroqLLM.chat_tools` with a fake client and produces a model-only valid plan in all 12 scenarios (1 to 3 proposals). This shows the protocol is workable, not that a real model will use it well.
+Offline proof that the protocol works: a scripted "model" in the tests (facts_sheet, then `size_conversion`, one proposal, then apply each `fix`) runs through `LiveLLM.chat_tools` (then Groq-hosted; now Bedrock) with a fake client and produces a model-only valid plan in all 12 scenarios (1 to 3 proposals). This shows the protocol is workable, not that a real model will use it well.
 
 ### Pre-registered evaluation
 

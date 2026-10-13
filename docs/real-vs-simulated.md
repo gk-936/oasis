@@ -9,6 +9,7 @@
 | Hybrid Ed25519 + ML-DSA-65 signed intents, intent-enforcing executor | Wallet / QR foreign-card fees (3% over CNY 200 + 1% card bank fee, from researched figures) and imported wallet spending |
 | Verification ramp (registry check → test payment → low limit → full limit) | Verified-payee registry: WeIdentity-*style* demo credentials, not real institutions, not the WeIdentity SDK |
 | Canary tripwires (early detection) and freeze → recovery plan → ask | Sandbox balances; parent account |
+| Generic corridor engine and foreign-currency plans and payments (`corridors.yaml`, `fxplan.py`, `fx_exec.py`): the code, the policy, the signed-intent path and the ledger currency check are real | Route prices for the five extra corridors (public-range estimates, flagged sourced / estimated / assumed), the universities and the USD / EUR accounts (MOCK) |
 | Corridor rules engine with data file `inr_cny.yaml` (values researched 2026-10-11, each with source, date and status: primary-confirmed, secondary-sourced or unconfirmed) | Simulated humans in the benchmark (student / parent approvers) |
 | SHA-256 hash-chained audit log and verifier | Simulated clock and "minutes to resolve" |
 | Proof packs and an independent verifier | Outcome simulation is a **model** with stated assumptions (`eval/simulator.py`) |
@@ -26,4 +27,4 @@
 
 Not built: real banking integration, a multi-host FISCO network, WeIdentity, the Python app serving TLS itself (hybrid post-quantum TLS is tested at a Caddy reverse proxy with a classical certificate, local only, browsers not tested: [pq-tls.md](pq-tls.md), `eval/reports/pqtls.md`), a local offline language model or OCR (the deterministic parser is the offline path). (The SQLite payload columns are AES-256-GCM encrypted; table names, row ids and counts are not, and the key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.)
 
-No result is a production claim. Corridor figures are "as of October 2026" and each still needs its official confirmation step (see `oasis/trust/rules/inr_cny.yaml`).
+No result is a production claim. Corridor figures are "as of October 2026" and each still needs its official confirmation step (see `oasis/trust/rules/inr_cny.yaml`; the extra corridors: `oasis/trust/rules/corridors.yaml` and `docs/corridor-research.md`).

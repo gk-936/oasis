@@ -12,6 +12,7 @@ from datetime import date
 from ..flightpath.core import DEDUCTIONS, GRACE_DAYS
 from ..mock.rates import ROUTES, MockRates, delivered_amount
 from ..planning.forecast import monthly_burn
+from ..passport.currency import obligation_cny
 from ..passport.models import Passport
 
 # ASSUMPTIONS (stated, not measured). Changing them changes the answer; the API echoes them back.
@@ -50,7 +51,7 @@ def build_inputs(passport: Passport, rates: MockRates, today: date) -> dict:
         if o.status in ("paid", "frozen") or o.remaining <= 0:
             continue
         due = max((date.fromisoformat(o.due) - today).days, 0)
-        obs.append({"id": o.id, "label": o.label or o.type, "type": o.type, "amount_cny": o.remaining, "due_day": due, "due": o.due})
+        obs.append({"id": o.id, "label": o.label or o.type, "type": o.type, "amount_cny": obligation_cny(o, rates, 0), "due_day": due, "due": o.due})
     inc = []
     for i in passport.expected_income:
         if i.get("received"):

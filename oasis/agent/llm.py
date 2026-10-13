@@ -13,6 +13,8 @@ import base64
 import hashlib
 import json
 import os
+import csv
+import io
 import re
 import time
 import unicodedata
@@ -26,7 +28,15 @@ from . import i18n
 _CUR_CODES = "CNY|RMB|USD|EUR|GBP|INR|JPY|HKD|AUD|CAD|SGD|CHF|KRW|NZD"
 _CUR_SYMBOLS = "¥￥$＄€£₹元"
 _CUR_ALT = rf"(?:{_CUR_CODES}|US\$|[{_CUR_SYMBOLS}])"
-AMOUNT_RE = re.compile(rf"(?:Amount(?:\s+due)?|Total|金额)\s*[:：]?\s*({_CUR_ALT})?\s*([\d,，]+(?:\.\d+)?)\s*({_CUR_CODES}|元)?", re.I)
+EXPONENT_RE = re.compile(r"^[\d,]+(?:\.\d+)?\s*[eE][+-]?\d")
+
+
+def has_exponent(s: str) -> bool:
+    """True for a number written in scientific notation ('1e5', '2.5E3'), which the amount regex would silently cut short."""
+    return bool(EXPONENT_RE.match(s))
+
+
+AMOUNT_RE = re.compile(rf"(?:Amount(?:\s+due)?|Total|金额)\s*[:：]?\s*({_CUR_ALT})?\s*(\d[\d,，.]*)\s*({_CUR_CODES}|元)?", re.I)
 FIELD_RES = {
     "payee_name": re.compile(r"(?:Payee|Pay to|Payable to|Beneficiary|Recipient|收款人|收款方)\s*[:：]\s*(.+)", re.I),
     "payee_id": re.compile(r"Payee[ _]?ID\s*[:：]\s*([\w-]+)", re.I),
@@ -211,8 +221,22 @@ class LLM(ABC):
         return None
 
 
+_EU_AMOUNT = re.compile(r"\d{1,3}(?:\.\d{3})+,\d{1,2}")
+_DOT_THOUSANDS = re.compile(r"\d{1,3}(?:\.\d{3})+")
+_US_AMOUNT = re.compile(r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?")      # commas only as thousands groups of three
+
+
 def parse_amount(s: str) -> float:
-    return float(s.replace(",", "").replace("，", ""))
+    """'30,000.50' (English) and '30.000,50' (European) are read; '30.000' (a dot and exactly three digits, which may be a thousands
+    separator) and anything else that is not clearly a number raises ValueError, so the student is asked instead of a guess being paid."""
+    t = str(s).strip().replace("，", ",").rstrip(".,")
+    if _EU_AMOUNT.fullmatch(t):
+        return float(t.replace(".", "").replace(",", "."))
+    if _DOT_THOUSANDS.fullmatch(t):
+        raise ValueError(f"ambiguous amount {s!r}: the dot may be a thousands separator")
+    if not _US_AMOUNT.fullmatch(t):
+        raise ValueError(f"unreadable amount {s!r}")
+    return float(t.replace(",", ""))
 
 
 PURPOSES = ("tuition", "rent", "deposit", "living", "family_support")
@@ -304,8 +328,44 @@ _KEY_SYNONYMS = {
     "Purpose": ("purpose", "用途"),
     "Due": ("due", "due date", "截止"),
 }
+_KEY_SYNONYMS["Account"] = _KEY_SYNONYMS["Account"] + ("account ref", "account_ref")
+_KEY_SYNONYMS["Payee"] = _KEY_SYNONYMS["Payee"] + ("payee_name",)
 _SYN = {syn: canon for canon, syns in _KEY_SYNONYMS.items() for syn in syns}
 _DASH_KV = re.compile(r"^\s*([A-Za-z#_ .\u4e00-\u9fff]{2,24}?)\s*(?:—|–|―|\s-\s|=)\s*(\S.*)$")
+
+
+def _structured_lines(text: str) -> str | None:
+    """A JSON object, or a CSV with one header and one row, as 'Key: value' lines for the known keys; None for any other shape.
+    Values are copied verbatim (newlines collapsed); nothing in them is interpreted."""
+    t = text.strip()
+    pairs = None
+    if t.startswith("{") and t.endswith("}"):
+        try:
+            obj = json.loads(t)
+        except ValueError:
+            obj = None
+        if isinstance(obj, dict):
+            pairs = [(str(k), v) for k, v in obj.items() if isinstance(v, (str, int, float)) and not isinstance(v, bool)]
+    elif "\n" in t and t.count(",") >= 2:
+        rows = [r for r in csv.reader(io.StringIO(t)) if any(c.strip() for c in r)]
+        if len(rows) == 2 and len(rows[0]) == len(rows[1]) and sum(1 for h in rows[0] if _SYN.get(h.strip().casefold())) >= 2:
+            pairs = list(zip(rows[0], rows[1]))
+    if not pairs:
+        return None
+    cur = next((" ".join(str(v).split()) for k, v in pairs if k.strip().casefold() in ("currency", "ccy")), "")
+    out = []
+    for k, v in pairs:
+        norm = k.strip().casefold()
+        key = _SYN.get(norm) or _SYN.get(norm.replace("_", " "))
+        if not key:
+            continue
+        v = " ".join(str(v).split())
+        out.append(f"Amount: {cur + ' ' if cur else ''}{v}" if key == "Amount" else f"{key}: {v}")
+    return "\n".join(out) if out else None
+
+
+def _cells(line: str) -> list[str]:
+    return [c.strip() for c in line.replace("**", "").strip().strip("|").split("|")]
 
 
 def canonical_text(text: str) -> str:
@@ -313,9 +373,26 @@ def canonical_text(text: str) -> str:
     tables ('| Payee | Chen Wei |'), 'Payee — X' / 'Payee - X' / 'Payee = X', bold keys ('**Payee:** X'), 'Pay to X'.
     Only known keys are rewritten; every other line is passed through unchanged. This is a layout normaliser, not an
     interpreter: it never follows instructions, and values are copied verbatim."""
+    structured = _structured_lines(text)
+    if structured is not None:
+        return structured
     out: list[str] = []
-    for line in text.splitlines():
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
         ln = line.replace("**", "").replace("__", "").strip()
+        if ln.startswith("|") and ln.count("|") >= 2 and i + 1 < len(lines) and lines[i].strip().startswith("|"):
+            head = _cells(ln)                      # a header row of known keys, a separator row, then one data row
+            keys = [_SYN.get(c.casefold().rstrip(":")) for c in head]
+            sep = set("".join(_cells(lines[i]))) <= set("-: ")
+            data = _cells(lines[i + 1])
+            if len(head) >= 2 and all(keys) and sep and len(data) == len(head):
+                for k, v in zip(keys, data):
+                    out.append(f"{k}: {v}")
+                i += 2
+                continue
         if ln.startswith("|") and ln.count("|") >= 2:
             cells = [c.strip() for c in ln.strip("|").split("|")]
             if len(cells) >= 2 and cells[0] and not set("".join(cells)) <= set("-: "):
@@ -386,9 +463,14 @@ def regex_fields(text: str) -> dict:
     if "purpose" in f:
         f["purpose"] = normalize_purpose(f["purpose"])
     m = AMOUNT_RE.search(t)
+    if m and has_exponent(t[m.start(2):m.end(2) + 4]):
+        m = None                  # '1e5' is not read as 1: no amount, so the student is asked to confirm
     if m:
-        f["amount"] = parse_amount(m.group(2))
-        f["currency"] = normalize_currency(m.group(1) or m.group(3)) or "CNY"
+        try:
+            f["amount"] = parse_amount(m.group(2))
+            f["currency"] = normalize_currency(m.group(1) or m.group(3)) or "CNY"
+        except ValueError:
+            pass                  # ambiguous or unreadable: no amount, so the student is asked to confirm
     f.setdefault("currency", "CNY")
     return f
 
@@ -436,7 +518,10 @@ class OfflineLLM(LLM):
             if a:
                 f["account_ref"], followed = normalize_account(a.group(1)), True
             if amt:
-                f["amount"], followed = parse_amount(amt.group(1)), True
+                try:
+                    f["amount"], followed = parse_amount(amt.group(1)), True
+                except ValueError:
+                    pass
             pid = OVERRIDE_PID_RE.search(body)
             if pid:
                 f["payee_id"], followed = pid.group(1), True
@@ -852,7 +937,11 @@ class LiveLLM(OfflineLLM):
             if isinstance(a, (int, float)):
                 f["amount"] = float(a)
             elif isinstance(a, str) and a.strip():
-                f["amount"] = parse_amount(re.sub(r"[^\d,.]", "", a))
+                if not has_exponent(a.strip()):
+                    try:
+                        f["amount"] = parse_amount(re.sub(r"[^\d,.]", "", a))
+                    except ValueError:
+                        pass
         except ValueError:
             pass
         return f

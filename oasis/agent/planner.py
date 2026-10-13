@@ -22,6 +22,7 @@ from ..mock.rates import ROUTES, delivered_amount
 from ..planning.routes import inr_needed
 from ..planning.tools import TOOL_SPECS, TOOL_SPECS_V3, PlanningToolbox, compact, present
 from ..planning.validator import required_obligations, safe_quota_inr, validate_plan
+from ..planning.fxplan import FX_SYSTEM, FX_TOOL_SPECS, FxToolbox, draft_fx, foreign_obligations, repair_fx
 
 MAX_ITERATIONS = 4          # proposals the validator will judge
 MAX_MODEL_CALLS = 8         # chat completions per plan (live)
@@ -237,6 +238,8 @@ def _tool_message(tc_id: str, res: dict, name: str = "", fmt: str = "v1") -> dic
 class AgenticPlanner:
     """Native tool calling (Bedrock) over the same toolbox. Falls back to the deterministic plan, and says so."""
     name = "bedrock-tools"
+    toolbox_cls = PlanningToolbox
+    suffix = "-tools"
 
     def __init__(self, llm, max_model_calls: int = MAX_MODEL_CALLS, token_cap: int | None = None, fmt: str | None = None):
         self.llm = llm
@@ -246,8 +249,11 @@ class AgenticPlanner:
         self.max_model_calls = max_model_calls
         self.token_cap = token_cap       # stop asking the model once this many tokens were spent on this plan
 
+    def _fallback(self):
+        return DeterministicPlanner()
+
     def plan(self, world, goal: str = "") -> PlanResult:
-        tb = PlanningToolbox(world, MAX_ITERATIONS, self.fmt)
+        tb = self.toolbox_cls(world, MAX_ITERATIONS, self.fmt)
         msgs: list[dict] = [{"role": "system", "content": self.system},
                             {"role": "user", "content": f"Today is {world.today.isoformat()}. Plan how to pay everything due"
                                                         + (f". Student's goal: {goal}" if goal else ".")}]
@@ -299,15 +305,54 @@ class AgenticPlanner:
             reason = f"{type(e).__name__}: {str(e)[:200]}"
         if tb.valid_proposal:
             vp = tb.valid_proposal
-            return PlanResult(vp["steps"], True, vp["validation"], vp["rationale"] or "", f"{getattr(self.llm, 'name', 'bedrock')}-tools", model, len(tb.proposals),
+            return PlanResult(vp["steps"], True, vp["validation"], vp["rationale"] or "", f"{getattr(self.llm, 'name', 'bedrock')}{self.suffix}", model, len(tb.proposals),
                               trace=tb.trace, tokens=tokens, model_calls=calls)
         reason = reason or (f"no valid plan after {len(tb.proposals)} proposal(s)" if tb.proposals else "the model never proposed a plan")
-        fb = DeterministicPlanner().plan(world, goal)
+        fb = self._fallback().plan(world, goal)
         trace = tb.trace + [{"type": "fallback", "reason": reason, "message": "The live model did not produce a valid plan; "
                                                                                 "using the deterministic planner's plan."}] + fb.trace
         return PlanResult(fb.steps, fb.valid, fb.validation, fb.rationale, "deterministic (fallback)", model,
                           len(tb.proposals) + fb.iterations, fell_back=True, fallback_reason=reason, trace=trace,
                           tokens=tokens, model_calls=calls)
+
+
+class DeterministicFxPlanner:
+    """Offline planner for obligations owed in USD or EUR (the corridors beyond INR-CNY). Same protocol, FX toolbox."""
+    name = "deterministic-fx"
+
+    def __init__(self, fmt: str = "v2"):
+        self.fmt = fmt
+
+    def plan(self, world, goal: str = "") -> PlanResult:
+        tb = FxToolbox(world, MAX_ITERATIONS, self.fmt)
+        facts = tb.call("fx_facts")
+        cons: dict = {}
+        rationale = ""
+        for _ in range(MAX_ITERATIONS):
+            steps, rationale = draft_fx(world, tb, facts, cons)
+            res = tb.call("propose_plan", {"steps": steps, "rationale": rationale})
+            if res.get("valid"):
+                break
+            if not repair_fx(cons, res.get("errors", [])):
+                break
+        final = tb.valid_proposal or (tb.proposals[-1] if tb.proposals else None)
+        return PlanResult(final["steps"] if final else [], bool(tb.valid_proposal), final["validation"] if final else {},
+                          final["rationale"] if final else rationale, self.name, None, len(tb.proposals), trace=tb.trace)
+
+
+class AgenticFxPlanner(AgenticPlanner):
+    """The live tool-calling planner over the FX toolbox; falls back to the deterministic FX plan, and says so."""
+    name = "bedrock-fx-tools"
+    toolbox_cls = FxToolbox
+    suffix = "-fx-tools"
+
+    def __init__(self, llm, max_model_calls: int = MAX_MODEL_CALLS, token_cap: int | None = None):
+        super().__init__(llm, max_model_calls, token_cap, fmt="v2")
+        self.system = FX_SYSTEM
+        self.tool_specs = FX_TOOL_SPECS
+
+    def _fallback(self):
+        return DeterministicFxPlanner()
 
 
 def make_planner(llm):
@@ -361,3 +406,37 @@ def build_record(world, res: PlanResult, goal: str = "") -> dict:
 def propose(world, planner=None, goal: str = "") -> dict:
     planner = planner or make_planner(world.llm)
     return build_record(world, planner.plan(world, goal), goal)
+
+
+# ---------------------------------------------------------------------------------------------- foreign-currency plan record
+def explain_fx_plan(validation: dict) -> list[str]:
+    m, why = validation.get("metrics", {}), []
+    convs = [s for s in validation.get("schedule", []) if s["action"] == "convert"]
+    why.append(f"{m.get('deadlines_met', 0)} of {m.get('obligations', 0)} foreign-currency obligations are paid on or before their due dates.")
+    if convs:
+        why.append(f"{len(convs)} conversion(s) send about USD {m.get('total_send_usd_equivalent', 0):,.0f} (equivalent) and deliver at least "
+                   f"USD {m.get('delivered_worst_case_usd_equivalent', 0):,.0f} even after the worst-case intermediary deduction; that is USD "
+                   f"{m.get('saved_vs_bank_usd_equivalent', 0):,.0f} more than a typical bank route (estimated prices, not live quotes).")
+        why.append("Routes: " + "; ".join(sorted({f"{c['route']} ({c['price_status']} price)" for c in convs})) + ".")
+    else:
+        why.append("No conversion is needed: the foreign currency already held covers every obligation.")
+    if m.get("tcs_inr"):
+        why.append(f"TCS of INR {m['tcs_inr']:,.0f} would be collected; it is an advance tax credit, not a fee.")
+    why.append("Accepting runs each step through the normal trust path: the registry's account, the student's signature on the exact payment, the signed intent and the executor. Nothing is paid until you accept and sign.")
+    why.append(f"Rates are {m.get('rate_basis', 'a quote')}; Oasis does not predict exchange rates.")
+    return why
+
+
+def build_fx_record(world, res: PlanResult, goal: str = "") -> dict:
+    """Store an FX plan as a PROPOSAL (status 'proposed'). Accepting and executing it goes through plan_exec like a CNY plan."""
+    pid = f"plan_{len(world.plans) + 1:03d}"
+    rec = {"id": pid, "kind": "fx", "created": world.now_iso(), "goal": goal, "status": "proposed" if res.valid else "invalid",
+           "planner": res.planner, "model": res.model, "valid": res.valid, "iterations": res.iterations,
+           "fell_back": res.fell_back, "fallback_reason": res.fallback_reason, "tokens": res.tokens,
+           "model_calls": res.model_calls, "steps": res.steps, "rationale": res.rationale,
+           "why": explain_fx_plan(res.validation) if res.validation else [],
+           "validation": res.validation, "trace": res.trace, "executed": []}
+    world.plans.append(rec)
+    world.audit.append("plan_proposed", {"plan_id": pid, "planner": res.planner, "valid": res.valid, "iterations": res.iterations,
+                                         "fell_back": res.fell_back, "steps": len(res.steps), "kind": "fx"})
+    return rec

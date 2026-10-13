@@ -5,6 +5,9 @@ import { has, t, tl, tm, tp, useLang } from "../i18n/index.js";
 import { announce, cny, Empty, ErrorBox, fmt, fmtDate, Hash, inr, Loading, Mock, pct, Pill, R, Skeleton } from "../ui.jsx";
 import { AgentPlan } from "./plan.jsx";
 import { TrustPass } from "./trustpass.jsx";
+import { CreditGrowth } from "./CreditGrowth.jsx";
+import { Corridors } from "./Corridors.jsx";
+import { FxPlan } from "./FxPlan.jsx";
 
 /* ------------------------------------------------------------------ Spending + Tier-1 autonomy */
 function Spending({ s, refresh }) {
@@ -281,7 +284,7 @@ export function Passport({ s, refresh }) {
         <h3>{t("pass.obligations")}</h3>
         <div className="tbl"><table aria-label={t("pass.obligations")}><thead><tr><th>{t("pass.col.what")}</th><th className="r">{t("pass.col.amount")}</th><th>{t("pass.col.due")}</th><th>{t("pass.col.status")}</th></tr></thead>
           <tbody>{p.obligations.map((o) => (
-            <tr key={o.id}><td>{o.label ? tm(o.label) : tl("type", o.type)}</td><td className="r money">{cny(o.amount)}</td><td>{fmtDate(o.due)}</td><td><Pill status={o.status} /></td></tr>))}
+            <tr key={o.id}><td>{o.label ? tm(o.label) : tl("type", o.type)}</td><td className="r money">{o.currency && o.currency !== "CNY" ? `${{ USD: "$", EUR: "€" }[o.currency] || ""}${fmt(o.amount, 2)}` : cny(o.amount)}</td><td>{fmtDate(o.due)}</td><td><Pill status={o.status} /></td></tr>))}
           </tbody></table></div>
       </div>
       <div className="card">
@@ -301,7 +304,10 @@ export function Passport({ s, refresh }) {
         <p className="muted small">{t("pass.lastmile", { extra: cny(s.last_mile_rent_6000.extra_cost_cny) })}</p>
       </div>
       <CurrencyView s={s} refresh={refresh} />
+      <Corridors />
+      <FxPlan s={s} refresh={refresh} />
       <TrustPass />
+      <CreditGrowth />
       <ReliabilityRecord />
       <AgentPlan s={s} refresh={refresh} />
       <Spending s={s} refresh={refresh} />

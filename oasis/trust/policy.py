@@ -160,3 +160,44 @@ def decide_conversion(passport: Passport, convert_cny: float, canary_hits: list 
     return Decision("hold", 2, "R14_conversion_approval",
                     [f"Conversion of CNY {convert_cny:,.0f} is above the CNY {rules.tier1_auto_convert_cny:,.0f} auto limit."],
                     ["student"])
+
+
+@dataclass
+class FxPolicyInput:
+    passport: Passport
+    recipient: Recipient | None
+    payee_id: str
+    purpose: str
+    amount: float                  # in `currency`
+    currency: str                  # USD | EUR (the obligation's own currency)
+    amount_cny: float              # CNY equivalent at the world's rate, used only for the CNY-denominated limits
+    canary_hits: list = field(default_factory=list)
+    approvals: tuple[str, ...] = ()
+    paid_to_payee_cny: float = 0.0
+
+
+def decide_fx(p: FxPolicyInput) -> Decision:
+    """Policy for a payment owed in a foreign currency, built from the Passport and the registry (never from a document).
+
+    Deterministic like `decide`. A foreign-currency payment is never automatic (no tier 1): it always needs the student's
+    signature over the exact draft, on top of a verified recipient and the limits below. The CNY-denominated limits are
+    applied to the CNY equivalent."""
+    rules = p.passport.rules
+    rec = p.recipient
+    level = rec.verification.level if rec else Level.UNVERIFIED
+    if p.canary_hits:
+        return Decision("freeze", 3, "R01_canary", [f"Canary tripped: {h.kind} at {h.where}" for h in p.canary_hits])
+    if p.amount_cny > rules.hard_limit_cny:
+        return Decision("freeze", 3, "R02_hard_limit", [f"Amount (about CNY {p.amount_cny:,.0f}) exceeds the hard limit of CNY {rules.hard_limit_cny:,.0f}."])
+    if level == Level.REJECTED:
+        return Decision("freeze", 3, "R03_rejected_recipient", ["The registry contradicts this recipient's details."])
+    if LEVEL_ORDER[level] < LEVEL_ORDER[Level.VERIFIED_LOW]:
+        return Decision("hold", 2, "R05_unverified", ["Recipient is not verified; the verification ramp must complete first."], ["verification"])
+    limit = rec.verification.limit_cny if rec else 0.0
+    if p.paid_to_payee_cny + p.amount_cny > limit and "student" not in p.approvals:
+        return Decision("hold", 2, "R07_recipient_limit",
+                        [f"About CNY {p.paid_to_payee_cny + p.amount_cny:,.0f} would exceed this recipient's verified limit of CNY {limit:,.0f}."], ["student"])
+    if "student" not in p.approvals:
+        return Decision("hold", 2, "R18_fx_approval_required",
+                        [f"A {p.currency} payment of {p.amount:,.2f} is never automatic: it needs the student's signature over this exact payment."], ["student"])
+    return Decision("allow", 2, "R19_fx_approved", ["Student signature present; recipient verified; within limits."])

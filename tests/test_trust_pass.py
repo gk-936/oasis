@@ -131,7 +131,7 @@ def test_currency_view_covers_six_currencies_and_coverage():
 
 def test_convert_moves_own_balances_and_the_ledger():
     w = _paid_world()
-    w.passport.set_balance("USD", 1000)
+    w.credit_fx("USD", 1000)
     cny_before = w.passport.balance("CNY")
     rec = convert(w, 500, "USD", "CNY")
     assert w.passport.balance("USD") == 500

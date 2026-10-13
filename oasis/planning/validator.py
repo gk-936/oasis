@@ -92,7 +92,7 @@ def lrs_limit_inr() -> float:
 
 def required_obligations(passport) -> list:
     """Obligations a plan must fund: pending/planned and not recurring (recurring bills are paid by Tier-1 autonomy)."""
-    return sorted((o for o in passport.obligations if o.status in ("pending", "planned", "partially_paid") and not o.recurring),
+    return sorted((o for o in passport.obligations if o.status in ("pending", "planned", "partially_paid") and not o.recurring and o.currency == "CNY"),
                   key=lambda o: o.due)
 
 

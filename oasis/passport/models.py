@@ -101,6 +101,7 @@ class Passport(BaseModel):
     transactions: list[dict] = Field(default_factory=list)     # {"date","desc","amount_cny","category","source"}
     autonomy_log: list[dict] = Field(default_factory=list)     # Tier-1 actions the agent took on its own
     safe_used_inr: dict[str, float] = Field(default_factory=dict)  # calendar year -> INR already converted (SAFE quota)
+    cn_outbound_usd: dict[str, float] = Field(default_factory=dict)  # calendar year -> USD equivalent already sent out of CNY (SAFE annual quota)
 
     def balance(self, cur: str) -> float:
         return next((b.amount for b in self.balances if b.currency == cur), 0.0)

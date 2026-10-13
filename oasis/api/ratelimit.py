@@ -6,9 +6,23 @@ from typing import Callable
 
 
 class RateLimiter:
-    def __init__(self, limit: int, window_s: float = 60.0, clock: Callable[[], float] = time.monotonic):
-        self.limit, self.window, self._clock = limit, window_s, clock
+    def __init__(self, limit: int, window_s: float = 60.0, clock: Callable[[], float] = time.monotonic, store=None, name: str = ""):
+        """With `store` (an encrypted SqliteStore) and a `name`, recorded attempts survive a restart: the wall clock is used and
+        the hits are written through, so restarting the server no longer resets a login lockout."""
+        self.limit, self.window, self._clock = limit, window_s, (time.time if store is not None else clock)
         self._hits: dict[str, deque] = defaultdict(deque)
+        self._store, self._name = store, name
+        if store is not None:
+            now = self._clock()
+            for k, ts in (store.get_kv(name) or {}).items():
+                q = deque(t for t in ts if t > now - window_s)
+                if q:
+                    self._hits[k] = q
+
+    def _save(self) -> None:
+        if self._store is not None:
+            now = self._clock()
+            self._store.set_kv(self._name, {k: [t for t in q if t > now - self.window] for k, q in self._hits.items() if q})
 
     def allow(self, key: str) -> bool:
         """Record one attempt for `key`; False (and not recorded) when the window is already full."""
@@ -19,6 +33,7 @@ class RateLimiter:
         if len(q) >= self.limit:
             return False
         q.append(now)
+        self._save()
         return True
 
     def retry_after(self, key: str) -> int:
@@ -35,3 +50,4 @@ class RateLimiter:
 
     def record(self, key: str) -> None:
         self._hits[key].append(self._clock())
+        self._save()

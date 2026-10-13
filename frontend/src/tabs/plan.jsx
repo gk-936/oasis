@@ -98,7 +98,7 @@ export function AgentPlan({ s, refresh }) {
   const accept = (p) => run(async () => { await api(`/plan/${p.id}/accept`, {}); await load(); refresh(); });
   const exec = (p) => run(async () => { await api(`/plan/${p.id}/execute`, {}); await load(); refresh(); });
   const approve = (pd) => run(async () => { await signedApprove("student", pd.id, pd.draft); await load(); refresh(); });
-  const latest = plans?.[plans.length - 1];
+  const latest = plans?.filter((x) => x.kind !== "fx").slice(-1)[0];
   const sc = scen.find((x) => x.id === pick);
   return (
     <div className="card wide">

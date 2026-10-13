@@ -1,0 +1,138 @@
+# Extra corridors beyond INR -> CNY (see oasis/trust/rules/inr_cny.yaml). Data, not code.
+# ROUTE PRICES are public-range ESTIMATES, not any provider's live quote. price_status says how good each one is:
+#   sourced    taken from a provider's own published fee page (read through a search summary, not a quote for this payment)
+#   estimated  a typical public range (bank fee surveys, third-party fee guides); real quotes will differ
+#   assumed    no published figure was found; a plausible placeholder
+#   mock       invented illustrative value (only the original INR->CNY engine still uses these)
+# Each type/override carries price_source and price_retrieved. Rule rows carry source, retrieved and status (same vocabulary
+# as inr_cny.yaml). India and China limits are READ from inr_cny.yaml so each figure has one source of truth. Not legal advice.
+version: "2026.10.2"
+as_of: "2026-10"
+retrieved: "2026-10-13"
+
+# fixed_fee_usd is converted into the source currency at the mid rate. spread = markup over mid-market. pct_fee = percentage fee.
+route_types:
+  bank_swift:
+    name: Typical bank SWIFT transfer
+    typical_bank: true
+    price_status: estimated
+    price_source: "Outgoing wire fee about USD 35-50, FX markup 1-3% over mid-market (up to 2-4% at some banks), intermediary 'lifting' fees about USD 15-50 each: Corpay wire-fee guide 2026 (citing NerdWallet/Bankrate) and a UK bank SWIFT comparison. Secondary; not any one bank's tariff."
+    price_retrieved: "2026-10-13"
+    fixed_fee_usd: 45.0
+    pct_fee: 0.002            # some banks add ~0.2% with a minimum and maximum (e.g. ICBC London tariff 0.2%, min GBP 4, max GBP 50)
+    spread: 0.025
+    days: 3
+    reliability: 0.97         # assumption, not measured
+    deduction_worst_usd: 50.0 # up to about one intermediary lifting fee; the expected value is half
+  digital_remitter:
+    name: Digital remitter
+    price_status: estimated
+    price_source: "Wise states EUR to USD as 1.54 EUR + 0.47% at mid-market (wise.com, read via search summary); a third-party guide lists USD to INR as USD 1.17 + 0.8%. Other digital remitters differ; India and China corridors are costlier per the third-party guide."
+    price_retrieved: "2026-10-13"
+    fixed_fee_usd: 1.7
+    pct_fee: 0.0065
+    spread: 0.001
+    days: 1
+    reliability: 0.94         # assumption, not measured
+    deduction_worst_usd: 0.0
+  education_specialist:
+    name: Education payment specialist
+    price_status: assumed
+    price_source: "No published percentage found (Flywire fees depend on the institution; some universities state no transfer fee). Placeholder: a small FX margin and no fixed fee."
+    price_retrieved: "2026-10-13"
+    fixed_fee_usd: 0.0
+    pct_fee: 0.0
+    spread: 0.008             # upper-middle of the plausible range so an unsourced placeholder does not win the ranking
+    days: 3
+    reliability: 0.98         # assumption, not measured
+    deduction_worst_usd: 0.0
+
+# `out_of` names the rule set of the sending jurisdiction. INR-CNY stays on the original engine (engine: legacy, mock prices).
+corridors:
+  INR-CNY: {src: INR, dst: CNY, out_of: IN, engine: legacy}
+  CNY-USD: {src: CNY, dst: USD, out_of: CN, routes: [{type: bank_swift}, {type: digital_remitter, days: 2, price_status: assumed}, {type: education_specialist}]}
+  INR-USD: {src: INR, dst: USD, out_of: IN, routes: [{type: bank_swift}, {type: digital_remitter, fixed_fee_usd: 0.0, spread: 0.0, pct_fee: 0.0216, price_status: sourced, price_source: "Wise 'send money to USA' page, read 2026-10-13: INR 80,000 by bank transfer shows a transfer cost of INR 1,726.53 (2.16%) at 1 USD = 95.2726 INR. One undated example at a small amount; larger amounts are cheaper (the page offers a discount above USD 25,000), so this overstates the cost of a large payment."}, {type: education_specialist, spread: 0.02}]}
+  EUR-USD: {src: EUR, dst: USD, out_of: EU, routes: [{type: bank_swift, days: 2}, {type: digital_remitter, pct_fee: 0.0047, fixed_fee_usd: 1.7, price_status: sourced}, {type: education_specialist, days: 2}]}
+  INR-EUR: {src: INR, dst: EUR, out_of: IN, routes: [{type: bank_swift}, {type: digital_remitter, fixed_fee_usd: 0.0, spread: 0.0, pct_fee: 0.0204, price_status: sourced, price_source: "Wise 'send money to Germany' page, read 2026-10-13: INR 80,000 by bank transfer shows a transfer cost of INR 1,632.11 (2.04%) at 1 EUR = 106.596 INR. One undated example at a small amount; larger amounts are cheaper."}, {type: education_specialist, spread: 0.02}]}
+  CNY-EUR: {src: CNY, dst: EUR, out_of: CN, routes: [{type: bank_swift}, {type: digital_remitter, days: 2, price_status: assumed}, {type: education_specialist}]}
+
+jurisdictions:
+  IN:
+    label: India (outbound, resident individual)
+    rules:
+      - id: form_a2_purpose
+        kind: info
+        severity: info
+        message: "The bank must obtain Form A2 for a remittance under the Liberalised Remittance Scheme; expect it to ask for PAN and proof of purpose (for tuition, the admission and fee letter) and to file a purpose code (S0305, travel for education, per RBI's Form A2 annexure)."
+        status: confirmed-primary
+        confidence: medium-high
+        retrieved: "2026-10-13"
+        source: "RBI Master Direction - Liberalised Remittance Scheme (rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=10192, version of 6 Sep 2024), para 15: furnish Form A2 for purchase of foreign exchange under LRS; para 7(h): studies abroad up to USD 250,000 without a fee estimate, more with the institution's estimate. Purpose code S0305 from RBI's Form A2 annexure listing, read through a search snippet only (the PDF could not be extracted); PAN is the bank's requirement, not read from a primary page."
+      - {id: lrs_annual_limit, kind: annual_cap_usd, from: "inr_cny.lrs_annual_limit_usd", severity: hold,
+         note: "Per remitter per financial year, counted across plans. Oasis holds at USD 250,000 even for education, where RBI allows more on the institution's fee estimate (Master Direction para 7(h)): a deliberately conservative policy."}
+      - {id: tcs, kind: india_tcs, from: "inr_cny.tcs_by_purpose", severity: warn,
+         note: "TCS applies to the amount above the threshold; prior remittances this year are not tracked on this corridor yet."}
+  CN:
+    label: China (outbound, individual buying foreign exchange)
+    rules:
+      - id: safe_anti_splitting
+        kind: info
+        severity: info
+        message: "SAFE treats splitting a large sum into small amounts to stay under the quota as a reason for the bank to refuse or run an authenticity examination. Send one properly documented payment rather than several just under the limit."
+        status: confirmed-primary
+        confidence: high
+        retrieved: "2026-10-13"
+        source: "SAFE, 'The SAFE Further Improves Administration of Foreign Exchange Settlement and Sale Business for Individuals', safe.gov.cn/en/2009/1223/913.html (2009-12-23), read 2026-10-13. The page is from 2009; current practice not confirmed."
+      - id: safe_documents_above_quota
+        kind: info
+        severity: info
+        message: "Tuition bought outside the USD 50,000 quota is supported with your ID and the admission notice (or the school's fee notice); amounts above the quota for other purposes need transaction documents such as a tuition or living-cost notice. The bank decides what it accepts."
+        status: confirmed-primary
+        confidence: medium-high
+        retrieved: "2026-10-13"
+        source: "SAFE Tianjin bureau, 'Individual foreign exchange (9)', safe.gov.cn/tianjin/2025/0714/2833.html (2025-07-14), read 2026-10-13: the individual chooses whether tuition uses the quota; not using it needs ID plus the admission notice. Regional-bureau page; the bank applies its own checks."
+      - {id: safe_annual_quota, kind: annual_cap_usd, from: "inr_cny.safe_quota_usd", severity: warn, exempt_purposes: [tuition],
+         note: "USD 50,000 equivalent per person per calendar year for living costs and other personal purchases; documents can support more.",
+         exempt_note: "Overseas tuition does not have to use the USD 50,000 convenience quota: you choose whether it does. Not using it needs your ID plus the admission notice (or the school's fee notice) at the bank; using it needs only your ID and a personal foreign-exchange account. [SAFE Tianjin bureau, 2025-07-14]"}
+  EU:
+    label: Euro area (outbound, individual)
+    rules:
+      - id: free_movement_of_capital
+        kind: info
+        severity: info
+        message: "EU law bars restrictions on payments and capital movements to third countries in principle (Art. 63 TFEU), with exceptions (Art. 64 and public-policy grounds). No general outbound cap is modelled. The bank may still ask for the purpose and documents."
+        status: researched-secondary
+        confidence: medium
+        retrieved: "2026-10-13"
+        source: "Art. 63 TFEU (eur-lex.europa.eu/eli/treaty/tfeu_2016/art_63/oj/eng) and European Parliament fact sheet FTU 2.1.3, read through a search summary, not the full text. Member-state rules and bank policy not checked."
+      - id: payer_payee_data
+        kind: info
+        severity: info
+        message: "Transfers in any currency must carry payer and payee information when a provider in the EU is involved, so expect the bank to ask for the payee's name, account and the purpose."
+        status: researched-secondary
+        confidence: medium
+        retrieved: "2026-10-13"
+        source: "Regulation (EU) 2023/1113 (recast Transfer of Funds Regulation), applicable from 2024-12-30, and EBA Travel Rule Guidelines EBA/GL/2024/11, read through search summaries. Thresholds not checked."
+
+purpose_tcs_note: "TCS rates by purpose come from inr_cny.yaml (tcs_by_purpose)."
+
+# Rules of the RECEIVING side, by destination currency.
+inbound:
+  USD:
+    - id: us_incoming_wire_fee
+      kind: info
+      severity: info
+      message: "A US bank often charges the recipient an incoming international wire fee (about USD 0 to 25 at the banks surveyed), and intermediary banks may deduct their own charges. This is why Oasis sizes the send amount for the worst-case deduction."
+      status: researched-secondary
+      confidence: medium
+      retrieved: "2026-10-13"
+      source: "Secondary only: Wise bank-fee pages and the mybanktracker.com comparison of US bank wire fees, read 2026-10-13. Fees change; check the recipient bank's current schedule."
+  EUR:
+    - id: eu_incoming_charges
+      kind: info
+      severity: info
+      message: "Intermediary or recipient-bank charges may reduce a transfer received in euro; the recipient should confirm with their bank."
+      status: unconfirmed
+      confidence: low
+      retrieved: "2026-10-13"
+      source: "Not read from a source in this build."

@@ -146,6 +146,16 @@ class SqliteStore:
             audit = self.load_audit()
         return {"kv": kv, "proofs": proofs, "cards": cards, "audit": audit}
 
+    def get_kv(self, key: str):
+        with self._lock:
+            r = self._db.execute("SELECT json FROM kv WHERE key = ?", (key,)).fetchone()
+        return self._open("kv", key, r[0]) if r else None
+
+    def set_kv(self, key: str, obj) -> None:
+        with self._lock:
+            self._db.execute("INSERT OR REPLACE INTO kv(key, json) VALUES (?, ?)", (key, self._seal("kv", key, obj)))
+            self._db.commit()
+
     def clear(self) -> None:
         with self._lock:
             for t in TABLES:

@@ -111,7 +111,7 @@ class PlanningToolbox:
         need = {o.id for o in required_obligations(p)}
         return {"obligations": [{"id": o.id, "type": o.type, "payee_id": o.payee_id, "amount_cny": o.remaining, "due": o.due,
                                  "status": o.status, "recurring": o.recurring, "plan_must_fund": o.id in need}
-                                for o in p.obligations if o.status != "paid"]}
+                                for o in p.obligations if o.status != "paid" and o.currency == "CNY"]}
 
     def tool_get_rates(self) -> dict:
         w = self.w

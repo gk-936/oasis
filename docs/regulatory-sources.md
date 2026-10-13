@@ -1,5 +1,7 @@
 # Regulatory and market sources for the INR -> CNY corridor
 
+> The five extra corridors (CNY→USD, INR→USD, EUR→USD, INR→EUR, CNY→EUR) are researched in [corridor-research.md](corridor-research.md).
+
 Research for the Oasis team. **Not legal advice and not certification.** It records what public pages said when read, so the team can confirm figures quickly with an authorised dealer (AD) bank or counsel. Retrieval date for everything below: **2026-10-11**. Rules change; re-check before any demo or release.
 
 Method and limits: pages were fetched with a summarising web fetch tool, so "quotes" are short extracts as returned by that tool, not byte-exact copies. Several primary pages (incometaxindia.gov.in section page, Finance Bill 2026 PDF, Alipay help centre) returned HTTP 403 or a connection error and could not be read; where that happens the block says so and a labelled secondary source is used. Nothing here was verified against a printed gazette.

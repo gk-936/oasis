@@ -46,7 +46,8 @@ from ..agent.llm import LiveLLM, VisionExtractor, VisionUnavailable, explain_tem
 from ..agent.parent import parent_view
 from ..agent.pipeline import OasisAgent, Request
 from ..agent import plan_exec
-from ..agent.planner import AgenticPlanner, DeterministicPlanner, build_record, make_planner
+from ..agent.planner import (AgenticFxPlanner, AgenticPlanner, DeterministicFxPlanner, DeterministicPlanner, build_fx_record,
+                             build_record, make_planner)
 from ..agent.replay import MODES, fixture_info
 from ..demo import DemoRunner, new_demo_world
 from ..market import provenance
@@ -60,6 +61,10 @@ from ..planning.routes import last_mile, quote_routes, rank
 from ..mock.fx import FxError, quote as fx_quote, table_for
 from ..passport import currency as currency_mod
 from ..passport.currency import currency_view
+from ..corridors import core as cor
+from ..agent import fx_exec
+from ..planning import fxplan
+from ..proof import credit_growth as cg
 from ..proof import trust_pass as tp
 from ..proof import vc_export
 from ..proof import evidence_passport as evp
@@ -73,6 +78,7 @@ from ..trust.approvals import ApproverRegistry
 from ..trust import corridor
 from ..trust.audit import verify_chain
 from ..trust.keyfile import default_session_secret_path, load_or_create_secret
+from ..trust import keyfile as _keyfile
 from ..trust.keystore import fingerprint, load_or_create_signer
 from ..world import Features, World
 from .auth import COOKIE, ROLES, Auth, Principal, judge_mode
@@ -285,7 +291,7 @@ class Session:
         self.redteam_per_minute = JUDGE_REDTEAM_PER_MINUTE if jm else REDTEAM_PER_MINUTE
         self.redteam_max_worlds = int(os.environ.get("OASIS_REDTEAM_MAX_WORLDS") or REDTEAM_MAX_WORLDS)
         self.redteam_limiter = RateLimiter(self.redteam_per_minute, 60.0)
-        self.login_limiter = RateLimiter(JUDGE_LOGIN_FAILS_PER_MINUTE if jm else LOGIN_FAILS_PER_MINUTE, 60.0)
+        self.login_limiter = RateLimiter(JUDGE_LOGIN_FAILS_PER_MINUTE if jm else LOGIN_FAILS_PER_MINUTE, 60.0, store=self.store, name="throttle:login")
         self.redteam_log_limiter = RateLimiter(5, 60.0)
         self.pending: dict[str, dict] = {}   # pending_id -> {"request","signed","required","outcome"}
         self.demo: DemoRunner | None = None
@@ -1160,6 +1166,38 @@ def plan_create(body: PlanIn, p: Principal = Depends(STUDENT), ui: str = UI):
     return _plan_view(S.world, rec, ui)
 
 
+class FxBillIn(Strict):
+    kind: str = Field(max_length=4)                      # "us" | "eu": one of two fixed MOCK universities
+    amount: float = Field(gt=0, le=fx_exec.DEMO_MAX)
+    days: int = Field(default=30, ge=0, le=365)
+
+
+@app.post("/api/fx/demo-obligation")
+def fx_demo_obligation(body: FxBillIn, p: Principal = Depends(STUDENT)):
+    """SANDBOX (MOCK): add a USD or EUR tuition bill to one of two fixed MOCK universities, issued by the MOCK registry. The payee
+    and its account never come from the caller. Paying it still needs a plan, your signature and the executor."""
+    try:
+        ob = fx_exec.add_demo_obligation(S.world, body.kind, body.amount, body.days)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    S.save()
+    return ob
+
+
+@app.post("/api/plan/fx")
+def plan_create_fx(body: PlanIn, p: Principal = Depends(STUDENT), ui: str = UI):
+    """A plan for obligations owed in USD or EUR over the extra corridors. A PROPOSAL like any plan: accepting and executing it
+    runs through plan_exec (registry account, student signature, signed intent, executor). Refused (400) when nothing is owed
+    in a foreign currency."""
+    if not fxplan.has_foreign(S.world):
+        raise HTTPException(400, "no obligation is owed in a foreign currency")
+    live = body.live and isinstance(S.world.llm, LiveLLM)
+    planner = AgenticFxPlanner(S.world.llm) if live else DeterministicFxPlanner()
+    rec = build_fx_record(S.world, planner.plan(S.world, body.goal), body.goal)
+    S.save()
+    return _plan_view(S.world, rec, ui)
+
+
 @app.get("/api/plans")
 def plans_list(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
     return [_plan_view(S.world, r, ui) for r in S.world.plans]
@@ -1458,6 +1496,7 @@ def trust_fingerprint():
     return {"fingerprint": w.trust_fingerprint(), "key_id": w.signer.key_id, "public_keys": w.signer.public_keys(),
             "algorithms": sorted(w.signer.public_keys()), "persistent": S.signer is not None and not w.deterministic,
             "demo_keys": bool(w.deterministic),
+            "keys_encrypted": bool(_keyfile.passphrase()),
             "approver_keys": [{"role": k["role"], "key_id": k["key_id"], "active": k["active"]}
                               for ap in (S.approvers, w.approvers) for k in ap.keys],
             "note": "Pin this fingerprint out of band. A proof pack embeds its own public keys, so a pack signed with any "
@@ -1530,6 +1569,42 @@ def fx_convert(body: FxIn, p: Principal = Depends(STUDENT)):
     return rec
 
 
+# ------------------------------------------------------------------ extra corridors (MOCK pricing, read-only)
+class CorridorCompareIn(Strict):
+    corridor: str = Field(max_length=8)
+    required: float = Field(gt=0, le=cor.MAX_AMOUNT)         # what the recipient must receive, in the destination currency
+    due_in_days: int | None = Field(default=None, ge=0, le=365)
+
+
+class CorridorCheckIn(Strict):
+    corridor: str = Field(max_length=8)
+    amount: float = Field(gt=0, le=cor.MAX_AMOUNT)           # in the sending currency
+    purpose: str = Field(default="tuition", max_length=20)
+
+
+@app.get("/api/corridors")
+def corridors_list(p: Principal = Depends(ANY)):
+    return {"corridors": cor.listing(), "mock": cor.MOCK_NOTE}
+
+
+@app.post("/api/corridors/compare")
+def corridors_compare(body: CorridorCompareIn, p: Principal = Depends(STUDENT_PARENT)):
+    """Read-only: what to send per route so the recipient gets `required` even in the worst case. Moves no money."""
+    try:
+        return cor.compare(body.corridor, body.required, table_for(S.world.rates, S.world.day_index), body.due_in_days, S.world.today)
+    except cor.CorridorError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/corridors/check")
+def corridors_check(body: CorridorCheckIn, p: Principal = Depends(STUDENT_PARENT)):
+    """Read-only rule findings (limits, tax) for one payment, each with its source and status. Not legal advice."""
+    try:
+        return cor.check(body.corridor, body.amount, body.purpose, table_for(S.world.rates, S.world.day_index))
+    except cor.CorridorError as e:
+        raise HTTPException(400, str(e))
+
+
 # ------------------------------------------------------------------ Trust Pass (portable payment reputation)
 class TrustIssueIn(Strict):
     claims: list[str] = Field(max_length=len(tp.CLAIMS))
@@ -1584,6 +1659,31 @@ def trust_zk_prove(body: TrustZkIn, p: Principal = Depends(STUDENT)):
         return tp.zk_prove(body.credential, body.openings, body.kind, body.k)
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@app.get("/api/credit-growth/plan")
+def growth_plan(p: Principal = Depends(STUDENT)):
+    """Read-only: milestones, what Oasis can and cannot verify, upcoming real obligations. Writes nothing."""
+    return cg.plan(S.world)
+
+
+@app.get("/api/credit-growth/opportunities")
+def growth_opportunities(p: Principal = Depends(STUDENT)):
+    """Read-only: evidence held vs missing per ask, with a ready payload for /trust-pass/issue. No approval is promised."""
+    return cg.opportunities(S.world)
+
+
+class GrowthSimIn(Strict):
+    on_time_months: int = Field(default=0, ge=0, le=cg.MAX_MONTHS)
+    late_payments: int = Field(default=0, ge=0, le=cg.MAX_LATE)
+    starter_product: bool = False
+    budget_safe: bool = True
+
+
+@app.post("/api/credit-growth/simulate")
+def growth_simulate(body: GrowthSimIn, p: Principal = Depends(STUDENT)):
+    """Read-only what-if over Oasis's own metrics (hypothetical, not saved, not a score or a lender prediction)."""
+    return cg.simulate(S.world, body.on_time_months, body.late_payments, body.starter_product, body.budget_safe)
 
 
 @app.post("/api/trust-pass/share")

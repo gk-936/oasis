@@ -67,6 +67,7 @@ class Request:
     pay_again: bool = False          # the student explicitly confirmed paying a suspected duplicate a second time (R17)
     genuine: dict | None = None      # benchmark only: the document's genuine (pre-injection) fields, from the scenario
     channel: dict | None = None      # real inbound channel provenance (email headers, sender); risk evidence only
+    fx: dict | None = None           # {"obligation_id"}: a foreign-currency payment built from the Passport + registry (agent/fx_exec.py)
 
 
 @dataclass
@@ -234,6 +235,9 @@ class OasisAgent:
 
     # ---------------------------------------------------------------- main flow
     def handle(self, req: Request, approver: ApprovalProvider | None = None) -> Outcome:
+        if req.fx is not None:
+            from .fx_exec import handle_fx
+            return handle_fx(self, req, approver)
         w, p, f_ = self.w, self.w.passport, self.w.features
         t0 = w.sim_minutes
         self._suspicious_text = req.text

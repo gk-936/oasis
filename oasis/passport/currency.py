@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from ..mock import fx
+from ..mock import fx, money
 
 SUPPORTED = fx.CURRENCIES
 COVERAGE_DAYS = 60
@@ -62,7 +62,7 @@ def coverage(passport, today) -> dict:
 
 def convert(world, amount, src: str, dst: str) -> dict:
     """Convert between the student's own sandbox balances at the MOCK wallet price. Raises fx.FxError on refusal."""
-    from ..world import STUDENT_ACCT
+    from ..world import FX_ACCTS, STUDENT_ACCT
     table = fx.table_for(world.rates, world.day_index)
     q = fx.quote(amount, src, dst, table)
     p = world.passport
@@ -71,10 +71,21 @@ def convert(world, amount, src: str, dst: str) -> dict:
     acct = world.ledger.accounts[STUDENT_ACCT]
     for cur, delta in ((src, -q.amount), (dst, q.received)):
         if cur == "CNY":
-            acct.balance = round(acct.balance + delta, 2)
+            acct.balance = money.add(acct.balance, delta)
+        elif cur in FX_ACCTS:
+            fa = world.ledger.accounts[FX_ACCTS[cur]]
+            fa.balance = money.add(fa.balance, delta)
         else:
             p.set_balance(cur, round(p.balance(cur) + delta, 2))
     world.sync_balances()
     rec = {"day": world.today.isoformat(), **q.to_dict()}
     world.audit.append("fx_conversion", {k: rec[k] for k in ("day", "from", "to", "amount", "rate", "fee", "received")})
     return rec
+
+
+def obligation_cny(o, rates, day_index: int = 0, remaining: bool = True) -> float:
+    """An obligation's amount in CNY: as is for CNY, else at the mid rate (a valuation aid, not a quote)."""
+    v = o.remaining if remaining else o.amount
+    if o.currency == "CNY" or o.currency not in SUPPORTED:
+        return v
+    return round(v * fx.mid(o.currency, "CNY", fx.table_for(rates, day_index)), 2)

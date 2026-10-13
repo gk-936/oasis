@@ -15,6 +15,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import money
+
 
 @dataclass
 class Account:
@@ -66,11 +68,13 @@ class SandboxLedger:
             raise ValueError(f"transfer amount must be a positive finite number, got {amount!r}")   # a negative amount would move money backwards
         self._authorise(credential, from_ref, to_ref, amount, currency, intent_id)
         src = self.accounts[from_ref]
+        dst = self.accounts.get(to_ref) or self.open(to_ref, "unknown", currency)
+        if src.currency != currency or dst.currency != currency:
+            raise ValueError(f"currency mismatch: {from_ref} holds {src.currency}, {to_ref} holds {dst.currency}, transfer is {currency}")
         if src.balance < amount:
             raise InsufficientFunds(f"{from_ref} has {src.balance}, needs {amount}")
-        dst = self.accounts.get(to_ref) or self.open(to_ref, "unknown", currency)
-        src.balance = round(src.balance - amount, 2)       # float money: keep balances on whole fen so error cannot accumulate
-        dst.balance = round(dst.balance + amount, 2)
+        src.balance = money.sub(src.balance, amount)       # exact decimal arithmetic on whole fen (mock/money.py)
+        dst.balance = money.add(dst.balance, amount)
         t = Transfer(f"tx_{len(self.transfers)+1:04d}", from_ref, to_ref, amount, currency, memo, intent_id)
         self.transfers.append(t)
         return t

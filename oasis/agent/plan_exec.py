@@ -15,6 +15,8 @@ changes nothing about the trust model:
 from __future__ import annotations
 from datetime import date
 
+from ..planning import fxplan
+from ..planning.fxplan import validate_fx_plan
 from ..planning.validator import validate_plan
 from ..trust.crypto import canonical, sha256_hex
 from ..trust.policy import decide_conversion
@@ -46,7 +48,7 @@ def accept_plan(agent: OasisAgent, plan_id: str) -> dict:
         return {"error": "no such plan"}
     if plan["status"] not in ("proposed", "accepted"):
         return {"error": f"plan is {plan['status']}; only a valid proposal can be accepted"}
-    v = validate_plan(w, plan["steps"])
+    v = (validate_fx_plan if plan.get("kind") == "fx" else validate_plan)(w, plan["steps"])
     if not v.ok:
         plan["status"] = "invalid"
         return {"error": "the plan no longer validates against the current Passport", "errors": v.errors}
@@ -64,8 +66,12 @@ def _bill_text(world, ob) -> str:
 
 def conversion_draft(plan_id: str, i: int, s: dict) -> dict:
     """What a parent signs to consent to one parent-remitted conversion step."""
-    d = {"kind": "plan_conversion", "plan_id": plan_id, "step": i, "date": s["date"], "send_inr": float(s["send_inr"]),
-         "route_id": s["route_id"], "remitter": s.get("remitter", "student")}
+    if "corridor" in s:     # a foreign-currency plan step (INR only can be parent-remitted)
+        d = {"kind": "plan_conversion", "plan_id": plan_id, "step": i, "date": s["date"], "send_inr": float(s["send"]),
+             "route_id": s["route_id"], "corridor": s["corridor"], "remitter": s.get("remitter", "student")}
+    else:
+        d = {"kind": "plan_conversion", "plan_id": plan_id, "step": i, "date": s["date"], "send_inr": float(s["send_inr"]),
+             "route_id": s["route_id"], "remitter": s.get("remitter", "student")}
     d["canonical"] = canonical({k: v for k, v in d.items()}).decode()
     d["draft_hash"] = sha256_hex(d["canonical"])
     return d
@@ -127,10 +133,11 @@ def execute_due(agent: OasisAgent, plan_id: str, approver=None) -> dict:
         s = plan["steps"][i]
         if date.fromisoformat(s["date"]) > w.today or i in done_steps:
             continue
+        fxp = plan.get("kind") == "fx"
         if s["action"] == "convert":
-            res = _run_convert(agent, plan, i, s)
+            res = (_run_fx_convert if fxp else _run_convert)(agent, plan, i, s)
         else:
-            res = _run_pay(agent, plan, i, s, approver, held)
+            res = (_run_fx_pay if fxp else _run_pay)(agent, plan, i, s, approver, held)
         if res:
             ran.append(res)
     plan["status"] = "done" if all(x["status"] == "done" for x in step_statuses(w, plan)) else "executing"
@@ -172,6 +179,63 @@ def _run_pay(agent, plan, i, s, approver, held) -> dict | None:
     out = agent.handle(req, approver)
     if out.status == "paid":
         return _record(plan, i, "done", f"paid CNY {ob.amount:,.0f}; proof {out.proof_id}")
+    if out.status == "held":
+        held.append((req, out))
+        need = ", ".join((out.decision or {}).get("required_approvals") or []) or "approval"
+        return _record(plan, i, "awaiting_approval", f"waiting for {need}")
+    return _record(plan, i, "blocked", f"{out.status}: {(out.card or {}).get('rule', '')}")
+
+
+# ------------------------------------------------------------------------------------ foreign-currency plan steps
+def _run_fx_convert(agent, plan, i, s) -> dict:
+    """One conversion of an accepted FX plan into the student's own USD / EUR account. Never pays a third party."""
+    from ..corridors import core as cor
+    from ..mock import fx
+    from ..trust import corridor as legacy
+    w = agent.w
+    rem = s.get("remitter", "student")
+    if rem == "parent" and not _consent_ok(w, plan, i, s):
+        return _record(plan, i, "awaiting_parent_consent", "A parent-remitted conversion needs the parent's signed consent.")
+    try:
+        c = cor.corridor(s["corridor"])
+    except cor.CorridorError:
+        return _record(plan, i, "blocked", "unknown corridor")
+    table = fx.table_for(w.rates, w.day_index)
+    route = next((r for r in cor.routes_for(s["corridor"], table) if r.id == s["route_id"]), None)
+    if route is None:
+        return _record(plan, i, "blocked", "unknown route")
+    if c["src"] == "INR":       # LRS is re-checked now, against the Passport as it is today
+        lrs = legacy.load_rules()["rules"]["lrs_annual_limit_usd"]["value"] * table["INR"]
+        if w.passport.remitted_inr_fy.get(rem, 0.0) + float(s["send"]) > lrs + 0.005:
+            return _record(plan, i, "blocked", "lrs_exceeded: this remitter's limit for the financial year would be exceeded")
+    counts = fxplan.uses_safe_quota(w, plan["steps"])
+    if c["src"] == "CNY" and counts:       # the SAFE annual quota is re-checked now against cumulative use
+        y = str(w.today.year)
+        cap = legacy.load_rules()["rules"]["safe_quota_usd"]["value"]
+        if w.passport.cn_outbound_usd.get(y, 0.0) + float(s["send"]) / table["CNY"] > cap + 0.005:
+            return _record(plan, i, "blocked", "annual_limit_exceeded: the SAFE annual quota would be exceeded")
+    mid = fx.mid(c["src"], c["dst"], table)
+    cny = cor.delivered(float(s["send"]), route, mid) * fx.mid(c["dst"], "CNY", table)
+    d = decide_conversion(w.passport, cny, w.canaries.hits if w.canaries else [], ("student",))     # accepting the plan = student approval
+    if d.action != "allow":
+        return _record(plan, i, "blocked", f"{d.rule}: {'; '.join(d.reasons)}")
+    conv = w.convert_fx_step(s["corridor"], s["route_id"], float(s["send"]), rem, counts_against_quota=counts)
+    if "error" in conv:
+        return _record(plan, i, "blocked", conv["error"])
+    return _record(plan, i, "done", f"{conv['route']}: {conv['from']} {conv['sent']:,.0f} -> {conv['to']} {conv['delivered']:,.2f} ({d.rule}; {conv['price_status']} price)")
+
+
+def _run_fx_pay(agent, plan, i, s, approver, held) -> dict | None:
+    w = agent.w
+    ob = w.passport.obligation(s["obligation_id"])
+    if ob is None or ob.status == "paid":
+        return _record(plan, i, "done", "already paid")
+    if ob.status == "frozen":
+        return _record(plan, i, "blocked", "obligation is frozen; approve the recovery plan first")
+    req = Request("", source="plan", fx={"obligation_id": ob.id})
+    out = agent.handle(req, approver)
+    if out.status == "paid":
+        return _record(plan, i, "done", f"paid {ob.currency} {ob.amount:,.2f}; proof {out.proof_id}")
     if out.status == "held":
         held.append((req, out))
         need = ", ".join((out.decision or {}).get("required_approvals") or []) or "approval"

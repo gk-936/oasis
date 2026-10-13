@@ -23,6 +23,7 @@ from .scenarios import Scenario, Step
 
 HIDDEN_PATH = Path(__file__).resolve().parent / "hidden" / "scenarios_hidden.json"
 ATTEMPTS_PATH = Path(__file__).resolve().parent / "scenarios_from_attempts.json"
+FRESH_PATH = Path(__file__).resolve().parent / "fresh" / "scenarios_fresh.json"
 HIDDEN_SHA256 = "4b71a8c416125aebeac19e4626f9eb72f6365eb8a3ccc6d58c09144e222e7294"
 
 
@@ -35,7 +36,8 @@ class StrictScenario(Scenario):
 
 
 def file_sha256(path: Path = HIDDEN_PATH) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    raw = Path(path).read_bytes().replace(b"\r\n", b"\n")      # line endings do not count: a Windows checkout (autocrlf) hashes the same
+    return hashlib.sha256(raw).hexdigest()
 
 
 def sha_line(path: Path = HIDDEN_PATH) -> tuple[str, bool]:

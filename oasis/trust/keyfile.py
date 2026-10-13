@@ -28,6 +28,16 @@ def passphrase() -> str | None:
     return os.environ.get("OASIS_KEY_PASSPHRASE") or None
 
 
+def strict() -> bool:
+    """OASIS_REQUIRE_KEY_PASSPHRASE=1: refuse to read or write a plaintext key file (use it for anything but a throwaway demo)."""
+    return os.environ.get("OASIS_REQUIRE_KEY_PASSPHRASE", "").strip().lower() in ("1", "true", "yes")
+
+
+def _check_strict() -> None:
+    if strict() and not passphrase():
+        raise KeyFileError("OASIS_REQUIRE_KEY_PASSPHRASE is set but OASIS_KEY_PASSPHRASE is empty: refusing to use plaintext key files")
+
+
 def wrap(plain: bytes, pw: str) -> dict:
     salt, nonce = os.urandom(16), os.urandom(12)
     key = Scrypt(salt=salt, length=32, n=2 ** 15, r=8, p=1).derive(pw.encode())
@@ -62,6 +72,7 @@ def read_secret_json(p: Path) -> dict:
         raise KeyFileError(f"key file {p} is unreadable or corrupt ({type(e).__name__}); restore it from a backup. "
                            "Oasis will not generate a replacement over an existing file.") from e
     pw = passphrase()
+    _check_strict()
     if "wrapped" in d:
         if not pw:
             raise ValueError(f"key file {p} is passphrase-wrapped: set OASIS_KEY_PASSPHRASE")
@@ -73,6 +84,7 @@ def read_secret_json(p: Path) -> dict:
 
 def write_secret_json(p: Path, body: dict) -> None:
     pw = passphrase()
+    _check_strict()
     write_private(p, {"version": 1, "wrapped": wrap(json.dumps(body).encode(), pw)} if pw else body)
 
 

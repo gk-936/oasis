@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from .agent.llm import LLM, make_llm
 from .chain.anchor import Anchor, LocalAnchorChain, make_anchor
+from .mock import money
 from .mock.ledger import Account, SandboxLedger, Transfer
 from .market import make_rates
 from .mock.rates import MockRates
@@ -28,6 +29,7 @@ LANDLORD_ACCT_NEW = "6222021111110002"
 STUDENT_SELF_ACCT = "acct_student_cny"
 TELECOM_ACCT = "6228480000002468"
 MIN_CONVERSION_CNY = 500.0
+FX_ACCTS = {"USD": "acct_student_usd", "EUR": "acct_student_eur"}   # the student's own foreign-currency accounts (MOCK)
 
 
 @dataclass(frozen=True)
@@ -145,6 +147,7 @@ class World:
         r.set_contact("payee_univ_x", "the finance office's official portal inbox", "finance@univ-x.example.edu")
         r.set_contact("payee_landlord_chen", "the phone number on the signed lease", "+86 755 0100 0001 (MOCK)")
         self.ledger.open(STUDENT_ACCT, "student")
+        self.ensure_fx_accounts()
         # Parent's remittance source (CNY-equivalent after their own INR conversion; MOCK).
         self.ledger.open("acct_parent", "parent (Lakshmi)", balance=100000)
         self.ledger.open(UNIV_ACCT, "University X")
@@ -176,8 +179,23 @@ class World:
                                                         account_ref="6666000000000001")
 
     # -- balances --------------------------------------------------------
+    def ensure_fx_accounts(self) -> None:
+        for cur, ref in FX_ACCTS.items():
+            if ref not in self.ledger.accounts:
+                self.ledger.open(ref, f"student ({cur})", currency=cur)
+
+    def credit_fx(self, cur: str, amount: float) -> None:
+        """Sandbox funding of the student's own USD / EUR account (tests and demo setup; the ledger is the source of truth)."""
+        self.ledger.accounts[FX_ACCTS[cur]].balance = money.add(self.ledger.accounts[FX_ACCTS[cur]].balance, amount)
+        self.sync_balances()
+
     def sync_balances(self) -> None:
         self.passport.set_balance("CNY", round(self.ledger.accounts[STUDENT_ACCT].balance, 2))
+        for cur, ref in FX_ACCTS.items():
+            if ref in self.ledger.accounts:
+                bal = round(self.ledger.accounts[ref].balance, 2)
+                if bal or any(b.currency == cur for b in self.passport.balances):    # a zero balance is not listed until it has been used
+                    self.passport.set_balance(cur, bal)
 
     def convert(self, cny_needed: float, due: date | None = None) -> dict | None:
         """Plan step: convert INR to CNY with the best on-time route if funds are short."""
@@ -198,7 +216,7 @@ class World:
         from .mock.rates import delivered_amount
         got = round(delivered_amount(send, route, self.rates.mid(self.day_index)), 2)
         self.passport.set_balance("INR", round(self.passport.balance("INR") - send, 2))
-        self.ledger.accounts[STUDENT_ACCT].balance += got
+        self.ledger.accounts[STUDENT_ACCT].balance = money.add(self.ledger.accounts[STUDENT_ACCT].balance, got)
         self.note_safe_use(send)
         self.sync_balances()
         bank_got = delivered_amount(send, bank.route, self.rates.mid(self.day_index))
@@ -228,13 +246,57 @@ class World:
             self.passport.set_balance("INR", round(self.passport.balance("INR") - send_inr, 2))
         else:     # the parent sends INR from their own account; it counts against the parent's LRS / TCS, not the student's
             self.passport.remitted_inr_fy[remitter] = self.passport.remitted_inr_fy.get(remitter, 0.0) + send_inr
-        self.ledger.accounts[STUDENT_ACCT].balance += got
+        self.ledger.accounts[STUDENT_ACCT].balance = money.add(self.ledger.accounts[STUDENT_ACCT].balance, got)
         self.note_safe_use(send_inr)
         self.sync_balances()
         rec = {"route": route.name, "route_id": route.id, "sent_inr": send_inr, "delivered_cny": got, "remitter": remitter,
                "bank_delivered_cny": round(bank_got, 2), "saved_cny": round(got - bank_got, 2),
                "saved_pct": round((got - bank_got) / bank_got * 100, 2) if bank_got else 0.0,
                "tax_note": "TCS is an advance tax credit, not a fee."}
+        self.audit.append("conversion", rec)
+        return rec
+
+    def convert_fx_step(self, cid: str, route_id: str, send: float, remitter: str = "student", counts_against_quota: bool = True) -> dict:
+        """Execute one conversion of an accepted foreign-currency plan: `send` in the corridor's source currency on a named
+        route into the student's own USD / EUR account. Never pays a third party. The caller has already passed
+        `policy.decide_conversion`. The sandbox credits the EXPECTED delivery (the plan only counted on the worst case)."""
+        from .corridors import core as cor
+        from .mock import fx as fxm
+        c = cor.corridor(cid)
+        src, dst = c["src"], c["dst"]
+        if dst not in FX_ACCTS or c.get("engine") == "legacy":
+            return {"error": "unsupported_corridor"}
+        table = fxm.table_for(self.rates, self.day_index)
+        route = next((r for r in cor.routes_for(cid, table) if r.id == route_id), None)
+        if route is None:
+            return {"error": "unknown_route"}
+        mid = fxm.mid(src, dst, table)
+        if remitter == "student":
+            held = (self.passport.balance(src) if src not in ("CNY", *FX_ACCTS) else self.ledger.accounts[STUDENT_ACCT if src == "CNY" else FX_ACCTS[src]].balance)
+            if send > held + 0.005:
+                return {"error": f"insufficient_{src.lower()}", "needed": send}
+        elif remitter == "parent" and src != "INR":
+            return {"error": "only an INR conversion can be remitted by the parent"}
+        got = round(max(0.0, cor.delivered(send, route, mid) - route.deduction_worst_dst / 2), 2)
+        bank = next((r for r in cor.routes_for(cid, table) if r.typical_bank), None)
+        bank_got = round(max(0.0, cor.delivered(send, bank, mid) - bank.deduction_worst_dst / 2), 2) if bank else 0.0
+        if remitter == "student":
+            if src == "INR":
+                self.passport.set_balance("INR", round(self.passport.balance("INR") - send, 2))
+            else:
+                a = self.ledger.accounts[STUDENT_ACCT if src == "CNY" else FX_ACCTS[src]]
+                a.balance = money.sub(a.balance, send)
+        if src == "INR":
+            self.passport.remitted_inr_fy[remitter] = money.add(self.passport.remitted_inr_fy.get(remitter, 0.0), send)
+        elif src == "CNY" and counts_against_quota:     # counts against the SAFE annual quota (USD equivalent, per calendar year)
+            y = str(self.today.year)
+            self.passport.cn_outbound_usd[y] = money.add(self.passport.cn_outbound_usd.get(y, 0.0), send / table[src])
+        d = self.ledger.accounts[FX_ACCTS[dst]]
+        d.balance = money.add(d.balance, got)
+        self.sync_balances()
+        rec = {"corridor": cid, "route": route.name, "route_id": route.id, "sent": send, "from": src, "to": dst, "delivered": got,
+               "remitter": remitter, "bank_delivered": bank_got, "saved": round(got - bank_got, 2), "price_status": route.price_status,
+               "mock": "route prices are public-range estimates, not live quotes"}
         self.audit.append("conversion", rec)
         return rec
 
@@ -264,6 +326,7 @@ class World:
         kv = snap["kv"]
         self.passport = Passport.model_validate(kv["passport"])
         self.ledger.accounts = {a["ref"]: Account(**a) for a in kv["ledger"]["accounts"]}
+        self.ensure_fx_accounts()
         self.ledger.transfers = [Transfer(**t) for t in kv["ledger"]["transfers"]]
         self.history = list(kv["history"])
         c = kv["clock"]
