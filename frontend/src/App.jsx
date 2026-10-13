@@ -10,13 +10,14 @@ import { Demo } from "./tabs/Demo.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
 import { Parent } from "./tabs/Parent.jsx";
 import { Passport } from "./tabs/Passport.jsx";
+import { Twin } from "./tabs/Twin.jsx";
 import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "proof", "numbers"],
+  student: ["demo", "chat", "passport", "parent", "proof", "numbers", "twin"],
   parent: ["parent", "proof"],
-  judge: ["redteam", "proof", "numbers"],
+  judge: ["redteam", "proof", "numbers", "twin"],
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
@@ -192,6 +193,7 @@ export default function App() {
             {tab === "redteam" && <RedTeam onProof={openProof} />}
             {tab === "proof" && <Proof s={s} selected={proofSel} />}
             {tab === "numbers" && <Numbers />}
+            {tab === "twin" && <Twin />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>

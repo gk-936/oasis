@@ -144,6 +144,7 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
 | [docs/flightpath.md](docs/flightpath.md) | FlightPath: pre-transfer checks, recipient-amount route comparison, simulated transfer lifecycle, delay/short-credit detection, no-blind-resend recovery; simulation benchmark and its limits (core only, no UI tab yet) |
+| [docs/digital-twin.md](docs/digital-twin.md) | Financial Digital Twin: seeded Monte Carlo of the semester (FX random walk, late top-up, rail delay); per-deadline probabilities, p10/p50/p90 runway fan chart, mitigation uplift by re-running (MOCK simulation, Twin tab) |
 | [docs/real-inputs.md](docs/real-inputs.md) | real invoice intake (email file, Telegram bot, mailbox watcher): setup, safety rules, where each works (Telegram is blocked in mainland China), what was and was not tested live |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |
 | [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |
