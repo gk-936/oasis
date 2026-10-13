@@ -16,16 +16,7 @@ import { RedTeam } from "./tabs/RedTeam.jsx";
 import { BreakIt } from "./tabs/BreakIt.jsx";
 
 const TABS_BY_ROLE = {
-<<<<<<< HEAD
-  student: ["demo", "chat", "passport", "parent", "proof", "numbers", "flightpath"],
-  parent: ["parent", "proof"],
-  judge: ["redteam", "proof", "numbers", "flightpath"],
-=======
-  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers"],
-  parent: ["parent", "proof"],
-  judge: ["redteam", "breakit", "proof", "numbers"],
->>>>>>> worktree-agent-ae7f5a55aa8879a22
-};
+  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath"],\n  parent: ["parent", "proof"],\n  judge: ["redteam", "breakit", "proof", "numbers", "flightpath"],\n};
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
 
