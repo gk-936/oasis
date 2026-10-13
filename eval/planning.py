@@ -1,7 +1,7 @@
 """Plan-quality evaluation (spec step 2, "agentic planning"): eight planning scenarios scored by the deterministic validator.
 
     python -m eval.planning                       # offline: the deterministic planner, no network
-    python -m eval.planning --llm groq            # live: Groq native tool calling, capped by --token-cap (default 60,000)
+    python -m eval.planning --llm bedrock            # live: Bedrock native tool calling, capped by --token-cap (default 60,000)
 
 The validator, not a model, scores every plan. Per scenario: was the final plan valid, how many proposals did it take,
 did the live model fall back to the deterministic plan, how many obligations were paid by their deadline, and what the
@@ -177,7 +177,7 @@ def render(data: dict) -> str:
          "TCS and LRS findings are surfaced as warnings. Fees are measured against the same INR sent through the typical bank route. "
          "Rates are quoted at today's mock rate; nothing is predicted.", ""]
     for key, title in (("offline", "Offline (deterministic planner, no network)"),
-                       ("live", "Live (Groq native tool calling), after the planner prompt change"),
+                       ("live", "Live (Bedrock native tool calling), after the planner prompt change"),
                        ("live_before", "Live, before planner prompt change (2026-10-10, 1 run)")):
         d = data.get(key)
         if not d:
@@ -244,7 +244,7 @@ def spread_of(per_rep: list[dict]) -> dict:
 
 def main(argv=None) -> dict:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--llm", default="offline", choices=("offline", "groq"))
+    ap.add_argument("--llm", default="offline", choices=("offline", "bedrock"))
     ap.add_argument("--repeats", type=int, default=1, help="live only: N independent samples per scenario (temperature "
                     f"{LIVE_TEMPERATURE}, cache salt planrep<N>, so repeats are distinct and never cache hits of each other)")
     ap.add_argument("--repeat-index", "--only-repeat", dest="repeat_index", type=int, default=None,
@@ -253,7 +253,7 @@ def main(argv=None) -> dict:
     ap.add_argument("--per-plan-cap", type=int, default=PER_PLAN_CAP, help="stop asking the model once one plan has used this many tokens")
     ap.add_argument("--only", help="comma-separated scenario ids")
     ap.add_argument("--ledger-baseline", type=int, default=None,
-                    help="Groq tokens already used today BEFORE the planning work (cache replays count as 0 new tokens, so the total is taken from the ledger)")
+                    help="Tokens already used today BEFORE the planning work (cache replays count as 0 new tokens, so the total is taken from the ledger)")
     args = ap.parse_args(argv)
     ids = [i for i in (args.only.split(",") if args.only else SCENARIOS)]
     REPORTS.mkdir(exist_ok=True)
@@ -261,10 +261,8 @@ def main(argv=None) -> dict:
     data = json.loads(jf.read_text(encoding="utf-8")) if jf.exists() else {}
     notes: list[str] = []
     today = time.strftime("%Y-%m-%d")
-    if args.llm == "groq":
-        from oasis.agent.llm import GroqLLM, UsageLedger
-        if not config.GROQ_API_KEY:
-            raise SystemExit("GROQ_API_KEY is not set")
+    if args.llm == "bedrock":
+        from oasis.agent.llm import LiveLLM, UsageLedger
         prev = data.get("live") or {}
         if prev and not prev.get("repeats"):            # the pre-change single run is kept as its own section
             data["live_before"] = data.pop("live")
@@ -280,14 +278,14 @@ def main(argv=None) -> dict:
             reps_n = max(args.repeats, prev.get("repeats", 0))
             per = [summarize([r for r in merged if r["rep"] == k]) for k in range(reps_n)]
             comp = [k for k in range(reps_n) if len([r for r in merged if r["rep"] == k]) == len(SCENARIOS)]
-            data["live"] = {"date": today, "planner": "groq-tools", "model": llm0.model, "fallback_model": config.FALLBACK_MODEL,
+            data["live"] = {"date": today, "planner": "bedrock-tools", "model": llm0.model, "fallback_model": config.FALLBACK_MODEL,
                             "repeats": reps_n, "temperature": LIVE_TEMPERATURE, "per_plan_cap": args.per_plan_cap,
                             "complete_repeats": comp, "summary": summarize(merged), "per_repeat": per,
                             "spread": spread_of([per[k] for k in comp]) if len(comp) > 1 else None,
-                            "results": merged, "notes": [n for n in prev.get("notes", []) if n.startswith(("Invocation", "Total Groq"))] + notes + extra_notes(merged, list(SCENARIOS))}
+                            "results": merged, "notes": [n for n in prev.get("notes", []) if n.startswith(("Invocation", "Total"))] + notes + extra_notes(merged, list(SCENARIOS))}
             jf.write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
 
-        llm0 = GroqLLM(salt="planrep0", temperature=LIVE_TEMPERATURE)
+        llm0 = LiveLLM(salt="planrep0", temperature=LIVE_TEMPERATURE)
         spent0 = llm0.usage.day()["tokens"]
         keys0 = {k: dict(v) for k, v in llm0.usage.day().get("keys", {}).items()}
         calls = hits = fbs = rots = 0
@@ -296,7 +294,7 @@ def main(argv=None) -> dict:
         for rep in range(args.repeats):
             if args.repeat_index is not None and rep != args.repeat_index - 1:
                 continue
-            llm = GroqLLM(salt=f"planrep{rep}", temperature=LIVE_TEMPERATURE)
+            llm = LiveLLM(salt=f"planrep{rep}", temperature=LIVE_TEMPERATURE)
             for sid in ids:
                 if spent >= args.token_cap:
                     if (rep, sid) in old_rows:
@@ -315,16 +313,16 @@ def main(argv=None) -> dict:
                 flush()
                 print(f"rep{rep} {sid}: valid={r['valid']} fallback={r['fell_back']} proposals={r['proposals']} tokens={r['tokens']} (total {spent:,})", flush=True)
             calls, hits, fbs, rots = calls + llm.calls, hits + llm.cache_hits, fbs + llm.fallbacks, rots + llm.key_rotations
-        notes.append(f"Invocation {today}: new tokens {spent:,} (cap {args.token_cap:,}); Groq daily ledger before {spent0:,}, "
+        notes.append(f"Invocation {today}: new tokens {spent:,} (cap {args.token_cap:,}); daily ledger before {spent0:,}, "
                      f"after {UsageLedger(llm0.usage.path).day()['tokens']:,}. Live calls {calls}, cache hits {hits}, model fallbacks {fbs}.")
-        fresh = UsageLedger(llm0.usage.path)      # other GroqLLM instances (one per repeat) wrote the file; re-read it
+        fresh = UsageLedger(llm0.usage.path)      # other LiveLLM instances (one per repeat) wrote the file; re-read it
         keys1 = fresh.day().get("keys", {})
         per_key = {k: keys1[k]["tokens"] - keys0.get(k, {}).get("tokens", 0) for k in keys1}
         if len(llm0.fingerprints) > 1 or per_key:
             notes.append(f"Per-key tokens this invocation ({len(llm0.fingerprints)} key(s), by sha256 fingerprint): "
                          + ", ".join(f"{k}: {v:,}" for k, v in sorted(per_key.items())) + f"; key rotations {rots}.")
         if args.ledger_baseline is not None:
-            notes.append(f"Total Groq tokens spent on live planning in this session: {UsageLedger(llm0.usage.path).day()['tokens'] - args.ledger_baseline:,}.")
+            notes.append(f"Total tokens spent on live planning in this session: {UsageLedger(llm0.usage.path).day()['tokens'] - args.ledger_baseline:,}.")
         flush()
     else:
         planner = DeterministicPlanner()
@@ -337,7 +335,7 @@ def main(argv=None) -> dict:
                            "summary": summarize(rows), "results": rows, "notes": notes}
     jf.write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
     (REPORTS / "planning.md").write_text(render(data), encoding="utf-8")
-    print(json.dumps(data["live" if args.llm == "groq" else "offline"]["summary"], indent=1))
+    print(json.dumps(data["live" if args.llm == "bedrock" else "offline"]["summary"], indent=1))
     return data
 
 

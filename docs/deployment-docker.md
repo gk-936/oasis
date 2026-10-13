@@ -54,7 +54,7 @@ Set secrets at run time, never in the image. The full annotated list is `.env.do
 | `OASIS_ALLOW_DEMO_PASSCODES` | unset | `1` accepts the public demo passcodes |
 | `OASIS_KEY_PASSPHRASE` | unset (warning) | wraps the key files; needed at every start |
 | `OASIS_JUDGE_MODE` | `1` | `0` for personal use (`/docs` on, looser limits) |
-| `OASIS_LLM` / `GROQ_API_KEY` | `offline` / unset | live mode sends text to Groq; not for a public instance |
+| `OASIS_LLM` / AWS credentials | `offline` / unset | live mode sends text to Amazon Bedrock; not for a public instance |
 | `OASIS_RATES` / `OASIS_ANCHOR` | `live` / `local` | `live` fetches real ECB rates server-side (cached; MOCK fallback if unreachable); set `mock` for repeatable demo numbers |
 | `OASIS_HOSTED` | `1` | `0` skips the entrypoint's hosted-mode checks (the app's own checks still apply) |
 | `PORT` | `8000` | injected by many hosts |
@@ -101,7 +101,7 @@ General rules whichever you pick: 1 replica, 1 worker, the platform's `PORT` is 
 
 - [ ] Custom passcodes (8+ chars, different per role), never the public demo ones.
 - [ ] `OASIS_KEY_PASSPHRASE` set **before first start** (a plaintext key file is not rewrapped by adding it later; for a fresh sandbox, wipe the volume first).
-- [ ] Keep `OASIS_LLM=offline`. Live mode sends strangers' input to Groq on your key and quota.
+- [ ] Keep `OASIS_LLM=offline`. Live mode sends strangers' input to Bedrock on your AWS account and bill.
 - [ ] HTTPS only; cookie is `Secure`; HTTP redirects to HTTPS (Caddy does this).
 - [ ] `OASIS_JUDGE_MODE=1`, so `/docs`, `/redoc` and `/openapi.json` return 404 and limits are tighter.
 - [ ] `FORWARDED_ALLOW_IPS` is the proxy only, never `*` on an exposed port. Container port not published to the internet directly.

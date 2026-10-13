@@ -71,7 +71,7 @@ def fallback_class(reason: str | None) -> str:
     if r.startswith("no valid plan after"):
         return "no valid plan after proposals"
     if "tool_use_failed" in r or "failed to call a function" in r:
-        return "malformed tool call"          # the model's own generation was invalid (Groq 400): a model failure, not quota
+        return "malformed tool call"          # the model's own generation was invalid (HTTP 400): a model failure, not quota
     if "stopped without" in r:
         return "stopped without a plan"
     if r:
@@ -285,17 +285,15 @@ def main(argv=None) -> int:
         ap.error(f"unknown scenario(s): {bad}")
     if args.rep is not None and not 1 <= args.rep <= args.repeats:
         ap.error("--rep must be between 1 and --repeats")
-    from oasis.agent.llm import GroqLLM
+    from oasis.agent.llm import LiveLLM
     from oasis.agent.planner import AgenticPlanner
-    if not config.GROQ_API_KEY:
-        raise SystemExit("GROQ_API_KEY is not set")
     rows = load()
     done = {row_key(r) for r in rows}
     spent = 0
     for rep in range(args.repeats):
         if args.rep is not None and rep != args.rep - 1:
             continue
-        llm = GroqLLM(model=model, fallback_model=model, salt=f"v3eval{rep}", temperature=LIVE_TEMPERATURE)
+        llm = LiveLLM(model=model, fallback_model=model, salt=f"v3eval{rep}", temperature=LIVE_TEMPERATURE)
         for sid in ids:
             if (args.format, model, rep, sid) in done:
                 continue

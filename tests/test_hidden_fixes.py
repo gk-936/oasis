@@ -5,7 +5,7 @@ import pytest
 from eval.approver import SimulatedHumans
 from eval.scenarios import tuition
 from oasis.agent import request_types as rt
-from oasis.agent.llm import (GroqLLM, OfflineLLM, account_anomalies, canonical_text, heuristic_risk, normalize_account,
+from oasis.agent.llm import (LiveLLM, OfflineLLM, account_anomalies, canonical_text, heuristic_risk, normalize_account,
                              normalize_currency, regex_fields)
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.passport.models import Level
@@ -93,7 +93,7 @@ def test_normalisation_cannot_move_money_to_an_attacker_or_to_another_payees_acc
 
 
 def test_model_output_gets_the_same_normalisation():
-    mf = GroqLLM._model_fields({"account_ref": "6228 4800​0000 1234", "currency": "rmb", "amount": "30,000"})
+    mf = LiveLLM._model_fields({"account_ref": "6228 4800​0000 1234", "currency": "rmb", "amount": "30,000"})
     assert mf["account_ref"] == UNI_ACCT and mf["currency"] == "CNY" and mf["amount"] == 30000.0
 
 

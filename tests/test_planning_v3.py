@@ -1,7 +1,7 @@
 """Planner format v3 (calculator tools + `fix` hints + shorter prompt). Hermetic: fake clients only, no network.
 
 Covers: tool schemas, size_conversion arithmetic, facts_sheet totals for all 12 scenarios, every `fix` removing its own
-validator error, v1/v2 byte-for-byte snapshots, prompt length, the tool-call round trip through GroqLLM.chat_tools with a
+validator error, v1/v2 byte-for-byte snapshots, prompt length, the tool-call round trip through LiveLLM.chat_tools with a
 scripted "model" that uses the calculators, purity of the new tools, and the offline planner under every format."""
 import copy
 import hashlib
@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from oasis.agent.llm import GroqLLM
+from oasis.agent.llm import LiveLLM
 from oasis.agent.planner import SYSTEM, SYSTEM_V3, AgenticPlanner, DeterministicPlanner, _tool_message, planner_format
 from oasis.mock.rates import ROUTES, delivered_amount
 from oasis.planning import calc
@@ -332,7 +332,7 @@ def test_v1_and_v2_prompts_tools_and_outputs_are_byte_for_byte_unchanged():
 def test_agentic_planner_default_is_still_v2_and_v3_is_opt_in(monkeypatch):
     monkeypatch.delenv("OASIS_PLANNER_FORMAT", raising=False)
     assert planner_format() == "v2"
-    llm = SimpleNamespace(name="groq", errors=[])
+    llm = SimpleNamespace(name="bedrock", errors=[])
     p = AgenticPlanner(llm)
     assert p.fmt == "v2" and p.system is SYSTEM and p.tool_specs is TOOL_SPECS
     monkeypatch.setenv("OASIS_PLANNER_FORMAT", "v3")
@@ -427,17 +427,17 @@ class ModelClient:
 
 def run_scripted(tmp_path, sid, fmt="v3"):
     client = ModelClient(ScriptedCalcModel())
-    llm = GroqLLM(client=client, cache_dir=tmp_path / sid, sleep=lambda s: None, rpm=0)
+    llm = LiveLLM(client=client, cache_dir=tmp_path / sid, sleep=lambda s: None, rpm=0)
     w = build_scenario_world(sid, llm)
     return w, client, AgenticPlanner(llm, fmt=fmt).plan(w, ALL_SCENARIOS[sid].goal)
 
 
 @pytest.mark.parametrize("sid", ALL)
-def test_scripted_model_uses_the_calculators_end_to_end_through_groqllm(tmp_path, sid):
+def test_scripted_model_uses_the_calculators_end_to_end_through_livellm(tmp_path, sid):
     w, client, res = run_scripted(tmp_path, sid)
     tools_called = [t["tool"] for t in res.trace if t["type"] == "tool_call"]
     assert tools_called[0] == "facts_sheet"                                   # facts first
-    assert res.planner == "groq-tools" and res.valid and not res.fell_back, (sid, res.fallback_reason, [e["code"] for t in res.trace if t["type"] == "proposal" for e in t["validation"]["errors"]])
+    assert res.planner == "bedrock-tools" and res.valid and not res.fell_back, (sid, res.fallback_reason, [e["code"] for t in res.trace if t["type"] == "proposal" for e in t["validation"]["errors"]])
     assert res.iterations <= 4
     sent = client.calls[0]
     assert sent["messages"][0]["content"] == SYSTEM_V3 and [t["function"]["name"] for t in sent["tools"]] == ["facts_sheet", "size_conversion", "propose_plan"]
@@ -459,7 +459,7 @@ def test_scripted_protocol_shows_fix_driven_revision(tmp_path):
 
 def test_v2_prompt_and_tools_are_what_a_v2_run_sends(tmp_path):
     client = ModelClient(lambda m, t: [])
-    llm = GroqLLM(client=client, cache_dir=tmp_path, sleep=lambda s: None, rpm=0)
+    llm = LiveLLM(client=client, cache_dir=tmp_path, sleep=lambda s: None, rpm=0)
     AgenticPlanner(llm, fmt="v2").plan(build_scenario_world("shortfall", llm))
     assert client.calls[0]["messages"][0]["content"] == SYSTEM and client.calls[0]["tools"] == TOOL_SPECS
 
@@ -532,12 +532,11 @@ def test_eval_run_is_resumable_keyed_and_never_records_budget_artifacts(tmp_path
     import eval.planning_v3 as pv
     import oasis.agent.llm as llm_mod
     monkeypatch.setattr(pv, "ROWS", tmp_path / "rows.json"); monkeypatch.setattr(pv, "MD", tmp_path / "r.md"); monkeypatch.setattr(pv, "SUMMARY", tmp_path / "r.json")
-    monkeypatch.setattr(pv.config, "GROQ_API_KEY", "x")
     made = []
 
     class FakeLLM:
         def __init__(self, **kw): made.append(kw)
-    monkeypatch.setattr(llm_mod, "GroqLLM", FakeLLM)
+    monkeypatch.setattr(llm_mod, "LiveLLM", FakeLLM)
     seen, quota_ok = [], False
 
     def fake_run(sid, planner):

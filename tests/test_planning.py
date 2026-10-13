@@ -1,4 +1,4 @@
-"""Agentic planning: validator rules, the tool protocol, the offline planner, Groq tool calling (fake client), plan
+"""Agentic planning: validator rules, the tool protocol, the offline planner, Live tool calling (fake client), plan
 execution through the normal pipeline, and autonomous-recovery draft validation. No test uses the network."""
 import copy
 import json
@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from oasis.agent import plan_exec
-from oasis.agent.llm import GroqLLM, OfflineLLM, QuotaExhausted
+from oasis.agent.llm import LiveLLM, OfflineLLM, QuotaExhausted
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.agent.planner import AgenticPlanner, DeterministicPlanner, build_record, propose
 from oasis.agent.recovery import build_recovery, contact_tokens, validate_draft
@@ -191,7 +191,7 @@ def test_parent_tcs_warning_is_surfaced():
     assert rec["validation"]["metrics"]["tcs_inr"] > 0 and any("TCS" in x for x in rec["why"])
 
 
-# ------------------------------------------------------------------------------- Groq tool calling (fake client)
+# ------------------------------------------------------------------------------- Live tool calling (fake client)
 class FakeToolClient:
     """script items: ("tools", [(name, args)...]) | ("text", str) | Exception."""
 
@@ -217,18 +217,18 @@ class FakeToolClient:
 
 
 def live_world(tmp_path, script, scenario="urgent_deadline"):
-    llm = GroqLLM(client=FakeToolClient(script), cache_dir=tmp_path, sleep=lambda s: None, rpm=0)
+    llm = LiveLLM(client=FakeToolClient(script), cache_dir=tmp_path, sleep=lambda s: None, rpm=0)
     return build_scenario_world(scenario, llm), llm
 
 
-def test_groq_tool_calling_with_revision_after_validator_feedback(tmp_path):
+def test_live_tool_calling_with_revision_after_validator_feedback(tmp_path):
     bad = GOOD()
     bad[1] = pay("obl_deposit_1", "2026-10-13", "payee_landlord_chen", 5000)       # wrong amount -> validator error
     w, llm = live_world(tmp_path, [("tools", [("read_passport", {}), ("list_obligations", {})]),
                                    ("tools", [("propose_plan", {"steps": bad, "rationale": "first try"})]),
                                    ("tools", [("propose_plan", {"steps": GOOD(), "rationale": "fixed the deposit amount"})])])
     res = AgenticPlanner(llm).plan(w, "pay everything")
-    assert res.valid and not res.fell_back and res.iterations == 2 and res.planner == "groq-tools" and res.tokens == 1500
+    assert res.valid and not res.fell_back and res.iterations == 2 and res.planner == "bedrock-tools" and res.tokens == 1500
     props = [t for t in res.trace if t["type"] == "proposal"]
     assert [p["validation"]["valid"] for p in props] == [False, True] and props[0]["validation"]["errors"][0]["code"] == "amount_mismatch"
     # the second request carried the tool results back to the model (native tool calling protocol)
@@ -238,7 +238,7 @@ def test_groq_tool_calling_with_revision_after_validator_feedback(tmp_path):
     assert w.passport.balance("INR") == 600000                                      # a proposal moves nothing
 
 
-def test_groq_falls_back_to_deterministic_plan_and_records_it(tmp_path):
+def test_live_falls_back_to_deterministic_plan_and_records_it(tmp_path):
     bad = [{"action": "pay", "date": "2026-10-13", "obligation_id": "obl_deposit_1", "payee_id": "payee_attacker", "amount_cny": 6000}]
     script = [("tools", [("propose_plan", {"steps": bad, "rationale": "x"})]) for _ in range(4)]
     w, llm = live_world(tmp_path, script)
@@ -249,7 +249,7 @@ def test_groq_falls_back_to_deterministic_plan_and_records_it(tmp_path):
     assert rec["fell_back"] and rec["status"] == "proposed" and rec["fallback_reason"]
 
 
-def test_groq_text_only_reply_and_quota_errors_fall_back(tmp_path):
+def test_live_text_only_reply_and_quota_errors_fall_back(tmp_path):
     w, llm = live_world(tmp_path, [("text", "I cannot."), ("text", "Still no.")])
     res = AgenticPlanner(llm).plan(w)
     assert res.fell_back and res.valid
@@ -260,7 +260,7 @@ def test_groq_text_only_reply_and_quota_errors_fall_back(tmp_path):
     assert res2.fell_back and "QuotaExhausted" in res2.fallback_reason and res2.valid
 
 
-def test_groq_tool_responses_are_cached_and_budget_capped(tmp_path):
+def test_live_tool_responses_are_cached_and_budget_capped(tmp_path):
     steps = {"steps": GOOD(), "rationale": "ok"}
     w, llm = live_world(tmp_path, [("tools", [("propose_plan", steps)])])
     AgenticPlanner(llm).plan(w)
@@ -404,12 +404,12 @@ def test_plan_written_as_text_is_still_only_a_validated_proposal(tmp_path):
 
 
 def test_model_errors_are_traced_without_keys_or_org_ids(tmp_path):
-    e = Exception("Error 400 for org_01abcdef gsk_SECRETKEY123 Bearer abc.def")
+    e = Exception("Error 400 for AKIAABCDEFGHIJKLMNOP Bearer abc.def")
     e.status_code = 400
     w, llm = live_world(tmp_path, [e, e])
     res = AgenticPlanner(llm).plan(w)
     errs = [t for t in res.trace if t["type"] == "model_error"]
-    assert errs and all("SECRETKEY" not in json.dumps(t) and "org_01" not in json.dumps(t) and "abc.def" not in json.dumps(t) for t in errs)
+    assert errs and all("AKIAABCDEFGHIJKLMNOP" not in json.dumps(t) and "abc.def" not in json.dumps(t) for t in errs)
     assert res.fell_back
 
 
@@ -453,10 +453,9 @@ def test_only_repeat_runs_one_repeat_and_replaces_its_row(tmp_path, monkeypatch)
     (tmp_path / "planning.json").write_text(json.dumps({"live": {"repeats": 3, "results": [keep, old], "notes": []}}), encoding="utf-8")
     monkeypatch.setattr(ep, "REPORTS", tmp_path)
     monkeypatch.setattr(ep, "run_scenario", fake_run)
-    monkeypatch.setattr(ep.config, "GROQ_API_KEY", "x")
-    monkeypatch.setattr(llm_mod, "GroqLLM", FakeLLM)
+    monkeypatch.setattr(llm_mod, "LiveLLM", FakeLLM)
     monkeypatch.setattr(llm_mod, "UsageLedger", FakeLedger)
-    data = ep.main(["--llm", "groq", "--repeats", "3", "--repeat-index", "3", "--token-cap", "1000"])
+    data = ep.main(["--llm", "bedrock", "--repeats", "3", "--repeat-index", "3", "--token-cap", "1000"])
     rows = data["live"]["results"]
     assert len(seen) == len(SCENARIOS)
     r3 = [r for r in rows if r["rep"] == 2]
@@ -547,7 +546,7 @@ def test_agentic_planner_sends_the_compact_results_by_default_and_the_full_ones_
     import json as _json
 
     class Spy:
-        name = "groq"
+        name = "bedrock"
         errors: list = []
 
         def __init__(self):

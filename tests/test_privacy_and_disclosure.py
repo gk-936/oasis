@@ -24,7 +24,7 @@ INVOICE_TEXT = ("Payee: University X Finance Office\nPayee ID: payee_univ_x\nAcc
 
 
 class FakeVision:
-    """Stands in for the Groq vision call: records what it was given and returns the transcribed payment fields."""
+    """Stands in for the Live vision call: records what it was given and returns the transcribed payment fields."""
     seen: bytes | None = None
 
     def __init__(self, llm=None):

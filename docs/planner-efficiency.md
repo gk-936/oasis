@@ -1,5 +1,21 @@
 # Planner token efficiency (live tool-calling planner)
 
+## Current result: Amazon Nova Pro on Bedrock (2026-10-13)
+
+Same 8 scenarios, 3 repeats (24 plans per cell), temperature 0.3, per-plan cap 22,000, scored by the deterministic validator. No validator rule, scoring or fallback was changed.
+
+| Planner | Valid without fallback | Per repeat | Fallbacks | First-proposal valid | Fees, 24 plans (CNY) | Tokens |
+|---|---|---|---|---|---|---|
+| v2 (compact tool results) | 16 of 24 (67%) | 4, 6, 6 of 8 | 8 | - | - | 391,069 |
+| v3 (calculator tools, `fix` hints) | 24 of 24 | 8, 8, 8 of 8 | 0 | 19 of 24 | 26.7k | 168,982 |
+| v3 + `cheaper_route`, SAFE `split`, `suggested_conversion` (final) | **24 of 24** | 8, 8, 8 of 8 | 0 | 23 of 24 | **15,087** (deterministic planner: 14,969; typical bank: 88,307) | 150,079 |
+
+What fixed the v2 failures: most were `insufficient_cny` (the model got the INR arithmetic wrong) and, in `rate_target`, `rate_target_reserve` (the model never lowered the student's conversions below the spendable INR). `size_conversion` now returns the exact student/parent split when the student cannot spend that much, the cheaper on-time route, and the exact this-year/January SAFE split; `facts_sheet` suggests one conversion that funds every obligation. These are read-only calculator outputs; the model still writes the plan and the validator still judges it.
+
+Caveat: one model, mock data, 3 repeats of hand-written scenarios; not a robustness claim. v2 remains the code default; v3 is selected with `OASIS_PLANNER_FORMAT=v3`.
+
+> The sections below record the earlier Groq-hosted evaluation (qwen/qwen3.8-27b, openai/gpt-oss-120b) and are kept as history only.
+
 Goal: raise the share of live plans that are valid **without** falling back to the deterministic plan (the "model-only valid rate"), without hiding failures. The validator, its rules, the scoring and the fallback were not touched. Results table: `eval/reports/planning.md` (section "Tool-result format experiment"), raw rows: `eval/reports/planning_experiment.json` and `planning.json` (key `experiment`).
 
 ## (a) Where the tokens go

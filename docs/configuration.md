@@ -6,23 +6,17 @@ The API keeps the Passport, audit log, proofs, why-cards, ledger, pending approv
 
 ## LLM configuration
 
-By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser, risk scorer and explainer, so demos, tests and benchmarks are reproducible with no network. This is the no-network path; there is no OCR fallback (deliberately dropped). A local model through Ollama is available as an **exploratory, opt-in planner provider** (`OASIS_LLM=ollama`, below); it is not the default and the other LLM jobs (extraction, explanations) stay deterministic under it. **No key is needed.** To use Groq, copy `.env.example` to `.env` (git-ignored, never commit it) and set `GROQ_API_KEY` (a free key is enough). Real environment variables override `.env`.
+By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser, risk scorer and explainer, so demos, tests and benchmarks are reproducible with no network. This is the no-network path; there is no OCR fallback (deliberately dropped). Live mode uses Amazon Nova Pro on Amazon Bedrock (`OASIS_LLM=bedrock`; set-up steps in [bedrock-setup.md](bedrock-setup.md)). AWS credentials come from the standard AWS chain, never from a key in this repo; `.env` (git-ignored) may hold `OASIS_LLM`, `AWS_REGION` and `OASIS_BEDROCK_MODEL`. Real environment variables override `.env`.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `OASIS_LLM` | `offline` | `groq` to use Groq; `ollama` to use a LOCAL model for the planner only (no key; see the Ollama rows below; extraction, risk and explanations stay on the deterministic parser) |
-| `OASIS_PLANNER_FORMAT` | `v2` | planner format: `v1`, `v2` (default), `v3` (calculator tools, evaluation incomplete) or `v4` (schema-constrained JSON, exploratory, Ollama only) |
-| `OASIS_OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama server. Only loopback hosts are accepted unless `OASIS_OLLAMA_ALLOW_REMOTE=1`, so prompts never leave the machine |
-| `OASIS_OLLAMA_MODEL` | `qwen3.5:4b` | an INSTALLED local model (the adapter never pulls one). `-cloud` models and `gemini*` are refused: Ollama proxies them to a third party |
-| `OASIS_OLLAMA_NUM_CTX` | `8192` | context window sent with every call. Ollama's own default is smaller and truncates silently; 8192 fits the longest planner prompt and keeps the KV cache of a 3-5B model on a 6 GB GPU |
-| `OASIS_OLLAMA_KEEP_ALIVE` / `_TIMEOUT` / `_RETRIES` | `5m` / `300` s / `2` | how long the model stays loaded after a call (`0` unloads at once), request timeout (a cold load of a 4B model takes about 15 s), retries on 5xx and timeouts |
-| `GROQ_API_KEY` | - | the only key needed (text and image intake). Accepts a **comma-separated list** (`key1,key2,...`): the adapter keeps one client per key and moves to the next key when one reaches its daily limit (or its local daily budget); per-minute 429s are waited out on the same key. `QuotaExhausted` only when every key is spent. Usage is tracked per key fingerprint (8-char sha256) in `data/llm_cache/usage.json`; key values are never logged |
-| `OASIS_AGENT_MODEL` | `qwen/qwen3.8-27b` | Groq **preview** model; accepts images; may be retired at short notice |
-| `OASIS_FALLBACK_MODEL` | `openai/gpt-oss-120b` | production model, used automatically if the agent model errors (retired/404, daily limit); no vision |
-| `OASIS_REDTEAM_MODEL` | `openai/gpt-oss-120b` | AI red-team generator |
+| `OASIS_LLM` | `offline` | `bedrock` to use Amazon Nova Pro on Amazon Bedrock for extraction, risk, explanations, red-team variants, image intake and the planner (set up: below) |
+| `OASIS_PLANNER_FORMAT` | `v2` | planner format: `v1`, `v2` (default) or `v3` (calculator tools, evaluation incomplete) |
+| `OASIS_BEDROCK_MODEL` / `AWS_REGION` | `us.amazon.nova-pro-v1:0` / `us-east-1` | **the default id is a best guess, not verified**: copy the exact model id or inference profile from the Bedrock console. `OASIS_BEDROCK_REGION` overrides `AWS_REGION` |
+| `OASIS_BEDROCK_FALLBACK_MODEL` | same as the model | optional second model tried if the first errors; default is none, so there is no silent downgrade |
+| `OASIS_BEDROCK_RPM` / `_DAILY_TOKENS` | 120 / 2000000 | client-side rate limit and a spend guard (about $1/day at $0.10 in / $0.50 out per 1M tokens) |
 | `OASIS_LLM_RISK` | `0` | `1` adds the LLM risk scorer in live mode (`OASIS_EXTRACT=llm` only); combined as max(heuristic, llm), so it can only escalate |
 | `OASIS_TRUST_KEY` | `data/keys/trust_key.json` | where the persistent trust signing keys live (git-ignored) |
-| `OASIS_GROQ_RPM` / `_DAILY_TOKENS` / `_DAILY_REQUESTS` | 25 / 180000 / 900 | client-side guard rails under the free tier (about 30 RPM, 1,000 requests/day, 200k tokens/day); the daily budgets apply **per key** |
 | `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` | demo passcodes | role passcodes; `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults |
 | `OASIS_JUDGE_MODE` | `0` | `1` (set by the judge start scripts) refuses default passcodes unless `OASIS_ALLOW_DEMO_PASSCODES=1`, switches off `/docs`, tightens limits |
 | `OASIS_KEY_PASSPHRASE` | unset | wraps key files with scrypt+AES-GCM |
@@ -39,7 +33,7 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | `OASIS_TRUST_FORWARDED_HOST` | unset | `1` also accepts `X-Forwarded-Host` as the public host in the Origin check (the Docker entrypoint sets it when `FORWARDED_ALLOW_IPS` is set) |
 | `FORWARDED_ALLOW_IPS`, `PORT` | `127.0.0.1`, `8000` | read by the Docker command: proxy addresses whose `X-Forwarded-*` headers uvicorn believes (per-IP rate limits, https detection), and the listen port. See [deployment-docker.md](deployment-docker.md) |
 
-Model IDs were checked against console.groq.com/docs/models on 2026-10-10. `qwen/qwen3-32b` and `qwen/qwen3.6-27b` are retired. The Groq adapter rate-limits itself, backs off on 429 (honouring `retry-after`), keeps a daily budget on disk, caches every response on disk (`data/llm_cache/`; cache hits cost nothing) and falls back to the second model. If Groq is unavailable the offline parser is the floor. Unit tests use a fake client; the adapter, image intake and the benchmark have also been run live (2026-10-10).
+The adapter (`oasis/agent/llm.py` + `bedrock_llm.py`) rate-limits itself, backs off on throttling (honouring `retry-after`), keeps a daily token budget on disk, caches every response on disk (`data/llm_cache/`; cache hits cost nothing) and can fall back to a second model. If Bedrock is unreachable the offline parser is the floor. Unit tests use a fake client; nothing in this repo has been run against the real Bedrock API yet.
 
 Image intake (`POST /api/intake/image`) sends the picture to the agent model through the same client. The fallback model has no vision, so if the image cannot be read the result is a low-confidence hold asking the student to paste the text or confirm the fields; nothing is guessed. The image is not stored.
 
@@ -49,11 +43,11 @@ Image intake (`POST /api/intake/image`) sends the picture to the agent model thr
 # offline benchmark: 4 configurations x 44 scenarios + AI red-team variants -> eval/reports/benchmark.md/.json
 PYTHONPATH=. .venv/Scripts/python -m eval.runner
 
-# live benchmark (needs GROQ_API_KEY; resumable, ~200k tokens/day on the free tier) -> eval/reports/benchmark_live.md/.json
-PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm groq --extract llm --repeats 1     # raise --repeats N for spread
+# live benchmark (needs AWS credentials; resumable, capped by `OASIS_BEDROCK_DAILY_TOKENS`) -> eval/reports/benchmark_live.md/.json
+PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm bedrock --extract llm --repeats 1     # raise --repeats N for spread
 
 # plan-quality evaluation of the agentic planner (8 scenarios) -> eval/reports/planning.md/.json
-PYTHONPATH=. .venv/Scripts/python -m eval.planning                       # live: --llm groq --token-cap 60000
+PYTHONPATH=. .venv/Scripts/python -m eval.planning                       # live: --llm bedrock --token-cap 60000
 
 # 5-persona, 90-day student-outcome simulation (a model with stated assumptions) -> eval/reports/simulation.md/.json
 PYTHONPATH=. .venv/Scripts/python -m eval.simulator

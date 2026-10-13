@@ -54,9 +54,9 @@ TOOL_SPECS = [
 V3_TOOLS = ("facts_sheet", "size_conversion")
 TOOL_SPECS_V3 = [
     _fn("facts_sheet", "Read-only. All planning numbers: obligations (exact amount_cny, payee_id, due), CNY needed, balances, "
-                       "rate-target reserve, SAFE room per year, remitter limits, INR shortfall estimate, routes."),
-    _fn("size_conversion", "Read-only calculator. Exact whole-rupee send_inr for a conversion to deliver target_cny (with headroom), "
-                           "plus arrival date, on_time vs due, SAFE room and TCS/LRS notes.",
+                       "rate-target reserve, SAFE room, remitter limits, routes, suggested_conversion (one cheapest conversion funding all)."),
+    _fn("size_conversion", "Read-only calculator. Exact whole-rupee send_inr to deliver target_cny, arrival, on_time, SAFE and TCS/LRS notes. "
+                           "Obey cheaper_route; if split / safe.split appear, use those amounts as two convert steps.",
         {"target_cny": {"type": "number"}, "route_id": {"type": "string"}, "convert_date": _DATE,
          "remitter": {"type": "string", "description": "student (default) or parent"}, "due": _DATE},
         ["target_cny", "route_id", "convert_date"]),

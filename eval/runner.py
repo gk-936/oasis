@@ -1,12 +1,12 @@
 """Two-sided, layer-by-layer benchmark runner.
 
-    python -m eval.runner [--repeats N] [--llm offline|groq] [--extract deterministic|llm] [--no-resume]
+    python -m eval.runner [--repeats N] [--llm offline|bedrock] [--extract deterministic|llm] [--no-resume]
 
 Every scenario runs through the real pipeline in a fresh World for each configuration:
 baseline -> +verification -> +intents+policy -> full (with canaries).
 
-With `--llm groq` the run is RESUMABLE: every finished (repeat, configuration, scenario) result is checkpointed to
-`data/bench_cache/`, LLM responses are cached on disk (cache hits cost nothing) and the Groq client rate-limits
+With `--llm bedrock` the run is RESUMABLE: every finished (repeat, configuration, scenario) result is checkpointed to
+`data/bench_cache/`, LLM responses are cached on disk (cache hits cost nothing) and the Bedrock client rate-limits
 itself and keeps to a daily token/request budget. If the budget runs out the run stops cleanly; run the same
 command again later and it continues where it left off. `--repeats N` re-draws LLM samples (different salt and
 temperature for repeats after the first) and the report shows the spread across repeats.
@@ -29,7 +29,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from oasis import config
-from oasis.agent.llm import GroqLLM, OfflineLLM, QuotaExhausted, make_llm
+from oasis.agent.llm import LiveLLM, OfflineLLM, QuotaExhausted, make_llm
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.trust.canaries import Canaries
 from oasis.world import Features, World
@@ -452,14 +452,14 @@ def make_run_llm(provider: str, rep: int, extract: str = "deterministic", llm_ri
     if provider == "offline":
         return OfflineLLM(susceptible=True)
     # Repeats after the first draw different samples (salted cache key, temperature > 0); repeat 0 is greedy.
-    return GroqLLM(salt=f"rep{rep}", temperature=0.0 if rep == 0 else 0.4, strict=True, extract_mode=extract,
+    return LiveLLM(salt=f"rep{rep}", temperature=0.0 if rep == 0 else 0.4, strict=True, extract_mode=extract,
                    llm_risk=llm_risk)
 
 
 def checkpoint_path(llm: str, extract: str, llm_risk: bool = False) -> Path:
     """Keyed by provider, model, ruleset, extraction mode AND the LLM risk scorer, so runs that differ never mix."""
     tag = "-llmrisk" if llm_risk else ""
-    return CHECKPOINTS / f"{llm}-{config.AGENT_MODEL.replace('/', '_')}-{config.RULESET_VERSION}-{extract}{tag}.jsonl"
+    return CHECKPOINTS / f"{llm}-{config.AGENT_MODEL.replace('/', '_').replace(':', '_')}-{config.RULESET_VERSION}-{extract}{tag}.jsonl"
 
 
 def report_only(llm: str, extract: str, llm_risk: bool = False) -> dict:
@@ -607,7 +607,7 @@ def main(argv=None) -> dict | None:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--llm", default=config.LLM_PROVIDER)
     ap.add_argument("--extract", choices=("deterministic", "llm"), default="deterministic",
-                    help="llm = live agent: the model's extraction is primary (needs --llm groq)")
+                    help="llm = live agent: the model's extraction is primary (needs --llm bedrock)")
     ap.add_argument("--suite", choices=("main", "hidden", "attempts"), default="main",
                     help="main = the published attack + legit suites (default); hidden = eval/hidden/scenarios_hidden.json "
                          "(40 blind cases, offline); attempts = eval/scenarios_from_attempts.json built from judge red-team attempts (offline)")
@@ -619,7 +619,7 @@ def main(argv=None) -> dict | None:
     a = ap.parse_args(argv)
     if a.suite != "main":
         if a.llm != "offline" or a.extract != "deterministic" or a.report_only or a.llm_risk:
-            print(f"--suite {a.suite} runs offline only (no --llm groq, --extract llm, --llm-risk or --report-only). Nothing was run.",
+            print(f"--suite {a.suite} runs offline only (no --llm bedrock, --extract llm, --llm-risk or --report-only). Nothing was run.",
                   file=sys.stderr)
             sys.exit(1)
         return run_strict_suite(a.suite)
@@ -628,11 +628,8 @@ def main(argv=None) -> dict | None:
         sys.exit(1)
     if a.report_only:
         return report_only(a.llm, a.extract, a.llm_risk)
-    if a.llm == "groq" and not config.GROQ_API_KEY:
-        print("GROQ_API_KEY is not set (see .env.example). Nothing was run and no network call was made.", file=sys.stderr)
-        sys.exit(1)
     if a.extract == "llm" and a.llm == "offline":
-        print("--extract llm needs a live model (--llm groq). Nothing was run.", file=sys.stderr)
+        print("--extract llm needs a live model (--llm bedrock). Nothing was run.", file=sys.stderr)
         sys.exit(1)
     ck_path = None
     if a.llm != "offline":
@@ -661,16 +658,16 @@ def main(argv=None) -> dict | None:
                     ck.add(k, r)
                     results.append(r)
     except QuotaExhausted as e:
-        print(f"\nGroq budget reached ({e}).\nProgress is saved ({len(ck.done)} results; cached responses are free). "
+        print(f"\nDaily budget reached ({e}).\nProgress is saved ({len(ck.done)} results; cached responses are free). "
               f"Run the same command again later to resume; the report is written when the run completes.",
               file=sys.stderr)
         sys.exit(2)
     summary = summarize(results)
     per_rep = [summarize([r for r in results if r.rep == rep]) for rep in range(a.repeats)]
     spr = spread(per_rep) if a.repeats > 1 else None
-    g = next((l for l in llms.values() if isinstance(l, GroqLLM)), None)
+    g = next((l for l in llms.values() if isinstance(l, LiveLLM)), None)
     meta = {"run_at": time.strftime("%Y-%m-%d %H:%M"), "llm": next(iter(llms.values())).name,
-            "agent_model": config.AGENT_MODEL if g else None, "fallback_model": config.FALLBACK_MODEL if g else None,
+            "agent_model": g.model if g else None, "fallback_model": g.fallback_model if g else None,
             "llm_risk": bool(a.llm_risk),
             "ruleset": config.RULESET_VERSION, "repeats": a.repeats,
             "attacks": sum(s.suite == "attack" for s in scen), "legit": sum(s.suite == "legit" for s in scen),

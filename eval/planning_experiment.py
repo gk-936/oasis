@@ -60,14 +60,14 @@ def main(argv=None) -> int:
     ap.add_argument("--cap", type=int, required=True, help="stop starting plans once this many NEW tokens were spent in this invocation")
     ap.add_argument("--only")
     args = ap.parse_args(argv)
-    from oasis.agent.llm import GroqLLM
+    from oasis.agent.llm import LiveLLM
     from oasis.agent.planner import AgenticPlanner
     ids = list(HELDOUT if args.sset == "heldout" else SCENARIOS)
     if args.only:
         ids = [i for i in ids if i in args.only.split(",")]
     rows = load()
     done = {(r["format"], r["set"], r["rep"], r["scenario"]) for r in rows}
-    llm = GroqLLM(salt=f"planrep{args.rep}", temperature=LIVE_TEMPERATURE)
+    llm = LiveLLM(salt=f"planrep{args.rep}", temperature=LIVE_TEMPERATURE)
     spent = 0
     for sid in ids:
         if (args.format, args.sset, args.rep, sid) in done:

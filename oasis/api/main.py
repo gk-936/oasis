@@ -1897,7 +1897,7 @@ def benchmark(p: Principal = Depends(STUDENT_JUDGE)):
 @app.post("/api/demo/start")
 def demo_start(body: DemoIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Reset to the scripted demo world (fixed seed, fixed MOCK data) and return the step list. `mode` "offline" (default)
-    uses the offline LLM; "live" replays recorded Claude Haiku responses from the fixture (no network)."""
+    uses the offline LLM; "live" replays recorded Amazon Nova Pro responses from the fixture (no network)."""
     return loc.localize_demo_info(_demo_start(body), ui)
 
 

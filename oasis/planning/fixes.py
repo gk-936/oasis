@@ -109,7 +109,14 @@ def _fix(world, steps, e: dict) -> dict | None:
         short = float(data["reserve_inr"]) - float(data["left_inr"])
         cand = [(str(x.get("date")), k) for k, x in enumerate(steps)
                 if isinstance(x, dict) and x.get("action") == "convert" and (x.get("remitter") or "student") == "student" and x.get("route_id") in ROUTE_BY_ID]
-        return _shift_to_parent(world, steps, max(cand)[1], short) if cand else None
+        if not cand:
+            return None
+        tot = sum(float(x.get("send_inr") or 0) for x in steps if isinstance(x, dict) and x.get("action") == "convert"
+                  and (x.get("remitter") or "student") == "student")
+        return {**_shift_to_parent(world, steps, max(cand)[1], short),
+                "student_total_send_inr": round(tot, 2), "max_student_total_send_inr": round(tot - short, 2),
+                "rule": "sum of send_inr over ALL student-remitter convert steps must be <= max_student_total_send_inr; "
+                        "apply 'set' to that step once and add 'add_convert' once, change nothing else"}
     if code == "safe_quota_exceeded" and s is not None:
         route, d, y = ROUTE_BY_ID[s["route_id"]], _d(s["date"]), int(data["year"])
         room, send = float(data["max_send_inr"]), float(s["send_inr"])

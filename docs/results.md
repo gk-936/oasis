@@ -54,33 +54,20 @@ Report: `eval/reports/planning.md`. Eight scenarios scored by the deterministic 
 
 8/8 valid, 20/20 deadlines met, conversion fees 83.0% below a typical bank route (MOCK rates, recalibrated 2026-10-10): CNY 4,990 vs CNY 29,378.
 
-### Groq tool-calling planner, model-only (live, tiny samples)
+### Tool-calling planner, model-only (live, Amazon Nova Pro, small samples)
 
-Three full repeats on 2026-10-11 (per-plan cap 22,000 tokens, temperature 0.3, a distinct cache salt per repeat; repeat 3 replaced an older 2026-10-10 Tight runway row):
+Amazon Nova Pro on Amazon Bedrock, 2026-10-13, 3 repeats of the 8 scenarios (24 plans), temperature 0.3, per-plan cap 22,000 tokens, scored by the deterministic validator. v2 (compact tool results): 16 of 24 valid without fallback (67%), 8 fallbacks. v3 (calculator tools): 24 of 24 (168,982 tokens), but fees CNY 26.7k vs CNY 15.0k for the deterministic planner. v3 with the route, consolidation and SAFE-split calculators (final): 24 of 24 valid without fallback, 0 fallbacks, 23 of 24 valid on the first proposal, 150,079 tokens (about 6.3k per plan), 51 of 51 deadlines met, fees CNY 15,087 vs CNY 14,969 for the deterministic planner and CNY 88,307 via a typical bank route (83% lower).
 
-| Measure | Result |
-|---|---|
-| Valid without fallback, per repeat | 4 of 8, 2 of 8, 1 of 8 (min / mean / max 1 / 2.33 / 4) |
-| Pooled | 7 of 24 plans (29%); the single run before the prompt change was 4 of 8 |
-| Per scenario (valid out of 3 repeats) | Arrival shortfall 1, Tight runway 0, SAFE-quota tuition 0, Late scholarship 1, Parent remitter crossing TCS 2, Rate target 1, Five obligations 1, Urgent deposit 1 |
-| 17 fallbacks | 10 token-cap stops, 4 no proposal within the call budget, 2 no valid plan after one proposal, 1 Groq API HTTP 400 tool-call validation error |
-| Answered last by | qwen/qwen3.8-27b in 20 of 24 plans (4 of the 7 model-valid), openai/gpt-oss-120b in 4 (3 of 7) |
-| Tokens | 463,343 on 2026-10-11 over 3 of 4 keys |
-
-The final plan was valid in all 24 only because the fallback is the deterministic plan. Repeat 3 was run on its own with `python -m eval.planning --llm groq --repeats 3 --repeat-index 3`.
-
-### Format experiment: compact tool results (v2) vs old (v1)
-
-2026-10-11, 230,613 new tokens, temperature 0.3; details in [planner-efficiency.md](planner-efficiency.md).
-
-| | v2 (compact, now default) | v1 (old) |
+| Measure | v2 | v3 (final) |
 |---|---|---|
-| Original scenarios (7 of 8; urgent-deadline not run), model-only valid | 5 of 7 (1 repeat) | 6 of 21 (3 repeats); p about 0.08, inconclusive |
-| Four held-out scenarios written beforehand | 3 of 4 | 3 of 4 (no gain shown) |
-| Pooled | 8 of 11 | 9 of 25 |
-| Tokens per plan (originals) | 15,459 | 20,809 |
+| Valid without fallback | 16 of 24 (67%) | 24 of 24 (100%) |
+| Per repeat | 4, 6, 6 of 8 | 8, 8, 8 of 8 |
+| Fallbacks | 8 | 0 |
+| First-proposal valid | - | 23 of 24 |
+| Fees (24 plans) vs deterministic | - | CNY 15,087 vs 14,969 |
+| Tokens | 391,069 | 150,079 |
 
-Planner format v3 (calculator tools `facts_sheet` and `size_conversion`, numeric `fix` hints on validator errors, a prompt under half the length) was evaluated live on 2026-10-12 but the comparison is INCOMPLETE (daily quota ran out; the v2 gpt-oss-120b cell has 2 of 24 plans), so v2 stays the default. Model-only valid: v3 gpt-oss-120b 14 of 24 (58%), v3 qwen3.8-27b 4 of 24 (17%), v2 qwen3.8-27b 4 of 24 (17%); pooled v3 18/48 vs v2 5/26, Fisher p = 0.123. Small samples; table in [planner-efficiency.md](planner-efficiency.md). Pre-registered decision rule and commands: [planner-efficiency.md](planner-efficiency.md).
+The weak spots of the first v3 run (higher fees, 5 conversions where 1 sufficed, repeated SAFE-quota corrections) were fixed by adding three calculator outputs only (`cheaper_route`, SAFE `split`, `suggested_conversion`); no validator rule changed. Single sample, mock data: not a robustness claim. Earlier Groq-hosted runs (qwen/qwen3.8-27b, gpt-oss-120b) are kept only as history in [planner-efficiency.md](planner-efficiency.md).
 
 ## 5. Student-outcome simulation (a model with stated assumptions)
 

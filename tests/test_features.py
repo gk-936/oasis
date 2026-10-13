@@ -239,7 +239,6 @@ def test_recovery_approval_clears_tripwire_and_allows_genuine_payment():
 
 
 def test_image_intake_without_readable_image_is_a_low_confidence_hold(monkeypatch, api_client):
-    monkeypatch.setattr(config, "GROQ_API_KEY", "")
     c = api_client
     r = c.post("/api/intake/image", files={"file": ("x.png", b"not really an image", "image/png")}).json()
     assert r["status"] == "held" and r["card"]["rule"] == "extract_low_confidence" and "paste" in r["message"].lower()
@@ -297,18 +296,9 @@ def test_checkpoint_resume_and_spread(tmp_path):
     assert sp["full"]["attack_block_rate"]["n"] == 3 and sp["full"]["attack_block_rate"]["min"] <= sp["full"]["attack_block_rate"]["max"]
 
 
-def test_runner_groq_without_key_makes_no_call(monkeypatch, capsys):
-    from eval import runner
-    monkeypatch.setattr(config, "GROQ_API_KEY", "")
-    with pytest.raises(SystemExit) as e:
-        runner.main(["--llm", "groq"])
-    assert e.value.code == 1
-
-
 def test_runner_stops_cleanly_on_quota_and_resumes(monkeypatch, tmp_path):
     from eval import runner
     from oasis.agent.llm import QuotaExhausted
-    monkeypatch.setattr(config, "GROQ_API_KEY", "test")
     monkeypatch.setattr(runner, "CHECKPOINTS", tmp_path)
     monkeypatch.setattr(runner, "REPORTS", tmp_path / "rep")
     calls = {"n": 0}
@@ -322,10 +312,10 @@ def test_runner_stops_cleanly_on_quota_and_resumes(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "run_scenario", flaky)
     monkeypatch.setattr(runner, "make_run_llm", lambda provider, rep, extract="deterministic": OfflineLLM())
     with pytest.raises(SystemExit) as e:
-        runner.main(["--llm", "groq"])
+        runner.main(["--llm", "bedrock"])
     assert e.value.code == 2
     done = sum(1 for _ in open(next(tmp_path.glob("*.jsonl")), encoding="utf-8"))
     assert done == 4
     monkeypatch.setattr(runner, "run_scenario", lambda sc, cfg, llm, seed=7, rep=0: real(sc, cfg, OfflineLLM(), seed, rep))
-    runner.main(["--llm", "groq"])
+    runner.main(["--llm", "bedrock"])
     assert (tmp_path / "rep" / "benchmark.md").exists()

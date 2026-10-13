@@ -1,7 +1,7 @@
 """Hermetic test environment.
 
 Tests must never reach the network or touch the real data/ directory, even if the developer's shell has
-OASIS_LLM=groq and a real GROQ_API_KEY (oasis.config also loads .env with setdefault, so an empty value set
+OASIS_LLM=live and real AWS credentials (oasis.config also loads .env with setdefault, so an empty value set
 here wins). This runs before any test module imports oasis.config.
 """
 import os
@@ -17,7 +17,6 @@ os.environ["OASIS_PASS_STUDENT"] = "student-demo"      # a developer .env must n
 os.environ["OASIS_PASS_PARENT"] = "parent-demo"
 os.environ["OASIS_PASS_JUDGE"] = "judge-demo"
 os.environ.pop("OASIS_KEY_PASSPHRASE", None)
-os.environ["GROQ_API_KEY"] = ""              # empty but present: .env's setdefault cannot fill it in
 
 from oasis import config  # noqa: E402  (must come after the environment is pinned)
 
@@ -28,9 +27,8 @@ def _hermetic_config(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setattr(config, "LLM_PROVIDER", "offline")
     mp.setattr(config, "EXTRACT_MODE", "deterministic")
-    mp.setattr(config, "GROQ_API_KEY", "")
     mp.setattr(config, "DB_PATH", ":memory:")
-    # GroqLLM's default cache_dir / usage.json and any other data/ default land in a throwaway directory.
+    # LiveLLM's default cache_dir / usage.json and any other data/ default land in a throwaway directory.
     mp.setattr(config, "DATA_DIR", tmp_path_factory.mktemp("oasis_data"))
     yield
     mp.undo()

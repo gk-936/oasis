@@ -2,10 +2,10 @@
 
 - OfflineLLM: deterministic, no network. `susceptible=True` models a gullible agent that follows
   instructions embedded in untrusted documents (how the unprotected baseline gets hurt reproducibly).
-- GroqLLM: real model via Groq with an on-disk response cache, client-side rate limiting, 429 backoff,
-  a daily token/request budget and automatic fallback to a second model.
-- VisionExtractor: images (invoice photos / screenshots) read by the Groq agent model (qwen/qwen3.8-27b accepts images)
-  through the same client, key, disk cache and rate limiting. The fallback model has no vision.
+- LiveLLM: Amazon Nova Pro on Amazon Bedrock (bedrock_llm.py) with an on-disk response cache, client-side rate limiting,
+  throttling backoff, a daily token budget and optional fallback to a second model.
+- VisionExtractor: images (invoice photos / screenshots) read by the same model through the same client, disk cache and
+  rate limiting.
 There is no local-model or OCR path: the deterministic offline parser is the no-network path.
 """
 from __future__ import annotations
@@ -501,7 +501,7 @@ class QuotaExhausted(RuntimeError):
 
 
 class RateLimiter:
-    """Spaces network calls to at most `rpm` per minute (Groq free tier: 30 RPM)."""
+    """Spaces network calls to at most `rpm` per minute ."""
 
     def __init__(self, rpm: float, clock=time.monotonic, sleep=time.sleep):
         self.interval = 60.0 / rpm if rpm > 0 else 0.0
@@ -517,10 +517,9 @@ class RateLimiter:
 
 
 class UsageLedger:
-    """Per-day token/request counters on disk, so a resumed benchmark respects the daily free-tier budget.
+    """Per-day token/request counters on disk, so a resumed benchmark respects the daily token budget.
 
-    `tokens`/`requests` are the day totals (unchanged format); with several keys `keys` adds the split per key
-    fingerprint ({"keys": {"ab12cd34": {"tokens", "requests"}}}). Fingerprints only, never key values."""
+    `tokens`/`requests` are the day totals; `keys` splits them per client ({"keys": {"aws": {"tokens", "requests"}}})."""
 
     def __init__(self, path: Path, today=lambda: time.strftime("%Y-%m-%d")):
         self.path, self.today = path, today
@@ -536,7 +535,7 @@ class UsageLedger:
         return self.day().setdefault("keys", {}).setdefault(fp, {"tokens": 0, "requests": 0})
 
     def add(self, tokens: int, key: str | None = None) -> None:
-        try:                # several GroqLLM instances may share this file: re-read it so one never overwrites another
+        try:                # several LiveLLM instances may share this file: re-read it so one never overwrites another
             self.data = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             pass
@@ -551,11 +550,6 @@ class UsageLedger:
             self.path.write_text(json.dumps(self.data), encoding="utf-8")
         except OSError:
             pass
-
-
-def key_fingerprint(key: str) -> str:
-    """Eight hex chars of sha256(key): how a key is identified in ledgers and reports. Never the key itself."""
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
 
 
 def classify_error(e: Exception) -> str:
@@ -586,7 +580,7 @@ def _retry_after(e: Exception, attempt: int) -> float:
 
 
 THINK_RE = re.compile(r"<think>.*?</think>", re.S)
-_SECRET_RE = re.compile(r"(gsk_\w+|org_\w+|Bearer\s+\S+)")
+_SECRET_RE = re.compile(r"((?:AKIA|ASIA)[A-Z0-9]{12,}|Bearer\s+\S+)")
 
 
 def _redact(msg: str) -> str:
@@ -594,26 +588,25 @@ def _redact(msg: str) -> str:
     return _SECRET_RE.sub("[redacted]", msg)
 
 
-class GroqLLM(OfflineLLM):
-    """Groq-backed extraction, explanations and red-team generation; safety-relevant logic stays deterministic.
+class LiveLLM(OfflineLLM):
+    """Bedrock-backed (Amazon Nova Pro) extraction, explanations and red-team generation; safety-relevant logic stays deterministic.
 
-    - Primary model with automatic fallback: if the primary errors (retired model / 404, a "model not found"
-      style 400, a daily limit on that model) the call is retried on `config.FALLBACK_MODEL`, and a model that
+    - Primary model with automatic fallback: if the primary errors (unknown model / 404, a throttling limit on that model) the call is retried on `config.FALLBACK_MODEL`, and a model that
       reports "gone" is skipped for the rest of the process.
-    - Free-tier friendliness: client-side rate limit (`rpm`), exponential backoff / `retry-after` on 429, a daily
-      token and request budget persisted on disk, and an on-disk response cache (cache hits cost nothing).
+    - Spend guard: client-side rate limit (`rpm`), exponential backoff / `retry-after` on 429, a daily
+      token budget persisted on disk, and an on-disk response cache (cache hits cost nothing).
     - If the API is unavailable the offline parser is the floor, so the pipeline never depends on the network.
       With `strict=True` (the benchmark runner) quota exhaustion is raised instead so a run can be resumed.
     - `salt` and `temperature` let repeated benchmark runs draw different samples instead of re-reading one
       cache entry.
     """
-    name = "groq"
+    name = "bedrock"
 
     def __init__(self, model: str | None = None, cache_dir: Path | None = None, susceptible: bool = True,
                  client=None, sleep=time.sleep, clock=time.monotonic, rpm: float | None = None,
                  salt: str = "", temperature: float = 0.0, strict: bool = False,
                  fallback_model: str | None = None, max_retries: int | None = None, extract_mode: str | None = None,
-                 llm_risk: bool | None = None, api_keys: list[str] | None = None):
+                 llm_risk: bool | None = None):
         super().__init__(susceptible)
         # "deterministic" (default): regex parse is the floor, the model only fills empty fields.
         # "llm" (live agent): the model's JSON is primary; the regex parse is used only per field when the call
@@ -628,18 +621,14 @@ class GroqLLM(OfflineLLM):
         self.last_recorded: str | None = None
         self.model = model or config.AGENT_MODEL
         self.fallback_model = fallback_model or config.FALLBACK_MODEL
-        # One client per API key. `client` may be a single fake/real client or a list (tests); `api_keys` gives the key
-        # values behind them (used only for fingerprints and error redaction).
+        # `client` may be one fake/real client or a list (tests). Credentials come from the AWS chain, never from this code.
         if client is None:
-            from groq import Groq
-            api_keys = api_keys or config.groq_keys()
-            clients = [Groq(api_key=k, max_retries=0) for k in api_keys]   # we do our own backoff
+            from .bedrock_llm import BedrockClient
+            clients = [BedrockClient()]
         else:
             clients = list(client) if isinstance(client, (list, tuple)) else [client]
-        self._keys = [k for k in (api_keys or []) if k]
         self.clients = clients
-        self.fingerprints = ([key_fingerprint(k) for k in self._keys] if len(self._keys) == len(clients)
-                             else [f"key{i}" for i in range(len(clients))])
+        self.fingerprints = ["aws"] if len(clients) == 1 else [f"client{i}" for i in range(len(clients))]
         self.client = clients[0] if clients else None
         self._cur = 0                       # key in use; moves on only when a key hits its daily limit
         self._spent: set[tuple[str, str]] = set()   # (key fingerprint, model) pairs that reported a daily limit
@@ -649,10 +638,10 @@ class GroqLLM(OfflineLLM):
         self.cache_dir = cache_dir or (config.DATA_DIR / "llm_cache")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.sleep = sleep
-        self.limiter = RateLimiter(config.GROQ_RPM if rpm is None else rpm, clock, sleep)
+        self.limiter = RateLimiter(config.BEDROCK_RPM if rpm is None else rpm, clock, sleep)
         self.usage = UsageLedger(self.cache_dir / "usage.json")
         self.salt, self.temperature, self.strict = salt, temperature, strict
-        self.max_retries = config.GROQ_MAX_RETRIES if max_retries is None else max_retries
+        self.max_retries = config.BEDROCK_MAX_RETRIES if max_retries is None else max_retries
         self.calls = 0
         self.cache_hits = 0
         self.fallbacks = 0
@@ -663,14 +652,12 @@ class GroqLLM(OfflineLLM):
 
     # -- key selection, redaction and the shared request loop ------------------------------------
     def _scrub(self, msg: str) -> str:
-        """Redact EVERY configured key value (any format) plus gsk_/org_/Bearer patterns."""
-        for k in sorted(self._keys, key=len, reverse=True):
-            msg = msg.replace(k, "[redacted]")
+        """Redact AWS access key ids and Bearer tokens from error text."""
         return _redact(msg)
 
     def _key_budget_ok(self, i: int) -> bool:
         kd = self.usage.key_day(self.fingerprints[i])
-        return kd["tokens"] < config.GROQ_DAILY_TOKEN_BUDGET and kd["requests"] < config.GROQ_DAILY_REQUEST_BUDGET
+        return kd["tokens"] < config.BEDROCK_DAILY_TOKEN_BUDGET
 
     def _pick(self, model: str) -> int | None:
         """The key to use for `model`: the current one if it still has budget, else the next that does."""
@@ -687,10 +674,10 @@ class GroqLLM(OfflineLLM):
 
     def _check_budget(self) -> None:
         if self._auth_failed:
-            raise RuntimeError("Groq authentication failed earlier in this process")
+            raise RuntimeError("AWS authentication failed earlier in this process")
         if not any(i not in self._bad_keys and self._key_budget_ok(i) for i in range(len(self.clients))):
             d = self.usage.day()
-            raise QuotaExhausted(f"daily Groq budget used on all {len(self.clients)} key(s) "
+            raise QuotaExhausted(f"daily token budget used on all {len(self.clients)} key(s) "
                                  f"({d['tokens']} tokens, {d['requests']} requests in total)")
 
     def _request(self, order: list[str], make_kwargs):
@@ -725,7 +712,7 @@ class GroqLLM(OfflineLLM):
                         self._bad_keys.add(i)
                         if len(self._bad_keys) >= len(self.clients):
                             self._auth_failed = True
-                            raise RuntimeError(f"Groq authentication failed: {self._scrub(str(e))}") from None
+                            raise RuntimeError(f"AWS authentication failed: {self._scrub(str(e))}") from None
                         continue
                     if kind == "daily_limit":
                         self._spent.add((fp, m))
@@ -735,8 +722,8 @@ class GroqLLM(OfflineLLM):
                     break                       # try the next model
                 return r, m, i
         if order and spent_models >= len(order):
-            raise QuotaExhausted(f"Groq daily limit reached on every key and model: {self._scrub(str(last)) if last else 'budget used'}")
-        raise RuntimeError(f"Groq unavailable on {order}: {self._scrub(str(last))}")
+            raise QuotaExhausted(f"daily limit reached on every key and model: {self._scrub(str(last)) if last else 'budget used'}")
+        raise RuntimeError(f"Bedrock unavailable on {order}: {self._scrub(str(last))}")
 
     # -- one chat call with cache, rate limit, backoff and model fallback -------------------------
     def _chat(self, system: str, user: str, model: str | None = None, json_mode: bool = False,
@@ -777,15 +764,6 @@ class GroqLLM(OfflineLLM):
             raise e
 
     # -- native tool calling (planner) ------------------------------------------------------------
-    @staticmethod
-    def _extra_for(model: str) -> dict:
-        """Keep hidden reasoning small so tool-calling rounds stay inside the free-tier token budget."""
-        if "gpt-oss" in model:
-            return {"reasoning_effort": "low"}
-        if "qwen3" in model:
-            return {"reasoning_effort": "none"}
-        return {}
-
     def chat_tools(self, messages: list[dict], tools: list[dict], model: str | None = None, max_tokens: int = 900) -> dict:
         """One tool-calling completion with the same cache, rate limiter, backoff, daily budget and model fallback as
         `_chat`. Returns {"content", "tool_calls": [{"id","name","arguments"(dict)}], "model", "tokens", "cached"}."""
@@ -801,7 +779,7 @@ class GroqLLM(OfflineLLM):
         self._check_budget()
         order = [m for m in dict.fromkeys([model, self.fallback_model]) if m not in self._dead]
         r, m, i = self._request(order, lambda _m: dict(temperature=self.temperature, messages=messages, tools=tools,
-                                                       tool_choice="auto", max_tokens=max_tokens, **self._extra_for(_m)))
+                                                       tool_choice="auto", max_tokens=max_tokens))
         msg = r.choices[0].message
         calls = []
         for tc in (getattr(msg, "tool_calls", None) or []):
@@ -1015,21 +993,20 @@ class VisionUnavailable(RuntimeError):
     """The image could not be read (no key, model without vision, API error). Callers must hold, never guess."""
 
 
-VISION_MAX_BYTES = 20 * 1024 * 1024   # Groq: base64 images up to 20MB, max 3 images per request (we send one)
+VISION_MAX_BYTES = 20 * 1024 * 1024   # one image per request
 
 
 class VisionExtractor:
-    """Reads an invoice photo / chat screenshot with the Groq agent model; the image itself is not stored.
+    """Reads an invoice photo / chat screenshot with the agent model; the image itself is not stored.
 
-    Uses the same GROQ_API_KEY, disk cache and rate limiter as `GroqLLM`. The fallback model has no vision, so on
-    failure this raises `VisionUnavailable` and the pipeline holds for the student to paste text or confirm fields.
+    Uses the same client, disk cache and rate limiter as `LiveLLM`. On failure this raises `VisionUnavailable` and the pipeline holds for the student to paste text or confirm fields.
     """
 
-    def __init__(self, llm: "GroqLLM | None" = None):
+    def __init__(self, llm: "LiveLLM | None" = None):
         if llm is None:
-            if not config.GROQ_API_KEY:
-                raise VisionUnavailable("Image reading needs GROQ_API_KEY. Please paste the invoice text instead.")
-            llm = GroqLLM()
+            if config.LLM_PROVIDER != "bedrock":
+                raise VisionUnavailable("Image reading needs OASIS_LLM=bedrock. Please paste the invoice text instead.")
+            llm = LiveLLM()
         self.llm = llm
 
     def to_text(self, image_bytes: bytes, mime: str = "image/png") -> str:
@@ -1051,9 +1028,9 @@ class VisionExtractor:
 
 def make_llm(provider: str | None = None, susceptible: bool = True, **kw) -> LLM:
     provider = provider or config.LLM_PROVIDER
-    if provider == "groq" and config.GROQ_API_KEY:
-        return GroqLLM(susceptible=susceptible, **kw)
-    if provider == "ollama":            # local model, planner interface only (extraction/explanations stay deterministic)
-        from .ollama_llm import OllamaLLM
-        return OllamaLLM(susceptible=susceptible, **kw)
+    if provider == "bedrock":           # Amazon Nova Pro on Amazon Bedrock; AWS credentials come from the standard chain
+        return LiveLLM(susceptible=susceptible, **kw)
+    if provider == "bedrock":           # Amazon Nova Pro on Amazon Bedrock; AWS credentials come from the standard chain
+        from .bedrock_llm import BedrockLLM
+        return BedrockLLM(susceptible=susceptible, **kw)
     return OfflineLLM(susceptible=susceptible)

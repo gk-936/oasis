@@ -82,7 +82,7 @@ Cited external evidence (sources, dates and gaps: [docs/problem-evidence.md](doc
 
 **Intake channels** ([docs/real-inputs.md](docs/real-inputs.md)): pasted text, photo or screenshot (including Chinese text), uploaded .eml, optional Telegram bot and IMAP mailbox watcher. Email headers (sender authentication, Reply-To mismatch, free-mail sender, hidden instructions) add risk evidence, never authority.
 
-**LLM options**: `OASIS_LLM=offline` (default; deterministic, no key, reproducible) or `bedrock` (Claude Haiku on Amazon Bedrock, with a daily token cap; setup in [docs/bedrock-setup.md](docs/bedrock-setup.md), which notes the Bedrock path has not yet been run against the real API). The earlier live evaluations in the results used Groq-hosted models and are labelled as such.
+**LLM options**: `OASIS_LLM=offline` (default; deterministic, no key, reproducible) or `bedrock` (Amazon Nova Pro on Amazon Bedrock, with a daily token cap; setup in [docs/bedrock-setup.md](docs/bedrock-setup.md), which notes the Bedrock path has not yet been run against the real API). The live planner evaluation in the results used Amazon Nova Pro on Bedrock (see Results).
 
 **Languages**: English (default) and Simplified Chinese interface and server messages; parent approval in Tamil, Hindi, Chinese or English. All non-English text is machine-drafted ([docs/i18n-glossary.md](docs/i18n-glossary.md)).
 
@@ -113,7 +113,7 @@ Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
 | Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them at execution, keeps the audit chain and proof packs |
 | Optional extra risk score (can only escalate) | FlightPath, Digital Twin, netting, Trust Pass, ZK proofs, Evidence Passport, OFAC screening, the optional trained risk model (logistic regression, pure Python) |
 
-**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%), and the final plan is valid only because a fallback to the deterministic plan takes over. The planner v3 comparison is incomplete (quota ran out), so v2 stays the default. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log. The trained risk model ranks documents slightly better than the hand-set rules (AUC 0.80 vs 0.75) but flags no extra attack (13 vs 14 of 28), so it is reported as modest.
+**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning was evaluated live with Amazon Nova Pro: valid without fallback in **16 of 24** plans with planner v2 and **24 of 24** with planner v3 (calculator tools for route choice, consolidation, SAFE and parent splits; 23 of 24 on the first proposal; fees within 1% of the deterministic planner). Small sample (3 repeats of 8 scenarios, 2026-10-13), and the final plan is always checked by the deterministic validator with a deterministic fallback behind it. The code default is still v2; set `OASIS_PLANNER_FORMAT=v3` to use v3. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log. The trained risk model ranks documents slightly better than the hand-set rules (AUC 0.80 vs 0.75) but flags no extra attack (13 vs 14 of 28), so it is reported as modest.
 
 ## Results at a glance
 
@@ -126,8 +126,9 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md); ra
 | Live model vs injections | Followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
 | Planning (8 scenarios, deterministic) | 8/8 valid, 20/20 deadlines, fees CNY 4,990 vs 29,378 (83% lower) | MOCK fees and rates |
 | Route savings (90-day simulation) | CNY 1,542 to 2,963 saved per student | Model with stated assumptions, mock fees |
-| Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
-| Planner v3 vs v2 (live, incomplete) | v3 gpt-oss-120b 14 of 24 (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 plans; no verdict, v2 default |
+| Live planner, model-only (Nova Pro, v2) | 16 of 24 plans valid without fallback (67%) | 8 fallbacks to the deterministic plan; 391,069 tokens |
+| Live planner, model-only (Nova Pro, v3) | **24 of 24** valid without fallback; 23 of 24 on the first proposal | 3 repeats, 150,079 tokens; fees CNY 15,087 vs CNY 14,969 deterministic vs CNY 88,307 bank (83% lower); small sample |
+| Planner v3 vs v2 (Nova Pro) | v3 24 of 24 vs v2 16 of 24 | same scenarios, same cap and temperature; v3 adds calculator tools and fix hints; v2 stays the code default |
 | Trained risk model vs rules (hidden) | AUC 0.804 vs 0.747; flagged 13/28 vs 14/28 | Synthetic training data; off by default |
 | FlightPath (400 transfers, seed 11) | Duplicate payments 0 vs 62 baseline; preventable issues flagged 119/119 vs 0/119; false alarms 0.0; recipient-amount error 4.43 vs 4.9 CNY | SIMULATION on mock rails; the deduction model is our own, so this shows the mechanism, not accuracy on real rails |
 | Peer netting (seed 11) | Saving vs routing alone: 0% for a pool of 1, 79% (2), 56% (10), 42% (50), 55% (200), 48% (1000); matched volume 22 to 44% | Synthetic cohorts; real pools are thinner and lopsided; needs a licensed counterparty |
@@ -199,7 +200,7 @@ Code layout: `oasis/` (agent, api, chain, flightpath, intake, market, netting, p
 - **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
 - **Benchmarks are partly by construction:** the same team wrote attacks and defences; humans are simulated.
 - **Simulations are models:** FlightPath's deduction model is self-made, peer-netting cohorts are synthetic, and the Twin's parameters are stated assumptions. None is validated against real transfers, and none is a forecast or advice.
-- **Weak unaided AI planning** (7 of 24); the deterministic fallback makes plans valid.
+- **Live planner evidence is a small sample** (Nova Pro: v2 16 of 24, v3 24 of 24 valid without fallback); the validator and deterministic fallback stay in place.
 - **Demo-grade security setup:** shared passcodes, plaintext keys unless a passphrase is set; passkeys, the zero-knowledge proofs and email checks are not independently audited.
 - **Credentials are sandbox credentials:** the Trust Pass and Evidence Passport are not credit scores or bank statements; the W3C VC export is only partly spec-conformant.
 - **Real channels and Bedrock untested live:** Telegram and the mailbox watcher were tested against fake servers; the Bedrock path has not been run against the real API.
@@ -213,7 +214,7 @@ The full numbered list of 24 limitations follows the documentation index.
 |---|---|
 | [docs/results.md](docs/results.md) | all benchmark, planning, live and simulation tables with precise labels |
 | [docs/configuration.md](docs/configuration.md) | LLM configuration, environment variables, persistence, benchmark commands |
-| [docs/bedrock-setup.md](docs/bedrock-setup.md) | step-by-step Amazon Bedrock (Claude Haiku) setup, IAM, spend cap |
+| [docs/bedrock-setup.md](docs/bedrock-setup.md) | step-by-step Amazon Bedrock (Amazon Nova Pro) setup, IAM, spend cap |
 | [docs/technical-documentation.md](docs/technical-documentation.md) | architecture, algorithms, security design, API, repository layout, deployment |
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
 | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, test and limits (no audit or certification) |
@@ -248,7 +249,7 @@ The full numbered list of 24 limitations follows the documentation index.
 7. **Money is stored as floats rounded to whole fen.** Fine for a sandbox; production would use `Decimal`, and corridor checks use one hard-coded USD/INR of 88.0.
 8. **Demo Run 2 catches the forged invoice at step 3 (Verify), not step 5.** The step 5 intent-mismatch catch is shown by the rewritten-payment-instructions attack ([technical documentation][tech]).
 9. **Humans in the benchmark are simulated, and the same team wrote the attacks and the defences.** The scripted student and parent approve only requests consistent with the Passport, so 100% results are partly by construction; the blind hidden set mitigates this partly but is now partly burned, because its failures were fixed afterwards ([hidden-set report][hidden]).
-10. **Live results are small samples.** Live model-only planning was valid in 7 of 24 plans (29%) and the live injection test covered 18 runs (0 followed), so neither is a robustness claim; the final plan is always valid only because the fallback is the deterministic plan ([all live numbers][results]). Planner v3 versus v2 live evaluation (2026-10-12) is INCOMPLETE, so no verdict: the daily token quota on all four keys ran out before the last cell, and only 2 of its 24 plans ran. Model-only valid / final-valid / fallback / tokens per plan: v3 qwen3.8-27b 4 of 24 (17%) / 24 of 24 / 83% (all malformed tool calls) / 3,493; v2 qwen3.8-27b 4 of 24 (17%) / 24 of 24 / 83% / 10,787; v3 gpt-oss-120b 14 of 24 (58%) / 24 of 24 / 42% / 10,349; v2 gpt-oss-120b 1 of 2 plans. Samples are small, v2 stays the default, and final-valid is high only because of the deterministic fallback (docs/planner-efficiency.md).
+10. **Live results are small samples.** Live model-only planning with Amazon Nova Pro was valid without fallback in 16 of 24 plans (v2) and 24 of 24 (v3; one 3-repeat sample), and the live injection test covered 18 runs (0 followed), so neither is a robustness claim; the final plan is always checked by the deterministic validator, with the deterministic plan as fallback ([all live numbers][results]). Planner v3 is opt-in (`OASIS_PLANNER_FORMAT=v3`); v2 stays the code default (docs/planner-efficiency.md).
 11. **The risk scorer is heuristic and was tuned on the benchmark itself (in-sample).** The optional LLM scorer can only escalate, and neither scorer can see poisoned tool output (0/6), which only intent binding stops.
 12. **Regulatory figures were researched on 2026-10-11, several from secondary sources, and are not confirmed by a bank or counsel.** LRS and the SAFE quota were read on primary pages, TCS and the WeChat Pay fee from secondary ones; confirm each figure with an authorised dealer bank, as this is not legal advice ([regulatory sources][regsrc]).
 13. **Rate limiting and tokens are per process.** The login throttle and the session and executor token stores reset on restart and do not work across several workers.
@@ -291,4 +292,4 @@ Oasis is released under the [MIT licence](LICENSE). Dependencies (read from inst
 | cbor2 (via py_webauthn) | MIT |
 | Frontend build-time transitive packages (`node_modules`) | MIT (55), ISC (5), Apache-2.0 (1), BSD-3-Clause (1), CC-BY-4.0 (1: `caniuse-lite` browser-support data, attribution required, build-time only, not shipped in `dist`) |
 
-Claude Haiku on Amazon Bedrock is used as a hosted service under AWS and Anthropic terms and are not redistributed. Licences of every transitive Python package were not exhaustively audited.
+Amazon Nova Pro on Amazon Bedrock is used as a hosted service under AWS terms and are not redistributed. Licences of every transitive Python package were not exhaustively audited.

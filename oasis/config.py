@@ -1,4 +1,4 @@
-"""Runtime configuration. Models are env-overridable because Groq retires models often."""
+"""Runtime configuration. Models are env-overridable."""
 from __future__ import annotations
 import os
 from pathlib import Path
@@ -16,14 +16,16 @@ def _load_dotenv(path: Path) -> None:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+            v = v.strip().strip("'\"")
+            if v:                       # a blank "KEY=" line means "not set" (an empty AWS_* variable would break credential lookup)
+                os.environ.setdefault(k.strip(), v)
     except OSError:
         pass
 
 
 _load_dotenv(ROOT / ".env")
 
-# LLM provider: "offline" (deterministic, no network) or "groq".
+# LLM provider: "offline" (deterministic, no network) or "bedrock" (Amazon Nova Pro on Amazon Bedrock).
 LLM_PROVIDER = os.getenv("OASIS_LLM", "offline")
 # Extraction mode: "deterministic" (default; regex is the floor, the model only fills gaps) or "llm" (live agent:
 # the model's JSON is primary, the regex parse is only a per-field fallback).
@@ -32,41 +34,16 @@ EXTRACT_MODE = os.getenv("OASIS_EXTRACT", "deterministic")
 LLM_RISK = os.getenv("OASIS_LLM_RISK", "0") == "1"
 
 
-def parse_keys(raw: str) -> list[str]:
-    """GROQ_API_KEY may hold one key or a comma-separated list; blanks and whitespace are dropped, duplicates collapsed."""
-    return list(dict.fromkeys(k.strip() for k in (raw or "").split(",") if k.strip()))
-
-
-GROQ_API_KEYS = parse_keys(os.getenv("GROQ_API_KEY", ""))
-GROQ_API_KEY = GROQ_API_KEYS[0] if GROQ_API_KEYS else ""     # first key: truthy iff any key is configured
-
-
-def groq_keys() -> list[str]:
-    """Every configured key. Also honours an overridden single GROQ_API_KEY attribute."""
-    return GROQ_API_KEYS if GROQ_API_KEYS and GROQ_API_KEY == GROQ_API_KEYS[0] else parse_keys(GROQ_API_KEY)
-
-# Verify these on console.groq.com/docs/models before a run (checked 2026-10-10).
-AGENT_MODEL = os.getenv("OASIS_AGENT_MODEL", "qwen/qwen3.8-27b")  # preview model; may be retired
-REDTEAM_MODEL = os.getenv("OASIS_REDTEAM_MODEL", "openai/gpt-oss-120b")
-FALLBACK_MODEL = os.getenv("OASIS_FALLBACK_MODEL", "openai/gpt-oss-120b")  # production model
-
-# Groq free-tier guard rails (about 30 RPM, 1,000 requests/day, 200k tokens/day for these models).
-# The daily budgets below apply PER KEY when GROQ_API_KEY lists several.
-GROQ_RPM = float(os.getenv("OASIS_GROQ_RPM", "25"))                    # stay under the 30 RPM limit
-GROQ_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_GROQ_DAILY_TOKENS", "180000"))
-GROQ_DAILY_REQUEST_BUDGET = int(os.getenv("OASIS_GROQ_DAILY_REQUESTS", "900"))
-GROQ_MAX_RETRIES = int(os.getenv("OASIS_GROQ_MAX_RETRIES", "4"))
-
-# Local models via Ollama (OASIS_LLM=ollama): no key, loopback only by default. See docs/configuration.md.
-OLLAMA_URL = os.getenv("OASIS_OLLAMA_URL", "http://127.0.0.1:11434")
-OLLAMA_MODEL = os.getenv("OASIS_OLLAMA_MODEL", "qwen3.5:4b")
-OLLAMA_NUM_CTX = int(os.getenv("OASIS_OLLAMA_NUM_CTX", "8192"))
-OLLAMA_KEEP_ALIVE = os.getenv("OASIS_OLLAMA_KEEP_ALIVE", "5m")
-OLLAMA_TIMEOUT = float(os.getenv("OASIS_OLLAMA_TIMEOUT", "300"))
-OLLAMA_RETRIES = int(os.getenv("OASIS_OLLAMA_RETRIES", "2"))
-_mm = os.getenv("OASIS_OLLAMA_MMAP", "")
-OLLAMA_USE_MMAP = None if _mm == "" else _mm == "1"      # unset: Ollama's default; 0 keeps host RAM use low on small machines
-OLLAMA_ALLOW_REMOTE = os.getenv("OASIS_OLLAMA_ALLOW_REMOTE", "0") == "1"
+# Amazon Bedrock (OASIS_LLM=bedrock): Amazon Nova Pro. The model id is the Bedrock id / inference profile enabled in YOUR account.
+BEDROCK_MODEL = os.getenv("OASIS_BEDROCK_MODEL", "us.amazon.nova-pro-v1:0")
+BEDROCK_REGION = os.getenv("OASIS_BEDROCK_REGION") or os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+AGENT_MODEL = BEDROCK_MODEL                                                  # the model every live LLM job uses
+REDTEAM_MODEL = AGENT_MODEL
+FALLBACK_MODEL = os.getenv("OASIS_BEDROCK_FALLBACK_MODEL", AGENT_MODEL)      # default: no silent downgrade to a weaker model
+# Client-side guard rails: calls per minute, and a daily token cap as a spend guard (about $1 at $0.10 in / $0.50 out per 1M).
+BEDROCK_RPM = float(os.getenv("OASIS_BEDROCK_RPM", "120"))
+BEDROCK_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_BEDROCK_DAILY_TOKENS", "2000000"))
+BEDROCK_MAX_RETRIES = int(os.getenv("OASIS_BEDROCK_MAX_RETRIES", "4"))
 
 # Persistence for the API session: a SQLite file, or ":memory:" / "" for in-memory only.
 DB_PATH = os.getenv("OASIS_DB") or str(DATA_DIR / "oasis.db")

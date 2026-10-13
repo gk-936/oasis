@@ -1,0 +1,9 @@
+{
+ "recorded": "2026-10-13",
+ "model": "us.amazon.nova-pro-v1:0",
+ "fallback_model": "us.amazon.nova-pro-v1:0",
+ "entries": 0,
+ "tokens_spent_this_run": 0,
+ "partial": false,
+ "note": "Recorded responses for the Demo tab's live-replay mode. Contains model name, response text and date only."
+}

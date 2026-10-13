@@ -5,10 +5,10 @@ import pytest
 
 from eval import runner
 from eval.scenarios import all_scenarios, genuine_fields
-from oasis.agent.llm import GroqLLM, OfflineLLM, QuotaExhausted, normalize_purpose
+from oasis.agent.llm import LiveLLM, OfflineLLM, QuotaExhausted, normalize_purpose
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.world import Features, World
-from tests.test_llm_groq import Err, FakeClient
+from tests.test_llm_live import Err, FakeClient
 
 GOOD = ("INVOICE\nPayee: University X Finance Office\nPayee ID: payee_univ_x\nAccount: 6228480000001234\n"
         "Amount: CNY 30,000\nPurpose: tuition\nDue: 2026-11-15")
@@ -18,7 +18,7 @@ GENUINE_JSON = {"payee_name": "University X Finance Office", "payee_id": "payee_
 
 
 def live(tmp_path, script, **kw):
-    return GroqLLM(client=FakeClient([json.dumps(x) if isinstance(x, dict) else x for x in script]), cache_dir=tmp_path,
+    return LiveLLM(client=FakeClient([json.dumps(x) if isinstance(x, dict) else x for x in script]), cache_dir=tmp_path,
                    sleep=lambda s: None, rpm=0, extract_mode="llm", **kw)
 
 
@@ -42,7 +42,7 @@ def test_regex_and_model_purposes_are_normalised(tmp_path):
     l = live(tmp_path, [dict(GENUINE_JSON, purpose="学费")])
     e = l.extract(GOOD)
     assert e.fields["purpose"] == "tuition" and e.sources["purpose"] == "model"
-    det = GroqLLM(client=FakeClient([json.dumps({"purpose": "Monthly rent – November"})]), cache_dir=tmp_path / "d",
+    det = LiveLLM(client=FakeClient([json.dumps({"purpose": "Monthly rent – November"})]), cache_dir=tmp_path / "d",
                   sleep=lambda s: None, rpm=0)
     assert det.extract("Payee: A\nAccount: 123456789\nAmount: CNY 10").fields["purpose"] == "rent"   # deterministic fill
 
@@ -92,7 +92,7 @@ def test_live_strict_still_raises_on_quota(tmp_path):
 
 
 def test_deterministic_mode_is_unchanged_regex_floor(tmp_path):
-    l = GroqLLM(client=FakeClient([json.dumps(dict(GENUINE_JSON, account_ref="1111"))]), cache_dir=tmp_path,
+    l = LiveLLM(client=FakeClient([json.dumps(dict(GENUINE_JSON, account_ref="1111"))]), cache_dir=tmp_path,
                 sleep=lambda s: None, rpm=0)
     assert l.extract_mode == "deterministic"
     e = l.extract(INJ)
@@ -137,7 +137,7 @@ def test_summary_and_report_label_live_mode(tmp_path):
     sm = runner.summarize(res)
     assert sm["full"]["model_followed_injection"] == 0 and sm["full"]["injection_scenarios"] == 1
     assert sm["extraction"]["calls_failed"] == 2
-    meta = {"run_at": "x", "llm": "groq", "agent_model": "m/x", "fallback_model": "f", "served": "m/x", "ruleset": "r",
+    meta = {"run_at": "x", "llm": "bedrock", "agent_model": "m/x", "fallback_model": "f", "served": "m/x", "ruleset": "r",
             "repeats": 1, "attacks": 1, "legit": 1, "redteam": 0, "extract": "llm"}
     md = runner.to_markdown(sm, meta)
     assert "live agent (configured primary model m/x" in md and "Model followed injection" in md
@@ -145,8 +145,8 @@ def test_summary_and_report_label_live_mode(tmp_path):
 
 def test_checkpoints_are_keyed_by_mode(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "CHECKPOINTS", tmp_path)
-    assert runner.checkpoint_path("groq", "llm") != runner.checkpoint_path("groq", "deterministic")
-    assert runner.checkpoint_path("groq", "llm").name.endswith("-llm.jsonl")
+    assert runner.checkpoint_path("bedrock", "llm") != runner.checkpoint_path("bedrock", "deterministic")
+    assert runner.checkpoint_path("bedrock", "llm").name.endswith("-llm.jsonl")
 
 
 def test_runner_rejects_live_extraction_without_a_model(capsys):

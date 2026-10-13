@@ -14,7 +14,7 @@ from eval.scenarios import all_scenarios, tuition
 from auth_helpers import Approver, login
 from oasis import config
 from oasis.agent import i18n
-from oasis.agent.llm import GroqLLM, OfflineLLM, heuristic_risk, regex_fields
+from oasis.agent.llm import LiveLLM, OfflineLLM, heuristic_risk, regex_fields
 from oasis.agent.parent import parent_view
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.agent.replay import (FIXTURE_DIR, OFFLINE_LABEL, DemoLiveLLM, ai_summary, fixture_info)
@@ -28,7 +28,7 @@ from oasis.trust.crypto import HybridSigner, canonical, sha256_hex
 from oasis.trust.intents import strip_sigs
 from oasis.trust.keystore import fingerprint, load_or_create_signer
 from oasis.world import Features, World
-from tests.test_llm_groq import Err, FakeClient
+from tests.test_llm_live import Err, FakeClient
 
 
 # ============================================================================== 2. forged proof packs
@@ -183,7 +183,7 @@ def test_demo_keys_are_trusted_only_while_the_demo_world_is_active(api_client):
 
 # ============================================================================== 1. live-replay demo
 class SmartFake:
-    """A fake Groq client that behaves like a model that does NOT follow injections: extraction = the labelled lines,
+    """A fake Live client that behaves like a model that does NOT follow injections: extraction = the labelled lines,
     risk = 0.9 for pressure language else 0.1, planning = no tool call (the planner then falls back, and says so)."""
 
     def __init__(self):
@@ -238,7 +238,7 @@ def test_replay_shows_mode_model_and_date_per_step(tmp_path):
     forged = next(s for s in r["steps"] if "Forged invoice" in s["title"])
     assert forged["ai"]["mode"] == "live"
     lab = forged["ai"]["label"]
-    assert f"qwen3.8-27b" in lab and "Qwen" in lab and "replayed from recorded response" in lab
+    assert config.AGENT_MODEL in lab and "Amazon Nova Pro" in lab and "replayed from recorded response" in lab
     assert date.fromisoformat(forged["ai"]["items"][0]["recorded"])
     assert {i["kind"] for i in forged["ai"]["items"]} >= {"extract", "risk"}
     assert next(s for s in r["steps"] if "Receipts" in s["title"])["ai"]["items"] == []
@@ -304,14 +304,11 @@ def test_committed_fixture_holds_no_secrets():
 
 def test_recording_script_refuses_when_the_budget_would_run_low(monkeypatch, capsys):
     from eval import record_demo_fixture as rec
-    monkeypatch.setattr(config, "GROQ_API_KEY", "x")
-    monkeypatch.setattr(rec, "tokens_used_today", lambda: 164_025)
+    monkeypatch.setattr(rec, "tokens_used_today", lambda: rec.config.BEDROCK_DAILY_TOKEN_BUDGET - 35_975)
     called = []
     monkeypatch.setattr(rec, "DemoLiveLLM", lambda **k: called.append(k))
     assert rec.main([]) == 2 and not called
     assert "Refusing to record" in capsys.readouterr().err
-    monkeypatch.setattr(config, "GROQ_API_KEY", "")
-    assert rec.main([]) == 1
 
 
 # ============================================================================== 3. LLM risk scorer
@@ -319,7 +316,7 @@ DOC = tuition()
 
 
 def risk_llm(tmp_path, script, **kw):
-    return GroqLLM(client=FakeClient([json.dumps(x) if isinstance(x, dict) else x for x in script]), cache_dir=tmp_path,
+    return LiveLLM(client=FakeClient([json.dumps(x) if isinstance(x, dict) else x for x in script]), cache_dir=tmp_path,
                    sleep=lambda s: None, rpm=0, extract_mode="llm", llm_risk=True, **kw)
 
 
@@ -331,10 +328,10 @@ def _risk(llm, text=DOC, fields=None):
 
 
 def test_llm_risk_is_live_mode_only(tmp_path):
-    det = GroqLLM(client=FakeClient([]), cache_dir=tmp_path, rpm=0, extract_mode="deterministic", llm_risk=True)
+    det = LiveLLM(client=FakeClient([]), cache_dir=tmp_path, rpm=0, extract_mode="deterministic", llm_risk=True)
     assert det.llm_risk is False and _risk(det).components is None
     assert risk_llm(tmp_path / "l", []).llm_risk is True
-    assert GroqLLM(client=FakeClient([]), cache_dir=tmp_path / "d", rpm=0, extract_mode="llm").llm_risk is False   # off by default
+    assert LiveLLM(client=FakeClient([]), cache_dir=tmp_path / "d", rpm=0, extract_mode="llm").llm_risk is False   # off by default
 
 
 def test_llm_can_only_escalate(tmp_path):
@@ -388,22 +385,22 @@ def _sc(sid):
 
 def test_runner_reports_llm_risk_contribution(tmp_path):
     fake = SmartFake()
-    llm = GroqLLM(client=fake, cache_dir=tmp_path, sleep=lambda s: None, rpm=0, extract_mode="llm", llm_risk=True)
+    llm = LiveLLM(client=fake, cache_dir=tmp_path, sleep=lambda s: None, rpm=0, extract_mode="llm", llm_risk=True)
     scs = [x for x in all_scenarios() if x.suite == "attack"][:5] + [x for x in all_scenarios() if x.suite == "legit"][:3]
     results = [runner.run_scenario(sc, cfg, llm) for cfg in runner.CONFIGS for sc in scs]
     assert all(r.risk_components for r in results if r.config == "full")
     lr = runner.summarize(results)["llm_risk"]
     assert lr["steps_scored"] >= 8 and lr["lowered_score"] == 0 and lr["llm_call_failed"] == 0
     assert lr["raised_score"] == sum(c["raised"] for r in results for c in r.risk_components if r.config == "full")
-    md = runner.to_markdown(runner.summarize(results), {"run_at": "x", "llm": "groq", "agent_model": "m", "fallback_model": "f",
+    md = runner.to_markdown(runner.summarize(results), {"run_at": "x", "llm": "bedrock", "agent_model": "m", "fallback_model": "f",
                                                         "ruleset": "r", "repeats": 1, "attacks": 1, "legit": 1, "redteam": 0,
                                                         "extract": "llm"}, None, None)
     assert "LLM risk scorer (live mode, escalate-only)" in md
 
 
 def test_checkpoints_do_not_mix_with_and_without_the_llm_scorer():
-    assert runner.checkpoint_path("groq", "llm") != runner.checkpoint_path("groq", "llm", True)
-    assert runner.checkpoint_path("groq", "llm", True).name.endswith("-llm-llmrisk.jsonl")
+    assert runner.checkpoint_path("bedrock", "llm") != runner.checkpoint_path("bedrock", "llm", True)
+    assert runner.checkpoint_path("bedrock", "llm", True).name.endswith("-llm-llmrisk.jsonl")
 
 
 def test_llm_risk_flag_needs_live_mode():
@@ -414,11 +411,11 @@ def test_llm_risk_flag_needs_live_mode():
 # ============================================================================== 4. serving model per extraction
 def test_extraction_records_serving_model_and_cache_flag(tmp_path):
     good = dict(regex_fields(DOC), translation="", instruction_like_text=False)
-    llm = GroqLLM(client=FakeClient([json.dumps(good)]), cache_dir=tmp_path, sleep=lambda s: None, rpm=0, extract_mode="llm")
+    llm = LiveLLM(client=FakeClient([json.dumps(good)]), cache_dir=tmp_path, sleep=lambda s: None, rpm=0, extract_mode="llm")
     e1, e2 = llm.extract(DOC), llm.extract(DOC)
     assert (e1.served_model, e1.from_cache) == (config.AGENT_MODEL, False)
     assert (e2.served_model, e2.from_cache) == (config.AGENT_MODEL, True)
-    dead = GroqLLM(client=FakeClient([Err("down", 400)] * 4), cache_dir=tmp_path / "d", sleep=lambda s: None, rpm=0,
+    dead = LiveLLM(client=FakeClient([Err("down", 400)] * 4), cache_dir=tmp_path / "d", sleep=lambda s: None, rpm=0,
                    extract_mode="llm", max_retries=0)
     dead.last_model = "stale/model"
     e3 = dead.extract(DOC)
@@ -427,9 +424,9 @@ def test_extraction_records_serving_model_and_cache_flag(tmp_path):
 
 def test_fallback_model_is_reported_as_the_server(tmp_path):
     good = json.dumps(dict(regex_fields(DOC), translation="", instruction_like_text=False))
-    llm = GroqLLM(client=FakeClient([Err("model not found", 404), good]), cache_dir=tmp_path, sleep=lambda s: None, rpm=0,
-                  extract_mode="llm")
-    assert llm.extract(DOC).served_model == config.FALLBACK_MODEL
+    llm = LiveLLM(client=FakeClient([Err("model not found", 404), good]), cache_dir=tmp_path, sleep=lambda s: None, rpm=0,
+                  extract_mode="llm", fallback_model="fb-model")
+    assert llm.extract(DOC).served_model == "fb-model"
 
 
 def test_served_report_counts_per_model_and_labels_pre_fix_runs():

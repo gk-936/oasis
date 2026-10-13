@@ -30,41 +30,43 @@ Planner: `deterministic`; run 2026-10-10.
 
 - The deterministic planner drafts a student-funded plan first and asks the family only when the validator reports a shortfall; that is why scenarios with a shortfall need two proposals.
 
-## Live (Groq native tool calling), after the planner prompt change
+## Live (Bedrock native tool calling), after the planner prompt change
 
-Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`; run 2026-10-11; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 3 of 3.
+Planner: `bedrock-tools`; model `us.amazon.nova-pro-v1:0`, fallback `us.amazon.nova-pro-v1:0`; run 2026-10-13; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 3 of 3.
 
 | Repeat | Plans run | Valid without fallback | Final plan valid | Mean proposals to valid | Tokens |
 |---|---|---|---|---|---|
-| 1 | 8 of 8 | 4 | 100% | 1.5 | 155,816 |
-| 2 | 8 of 8 | 2 | 100% | 2.0 | 144,790 |
-| 3 | 8 of 8 | 1 | 100% | 2.0 | 162,737 |
+| 1 | 8 of 8 | 8 | 100% | 1.0 | 47,718 |
+| 2 | 8 of 8 | 8 | 100% | 1.0 | 47,753 |
+| 3 | 8 of 8 | 8 | 100% | 1.25 | 54,608 |
 
-Valid without fallback across completed repeats (min / mean / max): 1 / 2.33 / 4 of 8 scenarios.
+Valid without fallback across completed repeats (min / mean / max): 8 / 8.0 / 8 of 8 scenarios.
 
-Pooled over every plan run: 7 of 24 valid without fallback (29%); tokens 463,343.
+Pooled over every plan run: 24 of 24 valid without fallback (100%); tokens 150,079.
 
 | Scenario | Valid without fallback | Proposals to valid (per repeat; fb = fell back) | Tokens (per repeat) | First validator errors (per repeat) |
 |---|---|---|---|---|
-| Arrival shortfall (the demo student) | 1 of 3 | fb, 1, fb | 25,370, 7,424, 23,773 | insufficient_inr; -; amount_mismatch,unknown_route |
-| Tight runway | 0 of 3 | fb, fb, fb | 25,567, 14,167, 15,017 | -; -; amount_mismatch,unknown_route |
-| SAFE-quota tuition | 0 of 3 | fb, fb, fb | 23,711, 22,093, 23,530 | safe_quota_exceeded; amount_mismatch,unknown_route; - |
-| Late scholarship | 1 of 3 | fb, 3, fb | 23,134, 25,249, 22,992 | amount_mismatch,insufficient_inr; insufficient_cny; insufficient_inr |
-| Parent remitter crossing TCS | 2 of 3 | 2, fb, 2 | 16,837, 25,460, 16,832 | amount_mismatch,insufficient_inr; insufficient_inr; amount_mismatch,insufficient_inr |
-| Rate target to protect | 1 of 3 | 1, fb, fb | 13,692, 24,172, 26,542 | -; amount_mismatch,unknown_route; rate_target_reserve |
-| Five obligations | 1 of 3 | 2, fb, fb | 16,571, 22,058, 22,805 | amount_mismatch,unknown_route; amount_mismatch; - |
-| Urgent deposit | 1 of 3 | 1, fb, fb | 10,934, 4,167, 11,246 | -; -; - |
+| Arrival shortfall (the demo student) | 3 of 3 | 1, 1, 1 | 6,244, 6,458, 6,219 | -; -; - |
+| Tight runway | 3 of 3 | 1, 1, 1 | 6,120, 6,133, 6,515 | -; -; - |
+| SAFE-quota tuition | 3 of 3 | 1, 1, 1 | 5,957, 5,930, 6,059 | -; -; - |
+| Late scholarship | 3 of 3 | 1, 1, 1 | 6,052, 6,022, 6,080 | -; -; - |
+| Parent remitter crossing TCS | 3 of 3 | 1, 1, 1 | 4,717, 4,619, 4,630 | -; -; - |
+| Rate target to protect | 3 of 3 | 1, 1, 1 | 6,286, 6,276, 6,247 | -; -; - |
+| Five obligations | 3 of 3 | 1, 1, 1 | 6,366, 6,408, 6,410 | -; -; - |
+| Urgent deposit | 3 of 3 | 1, 1, 3 | 5,976, 5,907, 12,448 | -; -; route_too_slow |
 
 - Invocation 2026-10-11 (repeats 1 and 2; 4 comma-separated keys, daily budget 180,000 tokens per key): new tokens 300,606 (cap 300,000); Groq daily ledger before 0, after 300,606. Live calls 89, cache hits 9, model fallbacks 15 (the last figure counts calls served by the fallback model).
 - Invocation 2026-10-11 (repeat 3 only, `--repeats 3 --repeat-index 3 --token-cap 200000`): new tokens 162,737 (cap 200,000); Groq daily ledger before 300,606, after 463,343. Live calls 50, cache hits 4, model fallbacks 11.
-- Per-key tokens for the whole 2026-10-11 ledger, by sha256 fingerprint: 499b1366: 181,449 (55 requests); d40d45b2: 181,477 (53 requests); ceef6c23: 100,417 (31 requests); a1d412ac: 0. Repeat 3 alone: ceef6c23 100,417, d40d45b2 62,320, 499b1366 0; key rotations 2 (local 180,000-token guard; no server-side daily limit was hit). The 2026-10-10 planning work (about 105,000 tokens under the previous key) is not included.
-- Planner change in this section: the system prompt carries the validator's error vocabulary (compute the INR from get_routes, add fee/rounding headroom, pay each obligation exactly once with its exact amount, keep the rate-target reserve, stage SAFE-quota conversions across calendar years, parent for the INR shortfall) and the per-plan cap is 22,000 tokens. The validator rules were not changed. Repeat 3 was run with exactly the same planner, prompt, cap, temperature and validator as repeats 1 and 2; no tuning.
-- Sampling: temperature 0.3 with a repeat-specific cache salt (planrep0, planrep1, planrep2), so repeats are distinct samples and never cache hits of each other.
-- Coverage: 24 plans, three full repeats of all 8 scenarios, all run 2026-10-11 (qwen/qwen3.8-27b first, up to 8 rate-limit retries per call). The old 2026-10-10 Tight runway row that stood in for repeat 3 (Groq API HTTP 400 tool-call parse error, previous key) was replaced by the new repeat-3 sample (fell back: no valid plan after 1 proposal, 15,017 tokens). Repeat 3 was run on its own with `python -m eval.planning --llm groq --repeats 3 --repeat-index 3`; finished rows of repeats 1 and 2 were kept untouched.
-- Which model answered (the `model` of the final call in each row; a plan can mix both models): qwen/qwen3.8-27b in 20 of 24 plans and openai/gpt-oss-120b in 4 (Rate target and Urgent deposit in repeat 1; Arrival shortfall and Tight runway in repeat 2; none in repeat 3). Of the 7 plans valid without fallback, 4 ended on qwen (Parent TCS and Five obligations in repeat 1; Late scholarship in repeat 2; Parent TCS in repeat 3) and 3 on gpt-oss-120b (Rate target and Urgent deposit in repeat 1; Arrival shortfall in repeat 2). So these numbers describe qwen/qwen3.8-27b for most plans, but not all.
-- Why 17 of 24 plans fell back to the deterministic plan: 10 hit the per-plan token cap while still revising (qwen spends ~3,000 tokens per call re-sending context, so a 4-proposal plan costs 22,000-26,000 tokens; the cap check runs after a call, so rows can exceed 22,000; Urgent deposit in repeat 2 was cut at 4,167 tokens because that was all that remained of that run's 300,000 cap); 4 ended with the model never proposing a plan inside the call budget (Arrival shortfall repeat 1, Tight runway repeats 1 and 2, Parent TCS repeat 2); 2 ended with 'no valid plan after 1 proposal' (Tight runway and Rate target, repeat 3); 1 (Urgent deposit repeat 3) was a Groq API HTTP 400 tool-call validation error on both models ('attempted to call tool commentary'). A budget stop or exhausted call count is not a plan the validator rejected, but it is a plan the model did not finish.
-- The final plan was valid in all 24 rows because a fallback is the deterministic planner's plan; 'valid without fallback' is the model's own result.
-- Superseded samples: the 2026-10-10 rows from the previous key for Arrival shortfall (repeat 1) and Tight runway (repeats 1 and 2) were valid without fallback but were replaced when the plans were re-sampled on 2026-10-11, because their cached responses did not replay; they are not counted.
+- Invocation 2026-10-13: new tokens 146,221 (cap 200,000); daily ledger before 18, after 146,239. Live calls 46, cache hits 1, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 244,848 (cap 330,000); daily ledger before 146,239, after 391,087. Live calls 78, cache hits 49, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 56,493 (cap 120,000); daily ledger before 391,087, after 447,580. Live calls 21, cache hits 0, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 23,942 (cap 30,000); daily ledger before 447,580, after 471,522. Live calls 6, cache hits 0, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 16,800 (cap 30,000); daily ledger before 471,522, after 488,322. Live calls 3, cache hits 3, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 6,237 (cap 30,000); daily ledger before 488,322, after 494,559. Live calls 3, cache hits 0, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 46,125 (cap 120,000); daily ledger before 494,559, after 540,684. Live calls 21, cache hits 4, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 116,620 (cap 150,000); daily ledger before 540,684, after 657,304. Live calls 50, cache hits 27, model fallbacks 0.
+- Invocation 2026-10-13: new tokens 150,079 (cap 150,000); daily ledger before 657,304, after 807,383. Live calls 71, cache hits 3, model fallbacks 0.
+- Per-key tokens this invocation (1 key(s), by sha256 fingerprint): aws: 150,079; key rotations 0.
 
 ## Live, before planner prompt change (2026-10-10, 1 run)
 

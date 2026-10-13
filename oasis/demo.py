@@ -40,7 +40,7 @@ RATE_TARGET, RATE_TARGET_CNY = 0.0700, 2000.0
 
 def new_demo_world(store=None, mode: str = "offline", llm=None) -> World:
     """The demo world: fixed seed, fixed mock data, deterministic demo keys. `mode="offline"` (default): the offline LLM,
-    no network. `mode="live"`: qwen/qwen3.8-27b extraction + AI risk scorer + tool-calling planner REPLAYED from the
+    no network. `mode="live"`: Amazon Nova Pro extraction + AI risk scorer + tool-calling planner REPLAYED from the
     recorded fixture (still no network; anything not recorded falls back to offline and is labelled)."""
     if mode not in ("offline", "live"):
         raise ValueError(f"unknown demo mode {mode!r}")

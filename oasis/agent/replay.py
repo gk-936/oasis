@@ -1,4 +1,4 @@
-"""Live demo mode: a real model (Groq qwen/qwen3.8-27b) made repeatable by REPLAYING recorded responses.
+"""Live demo mode: a real model (Amazon Nova Pro on Bedrock) made repeatable by REPLAYING recorded responses.
 
 The Demo tab's "live-replay" mode runs the same scripted scenarios as the offline demo, but extraction (the model's JSON is
 primary), the optional AI risk scorer and the planner (native tool calling) are real model calls whose answers were
@@ -6,7 +6,7 @@ recorded once into a small committed fixture (`eval/fixtures/demo_cache/*.json`:
 date; no prompts, keys or organisation ids) and are read back from it with NO network. If a response is missing from
 the fixture, that step falls back to the offline parser / heuristic scorer / deterministic planner and says so.
 
-Record (the only time this module touches the network; needs GROQ_API_KEY and spends free-tier tokens):
+Record (the only time this module touches the network; needs AWS credentials and spends tokens):
 
     PYTHONPATH=. python -m eval.record_demo_fixture
 """
@@ -16,7 +16,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from .. import config
-from .llm import Extraction, GroqLLM, OfflineLLM, QuotaExhausted, UsageLedger, explain_template
+from .llm import Extraction, LiveLLM, OfflineLLM, QuotaExhausted, UsageLedger, explain_template
 
 FIXTURE_DIR = config.ROOT / "eval" / "fixtures" / "demo_cache"
 MODES = ("offline", "live")
@@ -28,7 +28,7 @@ class ReplayMiss(RuntimeError):
 
 
 class _ReplayOnlyClient:
-    """Stands in for the Groq client in replay mode: any call that was not served from the fixture is a miss. It cannot
+    """Stands in for the Bedrock client in replay mode: any call that was not served from the fixture is a miss. It cannot
     reach the network, so replay needs neither a key nor a connection."""
 
     def __init__(self):
@@ -45,13 +45,13 @@ def short_model(model: str | None) -> str:
 
 def family(model: str | None) -> str:
     m = (model or "").casefold()
-    return "Qwen" if "qwen" in m else "GPT-OSS" if "gpt-oss" in m else "Model"
+    return "Amazon Nova Pro" if "nova-pro" in m else "Claude" if "claude" in m else "Model"
 
 
-class DemoLiveLLM(GroqLLM):
-    """GroqLLM over a fixture directory. Replay (default) never touches the network; `record=True` uses the real client and
+class DemoLiveLLM(LiveLLM):
+    """LiveLLM over a fixture directory. Replay (default) never touches the network; `record=True` uses the real client and
     writes new responses into the fixture directory (counted against the shared daily-token ledger)."""
-    name = "groq-demo-replay"
+    name = "demo-replay"
 
     def __init__(self, fixture_dir: Path | None = None, record: bool = False, token_cap: int | None = None, **kw):
         self.record = record

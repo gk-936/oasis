@@ -53,11 +53,27 @@ def size_conversion(world, target_cny, route_id, convert_date, remitter: str = "
         dd = date.fromisoformat(str(due))
         out["on_time"] = arrives <= dd
         out["latest_convert_date"] = (dd - timedelta(days=route.days)).isoformat()
+    ok = [r for r in ROUTES if not r.typical_bank and (not due or d + timedelta(days=r.days) <= date.fromisoformat(str(due)))]
+    if ok:
+        best = min(ok, key=lambda r: size_send_inr(mid, r, target))
+        bs = size_send_inr(mid, best, target)
+        if best.id != route.id and bs < send:
+            out["cheaper_route"] = {"route_id": best.id, "send_inr": bs, "saves_inr": send - bs, "arrives_on": (d + timedelta(days=best.days)).isoformat()}
+    spendable = max(0.0, p.balance("INR") - _reserve_inr(p))
+    if remitter == "student" and send > spendable + 0.005:      # over what the student may spend: hand back the exact split
+        part = math.floor(spendable)
+        rest = max(0.0, target - round(delivered_amount(part, route, mid), 2)) if part > route.fixed_fee_inr + 1 else target
+        out["split"] = {"student_send_inr": part if part > route.fixed_fee_inr + 1 else 0, "parent_send_inr": size_send_inr(mid, route, rest),
+                        "why": f"the student can spend at most INR {spendable:,.0f} (rate-target reserve kept); use these two convert steps instead of one"}
     y = str(d.year)
     room = max(0.0, safe_quota_inr() - p.safe_used_inr.get(y, 0.0))
     out["safe"] = {"year": y, "room_inr": round(room), "fits": send <= room + 0.005}
     if not out["safe"]["fits"]:
         out["safe"]["stage_rest_on"] = f"{int(y) + 1}-01-01"
+        now = math.floor(room)
+        if now > route.fixed_fee_inr + 1:
+            left = max(0.0, target - round(delivered_amount(now, route, mid), 2))
+            out["safe"]["split"] = {"this_year_send_inr": now, "next_year_send_inr": size_send_inr(mid, route, left), "next_year_date": out["safe"]["stage_rest_on"]}
     rules = corridor.load_rules()
     used = p.remitted_inr_fy.get(remitter, 0.0)
     tr = corridor.tcs_rate(p, "tuition", rules)
@@ -95,7 +111,16 @@ def facts_sheet(world) -> dict:
     lrs, thr = lrs_limit_inr(), tr["threshold_inr"]
     remitter = lambda who: {"remitted_inr_fy": round(p.remitted_inr_fy.get(who, 0.0)), "lrs_left_inr": round(max(0.0, lrs - p.remitted_inr_fy.get(who, 0.0))),
                             "tcs_free_left_inr": round(max(0.0, thr - p.remitted_inr_fy.get(who, 0.0)))}
+    sugg = None
+    if short_cny > 0 and need:
+        avail = (min(date.fromisoformat(o.due) for o in need) - today).days - 2        # arrive 2 days before the earliest due date
+        pool = [r for r in ROUTES if not r.typical_bank and r.days <= avail]
+        if pool:
+            r = min(pool, key=lambda r: size_send_inr(mid, r, short_cny))
+            sugg = {"route_id": r.id, "convert_date": today.isoformat(), "target_cny": round(short_cny, 2),
+                    "note": "ONE conversion funds every obligation; call size_conversion with these values for the exact send_inr and any split"}
     return {
+        "suggested_conversion": sugg,
         "today": today.isoformat(), "mid_cny_per_inr": mid,
         "obligations": [{"id": o.id, "payee_id": o.payee_id, "amount_cny": o.remaining, "due": o.due} for o in need],
         "cny_needed": {"total": round(total, 2), "by_month": {k: round(v, 2) for k, v in sorted(by_month.items())},

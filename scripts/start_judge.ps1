@@ -15,7 +15,7 @@ if (-not (Test-Path (Join-Path $Root "frontend\dist\index.html"))) {
 }
 if (Test-Path $DataDir) { Remove-Item -Recurse -Force $DataDir }      # a fresh sandbox every start
 New-Item -ItemType Directory -Force (Join-Path $DataDir "keys") | Out-Null
-$env:OASIS_LLM = "offline"; $env:OASIS_EXTRACT = "deterministic"; $env:OASIS_RATES = "mock"; $env:OASIS_ANCHOR = "local"; $env:GROQ_API_KEY = ""
+$env:OASIS_LLM = "offline"; $env:OASIS_EXTRACT = "deterministic"; $env:OASIS_RATES = "mock"; $env:OASIS_ANCHOR = "local"
 $env:OASIS_DB = Join-Path $DataDir "oasis.db"
 $env:OASIS_DATA_KEY = Join-Path $DataDir "keys\data_key.json"
 $env:OASIS_TRUST_KEY = Join-Path $DataDir "keys\trust_key.json"

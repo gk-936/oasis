@@ -20,7 +20,7 @@ else PY="$(command -v python3 || command -v python)"; fi
 [ -f "$ROOT/frontend/dist/index.html" ] || { echo "frontend/dist is missing (it is committed to the repo); rebuild with: cd frontend && npm ci && npm run build" >&2; exit 1; }
 
 rm -rf "$DATA_DIR"; mkdir -p "$DATA_DIR/keys"          # a fresh sandbox every start
-export OASIS_LLM=offline OASIS_EXTRACT=deterministic OASIS_RATES=mock OASIS_ANCHOR=local GROQ_API_KEY=
+export OASIS_LLM=offline OASIS_EXTRACT=deterministic OASIS_RATES=mock OASIS_ANCHOR=local
 export OASIS_DB="$DATA_DIR/oasis.db" OASIS_DATA_KEY="$DATA_DIR/keys/data_key.json" OASIS_TRUST_KEY="$DATA_DIR/keys/trust_key.json"
 export OASIS_SESSION_SECRET_FILE="$DATA_DIR/keys/session_secret.json" OASIS_ATTEMPTS_FILE="$DATA_DIR/redteam_attempts.jsonl"
 export OASIS_JUDGE_MODE=1 PYTHONPATH="$ROOT"

@@ -68,7 +68,7 @@ def test_dockerfile_copies_no_secrets_or_state():
                 assert not re.search(r"(^|/)\.env", s) and not s.startswith("data") and s not in (".", "./"), a
                 assert "keys" not in s and "node_modules" not in s, a
     env = " ".join(a for k, a in DOCKERFILE if k == "ENV")
-    for var in ("OASIS_PASS_", "OASIS_KEY_PASSPHRASE", "GROQ_API_KEY", "OASIS_ALLOW_DEMO_PASSCODES"):
+    for var in ("OASIS_PASS_", "OASIS_KEY_PASSPHRASE", "AWS_SECRET_ACCESS_KEY", "OASIS_ALLOW_DEMO_PASSCODES"):
         assert var not in env, f"{var} must come from the run-time environment, not the image"
     for needed in ("OASIS_LLM=offline", "OASIS_RATES=live", "OASIS_ANCHOR=local", "OASIS_DB=/data/",
                    "OASIS_DATA_KEY=/data/", "OASIS_TRUST_KEY=/data/", "OASIS_SESSION_SECRET_FILE=/data/"):
@@ -111,7 +111,7 @@ def test_compose_has_volume_hardening_and_no_secrets():
     assert re.search(r"^\s+- oasis-data:/data\s*$", text, re.M) and re.search(r"^volumes:\s*\n\s+oasis-data:", text, re.M)
     assert "env_file: .env.docker" in text and "read_only: true" in text and "no-new-privileges" in text
     assert "restart:" in text and "healthcheck:" in text and "tmpfs:" in text and 'profiles: ["tls"]' in text
-    assert not re.search(r"gsk_|OASIS_PASS_\w+:\s*\S|OASIS_KEY_PASSPHRASE:\s*\S|GROQ_API_KEY:\s*\S", text)
+    assert not re.search(r"AKIA[A-Z0-9]{12,}|OASIS_PASS_\w+:\s*\S|OASIS_KEY_PASSPHRASE:\s*\S|AWS_SECRET_ACCESS_KEY:\s*\S", text)
     assert "127.0.0.1" in text            # published on loopback by default
 
 
@@ -119,9 +119,9 @@ def test_env_docker_example_has_no_real_secrets_and_documents_every_variable():
     text = _read(".env.docker.example")
     assert not re.search(r"gsk_[A-Za-z0-9]+", text) and not re.search(r"\bsk-[A-Za-z0-9]{10,}", text)
     for var in ("OASIS_PASS_STUDENT", "OASIS_PASS_PARENT", "OASIS_PASS_JUDGE", "OASIS_KEY_PASSPHRASE", "OASIS_JUDGE_MODE",
-                "OASIS_ALLOW_DEMO_PASSCODES", "GROQ_API_KEY", "OASIS_LLM", "OASIS_COOKIE_SECURE", "OASIS_ALLOWED_ORIGINS"):
+                "OASIS_ALLOW_DEMO_PASSCODES", "AWS_SECRET_ACCESS_KEY", "OASIS_LLM", "OASIS_COOKIE_SECURE", "OASIS_ALLOWED_ORIGINS"):
         assert re.search(rf"^{var}=", text, re.M), var
-    for var in ("OASIS_PASS_STUDENT", "OASIS_PASS_PARENT", "OASIS_PASS_JUDGE", "OASIS_KEY_PASSPHRASE", "GROQ_API_KEY"):
+    for var in ("OASIS_PASS_STUDENT", "OASIS_PASS_PARENT", "OASIS_PASS_JUDGE", "OASIS_KEY_PASSPHRASE", "AWS_SECRET_ACCESS_KEY"):
         assert re.search(rf"^{var}=\s*$", text, re.M), f"{var} must ship empty"
     assert re.search(r"^OASIS_LLM=offline\s*$", text, re.M)
     assert "NOT recommended" in text

@@ -4,7 +4,7 @@
 # Build:  docker build -t oasis .
 # Run:    docker run --rm -p 8000:8000 -v oasis-data:/data --env-file .env.docker oasis
 # See docs/deployment-docker.md.  The image contains no secrets and no .env; everything secret comes from the environment
-# (OASIS_PASS_*, OASIS_KEY_PASSPHRASE, GROQ_API_KEY) at run time, and all state lives in the /data volume.
+# (OASIS_PASS_*, OASIS_KEY_PASSPHRASE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) at run time, and all state lives in the /data volume.
 
 # ---- stage 1: build the virtualenv (wheels only; no compiler is needed in the final image) ----
 FROM python:3.12-slim AS builder

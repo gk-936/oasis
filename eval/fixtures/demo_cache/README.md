@@ -3,6 +3,6 @@ Each `<hash>.json` holds only the model name, the response text and the recordin
 organisation ids. While this directory holds no recordings the live-replay demo falls back to the offline parser and
 says so on every step.
 
-Record (spends free-tier Groq tokens; refuses when the daily allowance would run low):
+Record (spends Bedrock tokens; refuses when the daily token budget would run low):
 
     PYTHONPATH=. python -m eval.record_demo_fixture
