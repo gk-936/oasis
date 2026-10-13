@@ -771,6 +771,8 @@ export default {
   "cp.step2.note": "Ticked payments are shown in full; the rest stay hidden. Valid for {days} days.",
   "cp.nopayments": "No verified payments yet. Pay an obligation through Oasis first.",
   "cp.sharing": "Shown: {shown} · hidden: {hidden}",
+  "vc.export": "Export as W3C VC",
+  "vc.done": "W3C VC exported: did:key issuer, Ed25519 proof (see docs/w3c-vc.md)",
   "cp.download": "Download JSON (for an independent check)",
   "cp.announce.issued": "Trust Pass issued",
   "cp.announce.checked": "Trust Pass checked",
