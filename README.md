@@ -48,6 +48,8 @@ Cited external evidence (sources, dates and gaps: [docs/problem-evidence.md](doc
 | Arrives short, late or duplicated | FlightPath | Pre-transfer checks, recipient-amount routing, delay and short-credit detection, no blind resend | Simulated benchmark: 0 duplicate payments vs 62 baseline; 119 of 119 preventable issues flagged (own model, see caveats) |
 | Cost of FX spread | Peer netting (simulation) | Matches INR-to-CNY payers with CNY-to-INR payers at mid-rate | Saving grows with pool size, 0 for a pool of one (synthetic cohorts) |
 | No credit history | Trust Pass, ZK threshold proofs, W3C VC export | Student-held credential from verified payments; selective disclosure; any threshold provable without revealing counts | Tamper and false-claim tests pass; sandbox credential, not a credit score |
+| Credit building is passive | Credit growth | A plan of milestones from verified payments only, evidence per ask (lower deposit, no guarantor, student card) with what is missing, and a what-if simulator over Oasis's own metrics; never suggests extra payments | Read-only, student-only, offline; not a credit score and no lender prediction |
+| Fees are owed in USD or EUR, not CNY | Five more corridors, foreign-currency plans and payments | CNY-USD, INR-USD, EUR-USD, INR-EUR and CNY-EUR priced on the amount the recipient must receive, with sourced rule notes; a USD or EUR bill is planned, accepted, signed by the student and paid through the same trust path | Live Nova Pro: 25 of 27 plannable plans model-only valid, 3 of 3 above-LRS plans refused; route prices are estimates, not quotes |
 | "Did this payment really arrive?" | Evidence Passport | One signed, QR-verifiable bundle: intent, registry payee, reconciliation, audit-chain proof | Login-free verifier with tamper tests; reconciliation is MOCK |
 
 ## Features
@@ -58,7 +60,7 @@ Cited external evidence (sources, dates and gaps: [docs/problem-evidence.md](doc
 - Policy engine R01-R17 (plus R18-R19 for foreign-currency payments), permission tiers, corridor rules from `oasis/trust/rules/inr_cny.yaml` (each value with source and status).
 - Hybrid Ed25519 + ML-DSA-65 signed intents enforced exactly by the executor (nonce, expiry, policy re-check).
 - Canary tripwires, freeze and recovery plan, SHA-256 hash-chained audit log, proof packs with an independent verifier, plain-language why-cards.
-- Sanctions screening against a snapshot of the US OFAC list (17,515 entries): evidence for review, never an automatic block or a compliance clearance. Card and IFSC format checks.
+- Sanctions screening against snapshots of four public lists, US OFAC (17,515 entries), UN (1,010), UK OFSI (5,120) and EU (6,233): evidence for review, never an automatic block or a compliance clearance. Card and IFSC format checks.
 - Optional trained fraud-risk model (`OASIS_ML_RISK=1`, escalate-only).
 - Security headers and an optional passkey (WebAuthn) second factor.
 
@@ -115,7 +117,7 @@ Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
 | Reads documents and screenshots (incl. Chinese text) and extracts payment fields | Validates every plan: exact amounts, payees, deadlines, quotas, runway |
 | Proposes and revises a payment plan by calling read-only tools | Verifies the recipient against an independent registry; applies policy rules R01-R17 |
 | Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them at execution, keeps the audit chain and proof packs |
-| Optional extra risk score (can only escalate) | FlightPath, Digital Twin, netting, Trust Pass, ZK proofs, Evidence Passport, OFAC screening, the optional trained risk model (logistic regression, pure Python) |
+| Optional extra risk score (can only escalate) | FlightPath, Digital Twin, netting, Trust Pass, ZK proofs, Evidence Passport, sanctions screening, the optional trained risk model (logistic regression, pure Python) |
 
 **Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning was evaluated live with Amazon Nova Pro: valid without fallback in **16 of 24** plans with planner v2 and **24 of 24** with planner v3 (calculator tools for route choice, consolidation, SAFE and parent splits; 23 of 24 on the first proposal; fees within 1% of the deterministic planner). Small sample (3 repeats of 8 scenarios, 2026-10-13), and the final plan is always checked by the deterministic validator with a deterministic fallback behind it. The code default is still v2; set `OASIS_PLANNER_FORMAT=v3` to use v3. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log. The trained risk model ranks documents slightly better than the hand-set rules (AUC 0.80 vs 0.75) but flags no extra attack (13 vs 14 of 28), so it is reported as modest.
 
@@ -137,7 +139,11 @@ All sandbox data. Full tables and labels: [docs/results.md](docs/results.md); ra
 | FlightPath (400 transfers, seed 11) | Duplicate payments 0 vs 62 baseline; preventable issues flagged 119/119 vs 0/119; false alarms 0.0; recipient-amount error 4.43 vs 4.9 CNY | SIMULATION on mock rails; the deduction model is our own, so this shows the mechanism, not accuracy on real rails |
 | Peer netting (seed 11) | Saving vs routing alone: 0% for a pool of 1, 79% (2), 56% (10), 42% (50), 55% (200), 48% (1000); matched volume 22 to 44% | Synthetic cohorts; real pools are thinner and lopsided; needs a licensed counterparty |
 | Digital Twin | Probabilities and mitigation uplift per seeded run (reproducible) | Assumptions stated, not measured (0.3% daily FX volatility, 35% late top-up); a student who lacks the money has near-zero probabilities and only a top-up helps |
-| Tests | 730 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Fresh attack set (49 cases, offline) | First run: 32 of 33 attacks blocked, 12 of 16 genuine requests completed; after general fixes: 33 of 33 and 15 of 16 | AI-written with knowledge of the defences (fresh, not blind); the first run found an unhandled error and missing layouts |
+| Risk scorers, out of sample (fresh set) | Rules AUC 0.81, trained model AUC 0.92; 16 of 30 attack documents flagged, 0 of 16 legitimate | Scorers only escalate; cross-validation inside the training corpus gives 1.00, so that corpus is easy |
+| Foreign-currency planner, live (Nova Pro, 5 new corridors) | 25 of 27 plannable plans model-only valid, 27 of 27 delivered valid, 3 of 3 above-LRS plans refused; 233,701 tokens | Mock world, small sample; both misses are the INR-USD parent top-up scenario |
+| Foreign-currency planner, offline | 8 of 9 scenarios valid, the 9th refused for the LRS limit | Route prices are public-range estimates, not quotes (`eval/reports/fxplan.md`) |
+| Tests | 814 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Quick start
 
@@ -154,6 +160,13 @@ OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest 
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench
 PYTHONPATH=. .venv/Scripts/python -m eval.netting_bench
+# extra corridors, foreign-currency planner, fresh attack set, out-of-sample risk scorers (offline, no model call; --live fetches free ECB rates):
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.corridors_bench [--live]
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.fxplan_bench
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline --suite fresh --fresh-stem benchmark_fresh
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.risk_fresh
+# refresh the UN / UK / EU sanctions snapshot (network): python tools/fetch_extra_sanctions.py
+# live foreign-currency planner evaluation SPENDS TOKENS and needs the owner's approval: python -m eval.fxplan_live --cap N
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
@@ -204,7 +217,9 @@ Code layout: `oasis/` (agent, api, chain, flightpath, intake, market, netting, p
 - **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
 - **Benchmarks are partly by construction:** the same team wrote attacks and defences; humans are simulated.
 - **Simulations are models:** FlightPath's deduction model is self-made, peer-netting cohorts are synthetic, and the Twin's parameters are stated assumptions. None is validated against real transfers, and none is a forecast or advice.
-- **Live planner evidence is a small sample** (Nova Pro: v2 16 of 24, v3 24 of 24 valid without fallback); the validator and deterministic fallback stay in place.
+- **Live planner evidence is a small sample** (Nova Pro: v2 16 of 24, v3 24 of 24 valid without fallback; the five extra corridors 25 of 27); the validator and deterministic fallback stay in place.
+- **Extra-corridor prices are estimates:** each route price is flagged sourced, estimated or assumed with its source; none is a live provider quote, and the euro-area and applicability rules are secondary-sourced or unconfirmed ([docs/corridor-research.md](docs/corridor-research.md)).
+- **The fresh attack set is not blind:** an AI assistant that had read parts of the defence code wrote it; its first run is kept unchanged next to the post-fix run ([eval/fresh/README.md](eval/fresh/README.md)).
 - **Demo-grade security setup:** shared passcodes, plaintext keys unless a passphrase is set; passkeys, the zero-knowledge proofs and email checks are not independently audited.
 - **Credentials are sandbox credentials:** the Trust Pass and Evidence Passport are not credit scores or bank statements; the W3C VC export is only partly spec-conformant.
 - **Real channels untested live, Bedrock partly:** Telegram and the mailbox watcher were tested against fake servers; on Bedrock, the planner path was run live on Amazon Nova Pro on 2026-10-13, while extraction, vision and the LLM risk scorer have not been re-verified on it.
@@ -230,6 +245,7 @@ The full numbered list of 24 limitations follows the documentation index.
 | [docs/w3c-vc.md](docs/w3c-vc.md) | W3C VC export of the Trust Pass: what is and is not conformant |
 | [docs/breakit.md](docs/breakit.md) | Break-it live challenge |
 | [docs/real-inputs.md](docs/real-inputs.md) | email, Telegram, mailbox intake: setup, safety, what was tested |
+| [eval/fresh/README.md](eval/fresh/README.md) | the fresh attack set: how it was written, what it found, how to rerun |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem and its gaps |
 | [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each INR→CNY corridor figure came from |
 | [docs/corridor-research.md](docs/corridor-research.md) | the five extra corridors: regulation research, route-price evidence and how to replace estimates with real quotes |
