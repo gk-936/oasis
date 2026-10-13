@@ -18,7 +18,7 @@ function Fan({ fan }) {
     <svg viewBox={`0 0 ${W} ${H}`} role="img" className="twin-fan" style={{ width: "100%", height: "auto" }}
       aria-label={t("twin.fan.aria", { p50: cny(last.p50), p10: cny(last.p10), p90: cny(last.p90) })}>
       {[lo, (lo + hi) / 2, hi].map((v) => <g key={v}><line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="currentColor" opacity="0.15" /><text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="currentColor">{fmt(v)}</text></g>)}
-      <path d={band} fill="currentColor" opacity="0.18"><title>{t("twin.p10")} - {t("twin.p90")}</title></path>
+      <path d={band} fill="currentColor" opacity="0.3" stroke="currentColor" strokeOpacity="0.5" strokeWidth="1"><title>{t("twin.p10")} - {t("twin.p90")}</title></path>
       <path d={line("p50")} fill="none" stroke="currentColor" strokeWidth="2"><title>{t("twin.p50")}</title></path>
       <text x={(PAD.l + W - PAD.r) / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="currentColor">{t("twin.fan.x")}</text>
     </svg>
@@ -27,9 +27,10 @@ function Fan({ fan }) {
 
 export function Twin() {
   const [seed, setSeed] = useState(7);
+  const [rescue, setRescue] = useState(false);
   const [r, setR] = useState(null);
   const [err, setErr] = useState(null);
-  const load = useCallback(() => { setErr(null); api(`/twin?seed=${seed}`).then(setR).catch(setErr); }, [seed]);
+  const load = useCallback(() => { setErr(null); api(`/twin?seed=${seed}&rescue=${rescue}`).then(setR).catch(setErr); }, [seed, rescue]);
   useEffect(() => { load(); }, [load]);
   const b = r?.baseline, best = r?.mitigations.find((m) => m.id === r.recommended);
   const mname = (m) => t(`twin.m.${m.id}`, { n: m.topup_cny ? cny(m.topup_cny) : "" });
@@ -63,6 +64,7 @@ export function Twin() {
         <div className="row">
           <label>{t("twin.seed")} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value) || 0)} /></label>
           <button type="button" onClick={load}>{t("twin.rerun")}</button>
+          <label><input type="checkbox" checked={rescue} onChange={(e) => setRescue(e.target.checked)} /> {t("twin.rescue")}</label>
         </div>
       </>)}
     </section>

@@ -131,8 +131,13 @@ def simulate(inp: dict, plan: Plan = Plan(), paths: int = DEFAULT_PATHS, seed: i
             "deadlines": [{**o, "p_met": round(met[k] / paths, 4), "send_day": sends[k]} for k, o in enumerate(obs)], "fan": fan}
 
 
-def run_twin(passport: Passport, rates: MockRates, today: date, seed: int = 7, paths: int = DEFAULT_PATHS) -> dict:
+def run_twin(passport: Passport, rates: MockRates, today: date, seed: int = 7, paths: int = DEFAULT_PATHS, rescue: bool = False) -> dict:
     inp = build_inputs(passport, rates, today)
+    if rescue:
+        # What-if (MOCK): the family has promised enough to cover the whole gap, arriving in 10 days (and it may arrive late).
+        need0 = sum(o["amount_cny"] for o in inp["obligations"]) + inp["burn_per_day"] * 14
+        gap0 = max(need0 - inp["cny"] - inp["inr"] * inp["rate0"], 0.0)
+        inp["income"] = inp["income"] + [{"label": "What-if family top-up", "amount_cny": float(math.ceil((gap0 + 1000) / 1000) * 1000), "day": 10}]
     base = simulate(inp, Plan(), paths, seed)
     plans = {"convert_early": Plan(convert_early=True), "send_early": Plan(send_early=3), "faster_route": Plan(route_id="route_inr_cny_2")}
     need = sum(o["amount_cny"] for o in inp["obligations"]) + inp["burn_per_day"] * 14
@@ -148,4 +153,4 @@ def run_twin(passport: Passport, rates: MockRates, today: date, seed: int = 7, p
     best = options[0] if options and options[0]["improvement"] > 0.005 else None
     return {"label": "MOCK / simulation, not a forecast", "seed": seed, "paths": paths, "horizon_days": inp["horizon"],
             "assumptions": ASSUMPTIONS, "start_cny": inp["cny"], "start_inr": inp["inr"], "burn_basis": inp["burn_basis"],
-            "baseline": base, "mitigations": options, "recommended": best["id"] if best else None}
+            "rescue": rescue, "baseline": base, "mitigations": options, "recommended": best["id"] if best else None}

@@ -1,42 +1,108 @@
 # Oasis
 
-**A student finance assistant for cross-border study: it plans the semester's payments, finds the cheaper route, warns before money runs short, and will not pay the wrong person.**
+**A student finance assistant for cross-border study: it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and will not pay the wrong person.**
+
 Built for the 2026 Shenzhen FinTechathon, International Track, **Topic C: Cross-border & Student Finance Assistant**. Hero corridor: an Indian student arriving in Shenzhen (INR to CNY).
-Oasis keeps a Student Financial Passport and proposes a payment plan with an AI model; deterministic code checks, signs, enforces and records every payment.
 
-> All money, fees, payment rails, registry identities and balances are **simulated sandbox data**, labelled MOCK in the UI. Exchange rates are **real**: the hosted Docker image fetches ECB reference rates server-side (`OASIS_RATES=live`, cached, with a labelled MOCK fallback if the server is offline); local runs and tests default to a mock snapshot so results repeat. See [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
+Oasis keeps a Student Financial Passport and proposes a payment plan with an AI model; deterministic code checks, signs, enforces and records every payment. It then follows the payment after it is sent (FlightPath), simulates the semester's risks (Digital Twin), and turns verified payments into portable proof (Trust Pass, Evidence Passport).
 
-## The pain point we close
+> All money, fees, payment rails, registry identities and balances are **simulated sandbox data**, labelled MOCK in the UI. Exchange rates are **real** in the Docker image (`OASIS_RATES=live`: ECB reference rates fetched server-side, cached, with a labelled MOCK fallback); local runs and tests default to a mock snapshot so results repeat. See [docs/real-vs-simulated.md](docs/real-vs-simulated.md).
 
-**A forged invoice or a "my bank account has changed" message must never be able to redirect a student's tuition or rent.** Governments and universities warn students about exactly this (cited below). In Oasis the account that gets paid always comes from an independent payee registry, never from the document; a changed account triggers re-verification; and every payment is bound to a signed intent the executor enforces exactly. On our benchmark that is 100% of 32 attacks blocked and CNY 0 lost (a forged tuition invoice alone: CNY 30,000 saved), with every legitimate payment completed. Around that core, Oasis covers the rest of Topic C: cheaper remittance routes, deadline-aware tuition and rent plans, multi-currency balances at live rates, and a portable payment reputation (the Trust Pass) built from those same verified payments.
+## Contents
 
-## A student story: Arjun
+1. [The problem](#the-problem)
+2. [How Oasis answers each pain](#how-oasis-answers-each-pain)
+3. [Features](#features)
+4. [A student story: Arjun](#a-student-story-arjun)
+5. [What the AI does vs what code does](#what-the-ai-does-vs-what-code-does)
+6. [Results at a glance](#results-at-a-glance)
+7. [Quick start](#quick-start)
+8. [Architecture](#architecture)
+9. [Security, honesty and limitations](#security-honesty-and-limitations)
+10. [Documentation index](#documentation)
 
-Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a family-funded top-up, about CNY 42,000 in total, each with a deadline. In the scripted demo (offline, repeats exactly) Oasis does this:
+## The problem
 
-- **Sees the shortfall on day one.** The Passport and forecast show he needs about INR 604,727 and is INR 104,727 short, and warn about low runway, the SAFE annual quota and Indian TCS when a parent sends money.
-- **Compares routes and saves fees.** The agent's plan (valid after 2 validator revisions) saves **CNY 1,653 vs a typical bank route**. Across the 8 planning scenarios conversion fees were CNY 4,990 vs 29,378 (83% lower); in the 90-day simulation of 5 personas Oasis saves CNY 1,542 to 2,963 each, Arjun CNY 2,731. All mock fees; see [docs/results.md](docs/results.md).
-- **Meets deadlines.** All 20 deadlines across the 8 planning scenarios were met by the deterministic planner, with CNY arriving before it is spent.
-- **Pays tuition with a signed intent** to the registry-verified university account, and issues a proof pack he can show anyone.
-- **Languages.** The interface and the server's plain-language explanations come in English (default) and Simplified Chinese (picker on the login screen and in the header; a student's choice is saved in the Passport); machine-drafted Chinese, see `docs/i18n-glossary.md`.
-- **Gets parent co-approval in Tamil, Hindi, Chinese or English.** A top-up needs the parent's signed approval; the parent sees it in their own language (templated text, not native-reviewed).
-- **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
-- **Builds a payment reputation from day one: the Oasis Trust Pass (credit building, not a credit score).** Most students arrive with no credit file at all, and none travels across the border. From the payments that passed the full checks, Arjun issues a signed Trust Pass he holds himself: he picks claims ("3 of 3 paid on time", "all to registry-verified payees"), or only thresholds ("at least 90% on time") that hide the exact numbers, and chooses which payments, if any, to reveal (salted commitments, selective disclosure). He can also prove **any** threshold in zero knowledge ("at least 94% on time", "at least 5 payments") without revealing the counts and without Oasis pre-signing that number: the signed pass holds commitments to the counts and the proof is bound to this credential and audience; a false claim cannot be proved. He names the verifier ("Landlord, Room 1203", sealed into the signature) and shows a QR code; the landlord's phone opens a login-free page that re-verifies every signature. The pass suggests what it can support asking for (a lower deposit, no guarantor). A clean streak also proposes a higher parent co-approval limit that only the parent can accept. Not a bureau report: it cannot be padded by "paying rent" to a friend, because every payment went to a registry-verified payee. The simpler signed **payment-reliability record** is still there too. The pass can also be exported as a **W3C Verifiable Credential** (`did:key` issuer, Ed25519 proof; partly spec-conformant, see [docs/w3c-vc.md](docs/w3c-vc.md)).
-- **Sends the invoice the way it really arrives.** Besides pasting text or a photo, Arjun uploads a real email (.eml) or forwards it to a Telegram bot or a watched mailbox (optional; see [docs/real-inputs.md](docs/real-inputs.md)). Oasis reads the message's own headers: a forged test email (sender authentication failed, Reply-To on another domain, free-mail sender, hidden instruction text) scores risk 0.98 and is rejected at the verify step, while the genuine one scores 0 and waits for his signature. The channel adds evidence, never authority.
-- **Screens payees against a public sanctions list.** Payee names are fuzzy-matched against a snapshot of the US OFAC list (17,515 entries); a close match is evidence that sends the payment to review, never an automatic block, and a clean result is not a compliance clearance.
-- **Manages money in six currencies at live rates.** INR, CNY, USD, EUR, GBP and AUD balances, each valued in yuan and rupees at real ECB mid rates, with exposure per currency, an in-app converter (wallet fee and saving versus a typical bank shown up front; mock pricing) and a check that the yuan on hand covers everything due in the next 60 days.
-- **Acts on his behalf within small limits:** a rate-target conversion and a recurring bill (Tier-1 autonomy), then shows a **savings receipt** (CNY 1,313.66 in the demo) and the Student Financial Passport.
+International students moving money across a border meet four recurring failures:
 
-Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
+1. **Invoice-redirect fraud.** A forged invoice, or a "my bank account has changed" message from a fake landlord or finance office, sends tuition or rent to a criminal.
+2. **Hidden fees.** The amount that leaves the sender is not the amount that arrives; spreads, wallet fees and card fees are buried.
+3. **Payments that arrive short, late or twice.** A right payment to the right person still fails: delayed past a deadline, short-credited by intermediary deductions, or resent in panic and duplicated.
+4. **No credit history.** Most students arrive with no credit file and none travels across the border, so landlords ask for large deposits or guarantors.
 
-## Why this matters
-
-Cited external facts (sources, dates and gaps: [docs/problem-evidence.md](docs/problem-evidence.md); read 2026-10-11, no user research with real students has been done):
+Cited external evidence (sources, dates and gaps: [docs/problem-evidence.md](docs/problem-evidence.md); read 2026-10-11; **no user research with real students has been done**):
 
 - Sending money costs about 6.5% of the amount on average worldwide and banks are the dearest provider type at about 14.6% ([World Bank Remittance Prices Worldwide, Q1 2025](https://remittanceprices.worldbank.org/sites/default/files/rpw_main_report_and_annex_q125_1_0.pdf), read via a summary); we found no cited India-to-China tuition figure.
 - Paying in China by foreign card in WeChat Pay carries a 3% fee on each payment of CNY 200 or more ([Beijing government](https://english.beijing.gov.cn/travellinginbeijing/essentials/inboundtourismfacilitationmeasures/202603/t20260326_4566766.html)).
 - Shanghai's government warns international students about texts from a "landlord with a new number" asking for rent to a different card ([Shanghai government](https://english.shanghai.gov.cn/en-Editor'sPick-StudyinShanghai/20240828/f7b950613be9462e80a8bd94ca2c38de.html)); a Belgian university warned that fraudsters alter the account number on genuine tuition invoices ([VRT News](https://www.vrt.be/vrtnws/en/2026/10/01/ku-leuven-warns-of-invoice-fraud-with-tuition-fee-payments/), date unresolved).
 - The Ministry of External Affairs told the Rajya Sabha in 2023 that about 10,000 Indian students were in higher education in China, adding that students do not register with missions ([Careers360 report](https://news.careers360.com/no-specific-data-indian-students-studying-abroad-china-mbbs-russia-fmge-covid-in-spite-of-constant-efforts-ministry)).
+
+## How Oasis answers each pain
+
+| Pain | Feature | How | Proof (all sandbox) |
+|---|---|---|---|
+| Invoice-redirect fraud | Payee registry, signed intents, policy R01-R17, executor | The paid account comes from an independent registry, never the document; a changed account triggers re-verification; the executor enforces the signed intent exactly | 100% of 32 visible and 28 hidden attacks blocked, CNY 0 lost; forged tuition invoice alone: CNY 30,000 saved |
+| Fraud a judge invents | Break-it challenge | Paste any attempt; it runs through the real pipeline and returns the rule and why-card | Live in the Break it tab; deterministic attacker generator with scoreboard |
+| Hidden fees | Route comparison, wallet converter, planner | Ranks routes by what the recipient receives; shows wallet fee and saving versus a typical bank | Planning: fees CNY 4,990 vs 29,378 (83% lower); simulation: CNY 1,542 to 2,963 saved per student over 90 days (mock fees) |
+| Missed deadlines, running short | Deterministic plan validator, forecast, Digital Twin | Plans checked for exact amounts, quotas, runway; Monte Carlo of FX, late top-ups and rail delays | 20 of 20 deadlines met across 8 planning scenarios; Twin gives per-deadline probabilities and mitigation uplift (simulation) |
+| Arrives short, late or duplicated | FlightPath | Pre-transfer checks, recipient-amount routing, delay and short-credit detection, no blind resend | Simulated benchmark: 0 duplicate payments vs 62 baseline; 119 of 119 preventable issues flagged (own model, see caveats) |
+| Cost of FX spread | Peer netting (simulation) | Matches INR-to-CNY payers with CNY-to-INR payers at mid-rate | Saving grows with pool size, 0 for a pool of one (synthetic cohorts) |
+| No credit history | Trust Pass, ZK threshold proofs, W3C VC export | Student-held credential from verified payments; selective disclosure; any threshold provable without revealing counts | Tamper and false-claim tests pass; sandbox credential, not a credit score |
+| "Did this payment really arrive?" | Evidence Passport | One signed, QR-verifiable bundle: intent, registry payee, reconciliation, audit-chain proof | Login-free verifier with tamper tests; reconciliation is MOCK |
+
+## Features
+
+**Core protection**
+- Six-step pipeline: Understand, Plan, Verify, Commit, Execute and watch, Prove.
+- Independent payee registry (WeIdentity-style demo credentials), verification ramp (registry check, test payment, low limit, full limit).
+- Policy engine R01-R17, permission tiers, corridor rules from `oasis/trust/rules/inr_cny.yaml` (each value with source and status).
+- Hybrid Ed25519 + ML-DSA-65 signed intents enforced exactly by the executor (nonce, expiry, policy re-check).
+- Canary tripwires, freeze and recovery plan, SHA-256 hash-chained audit log, proof packs with an independent verifier, plain-language why-cards.
+- Sanctions screening against a snapshot of the US OFAC list (17,515 entries): evidence for review, never an automatic block or a compliance clearance. Card and IFSC format checks.
+- Optional trained fraud-risk model (`OASIS_ML_RISK=1`, escalate-only).
+- Security headers and an optional passkey (WebAuthn) second factor.
+
+**Planning and money**
+- Student Financial Passport, spending categorisation, cold-start to own-pattern forecast, shortfall and runway warnings, SAFE quota and Indian TCS awareness.
+- Agentic planner with a deterministic validator and fallback; deadline-aware tuition and rent plans.
+- Route comparison, six-currency wallet view (INR, CNY, USD, EUR, GBP, AUD), in-app converter, 60-day coverage check.
+- Tier-1 autonomy: rate-target conversions and recurring bills within small limits; savings receipt.
+
+**FlightPath** (payment-journey reliability, [docs/flightpath.md](docs/flightpath.md)): predict (pre-transfer checks), plan (routes ranked by recipient amount with a worst-case deduction margin), simulate (journey state machine), reconcile (delay and short-credit detection), recover (never resends while the first transfer is unresolved). FlightPath tab; journeys persist and verdicts go to the audit chain.
+
+**Trust Pass, zero knowledge and W3C VC** ([docs/w3c-vc.md](docs/w3c-vc.md)): student-held credential from payments that passed all checks; claims or thresholds only; salted commitments and selective disclosure; audience binding; zero-knowledge proof of any threshold ("at least 94% on time") with counts hidden; QR plus login-free verifier page; export as a W3C Verifiable Credential (`did:key` issuer, Ed25519 proof; only partly spec-conformant). The simpler signed payment-reliability record remains.
+
+**Evidence Passport** ([docs/evidence-passport.md](docs/evidence-passport.md)): one signed bundle proving a payment went to a registry-verified payee and arrived, verifiable by anyone at `/?evidence=<code>`; verification needs the server, proof-pack and registry issuer keys to match pins.
+
+**Financial Digital Twin** ([docs/digital-twin.md](docs/digital-twin.md)): seeded Monte Carlo (600 paths by default, about 0.2 s) of the rest of the semester: per-deadline probability, p10/p50/p90 balance fan chart, and mitigations (convert now, pay earlier, faster route, sized parent top-up) measured by re-running the same random paths.
+
+**Peer netting** ([docs/peer-netting.md](docs/peer-netting.md)): MOCK simulation of matching opposite INR/CNY flows at mid-rate; only verified, approved payments with at least 2 days to deadline enter the pool. Netting tab.
+
+**Break-it challenge** ([docs/breakit.md](docs/breakit.md)): live fraud input plus a deterministic offline attacker generator (up to 12 variants) with a scoreboard.
+
+**Intake channels** ([docs/real-inputs.md](docs/real-inputs.md)): pasted text, photo or screenshot (including Chinese text), uploaded .eml, optional Telegram bot and IMAP mailbox watcher. Email headers (sender authentication, Reply-To mismatch, free-mail sender, hidden instructions) add risk evidence, never authority.
+
+**LLM options**: `OASIS_LLM=offline` (default; deterministic, no key, reproducible) or `bedrock` (Claude Haiku on Amazon Bedrock, with a daily token cap; setup in [docs/bedrock-setup.md](docs/bedrock-setup.md), which notes the Bedrock path has not yet been run against the real API). The earlier live evaluations in the results used Groq-hosted models and are labelled as such.
+
+**Languages**: English (default) and Simplified Chinese interface and server messages; parent approval in Tamil, Hindi, Chinese or English. All non-English text is machine-drafted ([docs/i18n-glossary.md](docs/i18n-glossary.md)).
+
+**Hosting and optional extras**: Docker image with live rates that refuses the public demo passcodes; FISCO BCOS 4-node local-chain anchoring (`OASIS_ANCHOR=fisco`); post-quantum TLS recipe (OpenSSL client only).
+
+## A student story: Arjun
+
+Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a family-funded top-up, about CNY 42,000 in total, each with a deadline. In the scripted demo (offline, repeats exactly) Oasis does this:
+
+- **Sees the shortfall on day one.** He needs about INR 604,727 and is INR 104,727 short, with warnings about low runway, the SAFE annual quota and Indian TCS when a parent sends money.
+- **Compares routes and saves fees.** The agent's plan (valid after 2 validator revisions) saves **CNY 1,653 vs a typical bank route**.
+- **Meets deadlines**, with CNY arriving before it is spent.
+- **Pays tuition with a signed intent** to the registry-verified university account and gets a proof pack he can show anyone.
+- **Gets parent co-approval** in Tamil, Hindi, Chinese or English (templated text, not native-reviewed).
+- **Handles the landlord's genuine account change** (paid in 45 simulated minutes, nothing wrongly blocked) while a forged invoice is stopped with a plain-language why-card.
+- **Builds a payment reputation:** issues a Trust Pass naming the verifier (for example "Landlord, Room 1203"), shows a QR code, and the landlord's phone re-verifies every signature. It is credit building, not a credit score, and cannot be padded by paying a friend, because every payment went to a registry-verified payee.
+- **Sends the invoice the way it arrives.** A forged test email (failed sender authentication, Reply-To on another domain, free-mail sender, hidden instruction text) scores risk 0.98 and is rejected at Verify; the genuine one scores 0 and waits for his signature.
+- **Acts within small limits:** a rate-target conversion and a recurring bill, then a **savings receipt** (CNY 1,313.66 in the demo).
+
+Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
 
 ## What the AI does vs what code does
 
@@ -44,38 +110,29 @@ Cited external facts (sources, dates and gaps: [docs/problem-evidence.md](docs/p
 |---|---|
 | Reads documents and screenshots (incl. Chinese text) and extracts payment fields | Validates every plan: exact amounts, payees, deadlines, quotas, runway |
 | Proposes and revises a payment plan by calling read-only tools | Verifies the recipient against an independent registry; applies policy rules R01-R17 |
-| Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them exactly at execution, keeps the audit chain and proof packs |
+| Explains decisions in plain language, Tamil and Hindi | Signs intents (Ed25519 + ML-DSA-65), enforces them at execution, keeps the audit chain and proof packs |
+| Optional extra risk score (can only escalate) | FlightPath, Digital Twin, netting, Trust Pass, ZK proofs, Evidence Passport, OFAC screening, the optional trained risk model (logistic regression, pure Python) |
 
-**Also in the code, not the AI:** a small trained fraud-risk model (logistic regression, pure Python, optional via `OASIS_ML_RISK=1`, escalate-only, explainable weights). Measured once on the hidden set it ranks documents slightly better than the hand-set rules (AUC 0.80 against 0.75) but flags no extra attack (13 of 28 against 14 of 28), so it is reported as modest, not as a detection gain ([docs/results.md](docs/results.md)).
-
-**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%). The final plan is always valid only because a fallback to the deterministic plan takes over. Calculator tools (planner format v3) were evaluated live on 2026-10-12 but the comparison is incomplete (quota ran out), so v2 stays the default. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log.
+**Plain statement:** most of the work is deterministic code, not the AI. Unaided model planning is currently weak: live model-only plans were valid in **7 of 24** runs (29%), and the final plan is valid only because a fallback to the deterministic plan takes over. The planner v3 comparison is incomplete (quota ran out), so v2 stays the default. The AI never holds credentials, approves a payment, changes a verification status or edits the audit log. The trained risk model ranks documents slightly better than the hand-set rules (AUC 0.80 vs 0.75) but flags no extra attack (13 vs 14 of 28), so it is reported as modest.
 
 ## Results at a glance
 
-All sandbox data. Full tables and labels: [docs/results.md](docs/results.md).
+All sandbox data. Full tables and labels: [docs/results.md](docs/results.md); raw files in `eval/reports/`.
 
 | Result | Number | Caveat |
 |---|---|---|
 | Visible benchmark (32 attacks, offline) | 100% blocked, CNY 0 lost (unprotected baseline: 6.2%, CNY 479,000 lost) | Our own attacks; simulated humans, so partly by construction |
-| Hidden blind set (28 attacks, offline) | 100% blocked (strict pass criteria; baseline 39.3%) | Written by an independent agent, but partly burned: its failures were fixed afterwards |
-| Live model vs injections | Model followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
-| Route savings (simulation) | CNY 1,542 to 2,963 saved per student over 90 days | A model with stated assumptions and mock fees |
+| Hidden blind set (28 attacks, offline) | 100% blocked (strict criteria; baseline 39.3%) | Independent author, but partly burned: its failures were fixed afterwards |
+| Live model vs injections | Followed 0 of 18 embedded injections | Tiny sample of one model; not a robustness claim |
+| Planning (8 scenarios, deterministic) | 8/8 valid, 20/20 deadlines, fees CNY 4,990 vs 29,378 (83% lower) | MOCK fees and rates |
+| Route savings (90-day simulation) | CNY 1,542 to 2,963 saved per student | Model with stated assumptions, mock fees |
 | Live planner, model-only | 7 of 24 plans valid (29%) | Final plan valid only via the deterministic fallback |
-| Planner v3 vs v2 (live, incomplete) | gpt-oss-120b v3 14 of 24 valid (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 of 24 plans; no verdict, v2 stays default |
-| Trained risk model vs rules (hidden set) | AUC 0.804 vs 0.747; attacks flagged 13/28 vs 14/28; legit flagged 0/12 both | Synthetic training data from the same team; hidden set small and partly burned; off by default |
-| Tests | 729 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
-
-## Top limitations
-
-Full list of 24 below.
-
-- **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
-- **Weak unaided AI planning:** 7 of 24 live plans valid; the fallback makes the final plan valid.
-- **Benchmarks are partly by construction:** same team wrote attacks and defences; humans are simulated.
-- **Demo-grade security setup:** shared passcodes, plaintext keys unless a passphrase is set; passkeys (optional second factor), the zero-knowledge proofs and the email checks are not independently audited.
-- **Real channels untested live:** the Telegram bot and mailbox watcher were tested against fake servers; Telegram is blocked in mainland China.
-- **Translations are machine-drafted:** Chinese, Tamil and Hindi wording is unreviewed by native speakers; English is the official text.
-- **Regulatory figures are researched, not confirmed** by a bank or counsel; not legal advice.
+| Planner v3 vs v2 (live, incomplete) | v3 gpt-oss-120b 14 of 24 (58%); qwen3.8-27b 4 of 24 (17%) for both | v2 gpt-oss cell has 2 plans; no verdict, v2 default |
+| Trained risk model vs rules (hidden) | AUC 0.804 vs 0.747; flagged 13/28 vs 14/28 | Synthetic training data; off by default |
+| FlightPath (400 transfers, seed 11) | Duplicate payments 0 vs 62 baseline; preventable issues flagged 119/119 vs 0/119; false alarms 0.0; recipient-amount error 4.43 vs 4.9 CNY | SIMULATION on mock rails; the deduction model is our own, so this shows the mechanism, not accuracy on real rails |
+| Peer netting (seed 11) | Saving vs routing alone: 0% for a pool of 1, 79% (2), 56% (10), 42% (50), 55% (200), 48% (1000); matched volume 22 to 44% | Synthetic cohorts; real pools are thinner and lopsided; needs a licensed counterparty |
+| Digital Twin | Probabilities and mitigation uplift per seeded run (reproducible) | Assumptions stated, not measured (0.3% daily FX volatility, 35% late top-up); a student who lacks the money has near-zero probabilities and only a top-up helps |
+| Tests | 730 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Quick start
 
@@ -87,32 +144,35 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests: OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q     # 738 tests, no network
+# tests (731 passed, 2 skipped, no network):
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
+# simulation benchmarks (write eval/reports/flightpath.* and netting.*):
+PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench
+PYTHONPATH=. .venv/Scripts/python -m eval.netting_bench
 ```
 
 **For a judge:** `scripts\start_judge.ps1` (Windows) or `bash scripts/start_judge.sh` starts everything offline with a fresh sandbox and prints the URL and logins; see [JUDGE_GUIDE.md](JUDGE_GUIDE.md). Benchmark commands, LLM settings and env vars: [docs/configuration.md](docs/configuration.md).
 
-**Hosting (Docker):** `docker compose up -d --build` runs a single-worker container that refuses the public demo passcodes and fetches live ECB exchange rates server-side (judges' browsers never call the rate API; if the server cannot reach it the rate badge says MOCK and everything still works); see [docs/deployment-docker.md](docs/deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
+**Live model (optional):** follow [docs/bedrock-setup.md](docs/bedrock-setup.md), then `OASIS_LLM=bedrock`. Keep offline for tests and any public instance.
 
-## Login and roles
+**Hosting (Docker):** `docker compose up -d --build` runs a single-worker container that refuses the public demo passcodes and fetches live ECB rates server-side; see [docs/deployment-docker.md](docs/deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
 
-Demo passcodes (public, from `.env.example`; set `OASIS_PASS_*` for anything real):
+**Demo logins** (public, from `.env.example`; set `OASIS_PASS_*` for anything real):
 
 | Role | Passcode | May do |
 |---|---|---|
 | student | `student-demo` | intake, chat, plans, rate targets, signed approvals, the scripted demo, reset |
 | parent | `parent-demo` | signed approval of top-ups, sees only their own items |
-| judge | `judge-demo` | read-only views and the rate-limited red-team console |
-| Break it | tab for judge and student | live fraud challenge: rule + why-card verdict and a deterministic attacker generator with scoreboard (MOCK), see [docs/breakit.md](docs/breakit.md) |
+| judge | `judge-demo` | read-only views, the rate-limited red-team console and the Break it tab |
 
-Approvals are signed by browser-held Ed25519 device keys. Details: [docs/technical-documentation.md](docs/technical-documentation.md) section 11.
+Approvals are signed by browser-held Ed25519 device keys ([docs/technical-documentation.md](docs/technical-documentation.md) section 11).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   subgraph U["UNTRUSTED: everything the agent reads or writes"]
-    D["Documents, screenshots, web pages, tool output"] --> S1["1 Understand<br/>LLM extraction + canary scan + risk score<br/>(inputs only)"]
+    D["Documents, screenshots, email, web pages, tool output"] --> S1["1 Understand<br/>LLM extraction + canary scan + risk score<br/>(inputs only)"]
     S1 --> S2["2 Plan<br/>routes, forecast, agentic planner"]
     S2 -. "proposal" .-> V["Plan validator<br/>(deterministic)"]
     V -. "errors, revise (max 4)" .-> S2
@@ -125,14 +185,27 @@ flowchart LR
   end
   S5 --> L[("Sandbox ledger (MOCK)")]
   S5 -. "canary hit / mismatch" .-> F["Freeze, recovery plan,<br/>student approves"]
+  S5 --> FP["FlightPath<br/>reconcile, recover"]
+  FP --> EP["Evidence Passport"]
+  S6 --> TP["Trust Pass / ZK / W3C VC"]
+  P["Passport"] --> TW["Digital Twin (simulation)"]
 ```
 
-Safety (the part that keeps wrong payments from happening): the registry-confirmed account is the only one paid, each approved payment is bound to a signed intent the executor enforces exactly, canary tripwires flag tampering, and a proof pack anyone can verify ([docs/technical-documentation.md](docs/technical-documentation.md) sections 4 and 12).
+Code layout: `oasis/` (agent, api, chain, flightpath, intake, market, netting, passport, planning, proof, screening, trust, twin), `frontend/src/tabs/` (React UI), `eval/` (benchmarks and reports), `tests/`. Details: [docs/technical-documentation.md](docs/technical-documentation.md) sections 4 and 12.
 
-## Optional extras (not required for Topic C)
+## Security, honesty and limitations
 
-- **FISCO BCOS anchoring:** a 4-node local test chain, opt-in (`OASIS_ANCHOR=fisco`); no on-chain bonus claim ([docs/fisco-bcos.md](docs/fisco-bcos.md)).
-- **Post-quantum TLS:** tested with an OpenSSL client only, not browsers ([docs/pq-tls.md](docs/pq-tls.md)).
+- The registry-confirmed account is the only one paid; each approved payment is bound to a signed intent the executor enforces exactly; canaries flag tampering; proof packs are verifiable by anyone.
+- **Mock world:** fees, rails, registry and balances are simulated; nothing touches a real bank.
+- **Benchmarks are partly by construction:** the same team wrote attacks and defences; humans are simulated.
+- **Simulations are models:** FlightPath's deduction model is self-made, peer-netting cohorts are synthetic, and the Twin's parameters are stated assumptions. None is validated against real transfers, and none is a forecast or advice.
+- **Weak unaided AI planning** (7 of 24); the deterministic fallback makes plans valid.
+- **Demo-grade security setup:** shared passcodes, plaintext keys unless a passphrase is set; passkeys, the zero-knowledge proofs and email checks are not independently audited.
+- **Credentials are sandbox credentials:** the Trust Pass and Evidence Passport are not credit scores or bank statements; the W3C VC export is only partly spec-conformant.
+- **Real channels and Bedrock untested live:** Telegram and the mailbox watcher were tested against fake servers; the Bedrock path has not been run against the real API.
+- **Translations are machine-drafted;** regulatory figures are researched, not confirmed by a bank or counsel; not legal advice.
+
+The full numbered list of 24 limitations follows the documentation index.
 
 ## Documentation
 
@@ -140,23 +213,28 @@ Safety (the part that keeps wrong payments from happening): the registry-confirm
 |---|---|
 | [docs/results.md](docs/results.md) | all benchmark, planning, live and simulation tables with precise labels |
 | [docs/configuration.md](docs/configuration.md) | LLM configuration, environment variables, persistence, benchmark commands |
-| [docs/technical-documentation.md](docs/technical-documentation.md) | architecture, algorithms, security design, API, repository layout, agentic planning, demo, proof-pack verification, deployment |
+| [docs/bedrock-setup.md](docs/bedrock-setup.md) | step-by-step Amazon Bedrock (Claude Haiku) setup, IAM, spend cap |
+| [docs/technical-documentation.md](docs/technical-documentation.md) | architecture, algorithms, security design, API, repository layout, deployment |
 | [docs/security-self-assessment.md](docs/security-self-assessment.md) | permission tiers, threat model, known risks, out of scope |
-| [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, exact test, command, outcome and limits (no audit or certification) |
+| [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) | each security claim mapped to code, test and limits (no audit or certification) |
 | [docs/compliance-mapping.md](docs/compliance-mapping.md) | design alignment with LRS/TCS, SAFE, PIPL, DPDP, AML-style monitoring; explicitly NOT compliance |
-| [docs/peer-netting.md](docs/peer-netting.md) | Peer netting (MOCK simulation): matches INR to CNY payers against CNY to INR payers at mid-rate, residual routed normally; saving grows with pool size, 0 for a pool of one; synthetic cohorts, needs a licensed counterparty in reality |
-| [docs/flightpath.md](docs/flightpath.md) | FlightPath: pre-transfer checks, recipient-amount route comparison, simulated transfer lifecycle, delay/short-credit detection, no-blind-resend recovery; simulation benchmark and its limits (core only, no UI tab yet) |
-| [docs/digital-twin.md](docs/digital-twin.md) | Financial Digital Twin: seeded Monte Carlo of the semester (FX random walk, late top-up, rail delay); per-deadline probabilities, p10/p50/p90 runway fan chart, mitigation uplift by re-running (MOCK simulation, Twin tab) |
-| [docs/evidence-passport.md](docs/evidence-passport.md) | Payment Evidence Passport: one signed, QR-verifiable bundle (signed intent + registry payee + FlightPath reconciliation + audit-chain proof) with a login-free verifier and tamper tests; reconciliation is MOCK |
-| [docs/real-inputs.md](docs/real-inputs.md) | real invoice intake (email file, Telegram bot, mailbox watcher): setup, safety rules, where each works (Telegram is blocked in mainland China), what was and was not tested live |
-| [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem (costs, scams, student numbers), what was not found, and what is only simulated; no user research yet |
-| [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from (retrieved 2026-10-11), what could not be read |
-| [JUDGE_GUIDE.md](JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge to try to break Oasis, offline, one command |
+| [docs/flightpath.md](docs/flightpath.md) | FlightPath checks, lifecycle, recovery, benchmark and its limits |
+| [docs/digital-twin.md](docs/digital-twin.md) | Monte Carlo twin, assumptions, mitigation uplift |
+| [docs/evidence-passport.md](docs/evidence-passport.md) | Payment Evidence Passport contents, endpoints, trust model |
+| [docs/peer-netting.md](docs/peer-netting.md) | peer netting simulation and honest limits |
+| [docs/w3c-vc.md](docs/w3c-vc.md) | W3C VC export of the Trust Pass: what is and is not conformant |
+| [docs/breakit.md](docs/breakit.md) | Break-it live challenge |
+| [docs/real-inputs.md](docs/real-inputs.md) | email, Telegram, mailbox intake: setup, safety, what was tested |
+| [docs/problem-evidence.md](docs/problem-evidence.md) | cited evidence for the student problem and its gaps |
+| [docs/regulatory-sources.md](docs/regulatory-sources.md) | where each corridor figure came from |
 | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) | what is working code and what is MOCK |
 | [docs/execution-evidence.md](docs/execution-evidence.md) | sandbox logs and reports, how to regenerate them |
 | [docs/planner-efficiency.md](docs/planner-efficiency.md) | planner format experiments (v1, v2, v3) |
-| [docs/deployment-docker.md](docs/deployment-docker.md) | Docker image, compose (+ optional Caddy TLS), hosting options, hosted-security checklist, backup and reset |
-| [docs/pq-tls.md](docs/pq-tls.md) / [docs/fisco-bcos.md](docs/fisco-bcos.md) | post-quantum TLS recipe; FISCO BCOS local-chain anchoring |
+| [docs/live-rates.md](docs/live-rates.md) | live ECB rate handling |
+| [docs/i18n-glossary.md](docs/i18n-glossary.md) | translation glossary (machine-drafted) |
+| [docs/deployment-docker.md](docs/deployment-docker.md) | Docker, compose, hosting checklist, backup and reset |
+| [docs/pq-tls.md](docs/pq-tls.md) / [docs/fisco-bcos.md](docs/fisco-bcos.md) | post-quantum TLS; FISCO BCOS local-chain anchoring |
+| [JUDGE_GUIDE.md](JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge, offline, one command |
 | [PROGRESS.md](PROGRESS.md) | build ledger |
 
 ## Known limitations
@@ -206,11 +284,11 @@ Oasis is released under the [MIT licence](LICENSE). Dependencies (read from inst
 |---|---|
 | FastAPI, Pydantic, PyYAML, pytest, React 18, React DOM, Vite 5, @vitejs/plugin-react, httptools, watchfiles, qrcode-generator | MIT |
 | Starlette, Uvicorn, HTTPX, python-dotenv, websockets | BSD-3-Clause |
-| PyNaCl, Groq SDK, python-multipart | Apache-2.0 |
+| PyNaCl, boto3, python-multipart | Apache-2.0 |
 | cryptography | Apache-2.0 OR BSD-3-Clause |
 | gmssl (optional SM2/SM3) | BSD |
 | py_webauthn (passkeys), pypdf (optional, PDF text) | BSD-3-Clause |
 | cbor2 (via py_webauthn) | MIT |
 | Frontend build-time transitive packages (`node_modules`) | MIT (55), ISC (5), Apache-2.0 (1), BSD-3-Clause (1), CC-BY-4.0 (1: `caniuse-lite` browser-support data, attribution required, build-time only, not shipped in `dist`) |
 
-Groq models (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`) are used as a hosted service under Groq's terms and are not redistributed. Licences of every transitive Python package were not exhaustively audited.
+Claude Haiku on Amazon Bedrock is used as a hosted service under AWS and Anthropic terms and are not redistributed. Licences of every transitive Python package were not exhaustively audited.

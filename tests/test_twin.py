@@ -32,3 +32,11 @@ def test_mitigation_improvement_is_a_rerun_difference():
     r = tw.run_twin(w.passport, w.rates, w.today)
     for m in r["mitigations"]:
         assert abs(m["improvement"] - (m["p_all_met"] - r["baseline"]["p_all_met"])) < 1e-3
+
+
+def test_rescue_scenario_makes_deadlines_reachable():
+    w = _world()
+    base = tw.run_twin(w.passport, w.rates, w.today)
+    r = tw.run_twin(w.passport, w.rates, w.today, rescue=True)
+    assert r["rescue"] is True and base["rescue"] is False
+    assert r["baseline"]["p_all_met"] > base["baseline"]["p_all_met"]

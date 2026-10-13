@@ -1797,9 +1797,9 @@ def netting_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 # ------------------------------------------------------------------ Financial Digital Twin (MOCK simulation; moves no money)
 @app.get("/api/twin")
-def twin_run(seed: int = 7, paths: int = twin.DEFAULT_PATHS, p: Principal = Depends(STUDENT_JUDGE)):
+def twin_run(seed: int = 7, paths: int = twin.DEFAULT_PATHS, rescue: bool = False, p: Principal = Depends(STUDENT_JUDGE)):
     paths = max(50, min(paths, 2000))
-    return twin.run_twin(S.world.passport, S.world.rates, S.world.today, seed=seed, paths=paths)
+    return twin.run_twin(S.world.passport, S.world.rates, S.world.today, seed=seed, paths=paths, rescue=rescue)
 # ------------------------------------------------------------------ Payment Evidence Passport (signed, QR-verifiable; rail is MOCK)
 class EvpIssueIn(Strict):
     intent_id: str = Field(max_length=64)
