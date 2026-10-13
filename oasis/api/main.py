@@ -60,6 +60,7 @@ from ..mock.fx import FxError, quote as fx_quote, table_for
 from ..passport import currency as currency_mod
 from ..passport.currency import currency_view
 from ..proof import trust_pass as tp
+from ..proof import vc_export
 from ..proof.pack import verify_proof_pack
 from ..proof.reliability import build_reliability_record, eligible_payments, verify_reliability_record
 from ..intake.telegram import PairingStore, summarize as chat_summary
@@ -1519,6 +1520,26 @@ def trust_check(code: str):
 def trust_verify(pres: dict):
     """PUBLIC: verifies a pasted Trust Pass presentation against THIS server's pinned key and simulated clock."""
     return _tp_verify(pres)
+
+
+# ---- W3C Verifiable Credentials export of the Trust Pass (see docs/w3c-vc.md) ----
+class TrustVcExportIn(Strict):
+    holder: dict                    # the issue response (credential + disclosures); only the credential is exported
+
+
+@app.post("/api/trust-pass/vc/export")
+def trust_vc_export(body: TrustVcExportIn, p: Principal = Depends(STUDENT)):
+    """Student only. Converts a Trust Pass this server issued into a W3C VC (did:key issuer, Ed25519 proof)."""
+    if not _tp_verify({"credential": body.holder.get("credential"), "disclosures": []}).get("ok"):
+        raise HTTPException(400, "only a Trust Pass that verifies against this server can be exported")
+    return vc_export.export_vc(body.holder, S.world.signer)
+
+
+@app.post("/api/trust-pass/vc/verify")
+def trust_vc_verify(vc: dict):
+    """PUBLIC: verifies a pasted W3C VC export against THIS server's pinned key."""
+    return vc_export.verify_vc(vc, S.trusted_fingerprints())
+# ---- end W3C VC export ----
 
 
 @app.get("/api/trust-pass/ladder")

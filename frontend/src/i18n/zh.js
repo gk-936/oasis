@@ -808,6 +808,8 @@ export default {
   "cp.step2.note": "勾选的付款将完整显示，其余保持隐藏。有效期 {days} 天。",
   "cp.nopayments": "还没有已验证的付款。请先通过 Oasis 支付一笔款项。",
   "cp.sharing": "公开 {shown} 笔付款，隐藏 {hidden} 笔",
+  "vc.export": "导出为 W3C VC",
+  "vc.done": "已导出 W3C VC：did:key 签发者，Ed25519 签名（见 docs/w3c-vc.md）",
   "cp.download": "下载 JSON（用于独立核验）",
   "cp.announce.issued": "已签发信任通行证",
   "cp.announce.checked": "已核验信任通行证",

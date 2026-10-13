@@ -161,6 +161,7 @@ export function TrustPass() {
         <div className="row">
           <button disabled={busy} onClick={share} data-testid="cp-share">{t("cp.share")}</button>
           <button className="ghost" onClick={() => downloadJson(presentation, "oasis-trust-pass.json")} data-testid="cp-download">{t("cp.download")}</button>
+          <button className="ghost" disabled={busy} onClick={() => run(async () => { downloadJson(await api("/trust-pass/vc/export", { holder: { credential: holder.credential } }), "oasis-trust-pass.vc.json"); announce(t("vc.done")); })} data-testid="cp-vc">{t("vc.export")}</button>
         </div>
         {shared && (
           <div className="qr-box" data-testid="cp-qr">
