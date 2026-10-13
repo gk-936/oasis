@@ -12,14 +12,15 @@ import { Netting } from "./tabs/Netting.jsx";
 import { Numbers } from "./tabs/Numbers.jsx";
 import { Parent } from "./tabs/Parent.jsx";
 import { Passport } from "./tabs/Passport.jsx";
+import { Twin } from "./tabs/Twin.jsx";
 import { Proof } from "./tabs/Proof.jsx";
 import { RedTeam } from "./tabs/RedTeam.jsx";
 import { BreakIt } from "./tabs/BreakIt.jsx";
 
 const TABS_BY_ROLE = {
-  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath", "netting"],
+  student: ["demo", "chat", "passport", "parent", "breakit", "proof", "numbers", "flightpath", "netting", "twin"],
   parent: ["parent", "proof"],
-  judge: ["redteam", "breakit", "proof", "numbers", "flightpath", "netting"],
+  judge: ["redteam", "breakit", "proof", "numbers", "flightpath", "netting", "twin"],
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
 const ROLES = ["student", "parent", "judge"];
@@ -198,6 +199,7 @@ export default function App() {
             {tab === "numbers" && <Numbers />}
             {tab === "flightpath" && <FlightPath />}
             {tab === "netting" && <Netting />}
+            {tab === "twin" && <Twin />}
           </>)}
         </main>
         <footer>{t("app.footer")}</footer>

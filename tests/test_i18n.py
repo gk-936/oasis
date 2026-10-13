@@ -122,7 +122,7 @@ def test_every_dynamic_key_family_is_covered():
         "cfg": {"baseline", "+verification", "+intents+policy", "full"},
         "conf": {"high", "medium-high", "medium", "low-medium", "n/a"},
         "pipe": {"understand", "plan", "verify", "commit", "execute", "prove"},
-        "tab": {"demo", "chat", "passport", "parent", "redteam", "breakit", "proof", "numbers", "flightpath", "netting"},
+        "tab": {"demo", "chat", "passport", "parent", "redteam", "breakit", "proof", "numbers", "flightpath", "netting", "twin"},
         "req": {"risk_review", "out_of_band_verification", "duplicate_confirmation", "corrected_cny_invoice", "verification"},
         "rr.check": {"signature", "key_pinned", "record_hash", "summary_consistent", "on_time_consistent", "proofs_checked"},
         "rules.status": {"confirmed-primary", "researched-secondary", "unconfirmed"},

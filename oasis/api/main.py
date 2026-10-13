@@ -53,6 +53,7 @@ from ..market import provenance
 from ..planning import spending
 from ..flightpath import core as fpath
 from ..mock.rates import ROUTES
+from ..twin import core as twin
 from ..planning.scenarios import SCENARIOS, build_scenario_world
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import last_mile, quote_routes, rank
@@ -1793,6 +1794,11 @@ def netting_simulate(body: NettingIn, p: Principal = Depends(STUDENT_JUDGE)):
 def netting_benchmark(p: Principal = Depends(STUDENT_JUDGE)):
     f = REPORTS / "netting.json"
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+# ------------------------------------------------------------------ Financial Digital Twin (MOCK simulation; moves no money)
+@app.get("/api/twin")
+def twin_run(seed: int = 7, paths: int = twin.DEFAULT_PATHS, p: Principal = Depends(STUDENT_JUDGE)):
+    paths = max(50, min(paths, 2000))
+    return twin.run_twin(S.world.passport, S.world.rates, S.world.today, seed=seed, paths=paths)
 
 
 # ------------------------------------------------------------------ evaluation + demo
