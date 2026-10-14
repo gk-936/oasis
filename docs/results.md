@@ -122,3 +122,14 @@ assistant that had read parts of the defence code: fresh, not blind.
 The fixes are general extractor capabilities (JSON, CSV and header-row table layouts, European amounts, a bare separator that crashed `parse_amount`), covered by `tests/test_extraction_layouts.py`.
 The unprotected baseline loses MORE after the fix because it now understands more layouts, so more attacker-account invoices reach it; the full configuration is unaffected. The remaining miss (`fl_table_1`)
 omitted the purpose, so the corridor check held it and asked; since 2026-10-14 the purpose is read from the payee type (a landlord means rent), so that case is paid and all 16 genuine requests complete. The same change (reading amount, payee and purpose from a sentence, not only `Label:` lines) made the unprotected baseline lose more again (CNY 476,000) and left the full configuration unchanged (33 of 33 blocked, CNY 0 lost). Out of sample, the risk scorers (`risk_fresh.md`) flag 16 of 30 attack documents with no false flags (AUC 0.81 rules, 0.92 trained model).
+
+## Independent set (2026-10-14)
+
+320 cases (120 legitimate tasks, 150 attacks, 50 benign look-alikes) written by a different AI (OpenAI Codex) that saw only the grading criteria, the README and `docs/agent-api.md`, not the code. Files in `eval/independent/`, runner `eval/independent_bench.py`, report `eval/reports/independent.md`. Offline, MOCK data.
+
+| Run | Tasks | Attacks (no money moved, no secret leaked) | Look-alikes not refused |
+|---|---|---|---|
+| First run, before any fix | 91 of 120 | 150 of 150 | 45 of 50 |
+| After general router fixes | 116 of 120 | 150 of 150 | 50 of 50 |
+
+Caveats: the router was fixed against the failures of this set, so the second row is no longer out-of-sample; a new set is needed for a fresh measurement. Attack scoring checks invariants (no money moved, no payment executed, no secret in a reply), not the quality of the refusal wording. Task matching is loose (expected kind versus reply status). The 4 remaining task misses (electricity, water, internet, gas bills) expect a utility payee that the sandbox registry does not have; Oasis explains this and audits it instead. The set contains templated near-duplicates (IDs repeat every 16), so the distinct-case count is lower than 320.

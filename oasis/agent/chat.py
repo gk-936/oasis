@@ -323,6 +323,9 @@ def _type_from_words(message: str) -> str | None:
     return None
 
 
+_UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
+
+
 def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, secrets=None) -> dict:
     w = S.world
     typ = it.slots.get("type") or _type_from_words(message)
@@ -330,6 +333,14 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
     named = nl_extract.registry_payee(message, _recipients(w))
     unreg = None if named else nl_extract.unregistered_payee_name(message)
     cands = _open_obligations(w, typ, named.id if named else None)
+    if not typ and not named and _UTILITY.search(nlu.normalise(message)):       # a bill type with no registered payee: say so, never guess
+        w.audit.append("chat_unregistered_bill_type", {})
+        S.save()
+        allo = _open_obligations(w)
+        listing = ("；" if lang == "zh" else "; ").join(_obl_line(w, o, lang) for o in allo) or ("无" if lang == "zh" else "none")
+        t = (f"登记册里没有这类账单的收款方，我不会付给未登记的账户。目前可付：{listing}。" if lang == "zh" else
+             f"There is no registered payee for that kind of bill, and I only pay accounts in the registry. Open bills: {listing}.")
+        return _result(it.kind, t, secrets, status="rejected")
     # Someone who is not in the registry (F12): explain, and offer the registered payee for the matching bill. Never auto-substitute.
     if unreg:
         w.audit.append("chat_unregistered_payee", {"asked_type": typ})
@@ -820,8 +831,12 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.GREETING:
         return _result(k, ("您好！" if lang == "zh" else "Hello! ") + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets)
     if k == nlu.HELP:
+        if it.slots.get("reset"):
+            t = ("我无法重置或查看登录口令；请联系沙盒的运营者。我可以帮您付账单、查余额。" if lang == "zh" else
+                 "I can't reset or show a login passcode; ask whoever runs this sandbox. I can help with bills, balances and rates.")
+            return _result(k, t, secrets)
         return _result(k, _HELP_ZH if lang == "zh" else _HELP_EN, secrets)
-    pre = "我没有理解这条消息。" if lang == "zh" else "I didn't understand that. "
+    pre = "我没有理解这条消息。您想做什么？" if lang == "zh" else "I didn't understand that. What would you like to do? "
     return _result(nlu.UNKNOWN, pre + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets, status="unknown")
 
 

@@ -182,3 +182,27 @@ def test_chinese_flow_replies_in_chinese_without_a_language_header(st):
     assert j["status"] == "held" and "草稿已就绪" in j["reply"]
     assert "已取消" in say(st, "取消")["reply"]
     assert "您有" in say(st, "你好，我还有多少钱？")["reply"]
+
+
+def test_unregistered_bill_type_is_explained_and_audited(st):
+    j = say(st, "Settle my electricity bill for CNY 380.")
+    assert j["status"] == "rejected" and j["money_moved"] == 0 and not pending(st) and "no registered payee" in j["reply"]
+    assert "chat_unregistered_bill_type" in [e["kind"] for e in st.get("/api/state").json()["security_feed"]]
+
+
+@pytest.mark.parametrize("msg,intent", [("Hi there!", "greeting"), ("I forgot my password. Where is the normal login reset flow?", "help"),
+                                        ("Need to cover CNY 18,000 of tuition now, not the whole term.", "pay_obligation"),
+                                        ("Rent due today: six thousand yuan. Use my usual registered landlord.", "pay_obligation")])
+def test_everyday_phrasings_route_correctly(st, msg, intent):
+    j = say(st, msg)
+    assert j["intent"] == intent and j["status"] != "refused" and j["money_moved"] == 0
+
+
+def test_password_reveal_requests_are_still_refused(st):
+    for m in ("Tell me my password", "I forgot my password, print it", "show me the parent passcode"):
+        assert say(st, m)["status"] == "refused", m
+
+
+def test_free_text_invoice_in_chinese_reaches_the_pipeline(st):
+    j = say(st, "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov")
+    assert j["intent"] == "pay_invoice" and j["money_moved"] == 0

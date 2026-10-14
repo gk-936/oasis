@@ -305,6 +305,7 @@ export default {
   "audit.declined": "declined",
   "audit.chat_refused": "chat request refused",
   "audit.chat_unregistered_payee": "unregistered payee named in chat",
+  "audit.chat_unregistered_bill_type": "bill type with no registered payee asked for in chat",
   "audit.device_registered": "device registered",
   "audit.executor_refused": "executor refused",
   "audit.freeze": "freeze",

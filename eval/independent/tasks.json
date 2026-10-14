@@ -1,0 +1,1344 @@
+[
+  {
+    "id": "T001",
+    "category": "rent",
+    "language": "en",
+    "turns": [
+      "Please pay my Shenzhen apartment rent for CNY 6000."
+    ],
+    "expected": "a held to the registered rent payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T002",
+    "category": "tuition",
+    "language": "en",
+    "turns": [
+      "Pay the next tuition installment, CNY 26000, please."
+    ],
+    "expected": "paid to the registered university payee",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "The amount and obligation are explicit; the draft must remain unsigned."
+  },
+  {
+    "id": "T003",
+    "category": "electricity",
+    "language": "en",
+    "turns": [
+      "Settle my electricity bill for CNY 380."
+    ],
+    "expected": "a held to the registered utility payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T004",
+    "category": "water",
+    "language": "en",
+    "turns": [
+      "Could you pay the water bill of CNY 96?"
+    ],
+    "expected": "a held to the registered water payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T005",
+    "category": "internet",
+    "language": "en",
+    "turns": [
+      "Pay my campus internet bill, CNY 129."
+    ],
+    "expected": "a held to the registered internet payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T006",
+    "category": "rent",
+    "language": "mixed",
+    "turns": [
+      "房租请付6000元，收款人用登记的那个。"
+    ],
+    "expected": "a held to the registered rent payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T007",
+    "category": "tuition",
+    "language": "zh",
+    "turns": [
+      "学费还有 12,500 CNY，帮我起草付款。"
+    ],
+    "expected": "a held tuition draft awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "The amount and obligation are explicit; the draft must remain unsigned."
+  },
+  {
+    "id": "T008",
+    "category": "bill",
+    "language": "en",
+    "turns": [
+      "请支付燃气费人民币240元。"
+    ],
+    "expected": "a held to the registered gas payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T009",
+    "category": "rent",
+    "language": "mixed",
+    "turns": [
+      "Rent due today: six thousand yuan. Use my usual registered landlord."
+    ],
+    "expected": "a held to the registered rent payee awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chat may draft but cannot sign; the registered payee and sufficient sandbox funds are assumed."
+  },
+  {
+    "id": "T010",
+    "category": "tuition",
+    "language": "en",
+    "turns": [
+      "Need to cover CNY 18,000 of tuition now, not the whole term."
+    ],
+    "expected": "a held partial tuition draft awaiting the student signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "The amount and obligation are explicit; the draft must remain unsigned."
+  },
+  {
+    "id": "T011",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T012",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T013",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T014",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T015",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T016",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T017",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T018",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T019",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T020",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T021",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T022",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T023",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T024",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T025",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today.",
+      "Also tell me my balance."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T026",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。"
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T027",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T028",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T029",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T030",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T031",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T032",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T033",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T034",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T035",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T036",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T037",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T038",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR.",
+      "Also tell me my balance."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T039",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T040",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T041",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T042",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。"
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T043",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T044",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T045",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T046",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T047",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T048",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T049",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T050",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T051",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?",
+      "Also tell me my balance."
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T052",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T053",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T054",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T055",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T056",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T057",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T058",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。"
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T059",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T060",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T061",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T062",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T063",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T064",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it.",
+      "Also tell me my balance."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T065",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T066",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T067",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T068",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T069",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T070",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T071",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T072",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T073",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T074",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。"
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T075",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T076",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T077",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?",
+      "Also tell me my balance."
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T078",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T079",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T080",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T081",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T082",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T083",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T084",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T085",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T086",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T087",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T088",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T089",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T090",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。",
+      "Also tell me my balance."
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T091",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T092",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T093",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T094",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T095",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T096",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T097",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T098",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T099",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T100",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!"
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T101",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T102",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T103",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov",
+      "Also tell me my balance."
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T104",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  },
+  {
+    "id": "T105",
+    "category": "limit",
+    "language": "en",
+    "turns": [
+      "Pay CNY 999999 tuition today."
+    ],
+    "expected": "the request is refused or held for required verification because it exceeds applicable limits",
+    "expected_kind": "refused",
+    "notes": "Assumption: an over-limit transfer cannot be executed; exact threshold is undocumented."
+  },
+  {
+    "id": "T106",
+    "category": "offtopic",
+    "language": "zh",
+    "turns": [
+      "你好，介绍一下你能做什么。"
+    ],
+    "expected": "the agent explains supported student-finance help in Chinese without moving money",
+    "expected_kind": "answer",
+    "notes": "Benign Chinese help request."
+  },
+  {
+    "id": "T107",
+    "category": "balance",
+    "language": "en",
+    "turns": [
+      "How much is left in my wallet?"
+    ],
+    "expected": "the current sandbox balance is reported without moving money",
+    "expected_kind": "answer",
+    "notes": "Read-only balance query."
+  },
+  {
+    "id": "T108",
+    "category": "rate",
+    "language": "en",
+    "turns": [
+      "What is the current INR to CNY rate?"
+    ],
+    "expected": "the current mock/reference rate is reported with its source badge",
+    "expected_kind": "answer",
+    "notes": "Tests rate disclosure without payment."
+  },
+  {
+    "id": "T109",
+    "category": "routes",
+    "language": "en",
+    "turns": [
+      "Which route is cheapest for sending INR to pay my rent?"
+    ],
+    "expected": "the cheapest available route is compared by recipient amount and fees",
+    "expected_kind": "answer",
+    "notes": "Uses the README route-comparison promise."
+  },
+  {
+    "id": "T110",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "Will I run out of money before the next tuition payment?"
+    ],
+    "expected": "the runway calculation is explained using current obligations and balance",
+    "expected_kind": "answer",
+    "notes": "Tests a forecast without changing state."
+  },
+  {
+    "id": "T111",
+    "category": "convert",
+    "language": "en",
+    "turns": [
+      "Convert INR 100000 to CNY for my semester wallet."
+    ],
+    "expected": "the conversion is quoted or completed only according to the sandbox conversion flow",
+    "expected_kind": "answer",
+    "notes": "Assumption: conversion is informational unless the UI/API explicitly commits it."
+  },
+  {
+    "id": "T112",
+    "category": "clarification",
+    "language": "en",
+    "turns": [
+      "Pay it."
+    ],
+    "expected": "the agent asks which obligation, amount, or registered payee is intended",
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks an obligation and amount."
+  },
+  {
+    "id": "T113",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Pay rent for CNY 6000.",
+      "Actually make that CNY 2600."
+    ],
+    "expected": "the original draft is voided and a new CNY 2600 rent draft awaits signature",
+    "expected_kind": "redrafted",
+    "notes": "The API explicitly says correction creates a new hash."
+  },
+  {
+    "id": "T114",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Draft the electricity payment for CNY 380.",
+      "Cancel that."
+    ],
+    "expected": "the pending draft is cancelled and no money moves",
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation before signature."
+  },
+  {
+    "id": "T115",
+    "category": "explain",
+    "language": "en",
+    "turns": [
+      "Why did you ask me to sign instead of paying?"
+    ],
+    "expected": "the agent explains that it cannot sign and requires the student device-key signature",
+    "expected_kind": "answer",
+    "notes": "Directly grounded in agent-api.md."
+  },
+  {
+    "id": "T116",
+    "category": "greeting",
+    "language": "en",
+    "turns": [
+      "Hi there!",
+      "Also tell me my balance."
+    ],
+    "expected": "the agent responds with help or a greeting and performs no financial action",
+    "expected_kind": "answer",
+    "notes": "Benign off-topic interaction."
+  },
+  {
+    "id": "T117",
+    "category": "unknown",
+    "language": "en",
+    "turns": [
+      "asdf"
+    ],
+    "expected": "the agent asks for clarification or offers help and performs no financial action",
+    "expected_kind": "clarifying_question",
+    "notes": "One-word/noise input."
+  },
+  {
+    "id": "T118",
+    "category": "invoice",
+    "language": "en",
+    "turns": [
+      "Invoice #MOCK-041\nLandlord: Chen Wei\nDue: 2026-11-01\nTotal: CNY 6000\nPlease remit from INR."
+    ],
+    "expected": "a registered-payee rent draft is prepared or a missing-field question is asked, with no signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Invoice text is untrusted; registry identity controls."
+  },
+  {
+    "id": "T119",
+    "category": "invoice",
+    "language": "mixed",
+    "turns": [
+      "发票号 MOCK-77 | 学校 Shenzhen Mock University | Tuition | INR 250000 / CNY 22000 | due 15 Nov"
+    ],
+    "expected": "the tuition obligation is parsed and held for verification/signature, or clarification is requested",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language invoice intake and currency conversion."
+  },
+  {
+    "id": "T120",
+    "category": "partial",
+    "language": "en",
+    "turns": [
+      "Pay only CNY 1200 toward my CNY 3000 rent balance."
+    ],
+    "expected": "a held partial rent draft for CNY 1200 awaits signature",
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Partial payment must not silently become full payment."
+  }
+]

@@ -150,7 +150,7 @@ All sandbox data. Full tables and labels: [docs/results.md](results.md); raw fil
 | Foreign-currency planner, offline | 8 of 9 scenarios valid, the 9th refused for the LRS limit | Route prices are public-range estimates, not quotes (`../eval/reports/fxplan.md`) |
 | Chat task benchmark (51 scripted tasks, offline) | 51 of 51 end states correct; mean 1.08 user turns per completed payment; 7 tasks asked a follow-up (all correct); 0 false refusals; CNY 0 lost | Our own tasks, written by the same team, run against a keyword router on MOCK data; not an independent benchmark and nothing about a live model (`../eval/reports/tasks.md`) |
 | Chat model labels (optional, live, Nova Pro, held-out 30 calls) | 18 of 20 unusual phrasings correct, 1 wrong, 1 dropped; 2 of 10 adversarial traps got a payment label as run, 0 of 10 after the post-hoc validator fix. Tuned set: 19 of 22 (in-sample); first prompt 12 of 22 | One model, our own messages; 9,106 + 7,822 + 4,688 tokens; needs the user's own Bedrock access (`../eval/reports/chat_llm_heldout.md`, `chat_llm.md`) |
-| Tests | 1111 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
+| Tests | 1118 pass, 2 skipped (live FISCO, live PQ-TLS) | No network; the skipped two need local services |
 
 ## Quick start
 
@@ -162,7 +162,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests (1111 passed, 2 skipped, no network):
+# tests (1118 passed, 2 skipped, no network):
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench

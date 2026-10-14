@@ -304,6 +304,7 @@ export default {
   "audit.declined": "已拒绝",
   "audit.chat_refused": "聊天请求已拒绝",
   "audit.chat_unregistered_payee": "聊天中提到未登记的收款方",
+  "audit.chat_unregistered_bill_type": "聊天中请求了没有登记收款方的账单类型",
   "audit.device_registered": "设备已注册",
   "audit.executor_refused": "执行器拒绝",
   "audit.freeze": "冻结",

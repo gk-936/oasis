@@ -60,9 +60,10 @@ Optional: with `OASIS_CHAT_LLM=1` and your own Bedrock access, a model may propo
 ## Tests and reproducibility
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1111 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1118 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (51 scripted tasks)
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.independent_bench          # 320 independently written cases (tasks, attacks, look-alikes)
 ```
 
 Chat tasks: the 51 scripted tasks reach the expected end state (state, ledger and audit, not reply wording) with CNY 0 lost and no false refusal in [`eval/reports/tasks.md`](eval/reports/tasks.md); they are our own tasks run against an offline keyword router, not an independent benchmark.
