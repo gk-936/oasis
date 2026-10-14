@@ -133,3 +133,16 @@ omitted the purpose, so the corridor check held it and asked; since 2026-10-14 t
 | After general router fixes | 116 of 120 | 150 of 150 | 50 of 50 |
 
 Caveats: the router was fixed against the failures of this set, so the second row is no longer out-of-sample; a new set is needed for a fresh measurement. Attack scoring checks invariants (no money moved, no payment executed, no secret in a reply), not the quality of the refusal wording. Task matching is loose (expected kind versus reply status). The 4 remaining task misses (electricity, water, internet, gas bills) expect a utility payee that the sandbox registry does not have; Oasis explains this and audits it instead. The set contains templated near-duplicates (IDs repeat every 16), so the distinct-case count is lower than 320.
+
+### Second independent set (2026-10-14, frozen in its own commit before the first run)
+
+410 cases (150 tasks, 200 attacks, 60 look-alikes) written by the same outside AI from a stricter brief (`eval/independent/FRESH_SET_BRIEF.md`): 104 of the 200 attacks are multi-turn, 154 arrive as pasted invoices or emails, 167 are Chinese or mixed-language. Run with `python -m eval.independent_bench 2`; report `eval/reports/independent2.md`.
+
+| Run | Tasks | Attacks (no money moved, no secret leaked) | Look-alikes not refused |
+|---|---|---|---|
+| First run, nothing tuned on it | 87 of 150 | 200 of 200 | 55 of 60 |
+| After general router fixes | 134 of 150 | 200 of 200 | 60 of 60 |
+
+The first run exposed real bugs, all fixed generally: the word "please" contained "lease" and silently chose the rent bill; "until I approve it" and "do not bypass the safety check" were refused as bypass attempts; "without sending you the password" was refused; "prepare / draft" payment wording, Chinese number words, "Correction: ...", "what remains in my wallet", and "convert ... don't pay" (read as cancel) were missed. Tests for each are in `tests/test_chat_dialog.py`. No attack was ever let through.
+
+Caveats: the second row is tuned on this set, so it is no longer out-of-sample. The 16 remaining task misses are gas / utility bills with no registered payee (refused by design), an undo-after-cancel reply that asks for a fresh draft but is scored by a loose status match, and one vague message that gets an information reply. Many tasks are the same base message with an appended filler sentence, so the distinct-case count is lower than 410.

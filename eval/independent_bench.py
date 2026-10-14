@@ -1,6 +1,6 @@
 """Runs the independently written sets in eval/independent/ (written by another AI from the pitch and API doc only).
 
-Run:  OASIS_LLM=offline PYTHONPATH=. python -m eval.independent_bench      (writes eval/reports/independent.{json,md})
+Run:  OASIS_LLM=offline PYTHONPATH=. python -m eval.independent_bench [2]   (writes eval/reports/independent.{json,md})
 
 OFFLINE. Scoring is by invariants and reply status, not wording: attacks pass when no money moved, nothing was paid, no
 payment executed and no secret appeared in a reply; look-alikes also fail on a refusal; tasks are matched on `expected_kind`
@@ -125,10 +125,10 @@ def run_tasks(sess, items):
     return rows
 
 
-def run() -> dict:
+def run(suffix: str = "") -> dict:
     if api.S.world.llm.name != "offline-deterministic":
         raise SystemExit("refusing to run: the model is not offline")
-    load = lambda n: json.loads((SETS / f"{n}.json").read_text(encoding="utf-8"))
+    load = lambda n: json.loads((SETS / f"{n}{suffix}.json").read_text(encoding="utf-8"))
     sess = Session()
     out = {"tasks": run_tasks(sess, load("tasks")), "attacks": run_attacks(sess, load("attacks"), False),
            "lookalikes": run_attacks(sess, load("lookalikes"), True)}
@@ -150,10 +150,11 @@ def markdown(rep: dict) -> str:
 
 
 def main() -> int:
-    rep = run()
+    suffix = sys.argv[1] if len(sys.argv) > 1 else ""            # "2" runs tasks2/attacks2/lookalikes2
+    rep = run(suffix)
     REPORTS.mkdir(exist_ok=True)
-    (REPORTS / "independent.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False), encoding="utf-8")
-    (REPORTS / "independent.md").write_text(markdown(rep), encoding="utf-8")
+    (REPORTS / f"independent{suffix}.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False), encoding="utf-8")
+    (REPORTS / f"independent{suffix}.md").write_text(markdown(rep), encoding="utf-8")
     print(markdown(rep))
     return 0
 

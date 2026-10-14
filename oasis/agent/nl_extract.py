@@ -194,6 +194,6 @@ def type_hint(text: str) -> str | None:
     t = _clean(text).casefold()
     if re.search(r"universit|college|school|学校|大学", t):
         return "tuition"
-    if re.search(r"landlord|lease|房东|租", t):
+    if re.search(r"landlord|\blease\b|房东|租", t):
         return "rent"
     return None
