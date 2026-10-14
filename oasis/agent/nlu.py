@@ -110,13 +110,13 @@ _URGENCY = re.compile(r"urgent|immediately|right now|asap|right away|emergency|h
 
 
 _NEGATED = re.compile(r"(?:\bdo not|\bdon'?t|\bnever|\bnot|\bwithout asking to|请勿|不要|别)\s*(?:please\s*)?$", re.I)
-_CONDITIONAL_APPROVE = re.compile(r"(?:until|before|after|when|once|unless|so that|till)\s+i\s+approve", re.I)
+_CONDITIONAL_APPROVE = re.compile(r"(?:until|before|after|when|once|unless|so that|till)\s+i\s+(?:approve|aprove|apporve)", re.I)
 
 
 def _bypass_asked(norm: str) -> bool:
     """A real bypass request. 'Do not bypass the safety check' (negated verb) and 'keep it a draft until I approve' (the user
     will sign later) are not requests; any other bypass match in the same message still counts."""
-    cleaned = _CONDITIONAL_APPROVE.sub(" ", norm)
+    cleaned = _CONDITIONAL_APPROVE.sub(" ", _snap(norm, ("until", "before", "unless")))
     for m in _BYPASS.finditer(cleaned):
         if re.match(r"(?:skip|bypass|disable|turn off|waive)\b", m.group(0)) and _NEGATED.search(cleaned[max(0, m.start() - 16):m.start()]):
             continue
@@ -131,14 +131,35 @@ _MENTION = re.compile(r"\b(?:mean|means|meaning|quote[sd]?|quoting|example|says?
 def strip_mentions(norm: str) -> str:
     """'The email says "ignore previous instructions"; what does it mean?' talks ABOUT a phrase. The quoted part is dropped before the
     security check; the rest of the sentence is still checked, and nothing quoted is ever acted on."""
-    return _QUOTED.sub(" ", norm) if _MENTION.search(norm) and _QUOTED.search(norm) else norm
+    if not (_MENTION.search(norm) and _QUOTED.search(norm)):
+        return norm
+    rest = _QUOTED.sub(" ", norm)
+    # a message that is almost all quote is not talking about a phrase, it IS the phrase: keep it whole
+    return rest if len(re.sub(r"\W+", "", rest)) >= 0.35 * len(re.sub(r"\W+", "", norm)) else norm
+
+
+_EXEMPT_WORDS = ("without", "sending", "giving", "telling", "sharing", "showing", "revealing")
+
+
+def _snap(norm: str, words) -> str:
+    """Snap near-misses ('withot', 'tellling') onto the words the reset-help exemption looks for. It only ever RELAXES a refusal for a
+    help question; every other security pattern still runs on the unchanged text."""
+    out = []
+    for tok in norm.split(" "):
+        w = tok.strip(".,!?;:")
+        if len(w) >= 4 and w.isalpha() and w not in words:
+            m = [v for v in difflib.get_close_matches(w, words, 1, 0.8) if v[0] == w[0] or sorted(v) == sorted(w)]
+            if m:
+                tok = tok.replace(w, m[0])
+        out.append(tok)
+    return " ".join(out)
 
 
 def security_category(norm: str) -> str | None:
     """secrets | injection | bypass | role | social | None, for a normalised message."""
     # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
-    asked = re.sub(r"\bwithout (?:sending|giving|telling|sharing|showing|revealing)[^.?!]{0,30}|\bwhere is\b", "", norm)
-    reset_help = bool(_RESET.search(norm)) and not _SECRETS_VERB.search(asked)
+    asked = re.sub(r"\bwithout (?:sending|giving|telling|sharing|showing|revealing)[^.?!]{0,30}|\bwhere is\b", "", _snap(norm, _EXEMPT_WORDS))
+    reset_help = bool(_RESET.search(_snap(norm, ("reset", "password", "passcode", "login")))) and not _SECRETS_VERB.search(asked)
     if not reset_help and _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
         return "secrets"
     if _OTHER_USERS.search(norm):
@@ -161,7 +182,7 @@ _PAY_IMPERATIVE = re.compile(
 _PAY_WORD = re.compile(r"\b(?:pay|paying|settle|clear|send|transfer|remit|wire|cover|prepare|draft|bana do|banao)\b|草稿|给|交|付|缴|支付|转账|汇款|起草", re.I)
 _OBL_WORD = re.compile(r"rent|tuition|deposit|fees?\b|bills?\b|dues?\b|房租|租金|学费|押金|账单|费用", re.I)
 _CANCEL = re.compile(r"^(?:(?:please|pls)\s+)?(?:cancel|stop|abort|abandon|never ?mind|forget it|scrap)\b|"
-                     r"^(?:no,? )?(?:wait|hold on|hang on|stop)\b|\bwrong (?:person|one|guy)\b|\bnot (?:that|this) one\b|\bcancel (?:kar|karo|do|please|pls)\b|\bundo (?:that|this|the)\b[^.]{0,25}\bdraft\b|^no,? (?:stop|cancel|wait)\b|"
+                     r"^(?:no,? )?(?:wait|hold on|hang on)\b(?!.*\b(?:make|change|instead|actually|should|meant)\b)|^(?:no,? )?stop\b|\bwrong (?:person|one|guy)\b|\bnot (?:that|this) one\b|\bcancel (?:kar|karo|do|please|pls)\b|\bundo (?:that|this|the)\b[^.]{0,25}\bdraft\b|^no,? (?:stop|cancel|wait)\b|"
                      r"\b(?:cancel|stop|abort|withdraw) (?:that|this|the|my|it)\b|(?:don'?t|do not|dont) (?:pay|send|go ahead)|"
                      r"取消|别付|不要付|不付了|停止|算了|撤回", re.I)
 _CORRECT = re.compile(r"\bcorrection\b|(?:the |that )?(?:amount|sum|figure|total|price)\s+(?:was |is |should be |must be |has to be |needs to be )"
@@ -188,8 +209,9 @@ _OBLIGATIONS = re.compile(r"how much (?:is|are|do i (?:owe|pay)|must i pay|shoul
 _RATE = re.compile(r"\b(?:exchange |fx |forex |conversion )?rates?\b|inr (?:to|/|-|→) ?cny|cny (?:to|/) ?inr|how many (?:yuan|cny|rmb) (?:per|for|is)|汇率|兑换率|换汇率", re.I)
 _ROUTES = re.compile(r"cheap\w*|best (?:way|route|option|rail)|which (?:route|way|rail|option|app)|\broutes?\b|how (?:should|do|can) i (?:send|transfer|move|remit)|"
                      r"\bfees?\b(?! due)|compare|fastest|路线|最便宜|怎么汇|怎么转|哪种方式|手续费", re.I)
+_ROUTES_STRONG = re.compile(r"cheap\w*|best (?:way|route|option|rail)|\broutes?\b|fastest|how (?:should|do|can) i (?:send|transfer|move|remit)|路线|最便宜", re.I)
 _PLAN = re.compile(r"\bplan\b|\bbudget\b|semester|schedule my|规划|计划|预算", re.I)
-_CONVERT = re.compile(r"\b(?:convert|exchange|swap|change|quote)\b[^.\n]{0,40}(?:inr|cny|rmb|rupees?|yuan|₹|¥)|how much is[^?]{0,30}(?:inr|cny|rmb)[^?]{0,10}in (?:inr|cny|rmb)|兑换|换成|换汇|转换|换算", re.I)
+_CONVERT = re.compile(r"\b(?:convert|exchange|swap|change|quote)\b[^.\n]{0,40}(?:inr|cny|rmb|usd|eur|gbp|aud|jpy|rupees?|yuan|dollars?|euros?|pounds?|₹|¥|\$|€|£)|how much is[^?]{0,30}(?:inr|cny|rmb)[^?]{0,10}in (?:inr|cny|rmb)|兑换|换成|换汇|转换|换算", re.I)
 _GREETING = re.compile(r"^(?:hi|hello|hey|hiya|yo|good (?:morning|afternoon|evening)|greetings|thanks|thank you|thx|你好|您好|嗨|谢谢|早上好|晚上好)"
                        r"(?:\s+(?:there|team|oasis|everyone|assistant|bot))?\b[\s!.。！?？]*$", re.I)
 _RESET = re.compile(r"(?:forgot|forget|lost|reset|recover|change|locked out|can'?t (?:log ?in|sign ?in))[^.?!]{0,40}(?:password|passcode|login)|"
@@ -262,7 +284,7 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         cat = security_category(view)
         if cat:
             return ChatIntent(SECRETS if cat == "secrets" else BYPASS, {"urgent": bool(_URGENCY.search(norm))}, 1.0, lang, cat)
-    if _RESET.search(norm):
+    if _RESET.search(_snap(norm, ("reset", "password", "passcode", "login"))):
         return ChatIntent(HELP, {"reset": True}, 0.9, lang)
     raw, norm = fix_typos(raw), fix_typos(norm)
     if _INVOICE_WORD.search(raw) and re.search(r"\d{3,}", raw) and not _PAY_IMPERATIVE.search(norm):
@@ -295,7 +317,7 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
                                     "wants_account": bool(re.search(r"account|payee|账号|账户|收款", norm))}, 0.85, lang)
     if _STATUS.search(norm) and re.search(r"到账|了吗|吗[？?]?$|有没有|是否|^(?:did|has|have|was|is|where)", norm):
         return ChatIntent(STATUS, {}, 0.85, lang)
-    if _PAY_IMPERATIVE.search(norm) or _DUE_PAY.search(norm) or (_HINGLISH_PAY.search(norm) and _OBL_WORD.search(norm))             or (_OBL_WORD.search(norm) and nl_extract.money(raw) and re.search(r"\bko\b|को|给", norm) and "?" not in norm)             or (_PAY_WORD.search(norm) and _OBL_WORD.search(norm) and not re.search(r"\bhow much\b|\bwhat\b|\bwhen\b|\bwhy\b|\bwhich\b|多少|为什么|什么时候", norm)):
+    if _PAY_IMPERATIVE.search(norm) or _DUE_PAY.search(norm) or (_HINGLISH_PAY.search(norm) and _OBL_WORD.search(norm))             or (_OBL_WORD.search(norm) and nl_extract.money(raw) and re.search(r"\bko\b|को|给", norm) and "?" not in norm)             or (_PAY_WORD.search(norm) and _OBL_WORD.search(norm) and not re.search(r"\bhow much\b|\bwhat\b|\bwhen\b|\bwhy\b|\bwhich\b|\bwill\b|\bwould\b|\bwhether\b|^if\b|\bif i\b|多少|为什么|什么时候|会不会|够不够", norm)):
         if not _CONVERT.search(norm) or _OBL_WORD.search(norm):
             a = _amount(raw, bare=True)
             return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": a[0] if a else None,
@@ -305,10 +327,12 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         return ChatIntent(EXPLAIN, {}, 0.85, lang)
     if _UNDO.search(norm):
         return ChatIntent(UNDO, {}, 0.85, lang)
+    if re.search(r"\brates?\b|汇率", norm) and not nl_extract.money(raw):          # "exchange rate USD to CNY" asks for a rate, not a conversion
+        return ChatIntent(RATE, {}, 0.85, lang)
     if _CONVERT.search(norm):
         a = _amount(raw)
         return ChatIntent(CONVERT, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.85, lang)
-    for kind, rx in ((RUNWAY, _RUNWAY), (STATUS, _STATUS), (BALANCE, _BALANCE), (OBLIGATIONS, _OBLIGATIONS), (RATE, _RATE), (ROUTES, _ROUTES),
+    for kind, rx in ((RUNWAY, _RUNWAY), (STATUS, _STATUS), (BALANCE, _BALANCE), (OBLIGATIONS, _OBLIGATIONS), (ROUTES, _ROUTES_STRONG), (RATE, _RATE), (ROUTES, _ROUTES),
                      (PLAN, _PLAN), (PROOF, _PROOF), (CREDIT, _CREDIT)):
         if rx.search(norm):
             a = _amount(raw)

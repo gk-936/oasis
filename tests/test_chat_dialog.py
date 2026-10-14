@@ -241,3 +241,27 @@ def test_change_the_amount_then_a_bare_number_redrafts(st):
     j = say(st, "2600")
     assert j["intent"] == "correct" and j["status"] == "held"
     assert [p["draft"]["amount"] for p in pending(st).values()] == [2600]
+
+
+@pytest.mark.parametrize("msg,has,not_has", [
+    ("convert 5000 INR to USD", "INR → about", "CNY"),
+    ("convert 1000 EUR to CNY", "EUR → about", "INR"),
+    ("convert 5000 USD to EUR", "USD → about", "CNY"),
+    ("what is the rate INR to EUR", "INR→EUR", "INR→CNY"),
+    ("cheapest way to send INR to USD", "INR→CNY only", "Education payment"),
+    ("how should I send euros to China", "EUR→CNY", "Education payment"),
+])
+def test_other_currency_pairs_are_answered_for_that_pair_not_as_inr_to_cny(st, msg, has, not_has):
+    j = say(st, msg)
+    assert j["status"] in ("info", "needs_confirmation") and has in j["reply"] and not_has not in j["reply"].split("(")[0].replace("INR→CNY only", "")
+    assert j["money_moved"] == 0 and not pending(st)
+
+
+def test_a_currency_the_wallet_does_not_hold_is_named_not_swapped_for_another_pair(st):
+    j = say(st, "convert 100 JPY to CNY")
+    assert "JPY" in j["reply"] and "do not support" in j["reply"] and not pending(st)
+
+
+def test_inr_to_cny_chat_conversion_still_asks_for_confirmation_and_the_cheapest_route_still_compares(st):
+    assert say(st, "convert 5000 INR to CNY")["status"] == "needs_confirmation"
+    assert "Top 3" in say(st, "cheapest way to send INR to CNY")["reply"]

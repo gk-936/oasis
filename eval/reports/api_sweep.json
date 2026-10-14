@@ -1,0 +1,2376 @@
+{
+ "meta": {
+  "run": "2026-10-14 21:52",
+  "routes": 94,
+  "calls": 752,
+  "caveat": "Reads the allowed roles from the code's own require(...) dependencies and checks the responses. It does not check that the roles themselves are the right ones; that is the security evidence matrix and a human review."
+ },
+ "rows": [
+  {
+   "path": "/api/approve",
+   "method": "POST",
+   "roles": [
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/approvers",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/audit",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/audit/verify",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/config",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/login",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     422,
+     422
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/me",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/passkey/login/finish",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     422,
+     422
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/passkey/register/begin",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/passkey/register/finish",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/auth/passkey/status",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/autonomy/tick",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/benchmark",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/breakit/attack",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     413
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     422,
+     413
+    ]
+   }
+  },
+  {
+   "path": "/api/breakit/generate",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/chat",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/corridor/rules",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/corridors",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/corridors/check",
+   "method": "POST",
+   "roles": [
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/corridors/compare",
+   "method": "POST",
+   "roles": [
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/credit-growth/opportunities",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/credit-growth/plan",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/credit-growth/simulate",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/demo/next",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     409,
+     409
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/demo/reset",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/demo/run",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/demo/start",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/demo/state",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/device/register",
+   "method": "POST",
+   "roles": [
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/evidence-passport/check/{code}",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     404,
+     404
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     404,
+     404
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/evidence-passport/issue",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/evidence-passport/payments",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/evidence-passport/share",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/evidence-passport/verify",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/explain/savings",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/benchmark",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/compare",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/journeys",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/journeys",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/journeys/{jid}/advice",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/journeys/{jid}/refund",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/journeys/{jid}/simulate",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/flightpath/precheck",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/fx/convert",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/fx/demo-obligation",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/fx/quote",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/health",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/intake",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/intake/channels",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/intake/email",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/intake/image",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/intake/telegram/pair",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     400,
+     400
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/intake/telegram/unpair",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/netting/benchmark",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/netting/simulate",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/parent/pending",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/pay-again",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plan",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/fx",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     400,
+     400
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/scenarios",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/{plan_id}",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/{plan_id}/accept",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/{plan_id}/consent",
+   "method": "POST",
+   "roles": [
+    "parent"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     403,
+     403
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plan/{plan_id}/execute",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     409,
+     409
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/plans",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/proof/verify",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/proof/{intent_id}",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/proof/{intent_id}/verify",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     404,
+     404
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     404,
+     404
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/rate-target",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/rate-target/approve",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/recovery/approve",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/redteam",
+   "method": "POST",
+   "roles": [
+    "judge"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     403,
+     403
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     422,
+     413
+    ]
+   }
+  },
+  {
+   "path": "/api/redteam/log",
+   "method": "GET",
+   "roles": [
+    "judge"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     403,
+     403
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/reliability/mine",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/reliability/record",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/reliability/verify",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/reset",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/screen",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     422,
+     422
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/spending/add",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/spending/simulate",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/state",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/student/language",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/check/{code}",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     404,
+     404
+    ],
+    "student": [
+     404,
+     404
+    ],
+    "parent": [
+     404,
+     404
+    ],
+    "judge": [
+     404,
+     404
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/claims",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/issue",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/ladder",
+   "method": "GET",
+   "roles": [
+    "parent",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/ladder/accept",
+   "method": "POST",
+   "roles": [
+    "parent"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     403,
+     403
+    ],
+    "parent": [
+     400,
+     400
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/share",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/vc/export",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/vc/verify",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/verify",
+   "method": "POST",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/trust-pass/zk-prove",
+   "method": "POST",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/trust/fingerprint",
+   "method": "GET",
+   "roles": null,
+   "codes": {
+    "none": [
+     200,
+     200
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     200,
+     200
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/twin",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  }
+ ],
+ "findings": []
+}

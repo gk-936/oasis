@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from collections import OrderedDict
 
-from ..mock.fx import FxError, quote as fx_quote, table_for
+from ..mock.fx import CURRENCIES, FxError, mid as fx_mid, quote as fx_quote, table_for
 from ..mock.rates import ROUTES
 from ..passport import currency as currency_mod
 from ..planning.forecast import monthly_burn, runway_months, triggers
@@ -616,8 +616,46 @@ def _obligations(S, lang: str, secrets=None) -> dict:
     return _result("obligations", t, secrets)
 
 
-def _rate(S, lang: str, secrets=None) -> dict:
+_CUR_RE = re.compile(r"(?<![a-z])(inr|cny|rmb|usd|eur|gbp|aud|jpy|hkd|cad|sgd|rupees?|yuan|dollars?|euros?|pounds?)(?![a-z])|[₹¥$€£]|人民币|卢比", re.I)
+_CUR_CANON = {"rmb": "CNY", "yuan": "CNY", "人民币": "CNY", "¥": "CNY", "rupee": "INR", "rupees": "INR", "卢比": "INR", "₹": "INR", "dollar": "USD", "dollars": "USD",
+              "$": "USD", "euro": "EUR", "euros": "EUR", "€": "EUR", "pound": "GBP", "pounds": "GBP", "£": "GBP"}
+
+
+def _mentioned(message: str) -> list[str]:
+    """Currencies named in the message, in order of appearance, upper-case codes, no repeats."""
+    out = []
+    for m in _CUR_RE.finditer(message or ""):
+        t = m.group(0).lower()
+        c = _CUR_CANON.get(t) or t.upper()
+        if c not in out:
+            out.append(c)
+    return out
+
+
+def _scope_note(curs: list[str], lang: str) -> str | None:
+    """Currencies the wallet does not hold: say so instead of answering about a different pair."""
+    bad = [c for c in curs if c not in CURRENCIES]
+    if not bad:
+        return None
+    sup = ", ".join(CURRENCIES)
+    return (f"我不支持 {', '.join(bad)}。钱包支持：{sup}。" if lang == "zh" else f"I do not support {', '.join(bad)}. The wallet holds: {sup}.")
+
+
+def _rate(S, lang: str, secrets=None, message: str = "") -> dict:
     w = S.world
+    curs = _mentioned(message)
+    note = _scope_note(curs, lang)
+    if note:
+        return _result("rate", note, secrets, status="info")
+    if len(curs) >= 2 and set(curs[:2]) != {"INR", "CNY"}:
+        src, dst = curs[0], curs[1]
+        try:
+            r = fx_mid(src, dst, table_for(w.rates, w.day_index))
+        except FxError as e:
+            return _result("rate", str(e), secrets, status="rejected")
+        t = (f"{src}→{dst} 参考汇率约 {r:.4f}（演示/参考汇率，MOCK，非行情报价；我不预测汇率）。" if lang == "zh" else
+             f"{src}→{dst} reference rate about {r:.4f} (MOCK / reference cross, not a market quote; I do not predict rates).")
+        return _result("rate", t, secrets)
     pv = provenance(w.rates, w.day_index)
     badge = pv.get("label") or f"INR→CNY {pv['rate']:.4f} · {pv.get('source')}"
     when = (pv.get("as_of") or pv.get("fetched_at") or "")[:10]
@@ -629,8 +667,24 @@ def _rate(S, lang: str, secrets=None) -> dict:
     return _result("rate", t, secrets)
 
 
-def _routes(S, it: ChatIntent, lang: str, secrets=None) -> dict:
+def _routes(S, it: ChatIntent, lang: str, secrets=None, message: str = "") -> dict:
     w = S.world
+    curs = _mentioned(message)
+    note = _scope_note(curs, lang)
+    if note:
+        return _result("routes", note, secrets, status="info")
+    if curs and not {"INR", "CNY"} >= set(curs):                 # a pair other than INR/CNY: one price estimate, no route comparison
+        src, dst = (curs + ["CNY"])[:2] if len(curs) >= 2 else (curs[0], "CNY" if curs[0] != "CNY" else "INR")
+        base = float(it.slots.get("amount") or 1000)
+        try:
+            q = fx_quote(base, src, dst, table_for(w.rates, w.day_index))
+        except FxError as e:
+            return _result("routes", str(e), secrets, status="rejected")
+        t = (f"路线比较只针对 INR→CNY。{src}→{dst} 我只能给出一个价格估算：{q.amount:,.0f} {src} 约得 {q.received:,.2f} {dst}（汇率 {q.rate:.4f}，费用 {q.fee:,.2f} {src}；"
+             f"公开区间估算，MOCK，非报价）。" if lang == "zh" else
+             f"Route comparison is built for INR→CNY only. For {src}→{dst} I can give one price estimate: {q.amount:,.0f} {src} gives about {q.received:,.2f} {dst} "
+             f"(rate {q.rate:.4f}, fee {q.fee:,.2f} {src}; public-range estimate, MOCK, not a quote).")
+        return _result("routes", t, secrets)
     amt = it.slots.get("amount") if it.slots.get("currency") == "INR" else None
     base = float(amt or 100000)
     qs = rank(quote_routes(w.rates, base, w.today, None, w.day_index))[:3]
@@ -673,13 +727,19 @@ def _plan(S, lang: str, secrets=None) -> dict:
     return _result("plan", t, secrets, plan_id=rec["id"])
 
 
-def _convert(S, it: ChatIntent, lang: str, d: dict, secrets=None) -> dict:
+def _convert(S, it: ChatIntent, lang: str, d: dict, secrets=None, message: str = "") -> dict:
     w = S.world
+    curs = _mentioned(message)
+    note = _scope_note(curs, lang)
+    if note:
+        return _result("convert", note, secrets, status="info")
     amt, cur = it.slots.get("amount"), it.slots.get("currency")
     if not amt:
         return _result("convert", "您想兑换多少金额？例如“convert 20000 INR to CNY”。" if lang == "zh" else
                        "How much would you like to convert? For example: 'convert 20000 INR to CNY'.", secrets, status="needs_info", needs=["info:amount"])
-    src, dst = ("INR", "CNY") if cur in (None, "INR") else ("CNY", "INR")
+    src, dst = (curs[0], curs[1]) if len(curs) >= 2 else (("INR", "CNY") if cur in (None, "INR") else ("CNY", "INR"))
+    if len(curs) == 1 and curs[0] not in ("INR", "CNY"):
+        src, dst = curs[0], "CNY"
     try:
         q = fx_quote(float(amt), src, dst, table_for(w.rates, w.day_index))
     except FxError as e:
@@ -690,12 +750,16 @@ def _convert(S, it: ChatIntent, lang: str, d: dict, secrets=None) -> dict:
         t = f"报价：{q.amount:,.0f} {src} → 约 {q.received:,.2f} {dst}（汇率 {q.rate:.4f}，费用 {q.fee:,.2f} {src}；演示价格，MOCK）。"
     else:
         t = f"Quote: {q.amount:,.0f} {src} → about {q.received:,.2f} {dst} (rate {q.rate:.4f}, fee {q.fee:,.2f} {src}; MOCK prices)."
-    if cny_equiv <= lim and src == "INR":
+    if cny_equiv <= lim and (src, dst) == ("INR", "CNY"):
         d["awaiting"], d["ctx"] = "confirm_convert", {"amount": float(amt), "src": src, "dst": dst}
         t += (" 这是在您自己的余额之间兑换，不会付给任何人。回复“是”即可执行。" if lang == "zh" else
               " This moves money between your own balances only. Reply 'yes' to do it.")
         return _result("convert", t, secrets, status="needs_confirmation", needs=["info:confirm"])
-    t += (f" 超过 ¥{lim:,.0f} 的自动额度，请在“兑换”页面操作。" if lang == "zh" else f" That is above your CNY {lim:,.0f} auto limit; use the Convert screen.")
+    if (src, dst) != ("INR", "CNY"):
+        t += (" 这只是报价；聊天里只能确认 INR→CNY 兑换，其他币种对请在“兑换”页面操作。" if lang == "zh" else
+              " This is a quote only: chat confirms INR→CNY conversions; use the Convert screen for other pairs.")
+    else:
+        t += (f" 超过 ¥{lim:,.0f} 的自动额度，请在“兑换”页面操作。" if lang == "zh" else f" That is above your CNY {lim:,.0f} auto limit; use the Convert screen.")
     return _result("convert", t, secrets, status="info")
 
 
@@ -827,15 +891,15 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.OBLIGATIONS:
         return _obligations(S, lang, secrets)
     if k == nlu.RATE:
-        return _rate(S, lang, secrets)
+        return _rate(S, lang, secrets, message)
     if k == nlu.ROUTES:
-        return _routes(S, it, lang, secrets)
+        return _routes(S, it, lang, secrets, message)
     if k == nlu.RUNWAY:
         return _runway(S, lang, secrets)
     if k == nlu.PLAN:
         return _plan(S, lang, secrets)
     if k == nlu.CONVERT:
-        return _convert(S, it, lang, d, secrets)
+        return _convert(S, it, lang, d, secrets, message)
     if k == nlu.STATUS:
         return _status(S, lang, d, secrets)
     if k == nlu.EXPLAIN:

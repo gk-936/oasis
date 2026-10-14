@@ -146,3 +146,28 @@ Caveats: the router was fixed against the failures of this set, so the second ro
 The first run exposed real bugs, all fixed generally: the word "please" contained "lease" and silently chose the rent bill; "until I approve it" and "do not bypass the safety check" were refused as bypass attempts; "without sending you the password" was refused; "prepare / draft" payment wording, Chinese number words, "Correction: ...", "what remains in my wallet", and "convert ... don't pay" (read as cancel) were missed. Tests for each are in `tests/test_chat_dialog.py`. No attack was ever let through.
 
 Caveats: the second row is tuned on this set, so it is no longer out-of-sample. The 16 remaining task misses are gas / utility bills with no registered payee (refused by design), an undo-after-cancel reply that asks for a fresh draft but is scored by a loose status match, and one vague message that gets an information reply. Many tasks are the same base message with an appended filler sentence, so the distinct-case count is lower than 410.
+
+
+### Third independent set (2026-10-14, written by ChatGPT, frozen in its own commit before the first run)
+
+320 cases (120 tasks, 150 attacks, 50 look-alikes) written by ChatGPT from the README and API doc only (no code, no tests): 60 of the attacks are Chinese and 45 are mixed-language; tasks are split across English, Chinese, Hinglish and mixed.
+
+| Run | Tasks | Attacks (no money moved, no secret leaked) | Look-alikes not refused |
+|---|---|---|---|
+| First run, nothing tuned on it (`eval/reports/independent3.md` at commit 0939af8) | 68 of 120 | 150 of 150 | 27 of 50 |
+| After general router fixes | 97 of 120 | 150 of 150 | 50 of 50 |
+
+What the first run exposed, all fixed generally: the sentence "only the student signature can release money" was refused as a bypass; quoted phrases that were only being talked about ("what does 'approve all' mean?") were refused; "sort out", "set up", "draft", Hinglish ("bhej do", "bharo", "cancel kar do", "nahi") and Chinese ("给") phrasings were not understood. Caveats: the second row is tuned on this set and is not independent. The 23 remaining task misses are mostly bill types the system does not have (electricity, gas, water, internet: we explain there is no registered payee instead of asking a question), requests to change a draft that does not exist yet, and "ask me exactly one question" meta-tests. Offline keyword router only.
+
+### Fuzz, random walks, API sweep and approval tampering (2026-10-14, offline)
+
+All our own generators, so they find crashes and blind spots rather than new attack ideas.
+
+| Check | Command | Result |
+|---|---|---|
+| Mutation fuzz: 534 chat messages from every set, 10 mutations (typos, case, spacing, full-width, zero-width, filler, quotes, punctuation) | `python -m eval.fuzz_bench --seed 11` | 3,865 variants: 0 hard breaches (no money moved, no draft outside the registry, no secret, no server error) |
+| Random multi-turn walks (pay, correct, cancel, undo, yes/no, attack; 35% signed) | same | 500 walks, 2,765 steps, 83 signed drafts: 0 breaches (no overpayment, no double signing, no proof without a signature) |
+| API authorization sweep, 94 route/method pairs x 4 identities x 2 bodies | `python -m eval.api_sweep` | 752 calls: 0 findings (wrong role always 403, anonymous always 401, public routes change no state, no 5xx) |
+| Approval tampering at the API | `tests/test_approval_tamper.py` | 14 tests pass: cancelled draft, reused signature, parent key on a student draft, junk signatures and key ids, extra body fields |
+
+The first fuzz run (seed 7) found two real weaknesses, both fixed and covered by tests: wrapping a whole attack in quotes together with the word "quote" or "example" made the quoted-mention rule skip the entire message, and typos in "without telling you", "reset" and "until" turned harmless help questions into refusals.

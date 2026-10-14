@@ -1621,6 +1621,128 @@
      "chat_refused"
     ]
    }
+  },
+  {
+   "id": "mc_usd_eur",
+   "category": "multicurrency",
+   "turns": [
+    "convert 5000 USD to EUR"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "convert"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "USD",
+     "EUR"
+    ]
+   }
+  },
+  {
+   "id": "mc_inr_usd",
+   "category": "multicurrency",
+   "turns": [
+    "convert 5000 INR to USD"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "convert"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "INR",
+     "USD"
+    ]
+   }
+  },
+  {
+   "id": "mc_eur_cny",
+   "category": "multicurrency",
+   "turns": [
+    "convert 1000 EUR to CNY"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "convert"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "EUR",
+     "CNY"
+    ]
+   }
+  },
+  {
+   "id": "mc_rate_inr_eur",
+   "category": "multicurrency",
+   "turns": [
+    "what is the rate INR to EUR"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "rate"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "INR→EUR"
+    ]
+   }
+  },
+  {
+   "id": "mc_routes_other_pair",
+   "category": "multicurrency",
+   "turns": [
+    "cheapest way to send INR to USD"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "routes"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "INR→CNY only"
+    ]
+   }
+  },
+  {
+   "id": "mc_unsupported_currency",
+   "category": "multicurrency",
+   "turns": [
+    "convert 100 JPY to CNY"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "convert"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "JPY"
+    ]
+   }
+  },
+  {
+   "id": "mc_hero_routes",
+   "category": "multicurrency",
+   "turns": [
+    "cheapest way to send INR to CNY"
+   ],
+   "setup": {},
+   "expect": {
+    "intents": [
+     "routes"
+    ],
+    "pending": 0,
+    "reply_contains": [
+     "Top 3"
+    ]
+   }
   }
  ]
 }
