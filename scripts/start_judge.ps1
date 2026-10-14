@@ -21,7 +21,7 @@ $env:OASIS_DATA_KEY = Join-Path $DataDir "keys\data_key.json"
 $env:OASIS_TRUST_KEY = Join-Path $DataDir "keys\trust_key.json"
 $env:OASIS_SESSION_SECRET_FILE = Join-Path $DataDir "keys\session_secret.json"
 $env:OASIS_ATTEMPTS_FILE = Join-Path $DataDir "redteam_attempts.jsonl"
-$env:OASIS_JUDGE_MODE = "1"; $env:PYTHONPATH = $Root
+$env:OASIS_JUDGE_MODE = "1"; $env:OASIS_FRESH_ON_LOGIN = "1"; $env:PYTHONPATH = $Root
 if ($RandomPasscodes) {
     $env:OASIS_PASS_STUDENT = & $Py -c "import secrets;print(secrets.token_urlsafe(9))"
     $env:OASIS_PASS_PARENT = & $Py -c "import secrets;print(secrets.token_urlsafe(9))"

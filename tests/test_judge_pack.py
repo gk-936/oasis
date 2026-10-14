@@ -128,3 +128,25 @@ def test_judge_mode_session_still_logs_in_and_runs_the_console(monkeypatch):
         assert c.get("/api/redteam/log").json()["limits"]["per_minute"] == 10
     finally:
         api.S = saved
+
+
+def test_fresh_on_login_resets_the_sandbox_only_for_a_student_login(monkeypatch):
+    from tests.auth_helpers import new_client
+    monkeypatch.setenv("OASIS_FRESH_ON_LOGIN", "1")
+    st = new_client("student")
+    st.post("/api/reset")
+    assert st.post("/api/chat", json={"message": "Pay my rent"}).json()["status"] == "held"
+    assert len(st.get("/api/state").json()["pending"]) == 1
+    new_client("parent")                                   # a parent login must not wipe the student's draft
+    assert len(st.get("/api/state").json()["pending"]) == 1
+    st2 = new_client("student")                            # a second student login starts from the seeded sandbox
+    assert st2.get("/api/state").json()["pending"] == []
+
+
+def test_without_the_flag_a_student_login_keeps_the_sandbox(monkeypatch):
+    from tests.auth_helpers import new_client
+    monkeypatch.delenv("OASIS_FRESH_ON_LOGIN", raising=False)
+    st = new_client("student")
+    st.post("/api/reset")
+    st.post("/api/chat", json={"message": "Pay my rent"})
+    assert len(new_client("student").get("/api/state").json()["pending"]) == 1

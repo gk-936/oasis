@@ -23,7 +23,7 @@ rm -rf "$DATA_DIR"; mkdir -p "$DATA_DIR/keys"          # a fresh sandbox every s
 export OASIS_LLM=offline OASIS_EXTRACT=deterministic OASIS_RATES=mock OASIS_ANCHOR=local
 export OASIS_DB="$DATA_DIR/oasis.db" OASIS_DATA_KEY="$DATA_DIR/keys/data_key.json" OASIS_TRUST_KEY="$DATA_DIR/keys/trust_key.json"
 export OASIS_SESSION_SECRET_FILE="$DATA_DIR/keys/session_secret.json" OASIS_ATTEMPTS_FILE="$DATA_DIR/redteam_attempts.jsonl"
-export OASIS_JUDGE_MODE=1 PYTHONPATH="$ROOT"
+export OASIS_JUDGE_MODE=1 OASIS_FRESH_ON_LOGIN=1 PYTHONPATH="$ROOT"
 if [ "$RANDOM_PASS" = 1 ]; then
   rnd() { "$PY" -c "import secrets;print(secrets.token_urlsafe(9))"; }
   export OASIS_PASS_STUDENT="$(rnd)" OASIS_PASS_PARENT="$(rnd)" OASIS_PASS_JUDGE="$(rnd)"

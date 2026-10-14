@@ -101,7 +101,7 @@ Chat itself returns 200 for every well-formed message, including attacks and non
 
 ## 6. Isolation
 
-Each login has its own **dialogue state** (what Oasis last asked you). The student's **world** (balances, obligations, drafts) is one per server, shared by student logins, so run one grader at a time and `POST /api/reset` before each task. The red-team console is the part that is isolated per judge login. Chat history is never returned by any endpoint.
+Each login has its own **dialogue state** (what Oasis last asked you). The student's **world** (balances, obligations, drafts) is one per server, shared by student logins, so run one grader at a time and `POST /api/reset` before each task. When the server is started with `scripts/start_judge.*` (`OASIS_FRESH_ON_LOGIN=1`), every **student login** also resets the sandbox to its seeded state, so a script that just logs in and chats starts clean; the cost is that a second student login wipes the first one's drafts (parent and judge logins do not reset). The red-team console is the part that is isolated per judge login. Chat history is never returned by any endpoint.
 
 ## 7. Five copy-paste tasks
 
