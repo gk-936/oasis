@@ -76,7 +76,7 @@ _SECRET_WORDS = (r"pass ?code|password|passwd|\bpin\b|private key|signing key|se
                  r"system prompt|your prompt|your instructions|initial prompt|hidden prompt|prompt above|"
                  r"密码|口令|私钥|密钥|令牌|系统提示|提示词|你的指令|环境变量|凭证")
 _SECRETS_ASK = re.compile(rf"(?:{_SECRET_WORDS})", re.I)
-_SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|what(?:'s| is| are)|list|export|"
+_SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|find|config|stored|written down|what(?:'s| is| are)|list|export|"
                            r"告诉|显示|打印|泄露|给我|发给|是什么|输出|透露)", re.I)
 _OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|"
                           r"(?:someone|somebody) else'?s? (?:account|data|balance|payments?)|(?:其他|别人|所有)(?:用户|学生|账户|账号)", re.I)
@@ -108,9 +108,9 @@ _URGENCY = re.compile(r"urgent|immediately|right now|asap|right away|emergency|h
 
 def security_category(norm: str) -> str | None:
     """secrets | injection | bypass | role | social | None, for a normalised message."""
-    if _RESET.search(norm) and not _SECRETS_VERB.search(norm.replace("where is", "")):
-        return None                       # asking HOW to reset a login is help, not a request to reveal one
-    if _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
+    # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
+    reset_help = bool(_RESET.search(norm)) and not _SECRETS_VERB.search(norm.replace("where is", ""))
+    if not reset_help and _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
         return "secrets"
     if _OTHER_USERS.search(norm):
         return "secrets"

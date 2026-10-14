@@ -1,6 +1,6 @@
 # Task-completion benchmark (chat)
 
-Run: 2026-10-14 18:09 | LLM: offline-deterministic | 51 scripted tasks
+Run: 2026-10-14 18:29 | LLM: offline-deterministic | 51 scripted tasks
 
 **Caveat.** Our own scripted tasks, written by the same team that built Oasis, run against the offline keyword router on MOCK data. It shows the chat paths work end to end and that attacks fail; it is not an independent benchmark and says nothing about a live model.
 
