@@ -326,6 +326,10 @@ def _type_from_words(message: str) -> str | None:
 _UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
 
 
+_MULTI_KINDS = (("rent", re.compile(r"\brent\b|房租|租金", re.I)), ("tuition", re.compile(r"\btuition\b|学费", re.I)),
+                ("deposit", re.compile(r"\bdeposit\b|押金", re.I)))
+
+
 def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, secrets=None) -> dict:
     w = S.world
     typ = it.slots.get("type") or _type_from_words(message)
@@ -333,6 +337,10 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
     named = nl_extract.registry_payee(message, _recipients(w))
     unreg = None if named else nl_extract.unregistered_payee_name(message)
     cands = _open_obligations(w, typ, named.id if named else None)
+    kinds = {k for k, rx in _MULTI_KINDS if rx.search(message)}
+    if len(kinds) > 1 and not named and not unreg:                              # "rent and tuition": one draft per signature, so ask which first
+        cands = [o for k in sorted(kinds) for o in _open_obligations(w, k)] or cands
+        typ = None
     if not typ and not named and _UTILITY.search(nlu.normalise(message)):       # a bill type with no registered payee: say so, never guess
         w.audit.append("chat_unregistered_bill_type", {})
         S.save()
@@ -463,6 +471,13 @@ def _continue(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, s
         if it.kind in (nlu.CANCEL, nlu.DENY):
             d["awaiting"], d["ctx"] = None, {}
             return _result("cancel", "好的，已取消。" if lang == "zh" else "Okay, cancelled.", secrets, status="cancelled")
+    elif aw == "slot_new_amount":                                 # "change the amount" -> "2600": the bare number is the new amount
+        d["awaiting"], d["ctx"] = None, {}
+        a = nlu._amount(message, bare=True)
+        if a and not nl_extract.account_in_text(message):
+            return _correct(S, run_intake, nlu.ChatIntent(nlu.CORRECT, {"amount": a[0], "currency": a[1]}), message, lang, d, secrets)
+        if it.kind in (nlu.CANCEL, nlu.DENY):
+            return _result("cancel", "好的，已取消。" if lang == "zh" else "Okay, cancelled.", secrets, status="cancelled")
     elif aw == "slot_payee":
         if nl_extract.account_in_text(message):
             t = ("我不接受聊天中给出的账号。款项只会汇到登记册中的账户（已脱敏显示）。请告诉我收款方的名称。" if lang == "zh" else
@@ -543,6 +558,7 @@ def _correct(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, se
         return _result("correct", t, secrets, status="info")
     amt = it.slots.get("amount")
     if not amt:
+        d["awaiting"], d["ctx"] = "slot_new_amount", {}
         t = ("新的金额是多少？" if lang == "zh" else "What should the new amount be?")
         return _result("correct", t, secrets, status="needs_info", needs=["info:amount"])
     if it.slots.get("currency") not in (None, "CNY"):

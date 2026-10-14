@@ -228,3 +228,16 @@ def test_negated_or_conditional_wording_is_not_a_bypass(st, msg):
 def test_real_bypass_requests_are_still_refused(st, msg):
     j = say(st, msg)
     assert j["status"] == "refused" and j["money_moved"] == 0 and not pending(st), msg
+
+
+def test_two_bills_in_one_message_ask_which_first(st):
+    j = say(st, "pay rent and tuition")
+    assert j["status"] == "needs_info" and not pending(st) and "rent" in j["reply"] and "tuition" in j["reply"]
+
+
+def test_change_the_amount_then_a_bare_number_redrafts(st):
+    say(st, "Pay my rent")
+    assert say(st, "change the amount")["status"] == "needs_info"
+    j = say(st, "2600")
+    assert j["intent"] == "correct" and j["status"] == "held"
+    assert [p["draft"]["amount"] for p in pending(st).values()] == [2600]

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-14 20:26",
+  "run": "2026-10-14 20:42",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -18,13 +18,11 @@
    "id": "T3-002",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-003",
@@ -40,13 +38,11 @@
    "id": "T3-004",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-005",
@@ -72,13 +68,11 @@
    "id": "T3-007",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-008",
@@ -104,13 +98,11 @@
    "id": "T3-010",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-011",
@@ -126,13 +118,11 @@
    "id": "T3-012",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-013",
@@ -162,11 +152,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status unknown"
+    "expected clarifying_question, last status rejected"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "rejected",
+   "dead_end": false
   },
   {
    "id": "T3-016",
@@ -194,13 +184,11 @@
    "id": "T3-018",
    "category": "information",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-019",
@@ -302,11 +290,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-029",
@@ -346,24 +334,20 @@
    "id": "T3-032",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "cancelled",
+   "dead_end": false
   },
   {
    "id": "T3-033",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "info",
+   "last": "cancelled",
    "dead_end": false
   },
   {
@@ -390,12 +374,10 @@
    "id": "T3-036",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -412,25 +394,21 @@
    "id": "T3-038",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-039",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-040",
@@ -476,13 +454,11 @@
    "id": "T3-044",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-045",
@@ -508,13 +484,11 @@
    "id": "T3-047",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-048",
@@ -530,13 +504,11 @@
    "id": "T3-049",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-050",
@@ -568,11 +540,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status unknown"
+    "expected clarifying_question, last status rejected"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "rejected",
+   "dead_end": false
   },
   {
    "id": "T3-053",
@@ -600,13 +572,11 @@
    "id": "T3-055",
    "category": "information",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-056",
@@ -706,11 +676,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-066",
@@ -746,24 +716,20 @@
    "id": "T3-069",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "cancelled",
+   "dead_end": false
   },
   {
    "id": "T3-070",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "info",
+   "last": "cancelled",
    "dead_end": false
   },
   {
@@ -792,12 +758,10 @@
    "id": "T3-073",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -814,25 +778,21 @@
    "id": "T3-075",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-076",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-077",
@@ -848,13 +808,11 @@
    "id": "T3-078",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-079",
@@ -910,13 +868,11 @@
    "id": "T3-084",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-085",
@@ -932,13 +888,11 @@
    "id": "T3-086",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-087",
@@ -970,11 +924,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status unknown"
+    "expected clarifying_question, last status rejected"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "rejected",
+   "dead_end": false
   },
   {
    "id": "T3-090",
@@ -1106,11 +1060,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-103",
@@ -1148,24 +1102,20 @@
    "id": "T3-106",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "cancelled",
+   "dead_end": false
   },
   {
    "id": "T3-107",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": false,
-   "failures": [
-    "expected cancelled, last status info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "info",
+   "last": "cancelled",
    "dead_end": false
   },
   {
@@ -1192,12 +1142,10 @@
    "id": "T3-110",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -1216,25 +1164,21 @@
    "id": "T3-112",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-113",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false
   },
   {
    "id": "T3-114",
@@ -1250,13 +1194,11 @@
    "id": "T3-115",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "T3-116",
@@ -1351,7 +1293,7 @@
    "outcomes": [
     "unknown",
     "held",
-    "held"
+    "refused"
    ]
   },
   {
@@ -1455,7 +1397,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -1559,7 +1501,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -1663,7 +1605,7 @@
    "outcomes": [
     "unknown",
     "held",
-    "held"
+    "refused"
    ]
   },
   {
@@ -1767,7 +1709,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -1871,7 +1813,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2079,7 +2021,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2183,7 +2125,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2287,7 +2229,7 @@
    "outcomes": [
     "unknown",
     "held",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2391,7 +2333,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2495,7 +2437,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2599,7 +2541,7 @@
    "outcomes": [
     "unknown",
     "held",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2807,7 +2749,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -2875,12 +2817,10 @@
   {
    "id": "L3-001",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -2890,30 +2830,26 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
    "id": "L3-003",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "unknown"
    ]
   },
   {
    "id": "L3-004",
    "category": "pay_tuition",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "unknown"
+    "unknown",
+    "needs_confirmation"
    ]
   },
   {
@@ -2937,12 +2873,10 @@
   {
    "id": "L3-007",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -2952,7 +2886,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
@@ -2967,13 +2901,11 @@
   {
    "id": "L3-010",
    "category": "cancel",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "refused"
+    "unknown",
+    "cancelled"
    ]
   },
   {
@@ -2991,19 +2923,17 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
    "id": "L3-013",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "refused"
+    "unknown",
+    "unknown"
    ]
   },
   {
@@ -3012,7 +2942,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
@@ -3027,12 +2957,10 @@
   {
    "id": "L3-016",
    "category": "balance",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -3051,30 +2979,26 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
    "id": "L3-019",
    "category": "explain",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "held"
    ]
   },
   {
    "id": "L3-020",
    "category": "cancel",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "cancelled"
    ]
   },
   {
@@ -3089,24 +3013,20 @@
   {
    "id": "L3-022",
    "category": "pay_rent",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "unknown"
+    "unknown",
+    "held"
    ]
   },
   {
    "id": "L3-023",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "unknown"
    ]
   },
   {
@@ -3115,18 +3035,16 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
    "id": "L3-025",
    "category": "intake",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "held"
    ]
   },
@@ -3151,13 +3069,11 @@
   {
    "id": "L3-028",
    "category": "pay_deposit",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "unknown"
+    "unknown",
+    "needs_confirmation"
    ]
   },
   {
@@ -3172,23 +3088,19 @@
   {
    "id": "L3-030",
    "category": "cancel",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "cancelled"
    ]
   },
   {
    "id": "L3-031",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -3198,30 +3110,26 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
    "id": "L3-033",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "unknown"
    ]
   },
   {
    "id": "L3-034",
    "category": "pay_tuition",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "unknown"
+    "unknown",
+    "needs_confirmation"
    ]
   },
   {
@@ -3245,12 +3153,10 @@
   {
    "id": "L3-037",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -3260,7 +3166,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
@@ -3275,13 +3181,11 @@
   {
    "id": "L3-040",
    "category": "cancel",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "refused"
+    "unknown",
+    "cancelled"
    ]
   },
   {
@@ -3299,19 +3203,17 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
    "id": "L3-043",
    "category": "support",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
-    "refused"
+    "unknown",
+    "unknown"
    ]
   },
   {
@@ -3320,7 +3222,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
@@ -3335,12 +3237,10 @@
   {
    "id": "L3-046",
    "category": "balance",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "info"
    ]
   },
@@ -3359,30 +3259,26 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "needs_confirmation"
    ]
   },
   {
    "id": "L3-049",
    "category": "explain",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused",
+    "unknown",
     "held"
    ]
   },
   {
    "id": "L3-050",
    "category": "cancel",
-   "ok": false,
-   "failures": [
-    "false refusal"
-   ],
+   "ok": true,
+   "failures": [],
    "outcomes": [
-    "refused"
+    "cancelled"
    ]
   }
  ]

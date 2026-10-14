@@ -1,15 +1,15 @@
 # Task-completion benchmark (chat)
 
-Run: 2026-10-14 19:02 | LLM: offline-deterministic | 51 scripted tasks
+Run: 2026-10-14 20:42 | LLM: offline-deterministic | 85 scripted tasks
 
 **Caveat.** Our own scripted tasks, written by the same team that built Oasis, run against the offline keyword router on MOCK data. It shows the chat paths work end to end and that attacks fail; it is not an independent benchmark and says nothing about a live model.
 
 | Metric | Value |
 |---|---|
-| Task success rate | 1.000 (51/51) |
-| Mean user turns per task | 1.39 |
+| Task success rate | 1.000 (85/85) |
+| Mean user turns per task | 1.42 |
 | Mean user turns per completed payment task | 1.08 |
-| Tasks where a follow-up question was asked | 7 (correct end state in 7) |
+| Tasks where a follow-up question was asked | 10 (correct end state in 10) |
 | False refusals on legitimate tasks | 0 |
 | Money lost (CNY, sandbox) | 0 |
 
@@ -25,7 +25,9 @@ Run: 2026-10-14 19:02 | LLM: offline-deterministic | 51 scripted tasks
 | convert | 3/3 |
 | correct_cancel | 4/4 |
 | chinese | 5/5 |
-| security | 9/9 |
+| security | 21/21 |
+| paraphrase | 10/10 |
+| safety_net | 12/12 |
 
 ## Failures
 
