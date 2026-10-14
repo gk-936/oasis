@@ -12,6 +12,7 @@ approved that specific run in the current conversation.** Approval for one run d
 - Never run without approval:
   - `eval.planning --llm bedrock`, `eval.planning_v3 --format ...`, `eval.planning_experiment ...`
   - `eval.runner` without `--llm offline` (its default comes from `.env`, so it is **bedrock**), or with `--extract llm` / `--llm-risk`
+  - `eval.chat_llm_bench --live` (its dry run and `--report-only` are free)
   - `eval.record_demo_fixture`
   - `tests/test_llm_live.py` or `tests/test_live_extract.py` with live credentials
   - the server (`uvicorn oasis.api.main:app`) without `OASIS_LLM=offline`
@@ -25,7 +26,7 @@ approved that specific run in the current conversation.** Approval for one run d
 ## 2. Commands (offline)
 
 ```bash
-# tests (no network; expect "814 passed, 2 skipped" — update the README if the count changes)
+# tests (no network; expect "1111 passed, 2 skipped" — update the README if the count changes)
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # server
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
@@ -33,6 +34,7 @@ OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:ap
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.netting_bench
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench   # chat task benchmark (forces offline itself)
 # UI rebuild (frontend/dist is committed; rebuild after any change in frontend/src)
 cd frontend && npm ci && npm run build
 ```

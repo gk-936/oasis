@@ -11,6 +11,7 @@ Method and limits: pages were read with a summarising web-fetch tool, so quotes 
 | Item | Figure | Source, date | What it says | Confidence |
 |---|---|---|---|---|
 | Global average cost of sending remittances | 6.49% of the amount sent (Q1 2025), up from 6.26% in Q4 2024; banks the most expensive provider type at 14.55% | [World Bank, Remittance Prices Worldwide, Q1 2025 report](https://remittanceprices.worldbank.org/sites/default/files/rpw_main_report_and_annex_q125_1_0.pdf); site: [remittanceprices.worldbank.org](https://remittanceprices.worldbank.org) | Global average and bank average as stated in a search summary of the report; the PDF itself returned HTTP 403 | Medium (summary only) |
+| Global average, newer quarter | 6.36% (Q3 2025, September 2025 report) | [World Bank Remittance Prices Worldwide](https://remittanceprices.worldbank.org) (site states 6.36%); the Q1-to-Q3 trend (6.49% to 6.36%) is from a third-party summary | Site read via search result; the report PDF was not opened. A 3.54% "digital-only operators" figure circulates in a research note but we found it only in a third-party summary, so it is **not used** | Medium |
 | India to China corridor cost | **Not found.** The database is organised by sending and receiving country; no India-to-China student or tuition corridor figure was located | n/a | n/a | n/a |
 | Cost of remittances received in China | 8.43% in 2020 (inbound to China, not student tuition, and old) | [IndexMundi, World Bank indicator SI.RMT.COST.IB.ZS](https://www.indexmundi.com/facts/indicators/SI.RMT.COST.IB.ZS/rankings/asia) | Mirror of the World Bank indicator "average transaction cost of sending remittances to a specific country (%)" | Low (old, wrong direction for the Oasis hero corridor; shown only because nothing closer was found) |
 | Indian families' bank fees and FX mark-ups on education remittances | About INR 1,700 crore in 2024 across all destinations; markup structures of 3% to 3.5% on conventional cards; fees of INR 1,000 to 2,500 per transfer | [Angel One news item "Hidden costs of studying abroad"](https://oga-prod.angelone.in/news/personal-finance/hidden-costs-of-studying-abroad-how-indian-families-lose-1-700-crore); related guide [Business Standard, 2025-07-25](https://www.business-standard.com/amp/finance/personal-finance/sending-money-abroad-choose-platform-that-discloses-exchange-rates-fees-125072501067_1.html) | Search-result summaries only; the underlying estimate's method is not known to us and the pages were not opened | Low |
@@ -40,6 +41,19 @@ Reading: the global figures say bank routes are the costliest provider type; we 
 | Chinese Ministry of Education count | **Not found** | n/a | n/a |
 
 Reading: most Indian students in China study medicine, so the Oasis hero (an Indian student arriving in Shenzhen with tuition, rent and a deposit to pay) is a plausible but not a measured segment.
+
+### A4. Student needs: cost-of-living worry and credit invisibility (secondary research)
+
+These are published surveys by others, not Oasis user research. Each applies to its own population and question wording; do not add them up or read them as "our survey". Added 2026-10-13 from a research note; the first three rows were re-checked by search, the last two were not.
+
+| Finding | Source | Caveat | Oasis feature it motivates | Checked |
+|---|---|---|---|---|
+| 69% of 116,412 respondents named cost of living their biggest worry about studying abroad (accommodation 48%, scholarships 47%) | [QS International Student Survey 2023](https://www.qs.com/insights/how-are-higher-education-institutions-responding-to-student-pressure-in-the-soaring-cost-of-living-crisis-in-2023) | Prospective and current students mixed; a worry, not an experienced incident | Semester plan, shortfall and runway warnings, Digital Twin | Yes (search) |
+| Recent-immigrant families in Canada (under 2 years) were credit-invisible at 14.8% vs 7.5% for Canadian-born families | [Statistics Canada, 2023](https://www150.statcan.gc.ca/n1/pub/36-28-0001/2023009/article/00001-eng.htm) | Immigrant families in Canada, not international students. The study also finds the gap closes after 2 to 4 years and disappears once family characteristics are controlled for, so this supports a short-lived newcomer problem, not a permanent one | Trust Pass, credit growth (portable record of verified payments) | Yes (search) |
+| 70% of Indian respondents named cost of living their biggest concern (employment 58%, scholarships 53%) | [QS ISS 2024 India report (PDF)](https://insights.qs.com/hubfs/Reports/QS%20ISS%202024%20Source%20India%20report.pdf) | Indian prospective students, not those already in China | Hero persona, budget forecast | No (from the research note) |
+| 51% of surveyed students were reconsidering overseas study because of living-cost increases; 21% felt highly knowledgeable about costs | [IDP Emerging Futures 3 (PDF)](https://resources.idp-connect.com/hubfs/Emerging%20Futures%203%20Infographic%20Report.pdf) | Population and wording not re-read | Pre-departure cost planning | No (from the research note) |
+
+Not used: a UK-wide figure on skipped meals (not international students) and background reports from BIS, CPMI and the CFPB. None of this shows how often payments fail for students; that still needs real interviews (section C).
 
 ## B. Oasis's own SIMULATED numbers (not evidence about the real world)
 

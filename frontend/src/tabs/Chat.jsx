@@ -49,7 +49,7 @@ export function Chat({ refresh, openProof, s }) {
   const send = (text) => run(async () => {
     if (!text.trim()) return;
     say({ role: "student", text }); setMsg(""); setThinking(true);
-    try { const r = await api("/chat", { message: text }); say({ role: "oasis", text: r.reply, outcome: r.outcome }); }
+    try { const r = await api("/chat", { message: text }); say({ role: "oasis", text: r.reply, outcome: r.outcome, meta: r }); }
     finally { setThinking(false); refresh(); }
   });
   const resolve = (id, draft) => setResolved((x) => new Set(x).add(`${id}:${draft?.draft_hash}`));
@@ -92,6 +92,14 @@ export function Chat({ refresh, openProof, s }) {
     const r = await api("/recovery/approve", { obligation: o.recovery?.safe_plan?.obligation });
     say({ role: "oasis", k: "chat.recovered", vars: { n: r.canaries_cleared } }); refresh();
   });
+  const SUGGESTIONS = ["rent", "tuition", "owe", "balance", "rate", "runway"];
+  /* Quick replies for the last Oasis message: they only send ordinary chat text, so they carry no extra authority. */
+  const chips = (m) => {
+    const st = m.meta?.status;
+    if (st === "needs_confirmation") return [["chip.confirm", () => send(t("chat.chip.confirm.msg"))], ["chip.change", () => setMsg(t("chat.chip.change.prefill"))], ["chip.no", () => send(t("chat.chip.no.msg"))]];
+    if (st === "held" && m.meta?.pending_id) return [["chip.change", () => setMsg(t("chat.chip.change.prefill"))], ["chip.cancel", () => send(t("chat.chip.cancel.msg"))]];
+    return [];
+  };
   const text = (m) => {
     if (!m.k) return m.text;
     const v = m.vars?.status ? { ...m.vars, status: tl("status", m.vars.status) } : m.vars;
@@ -102,8 +110,14 @@ export function Chat({ refresh, openProof, s }) {
       <h2 id="chat-h">{t("chat.title")}</h2>
       <div className="chat" role="log" aria-label={t("chat.log.aria")}>
         {log.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
+          <div key={i} className={`msg ${m.role}${m.meta?.status === "refused" ? " refused" : ""}`} data-testid={m.meta?.status === "refused" ? "chat-refusal" : undefined}>
+            {m.meta?.status === "refused" && <p className="refusal-label"><span aria-hidden="true">🛡</span> <b>{t("chat.refused")}</b></p>}
             <p>{text(m)}</p>
+            {m.meta?.needs?.length > 0 && <p className="muted small">{m.meta.needs.filter((n) => n.endsWith("_signature")).map((n) => t(`chat.needs.${n}`)).join(" · ")}</p>}
+            {i === log.length - 1 && !busy && chips(m).length > 0 && (
+              <div className="row chips" role="group" aria-label={t("chat.waiting.aria")}>
+                {chips(m).map(([k, fn]) => <button key={k} type="button" className="ghost chip" onClick={fn}>{t(`chat.${k}`)}</button>)}
+              </div>)}
             {m.outcome && <Outcome o={m.outcome} onProof={openProof} onRecovery={recover}
               {...(m.outcome.draft && resolved.has(`${m.outcome.pending_id}:${m.outcome.draft.draft_hash}`) ? {} : { onApprove: approve, onPayAgain: payAgain, onDismiss: dismiss })} />}
           </div>
@@ -112,6 +126,12 @@ export function Chat({ refresh, openProof, s }) {
         <div ref={end} />
       </div>
       <ErrorBox error={err} onDismiss={() => setErr(null)} />
+      {log.length === 1 && (
+        <div className="card" data-testid="chat-suggestions"><p className="muted small" style={{ marginTop: 0 }}>{t("chat.sugg.title")}</p>
+          <div className="row chips">
+            {SUGGESTIONS.map((k) => <button key={k} type="button" className="ghost chip" disabled={busy} onClick={() => send(t(`chat.sugg.${k}`))}>{t(`chat.sugg.${k}`)}</button>)}
+          </div>
+        </div>)}
       {(() => {
         const inLog = new Set(log.map((m) => m.outcome?.pending_id).filter(Boolean));
         const waiting = (s?.pending || []).filter((p) => !inLog.has(p.id) && (p.required.includes("student") || p.required.includes("duplicate_confirmation")));

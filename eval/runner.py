@@ -374,7 +374,9 @@ def to_markdown(summary: dict, meta: dict, spr: dict | None = None, ref: dict | 
         rows.insert(5, ("Model followed injection (scenarios / injection-bearing)", "model_followed_injection"))
     title = (f"# Oasis benchmark results: live agent (configured primary model {meta['agent_model']}; see the table of serving models)" if live
              else "# Oasis benchmark results")
-    md = [title, "",
+    hist = ([("> Historical run on the Groq provider, which has since been removed. Kept as a record; Amazon Nova Pro on Bedrock is now the "
+              "only live provider and this exact run cannot be repeated."), ""] if str(meta.get("llm")) == "groq" else [])
+    md = [title, "", *hist,
           f"Run: {meta['run_at']} | LLM: {meta['llm']}{model} | ruleset {meta['ruleset']} | repeats {meta['repeats']} | "
           f"{meta['attacks']} attack + {meta['legit']} legit scenarios (+{meta['redteam']} AI red-team)", "",
           "All money is sandbox money; rails, rates and the registry are mocks. Humans in the loop are simulated.", "",
@@ -598,6 +600,16 @@ def run_strict_suite(name: str, fresh_stem: str = "benchmark_fresh_prefix") -> d
         intro = [f"{len(scen)} cases in `eval/fresh/scenarios_fresh.json` (sha256 `{got}`), in categories that neither the visible suite nor the hidden set "
                  "contains. They were written by an AI assistant that had read parts of the defence code, so the set is FRESH (never used for tuning before "
                  "its first run) but NOT blind. The run named `prefix` is the first run and is kept unchanged; the same pass criteria as the hidden set apply."]
+    elif name == "blind2":
+        got = hidden.file_sha256(hidden.BLIND2_PATH)
+        ok = got == hidden.BLIND2_SHA256
+        scen = hidden.load_scenarios(hidden.BLIND2_PATH)
+        stem, title = "benchmark_blind2", "Oasis blind-set-2 benchmark (offline, first run)"
+        extra = {"sha256": got, "sha256_expected": hidden.BLIND2_SHA256, "sha256_match": ok}
+        intro = [f"{len(scen)} cases in `eval/blind2/scenarios_blind2.json`, written by a second independent author that did not read the "
+                 "implementation (see `eval/blind2/README.md`). This is the first run, before any fix, and is kept unchanged. "
+                 f"File check: sha256 `{got}`; expected `{hidden.BLIND2_SHA256}`; **{'MATCH' if ok else 'MISMATCH (the file was changed)'}**. "
+                 "Same strict pass criteria as the hidden set, plus: a resubmitted invoice is paid at most once. Humans in the loop are simulated."]
     else:
         scen = hidden.load_scenarios(hidden.ATTEMPTS_PATH)
         stem, title = "benchmark_attempts", "Oasis red-team-attempts benchmark (offline)"
@@ -627,7 +639,7 @@ def main(argv=None) -> dict | None:
     ap.add_argument("--llm", default=config.LLM_PROVIDER)
     ap.add_argument("--extract", choices=("deterministic", "llm"), default="deterministic",
                     help="llm = live agent: the model's extraction is primary (needs --llm bedrock)")
-    ap.add_argument("--suite", choices=("main", "hidden", "attempts", "fresh"), default="main",
+    ap.add_argument("--suite", choices=("main", "hidden", "attempts", "fresh", "blind2"), default="main",
                     help="main = the published attack + legit suites (default); hidden = eval/hidden/scenarios_hidden.json "
                          "(40 blind cases, offline); attempts = eval/scenarios_from_attempts.json built from judge red-team attempts (offline)")
     ap.add_argument("--fresh-stem", default="benchmark_fresh_prefix", help="report file stem for --suite fresh (the first run is kept as benchmark_fresh_prefix)")

@@ -44,7 +44,10 @@ rules:
         2026): nil to INR 10 lakh, 2% above. Re-checked 2026-10-13: the Finance Act 2026 text (egazette.gov.in/WriteReadData/2026/271439.pdf,
         search summary; the PDF could not be fetched, certificate error) and the Budget 2026-27 PIB summary show 2%, but the Income Tax
         Department's own TCS rate page (uploaded 2026-04-30) still showed the older 5%. Primary sources disagree on what is current, so
-        confirm the rate with the AD bank.
+        confirm the rate with the AD bank. Re-checked again 2026-10-13: search results quoting the Department's section 394 page, the
+        Budget 2026-27 PIB summary and the Gazette (Finance Act 2026, assent 2026-03-30) all give 2% above INR 10 lakh, and a bank-side
+        explainer (Flywire) agrees; the primary pages themselves returned HTTP 403 to our fetcher, so the rate is still read from
+        snippets and stays researched-secondary. Only the older TCS guide PDF shows 5%, which predates the amendment.
     education_loan:
       rate: 0.0
       status: researched-secondary

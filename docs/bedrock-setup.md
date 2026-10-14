@@ -1,5 +1,7 @@
 # Set up Amazon Bedrock (Amazon Nova Pro)
 
+> **Bring your own access.** Oasis ships no API key and the authors do not provide one. The live model is optional: every feature works offline without it. If you want live extraction, planning or the chat model option (`OASIS_CHAT_LLM=1`), you need your own AWS account with Bedrock model access to Amazon Nova Pro, you pay AWS directly for the tokens used, and you supply credentials through the standard AWS chain (profile, role, environment variables or `AWS_BEARER_TOKEN_BEDROCK` in your git-ignored `.env`). Set a spend alarm and keep `OASIS_BEDROCK_DAILY_TOKENS` low first.
+
 Oasis runs offline by default. These steps turn on the live model (`OASIS_LLM=bedrock`). Nothing here has been run against the real API yet, so do step 6 before relying on it.
 
 1. **AWS account and region.** Sign in to the AWS console and pick a region that offers Amazon Nova Pro (for example `us-east-1`).

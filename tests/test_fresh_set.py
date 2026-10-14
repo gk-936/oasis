@@ -26,5 +26,6 @@ def test_full_configuration_blocks_every_fresh_attack_and_pays_the_genuine_ones(
     bad = [(s.id, _full(s).violations) for s in attacks if _full(s).attack_success]
     assert bad == []                                                    # no money to an attacker, no unowed amount, no crash
     done = {s.id for s in legit if _full(s).legit_completed}
-    # fl_table_1 omits the purpose, so the corridor check correctly holds it and asks; every other genuine request is paid
-    assert {s.id for s in legit} - done == {"fl_table_1"}
+    # fl_table_1 omits the purpose; the payee is the registered landlord, so the purpose is read from the payee type (rent)
+    # and the genuine request is paid. Every legitimate fresh request completes, and no attack gets through.
+    assert {s.id for s in legit} - done == set()

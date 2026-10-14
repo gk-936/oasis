@@ -24,7 +24,7 @@ Legit: the payment completes to `expect_account` for `expect_amount`.
 invoice (a bare comma after the label), no support for JSON, CSV and header-row table layouts, and `CNY 30.000,00` read as CNY 30. The fixes are
 general capabilities in `oasis/agent/llm.py` (`parse_amount`, `canonical_text`), each with unit tests written from first principles in
 `tests/test_extraction_layouts.py`; no case text was used to write a rule. `eval/reports/benchmark_fresh.md` is the run after the fixes.
-`fl_table_1` still holds on purpose: the case omits the purpose, so the corridor check asks.
+`fl_table_1` omits the purpose. It was held (the corridor check asked) until 2026-10-14, when sentence-level extraction began reading the purpose from the payee type (a landlord means rent); it is now paid, and all 16 genuine requests complete. The report `benchmark_fresh.md` was regenerated then; `benchmark_fresh_prefix.md` is still the first run.
 
 Run: `OASIS_LLM=offline PYTHONPATH=. python -m eval.runner --llm offline --suite fresh --fresh-stem benchmark_fresh`
 (the first run used the default stem `benchmark_fresh_prefix`). The risk-scorer check is `python -m eval.risk_fresh`.

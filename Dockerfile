@@ -57,7 +57,8 @@ COPY eval/__init__.py eval/approver.py ./eval/
 COPY eval/reports/ ./eval/reports/
 COPY eval/fixtures/demo_cache/ ./eval/fixtures/demo_cache/
 COPY docker/entrypoint.sh /usr/local/bin/oasis-entrypoint
-RUN chmod 0755 /usr/local/bin/oasis-entrypoint
+# strip CRs in case the repo was checked out with Windows line endings (the shebang would break: 'no such file or directory')
+RUN sed -i 's/$//' /usr/local/bin/oasis-entrypoint && chmod 0755 /usr/local/bin/oasis-entrypoint
 
 USER oasis
 VOLUME ["/data"]

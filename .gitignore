@@ -61,3 +61,6 @@ data/telegram_pairing.json
 **/telegram_pairing.json
 data/telegram_pairing.json
 **/telegram_pairing.json
+
+# scripted-client device keys (tools/oasis_client.py)
+.oasis_device_key*

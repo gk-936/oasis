@@ -12,7 +12,7 @@ Same 8 scenarios, 3 repeats (24 plans per cell), temperature 0.3, per-plan cap 2
 
 What fixed the v2 failures: most were `insufficient_cny` (the model got the INR arithmetic wrong) and, in `rate_target`, `rate_target_reserve` (the model never lowered the student's conversions below the spendable INR). `size_conversion` now returns the exact student/parent split when the student cannot spend that much, the cheaper on-time route, and the exact this-year/January SAFE split; `facts_sheet` suggests one conversion that funds every obligation. These are read-only calculator outputs; the model still writes the plan and the validator still judges it.
 
-Caveat: one model, mock data, 3 repeats of hand-written scenarios; not a robustness claim. v2 remains the code default; v3 is selected with `OASIS_PLANNER_FORMAT=v3`.
+Caveat: one model, mock data, 3 repeats of hand-written scenarios; not a robustness claim. **Update 2026-10-13: v3 is now the code default** (24 of 24 vs 16 of 24 on Nova Pro, same scenarios, cap and temperature); `OASIS_PLANNER_FORMAT=v2` restores the old view. The "v2 stays the default" statements further down are the earlier decision, kept as history.
 
 > The sections below record the earlier Groq-hosted evaluation (qwen/qwen3.8-27b, openai/gpt-oss-120b) and are kept as history only.
 
@@ -126,7 +126,7 @@ Rule, fixed before any live v3 result: v3 becomes the default only if, pooled ov
 
 Design: 12 scenarios (8 original + 4 `heldout_*`) x 2 repeats = 24 plans per format-model cell; four cells for two formats and two models. Temperature 0.3, a repeat-specific cache salt, per-plan cap 22,000 for both formats, and the fallback model pinned to the tested model (no cross-model contamination). Rows are keyed (format, model, repeat, scenario) in `eval/reports/planning_v3_rows.json`, written after every plan, and finished keys are skipped on re-run. A plan is not started unless the run cap leaves room for a whole per-plan cap, and a plan that ended on an API or quota error is discarded, not recorded.
 
-Commands (to run later, when the daily budget is back; each call is resumable):
+Commands as they were run on the removed Groq provider (history only; these model names and the `OASIS_GROQ_*` budgets no longer exist, and a new live run uses Bedrock and needs the owner's approval):
 
 ```
 export PYTHONPATH=.

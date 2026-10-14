@@ -1,7 +1,7 @@
 """Step 5 - intent-enforcing executor. The only component holding the (sandbox) payment credential."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Protocol, runtime_checkable
 
 from ..mock.ledger import SandboxLedger, Transfer
 from .approvals import ApproverRegistry
@@ -10,6 +10,19 @@ from .canaries import Canaries
 from .crypto import HybridSigner
 from .intents import check_intent, verified_approval_roles
 from .policy import Decision
+
+
+@runtime_checkable
+class PaymentRail(Protocol):
+    """The only three things the executor asks of a payment rail. `SandboxLedger` is the MOCK implementation. A real rail
+    (a licensed partner's API) would have to supply the same three calls, keep the same guarantees (a token bound to one
+    intent and one exact transfer, single use, short life; a currency that must match both accounts) and be the only thing
+    that can move money. See docs/path-to-production.md."""
+    def executor_credential(self) -> str: ...
+    def mint_tool_token(self, issuer: str, *, intent_id: str, from_ref: str, to_ref: str, amount: float,
+                        currency: str = "CNY", ttl_s: float = ...) -> str: ...
+    def transfer(self, credential: str, from_ref: str, to_ref: str, amount: float, currency: str = "CNY",
+                 memo: str = "", intent_id: str | None = None) -> Transfer: ...
 
 
 @dataclass
@@ -25,7 +38,7 @@ class ExecResult:
 
 
 class Executor:
-    def __init__(self, ledger: SandboxLedger, signer: HybridSigner, audit: AuditLog,
+    def __init__(self, ledger: PaymentRail, signer: HybridSigner, audit: AuditLog,
                  canaries: Canaries | None, now_iso: Callable[[], str], approvers=None):
         self._ledger = ledger
         self._cred = ledger.executor_credential()

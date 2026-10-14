@@ -376,3 +376,29 @@ def test_verify_hybrid_rejects_unknown_algorithm_and_empty_required():
     assert not verify_hybrid(m, sigs, keys, required=sorted(keys) + ["rsa"])
     assert not verify_hybrid(m, {}, {}, required=[])
     assert not verify_hybrid(m, {}, {})
+
+
+def test_executor_needs_only_the_three_call_payment_rail_seam():
+    """The executor talks to the ledger through PaymentRail only: swapping in a rail that has just those three calls works."""
+    from oasis.trust.executor import PaymentRail
+
+    class NarrowRail:
+        def __init__(self, inner):
+            self._inner, self.calls = inner, []
+        def executor_credential(self):
+            return self._inner.executor_credential()
+        def mint_tool_token(self, issuer, **kw):
+            self.calls.append("mint"); return self._inner.mint_tool_token(issuer, **kw)
+        def transfer(self, credential, from_ref, to_ref, amount, currency="CNY", memo="", intent_id=None):
+            self.calls.append("transfer"); return self._inner.transfer(credential, from_ref, to_ref, amount, currency, memo, intent_id)
+
+    w = _world()
+    w.ledger.accounts["acct_student_cny"].balance = 1000
+    rail = NarrowRail(w.ledger)
+    assert isinstance(rail, PaymentRail) and isinstance(w.ledger, PaymentRail)
+    w.executor._ledger = rail
+    it = _intent(w)
+    payload = {k: it[k] for k in ("payee_id", "account_ref", "amount", "currency", "route_id")}
+    allow = lambda appr: decide(_pi(w, amount_cny=100, approvals=appr))
+    assert w.executor.execute(it, payload, allow, "acct_student_cny").ok
+    assert rail.calls == ["mint", "transfer"]

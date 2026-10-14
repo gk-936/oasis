@@ -3,6 +3,7 @@ import { deviceOf, lockDevice, unlockDevice } from "./crypto.js";
 import { api, markSession, setApiHandlers, short4 } from "./api.js";
 import { assertPasskey, passkeysSupported, registerPasskey } from "./passkey.js";
 import { MockBanner } from "./common.jsx";
+import { Landing, LogoTile, ROLES } from "./Landing.jsx";
 import { LANG_CODES, REGISTRY, getLang, hasChoice, normalizeLang, setLang as applyLang, t, tl, useLang } from "./i18n/index.js";
 import { announce, Announcer, ApiError, ErrorBox, Loading, R } from "./ui.jsx";
 import { FlightPath } from "./tabs/FlightPath.jsx";
@@ -24,7 +25,6 @@ const TABS_BY_ROLE = {
   judge: ["redteam", "breakit", "proof", "numbers", "flightpath", "netting", "twin"],
 };
 const DEFAULT_TAB = { student: "demo", parent: "parent", judge: "redteam" };
-const ROLES = ["student", "parent", "judge"];
 
 /** Language picker (login screen and header). For a logged-in student the choice is also saved in the Passport. */
 function LangPicker({ role }) {
@@ -52,8 +52,8 @@ async function startSession(role, passcode) {
   return me;
 }
 
-function Login({ onDone, cfg, cfgErr, retryCfg, notice }) {
-  const [role, setRole] = useState("student");
+/** `role` / `setRole` come from the landing's "who are you" choice, so the card opens on the visitor's role. */
+function Login({ onDone, cfg, cfgErr, retryCfg, notice, role, setRole }) {
   const [pass, setPass] = useState("");
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -117,10 +117,6 @@ function Unlock({ role, onUnlocked }) {
   );
 }
 
-const Logo = () => (
-  <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#4fc7d6" /><path d="M32 10c-8 10-15 17-15 27a15 15 0 0 0 30 0c0-10-7-17-15-27z" fill="#0b3a44" /><path d="M23 41c3 5 15 5 18 0" stroke="#4fc7d6" strokeWidth="3.4" fill="none" strokeLinecap="round" /></svg>
-);
-
 export default function App() {
   const { lang } = useLang();
   const [auth, setAuth] = useState(undefined);     // undefined = checking, null = logged out, {role,...}
@@ -165,9 +161,9 @@ export default function App() {
     <>
       <a className="skip" href="#main">{t("app.skip")}</a>
       <Announcer />
-      <header className="topbar">
+      {auth !== null && <header className="topbar">
         <div className="topbar-in">
-          <div className="brand"><Logo /><h1>Oasis</h1></div>
+          <div className="brand"><LogoTile size={34} /><h1>Oasis</h1></div>
           <span className="tagline">{t("app.tagline")}</span>
           <div className="right">
             {auth && <LangPicker role={auth.role} />}
@@ -180,12 +176,12 @@ export default function App() {
             </>}
           </div>
         </div>
-      </header>
+      </header>}
       <MockBanner note={s?.mock_note} />
       <div className="app">
         <main id="main" tabIndex={-1}>
           {auth === undefined && <Loading>{t("app.checking")}</Loading>}
-          {auth === null && <Login onDone={loggedIn} cfg={cfg} cfgErr={cfgErr} retryCfg={loadCfg} notice={notice} />}
+          {auth === null && <Landing notice={notice} langPicker={<LangPicker role={null} />} renderLogin={(p) => <Login {...p} onDone={loggedIn} cfg={cfg} cfgErr={cfgErr} retryCfg={loadCfg} notice={notice} />} />}
           {auth && (<>
             <ErrorBox error={err} onRetry={refresh} />
             {needsKey && !dev && <Unlock role={auth.role} onUnlocked={setDev} />}
@@ -202,10 +198,9 @@ export default function App() {
             {tab === "netting" && <Netting />}
             {tab === "twin" && <Twin />}
             {tab === "evp" && <EvidencePassport />}
-      {tab === "numbers" && <Numbers />}
           </>)}
         </main>
-        <footer>{t("app.footer")}</footer>
+        {auth !== null && <footer>{t("app.footer")}</footer>}
       </div>
     </>
   );

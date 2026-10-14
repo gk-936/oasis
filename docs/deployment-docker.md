@@ -2,7 +2,7 @@
 
 Oasis ships as one container: the API, the already-built UI (`frontend/dist`, no Node needed) and its sandbox state under a `/data` volume. Defaults are **hosted-safe**: offline LLM, MOCK rates, simulated local anchor, judge mode on (API docs off, tighter limits), no secrets in the image, non-root user, one worker.
 
-> **Status of this packaging (2026-10-12).** The Dockerfile, entrypoint, compose files and docs were written and checked **without running Docker** (the build machine keeps Docker's disk image on `C:`, which was off limits). What was verified: static checks (`tests/test_container_config.py`), the Dockerfile parses, and the exact file layout, environment and start command were run from a clean Python virtualenv (see "What was and was not verified"). **No image has been built and the Caddy `tls` profile has not been run.** Expect to fix small things on your first `docker build`.
+> **Status of this packaging (updated 2026-10-13).** The image was built and run with Docker 29.1.2 on Windows: the build succeeded, the container reached `healthy`, the UI and API were served, the public demo passcodes were refused, a judge login and a red-team attempt worked, `/docs` was off, and the filesystem was read-only with a non-root user. Two defects found by that first build were fixed: the entrypoint had Windows line endings (the Dockerfile now strips them) and `httpx` was missing from `requirements.txt`. **Not done:** deployment to a public host, load testing, and the Caddy `tls` profile (still untested end to end).
 
 ## 1. Quick start
 

@@ -12,6 +12,7 @@ from typing import Protocol
 from .. import config
 from ..mock.ledger import InsufficientFunds
 from .duplicates import doc_hash, find_duplicate, invoice_ref
+from . import nl_extract
 from .llm import diverges_from_genuine
 from .request_types import LABELS, classify_request, needs_out_of_band
 from ..passport.models import Level, Obligation, Recipient
@@ -248,6 +249,9 @@ class OasisAgent:
         tool_ctx = w.canaries.tool_context() if w.canaries else {}
         ext = w.llm.extract(req.text, tool_ctx)
         fields = dict(ext.fields)
+        decoys = w.canaries.decoy_payees if w.canaries else set()
+        labelled = dict(fields)           # what the document stated in labelled form, before any sentence-level fill
+        filled = nl_extract.fill_missing(fields, req.text, [r for r in p.recipients.values() if r.id not in decoys])
         bad_amount = unreadable_amount(fields["amount"]) if fields.get("amount") is not None else None
         if bad_amount:
             fields.pop("amount")          # never pay, round or audit an amount that is not valid money; ask the student instead
@@ -263,6 +267,8 @@ class OasisAgent:
                               "served_model": ext.served_model, "from_cache": ext.from_cache}
         out.trace.append(f"Understand: extracted payee={fields.get('payee_name')!r} amount={fields.get('amount')} "
                          f"purpose={fields.get('purpose')} (untrusted)")
+        if filled:
+            out.trace.append(f"Understand: read {', '.join(filled)} from the sentence (no labelled line; still untrusted)")
         if bad_amount:
             out.trace.append(f"Understand: amount rejected - {bad_amount}")
         if w.canaries:
@@ -291,7 +297,10 @@ class OasisAgent:
         if out.canary_hits and f_.canaries:
             return self._finish_freeze(out, ob, fields, ["canary tripwire fired during understanding"],
                                        "R01_canary", t0, amount)
-        structured = amount > 0 and bool(fields.get("account_ref")) and bool(fields.get("payee_name") or fields.get("payee_id"))
+        # "structured" means the document itself carried payee, account and amount as labelled fields; a sentence we read
+        # them from is not, so a message announcing new bank details still goes to out-of-band verification (R16).
+        structured = (float(labelled.get("amount") or 0) > 0 and bool(labelled.get("account_ref"))
+                      and bool(labelled.get("payee_name") or labelled.get("payee_id")))
         kind = classify_request(req.text)
         if f_.intents_policy and needs_out_of_band(kind, structured):
             return self._finish_out_of_band(out, ob, fields, kind, t0, amount)

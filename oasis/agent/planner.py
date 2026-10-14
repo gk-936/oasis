@@ -225,10 +225,11 @@ def _plan_from_text(text: str) -> dict | None:
 
 
 def planner_format() -> str:
-    """'v2' (default): the model sees the trimmed tool results from `present`; 'v1': the full results (2026-10-11 runs);
-    'v3': calculator tools (facts_sheet, size_conversion), `fix` hints on validator errors and a shorter prompt (evaluation pending)."""
+    """'v3' (default): calculator tools (facts_sheet, size_conversion), `fix` hints on validator errors and a shorter prompt
+    (24 of 24 valid without fallback live, vs 16 of 24 for v2); 'v2': the model sees the trimmed tool results from `present`;
+    'v1': the full results (2026-10-11 runs)."""
     import os
-    return os.environ.get("OASIS_PLANNER_FORMAT", "v2")
+    return os.environ.get("OASIS_PLANNER_FORMAT", "v3")
 
 
 def _tool_message(tc_id: str, res: dict, name: str = "", fmt: str = "v1") -> dict:

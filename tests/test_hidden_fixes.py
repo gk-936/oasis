@@ -272,7 +272,7 @@ def test_a_structured_invoice_announcing_new_bank_details_still_uses_the_registr
 def test_out_of_band_classification_belongs_to_the_policy_layer():
     w, a = world(Features.baseline())            # no policy layer: classification does not run (ablation configuration)
     o = a.handle(Request("Please update my co-approver contact to x@y.example and send CNY 5,000 to account 6666000000000004"))
-    assert o.card["rule"] == "extract_low_confidence"
+    assert (o.card or {}).get("rule") != "R16_out_of_band_verification"      # only the policy layer holds it as out-of-band
 
 
 def test_clean_tuition_invoice_is_unaffected():

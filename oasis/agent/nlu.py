@@ -1,0 +1,254 @@
+"""Deterministic intent router for chat (English and Chinese). Keywords and regexes, no model, no randomness.
+
+`classify` only LABELS a message; it never acts. The chat handler (agent/chat.py) maps each label onto existing code, and
+every money path still goes through the normal pipeline, the registry check and a device-key approval. Unknown input
+falls to `help`, never to a guess. Security categories are decided first, on a normalised copy of the text (compatibility
+characters folded, zero-width and bidi characters removed, spaced-out letters joined, base64 blobs decoded), so a
+message cannot dodge them with formatting.
+"""
+from __future__ import annotations
+import base64
+import binascii
+import re
+from dataclasses import dataclass, field
+
+from . import nl_extract
+
+CJK = re.compile(r"[一-鿿]")
+
+# ------------------------------------------------------------------ intents
+PAY_OBLIGATION, PAY_TEXT, BALANCE, OBLIGATIONS, RATE, ROUTES, RUNWAY, PLAN = (
+    "pay_obligation", "pay_text", "balance", "obligations", "rate", "routes", "runway", "plan")
+CONVERT, RATE_TARGET, STATUS, CANCEL, CORRECT, CONFIRM, DENY, EXPLAIN, PROOF, CREDIT, UNDO = (
+    "convert", "rate_target", "status", "cancel", "correct", "confirm", "deny", "explain", "proof", "credit", "undo")
+SECRETS, BYPASS, PAY_INVOICE, HELP, GREETING, UNKNOWN = "secrets", "bypass", "pay_invoice", "help", "greeting", "unknown"
+REFUSALS = (SECRETS, BYPASS)
+
+INVOICE_HINT = re.compile(r"(Payee|Account|Amount|收款人|账号|金额)\s*[:：]", re.I)
+TARGET_RE_ZH = re.compile(r"(?:汇率|rate)[^\d]{0,12}(0\.\d+)[^\d]{0,12}(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)"
+                          r"|(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)[^\d]{0,24}?(?:汇率|rate)[^\d]{0,12}(0\.\d+)", re.I)
+TARGET_RE = re.compile(r"convert\s+(?:cny\s*|¥|rmb\s*)?([\d,]+(?:\.\d+)?)[^.\n]*?(?:rate|inr)[^\d]{0,30}?(0\.\d+)", re.I)
+
+
+@dataclass
+class ChatIntent:
+    kind: str
+    slots: dict = field(default_factory=dict)
+    confidence: float = 0.9
+    lang: str = "en"
+    category: str | None = None        # for refusals: which kind of attempt it was
+
+
+def detect_lang(text: str, ui: str = "en") -> str:
+    """Chinese characters in the message win; otherwise the interface language (zh or en)."""
+    return "zh" if CJK.search(text or "") else ("zh" if ui == "zh" else "en")
+
+
+# ------------------------------------------------------------------ normalisation
+_SPACED = re.compile(r"(?<![A-Za-z])(?:[A-Za-z][ .\-_]){3,}[A-Za-z](?![A-Za-z])")
+_B64 = re.compile(r"[A-Za-z0-9+/]{20,}={0,2}")
+
+
+def normalise(text: str) -> str:
+    t = nl_extract._clean(text or "").casefold()
+    t = _SPACED.sub(lambda m: re.sub(r"[ .\-_]", "", m.group(0)), t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def decoded_views(text: str) -> list[str]:
+    """Text hidden in base64 inside the message (decoded, normalised); only printable UTF-8 results count."""
+    out = []
+    for m in _B64.finditer(text or ""):
+        blob = m.group(0)
+        try:
+            raw = base64.b64decode(blob + "=" * (-len(blob) % 4), validate=True)
+            s = raw.decode("utf-8")
+        except (binascii.Error, ValueError, UnicodeDecodeError):
+            continue
+        if len(s) >= 6 and s.isprintable():
+            out.append(normalise(s))
+    return out
+
+
+# ------------------------------------------------------------------ security categories
+_SECRET_WORDS = (r"pass ?code|password|passwd|\bpin\b|private key|signing key|secret key|api[ _-]?key|access key|secret|token|"
+                 r"credential|\.env|aws|bedrock key|session (?:cookie|secret)|device key|seed phrase|mnemonic|"
+                 r"system prompt|your prompt|your instructions|initial prompt|hidden prompt|prompt above|"
+                 r"密码|口令|私钥|密钥|令牌|系统提示|提示词|你的指令|环境变量|凭证")
+_SECRETS_ASK = re.compile(rf"(?:{_SECRET_WORDS})", re.I)
+_SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|what(?:'s| is| are)|list|export|"
+                           r"告诉|显示|打印|泄露|给我|发给|是什么|输出|透露)", re.I)
+_OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|"
+                          r"(?:someone|somebody) else'?s? (?:account|data|balance|payments?)|(?:其他|别人|所有)(?:用户|学生|账户|账号)", re.I)
+_INJECTION = re.compile(
+    r"ignore (?:all |any |the )?(?:previous|prior|above|earlier|your|these) (?:instructions?|rules?|prompts?|guidelines?|polic\w+)|"
+    r"disregard (?:all |any |the )?(?:previous|prior|above|your) |forget (?:all |your |the )?(?:previous |prior )?(?:instructions?|rules?)|"
+    r"new instructions?:|system (?:note|message|override)|you (?:must|will) now|you are now|from now on you|act as (?:if|an?) |"
+    r"pretend (?:to be|you)|role-?play|developer mode|dev mode|god mode|admin(?:istrator)? mode|debug mode|maintenance mode|"
+    r"jailbreak|\bdan\b|do anything now|sudo\b|override (?:the )?(?:safety|security|policy|rules?|limit)|"
+    r"忽略(?:以上|之前|上面|所有)?(?:的)?(?:指令|规则|提示)|无视(?:以上|之前|所有)|开发者模式|管理员模式|调试模式|越狱|扮演", re.I)
+_BYPASS = re.compile(
+    r"approve (?:all|every|any|everything|the pending|all pending|them)|(?:skip|bypass|disable|turn off|waive|without|no need for|don'?t need) "
+    r"(?:the |a |an |any |my |your )?(?:approval|signature|signing|verification|check|checks|2fa|otp|registry|policy|limits?|safety|security|co-?approv\w*)|"
+    r"auto[- ]?approve|pre-?approved|already approved|i (?:hereby )?approve|(?:sign|approve) (?:it |this |that )?(?:for me|on my behalf)|"
+    r"mark [a-z ]{0,30}?(?:as )?(?:approved|verified|paid|signed)|release (?:the )?(?:funds?|money|payments?)|set (?:the )?status (?:to )?(?:paid|approved|verified)|"
+    r"(?:raise|increase|remove|lift|change) (?:my |the )?(?:limit|threshold|cap)|"
+    r"批准所有|全部批准|跳过(?:批准|审批|签名|验证)|无需(?:批准|审批|签名|验证)|不用(?:批准|审批|签名)|绕过|关闭(?:安全|验证|检查)", re.I)
+_ROLE = re.compile(r"(?:i am|i'm|this is|act as|acting as|as|log(?:ged)? in as|switch to|become) (?:the |your |a |an )?(?:parent|guardian|mother|father|mom|dad|admin\w*|"
+                   r"judge|bank|teacher|owner|developer|operator|support)\b|"
+                   r"(?:parent|guardian) (?:here|speaking)|我是(?:家长|父母|管理员|银行|老师|开发者)|(?:作为|以)(?:家长|管理员)", re.I)
+_SOCIAL = re.compile(r"(?:your |my )?(?:parent|mother|father|mom|dad|guardian|bank|manager|university|landlord|embassy|police) "
+                     r"(?:has |have |already |just )?(?:approved|confirmed|authori[sz]ed|told|said|asked|called|instructed)|"
+                     r"this is (?:just )?(?:a )?(?:test|drill|audit|debug|emergency|authori[sz]ed)|it'?s (?:fine|ok|okay|safe|allowed|authori[sz]ed)|"
+                     r"trust me|i (?:am|'m) authori[sz]ed|official (?:request|order)|(?:for )?security (?:reasons|purposes)|"
+                     r"your (?:developer|creator|admin\w*) (?:said|told|allowed)|家长(?:已经|已)?(?:批准|同意|确认)|这是(?:一个)?测试|银行(?:说|通知|要求)|相信我", re.I)
+_URGENCY = re.compile(r"urgent|immediately|right now|asap|right away|emergency|hurry|within \d+ ?(?:hours?|minutes?)|last chance|final notice|"
+                      r"紧急|马上|立刻|立即|尽快|急", re.I)
+
+
+def security_category(norm: str) -> str | None:
+    """secrets | injection | bypass | role | social | None, for a normalised message."""
+    if _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
+        return "secrets"
+    if _OTHER_USERS.search(norm):
+        return "secrets"
+    if _INJECTION.search(norm):
+        return "injection"
+    if _SOCIAL.search(norm):
+        return "social"
+    if _ROLE.search(norm):
+        return "role"
+    if _BYPASS.search(norm):
+        return "bypass"
+    return None
+
+
+# ------------------------------------------------------------------ everyday intents
+_PAY_IMPERATIVE = re.compile(
+    r"^(?:(?:please|kindly|pls|can you|could you|would you|i (?:want|need|have|would like) to|i'?d like to|let'?s|go ahead and|help me|lets)\s+)*"
+    r"(?:pay|settle|clear|send|transfer|remit|wire|make (?:a |the )?payment)\b|^(?:请|帮我|麻烦|我要|我想|我需要)?(?:帮我)?(?:交|付|缴|支付|转账|汇款|转)", re.I)
+_PAY_WORD = re.compile(r"\b(?:pay|paying|settle|clear|send|transfer|remit|wire)\b|交|付|缴|支付|转账|汇款", re.I)
+_OBL_WORD = re.compile(r"rent|tuition|deposit|fees?\b|bills?\b|dues?\b|房租|租金|学费|押金|账单|费用", re.I)
+_CANCEL = re.compile(r"^(?:(?:please|pls)\s+)?(?:cancel|stop|abort|abandon|never ?mind|forget it|scrap)\b|"
+                     r"\b(?:cancel|stop|abort|withdraw) (?:that|this|the|my|it)\b|(?:don'?t|do not|dont) (?:pay|send|go ahead)|"
+                     r"取消|别付|不要付|不付了|停止|算了|撤回", re.I)
+_CORRECT = re.compile(r"(?:the |that )?(?:amount|sum|figure|total|price)\s+(?:was |is |should be |must be |has to be |needs to be )"
+                      r"|(?:should|must|ought to) be\b|make (?:it|that|the amount)\b|change (?:it|that|the amount)\b|"
+                      r"\bactually\b|\bwrong (?:amount|account|payee|number)\b|\bi meant\b|\bno,? (?:it'?s|its|make)\b|\binstead\b|"
+                      r"金额(?:应该|应为|是|改成|改为)|改成|改为|应该是|写错了|弄错了|不对", re.I)
+_CONFIRM = re.compile(r"^(?:yes|yep|yeah|yup|y|ok|okay|sure|confirm|confirmed|go ahead|do it|proceed|please do|sounds good|that'?s right|correct|right|"
+                      r"yes please|ok please|确认|是的?|好的?|可以|行|对|没错|同意)[\s!.。！]*$", re.I)
+_DENY = re.compile(r"^(?:no|nope|nah|n|not now|no thanks|don'?t|negative|否|不|不要|不用了?|别|不行)[\s!.。！]*$", re.I)
+_UNDO = re.compile(r"\bundo\b|\brevers\w+|get (?:it|my money|the money) back|\brecall\b|\bclaw ?back\b|\brefund\b|撤销|追回|退回|退款", re.I)
+_EXPLAIN = re.compile(r"why (?:was|is|did|has|were)[^?]{0,60}(?:block|stop|hold|held|reject|refus|declin|frozen|freez|flag|deny|denied)|"
+                      r"what happened|explain (?:the|that|this|why)|why (?:can'?t|couldn'?t|won'?t) (?:i|you)|为什么[^？?]{0,20}(?:拦截|拒绝|冻结|暂缓|阻止|不能)|怎么回事|解释", re.I)
+_PROOF = re.compile(r"\bproofs?\b|\breceipts?\b|\bevidence\b|\bverify (?:the )?payment\b|证明|凭证|回执|收据", re.I)
+_CREDIT = re.compile(r"\bcredit\b|trust pass|\breputation\b|build (?:my )?(?:history|record|trust)|信用|信誉", re.I)
+_STATUS = re.compile(r"(?:did|has|have|was|is)[^?]{0,40}(?:go through|gone through|arrive|arrived|get paid|got paid|been paid|sent|paid|received|land|landed|reach)|"
+                     r"where(?:'s| is| are)[^?]{0,20}(?:my )?(?:money|payment|transfer|funds)|(?:payment|transfer) status|\bstatus\b|\bpending\b|paid yet|"
+                     r"到账|付了吗|付款了吗|进度|状态|有没有付|是否已付|支付成功", re.I)
+_RUNWAY = re.compile(r"run out|runway|how long (?:will|can|do)|last me|(?:enough|sufficient) (?:money|funds|cash)|will i (?:have|be) (?:able|enough)|"
+                     r"going to (?:run|be) (?:out|short|broke)|afford|够用|撑多久|够不够|用完|还能用", re.I)
+_BALANCE = re.compile(r"how much (?:money|cash|do i have|have i got|is (?:in|left))|\bbalance|\bmy (?:funds|money|savings|wallet)\b|\bwhat do i have\b|"
+                      r"how much (?:is )?left|余额|还有多少钱|有多少钱|还剩|剩多少|账户里", re.I)
+_OBLIGATIONS = re.compile(r"how much (?:is|are|do i (?:owe|pay)|must i pay|should i pay)[^?]{0,20}(?:rent|tuition|deposit|fees?|bills?)|what (?:do i|i) owe|what(?:'s| is| are) (?:due|owed|upcoming|coming up)|\bupcoming\b|\bbills\b|\bobligations?\b|\bdue (?:soon|date|dates)\b|"
+                          r"when (?:is|are)[^?]{0,30}due|what (?:payments|bills)|应付|要付|欠|到期|待付|哪些费用", re.I)
+_RATE = re.compile(r"\b(?:exchange |fx |forex |conversion )?rates?\b|inr (?:to|/|-|→) ?cny|cny (?:to|/) ?inr|how many (?:yuan|cny|rmb) (?:per|for|is)|汇率|兑换率|换汇率", re.I)
+_ROUTES = re.compile(r"cheap\w*|best (?:way|route|option|rail)|which (?:route|way|rail|option|app)|\broutes?\b|how (?:should|do|can) i (?:send|transfer|move|remit)|"
+                     r"\bfees?\b(?! due)|compare|fastest|路线|最便宜|怎么汇|怎么转|哪种方式|手续费", re.I)
+_PLAN = re.compile(r"\bplan\b|\bbudget\b|semester|schedule my|规划|计划|预算", re.I)
+_CONVERT = re.compile(r"\b(?:convert|exchange|swap|change)\b[^.\n]{0,40}(?:inr|cny|rmb|rupees?|yuan|₹|¥)|兑换|换成|换汇|转换", re.I)
+_GREETING = re.compile(r"^(?:hi|hello|hey|hiya|yo|good (?:morning|afternoon|evening)|greetings|thanks|thank you|thx|你好|您好|嗨|谢谢|早上好|晚上好)\b[\s!.。！?？]*$", re.I)
+_HELP = re.compile(r"\bhelp\b|what can you do|what you do|how (?:do|does) (?:you|this|it) work|\bcapabilit|what are you|who are you|帮助|你能做什么|怎么用|你是谁", re.I)
+_NUMBER = re.compile(r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)(?![\w])")
+
+
+def _bare_number(text: str) -> float | None:
+    """The one number in a short correction ('make it 2600'); None if there is none or more than one."""
+    t = nl_extract._ACCT_RUN.sub(" ", nl_extract._clean(text))
+    t = re.sub(r"\d+\s*(?:days?|weeks?|months?|years?|%|st|nd|rd|th)\b", " ", t, flags=re.I)
+    nums = {m.group(1).replace(",", "") for m in _NUMBER.finditer(t)}
+    if len(nums) != 1:
+        return None
+    try:
+        return float(next(iter(nums)))
+    except ValueError:
+        return None
+
+
+def _amount(text: str, bare: bool = False) -> tuple[float, str] | None:
+    m = nl_extract.money(text, bare=bare)
+    if m:
+        return m
+    v = _bare_number(text) if bare else None
+    return (v, "CNY") if v else None
+
+
+def classify(text: str, ui: str = "en") -> ChatIntent:
+    lang = detect_lang(text, ui)
+    raw = (text or "").strip()
+    norm = normalise(raw)
+    if not norm:
+        return ChatIntent(HELP, {"empty": True}, 1.0, lang)
+    # 1. a labelled invoice (Payee:/Account:/Amount: lines) goes to the pipeline, which is the thing that judges injected text
+    if INVOICE_HINT.search(raw):
+        return ChatIntent(PAY_INVOICE, {"labelled": True}, 1.0, lang)
+    # 2. security first, on the normalised text and on anything hidden in base64
+    for view in [norm, *decoded_views(raw)]:
+        cat = security_category(view)
+        if cat:
+            return ChatIntent(SECRETS if cat == "secrets" else BYPASS, {"urgent": bool(_URGENCY.search(norm))}, 1.0, lang, cat)
+    m = TARGET_RE.search(raw)
+    mz = None if m else TARGET_RE_ZH.search(raw)
+    if m or mz:
+        return ChatIntent(RATE_TARGET, {}, 1.0, lang)
+    urgent = bool(_URGENCY.search(norm))
+    acct = nl_extract.account_in_text(raw)
+    # 3. dialogue acts that only make sense next to a pending draft or question
+    if _CONFIRM.match(norm):
+        return ChatIntent(CONFIRM, {}, 0.95, lang)
+    if _DENY.match(norm):
+        return ChatIntent(DENY, {}, 0.95, lang)
+    if _CANCEL.search(norm) and not acct:
+        return ChatIntent(CANCEL, {}, 0.9, lang)
+    # 4. an account number next to "use / instead / change / wrong" is an attempt to change where money goes: never from chat
+    if acct and re.search(r"\b(?:use|instead|change|update|replace|switch|new account|wrong|correct)\b|改|换|更换|用这个|错", norm):
+        a = _amount(raw)
+        return ChatIntent(CORRECT, {"amount": a[0] if a else None, "currency": a[1] if a else None, "wants_account": True}, 0.9, lang)
+    # 4b. a payment with an explicit account, or a plain "pay/send ..." request
+    if acct and (_PAY_WORD.search(norm) or nl_extract.money(raw)):
+        a = _amount(raw, bare=True)
+        return ChatIntent(PAY_TEXT, {"amount": a[0] if a else None, "currency": a[1] if a else None, "account": acct,
+                                     "urgent": urgent, "purpose": nl_extract.purpose_in_text(raw)}, 0.9, lang)
+    if _CORRECT.search(norm) and not _PAY_IMPERATIVE.search(norm):
+        a = _amount(raw, bare=True)
+        return ChatIntent(CORRECT, {"amount": a[0] if a else None, "currency": a[1] if a else None,
+                                    "wants_account": bool(re.search(r"account|payee|账号|账户|收款", norm))}, 0.85, lang)
+    if _STATUS.search(norm) and re.search(r"到账|了吗|吗[？?]?$|有没有|是否|^(?:did|has|have|was|is|where)", norm):
+        return ChatIntent(STATUS, {}, 0.85, lang)
+    if _PAY_IMPERATIVE.search(norm) or (_PAY_WORD.search(norm) and _OBL_WORD.search(norm) and "?" not in norm and "？" not in norm
+                                        and not re.search(r"\bhow much\b|\bwhat\b|\bwhen\b|多少", norm)):
+        if not _CONVERT.search(norm) or _OBL_WORD.search(norm):
+            a = _amount(raw, bare=True)
+            return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": a[0] if a else None,
+                                               "currency": a[1] if a else None, "urgent": urgent}, 0.85, lang)
+    # 5. questions
+    if _EXPLAIN.search(norm):
+        return ChatIntent(EXPLAIN, {}, 0.85, lang)
+    if _UNDO.search(norm):
+        return ChatIntent(UNDO, {}, 0.85, lang)
+    if _CONVERT.search(norm):
+        a = _amount(raw)
+        return ChatIntent(CONVERT, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.85, lang)
+    for kind, rx in ((RUNWAY, _RUNWAY), (STATUS, _STATUS), (BALANCE, _BALANCE), (OBLIGATIONS, _OBLIGATIONS), (RATE, _RATE), (ROUTES, _ROUTES),
+                     (PLAN, _PLAN), (PROOF, _PROOF), (CREDIT, _CREDIT)):
+        if rx.search(norm):
+            a = _amount(raw)
+            return ChatIntent(kind, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.8, lang)
+    if _GREETING.match(norm):
+        return ChatIntent(GREETING, {}, 1.0, lang)
+    if _HELP.search(norm):
+        return ChatIntent(HELP, {}, 0.9, lang)
+    if nl_extract.account_in_text(raw) is None and nl_extract.money(raw) and not _PAY_WORD.search(norm):
+        return ChatIntent(UNKNOWN, {"amount": nl_extract.money(raw)[0]}, 0.3, lang)
+    return ChatIntent(UNKNOWN, {}, 0.2, lang)

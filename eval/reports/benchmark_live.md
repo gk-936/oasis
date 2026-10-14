@@ -1,5 +1,7 @@
 # Oasis benchmark results: live agent (configured primary model qwen/qwen3.8-27b; see the table of serving models)
 
+> Historical run on the Groq provider, which has since been removed. Kept as a record; Amazon Nova Pro on Bedrock is now the only live provider and this exact run cannot be repeated.
+
 Run: 2026-10-10 22:30 | LLM: groq | agent model qwen/qwen3.8-27b (fallback openai/gpt-oss-120b; see the table of serving models) | ruleset 2026.10.2 | repeats 3 | 32 attack + 12 legit scenarios (+9 AI red-team)
 
 All money is sandbox money; rails, rates and the registry are mocks. Humans in the loop are simulated.

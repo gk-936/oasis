@@ -1,0 +1,3928 @@
+{
+ "components": {
+  "schemas": {
+   "ApproveIn": {
+    "properties": {
+     "approve": {
+      "default": true,
+      "title": "Approve",
+      "type": "boolean"
+     },
+     "key_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Key Id"
+     },
+     "pending_id": {
+      "title": "Pending Id",
+      "type": "string"
+     },
+     "signature": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signature"
+     }
+    },
+    "required": [
+     "pending_id"
+    ],
+    "title": "ApproveIn",
+    "type": "object"
+   },
+   "Body_intake_email_api_intake_email_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_intake_email_api_intake_email_post",
+    "type": "object"
+   },
+   "Body_intake_image_api_intake_image_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_intake_image_api_intake_image_post",
+    "type": "object"
+   },
+   "BreakItGenIn": {
+    "properties": {
+     "n": {
+      "default": 8,
+      "title": "N",
+      "type": "integer"
+     },
+     "start": {
+      "default": 0,
+      "title": "Start",
+      "type": "integer"
+     }
+    },
+    "title": "BreakItGenIn",
+    "type": "object"
+   },
+   "BreakItIn": {
+    "properties": {
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "tool_poison": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tool Poison"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "BreakItIn",
+    "type": "object"
+   },
+   "ChatIn": {
+    "properties": {
+     "message": {
+      "maxLength": 20000,
+      "title": "Message",
+      "type": "string"
+     }
+    },
+    "required": [
+     "message"
+    ],
+    "title": "ChatIn",
+    "type": "object"
+   },
+   "ChatOut": {
+    "additionalProperties": true,
+    "description": "What every chat turn returns, so a script can score a task without reading prose. `needs` lists what is still required:\n`student_signature` / `parent_signature` (a device-key signature on the exact draft) or `info:<slot>` (a question to answer).",
+    "properties": {
+     "draft_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Draft Hash"
+     },
+     "intent": {
+      "title": "Intent",
+      "type": "string"
+     },
+     "money_moved": {
+      "default": 0.0,
+      "title": "Money Moved",
+      "type": "number"
+     },
+     "needs": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Needs",
+      "type": "array"
+     },
+     "pending_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pending Id"
+     },
+     "proof_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proof Id"
+     },
+     "reply": {
+      "title": "Reply",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reply",
+     "intent",
+     "status"
+    ],
+    "title": "ChatOut",
+    "type": "object"
+   },
+   "ConsentIn": {
+    "properties": {
+     "signature": {
+      "title": "Signature",
+      "type": "string"
+     },
+     "step": {
+      "title": "Step",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "step",
+     "signature"
+    ],
+    "title": "ConsentIn",
+    "type": "object"
+   },
+   "CorridorCheckIn": {
+    "properties": {
+     "amount": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000000000.0,
+      "title": "Amount",
+      "type": "number"
+     },
+     "corridor": {
+      "maxLength": 8,
+      "title": "Corridor",
+      "type": "string"
+     },
+     "purpose": {
+      "default": "tuition",
+      "maxLength": 20,
+      "title": "Purpose",
+      "type": "string"
+     }
+    },
+    "required": [
+     "corridor",
+     "amount"
+    ],
+    "title": "CorridorCheckIn",
+    "type": "object"
+   },
+   "CorridorCompareIn": {
+    "properties": {
+     "corridor": {
+      "maxLength": 8,
+      "title": "Corridor",
+      "type": "string"
+     },
+     "due_in_days": {
+      "anyOf": [
+       {
+        "maximum": 365.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due In Days"
+     },
+     "required": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000000000.0,
+      "title": "Required",
+      "type": "number"
+     }
+    },
+    "required": [
+     "corridor",
+     "required"
+    ],
+    "title": "CorridorCompareIn",
+    "type": "object"
+   },
+   "DemoIn": {
+    "properties": {
+     "mode": {
+      "default": "offline",
+      "title": "Mode",
+      "type": "string"
+     },
+     "run": {
+      "default": "legit",
+      "title": "Run",
+      "type": "string"
+     }
+    },
+    "title": "DemoIn",
+    "type": "object"
+   },
+   "DeviceIn": {
+    "properties": {
+     "public_key": {
+      "title": "Public Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "public_key"
+    ],
+    "title": "DeviceIn",
+    "type": "object"
+   },
+   "EvpIssueIn": {
+    "properties": {
+     "credited_cny": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Credited Cny"
+     },
+     "intent_id": {
+      "maxLength": 64,
+      "title": "Intent Id",
+      "type": "string"
+     },
+     "outcome": {
+      "default": "credited",
+      "maxLength": 16,
+      "title": "Outcome",
+      "type": "string"
+     }
+    },
+    "required": [
+     "intent_id"
+    ],
+    "title": "EvpIssueIn",
+    "type": "object"
+   },
+   "EvpShareIn": {
+    "properties": {
+     "passport": {
+      "additionalProperties": true,
+      "title": "Passport",
+      "type": "object"
+     }
+    },
+    "required": [
+     "passport"
+    ],
+    "title": "EvpShareIn",
+    "type": "object"
+   },
+   "FlightPathIn": {
+    "properties": {
+     "due_in_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due In Days"
+     },
+     "required_cny": {
+      "exclusiveMinimum": 0.0,
+      "title": "Required Cny",
+      "type": "number"
+     }
+    },
+    "required": [
+     "required_cny"
+    ],
+    "title": "FlightPathIn",
+    "type": "object"
+   },
+   "FxBillIn": {
+    "properties": {
+     "amount": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 100000.0,
+      "title": "Amount",
+      "type": "number"
+     },
+     "days": {
+      "default": 30,
+      "maximum": 365.0,
+      "minimum": 0.0,
+      "title": "Days",
+      "type": "integer"
+     },
+     "kind": {
+      "maxLength": 4,
+      "title": "Kind",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "amount"
+    ],
+    "title": "FxBillIn",
+    "type": "object"
+   },
+   "FxIn": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "number"
+     },
+     "from": {
+      "maxLength": 3,
+      "title": "From",
+      "type": "string"
+     },
+     "to": {
+      "maxLength": 3,
+      "title": "To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "amount",
+     "from",
+     "to"
+    ],
+    "title": "FxIn",
+    "type": "object"
+   },
+   "GrowthSimIn": {
+    "properties": {
+     "budget_safe": {
+      "default": true,
+      "title": "Budget Safe",
+      "type": "boolean"
+     },
+     "late_payments": {
+      "default": 0,
+      "maximum": 6.0,
+      "minimum": 0.0,
+      "title": "Late Payments",
+      "type": "integer"
+     },
+     "on_time_months": {
+      "default": 0,
+      "maximum": 24.0,
+      "minimum": 0.0,
+      "title": "On Time Months",
+      "type": "integer"
+     },
+     "starter_product": {
+      "default": false,
+      "title": "Starter Product",
+      "type": "boolean"
+     }
+    },
+    "title": "GrowthSimIn",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "IntakeIn": {
+    "properties": {
+     "remitter": {
+      "default": "student",
+      "title": "Remitter",
+      "type": "string"
+     },
+     "source": {
+      "default": "invoice",
+      "title": "Source",
+      "type": "string"
+     },
+     "text": {
+      "maxLength": 20000,
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "IntakeIn",
+    "type": "object"
+   },
+   "JourneyIn": {
+    "properties": {
+     "due_in_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due In Days"
+     },
+     "required_cny": {
+      "exclusiveMinimum": 0.0,
+      "title": "Required Cny",
+      "type": "number"
+     },
+     "route_id": {
+      "title": "Route Id",
+      "type": "string"
+     },
+     "send_inr": {
+      "exclusiveMinimum": 0.0,
+      "title": "Send Inr",
+      "type": "number"
+     }
+    },
+    "required": [
+     "route_id",
+     "required_cny",
+     "send_inr"
+    ],
+    "title": "JourneyIn",
+    "type": "object"
+   },
+   "LanguageIn": {
+    "properties": {
+     "language": {
+      "maxLength": 16,
+      "title": "Language",
+      "type": "string"
+     }
+    },
+    "required": [
+     "language"
+    ],
+    "title": "LanguageIn",
+    "type": "object"
+   },
+   "LoginIn": {
+    "properties": {
+     "passcode": {
+      "title": "Passcode",
+      "type": "string"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "passcode"
+    ],
+    "title": "LoginIn",
+    "type": "object"
+   },
+   "NettingIn": {
+    "properties": {
+     "pool_size": {
+      "default": 50,
+      "maximum": 2000.0,
+      "minimum": 1.0,
+      "title": "Pool Size",
+      "type": "integer"
+     }
+    },
+    "title": "NettingIn",
+    "type": "object"
+   },
+   "PasskeyFinishIn": {
+    "properties": {
+     "challenge_id": {
+      "maxLength": 64,
+      "title": "Challenge Id",
+      "type": "string"
+     },
+     "credential": {
+      "additionalProperties": true,
+      "title": "Credential",
+      "type": "object"
+     }
+    },
+    "required": [
+     "challenge_id",
+     "credential"
+    ],
+    "title": "PasskeyFinishIn",
+    "type": "object"
+   },
+   "PayAgainIn": {
+    "properties": {
+     "pending_id": {
+      "title": "Pending Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "pending_id"
+    ],
+    "title": "PayAgainIn",
+    "type": "object"
+   },
+   "PlanIn": {
+    "properties": {
+     "goal": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Goal",
+      "type": "string"
+     },
+     "live": {
+      "default": false,
+      "title": "Live",
+      "type": "boolean"
+     },
+     "scenario": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Scenario"
+     }
+    },
+    "title": "PlanIn",
+    "type": "object"
+   },
+   "PrecheckIn": {
+    "properties": {
+     "details_match": {
+      "default": true,
+      "title": "Details Match",
+      "type": "boolean"
+     },
+     "docs_complete": {
+      "default": true,
+      "title": "Docs Complete",
+      "type": "boolean"
+     },
+     "due_in_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due In Days"
+     },
+     "payee_verified": {
+      "title": "Payee Verified",
+      "type": "boolean"
+     },
+     "route_id": {
+      "title": "Route Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "route_id",
+     "payee_verified"
+    ],
+    "title": "PrecheckIn",
+    "type": "object"
+   },
+   "RateTargetIn": {
+    "properties": {
+     "convert_cny": {
+      "title": "Convert Cny",
+      "type": "number"
+     },
+     "rate": {
+      "title": "Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "rate",
+     "convert_cny"
+    ],
+    "title": "RateTargetIn",
+    "type": "object"
+   },
+   "RecoveryIn": {
+    "properties": {
+     "obligation": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Obligation"
+     }
+    },
+    "title": "RecoveryIn",
+    "type": "object"
+   },
+   "RedTeamIn": {
+    "properties": {
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "tool_poison": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tool Poison"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "RedTeamIn",
+    "type": "object"
+   },
+   "RefundIn": {
+    "properties": {
+     "confirmed": {
+      "default": true,
+      "title": "Confirmed",
+      "type": "boolean"
+     }
+    },
+    "title": "RefundIn",
+    "type": "object"
+   },
+   "ReliabilityIn": {
+    "properties": {
+     "include_name": {
+      "default": false,
+      "title": "Include Name",
+      "type": "boolean"
+     },
+     "share_amounts": {
+      "default": false,
+      "title": "Share Amounts",
+      "type": "boolean"
+     }
+    },
+    "title": "ReliabilityIn",
+    "type": "object"
+   },
+   "ScreenIn": {
+    "properties": {
+     "account": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Account"
+     },
+     "ifsc": {
+      "anyOf": [
+       {
+        "maxLength": 16,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ifsc"
+     },
+     "name": {
+      "maxLength": 200,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ScreenIn",
+    "type": "object"
+   },
+   "SimulateIn": {
+    "properties": {
+     "event": {
+      "title": "Event",
+      "type": "string"
+     },
+     "short_cny": {
+      "default": 25.0,
+      "minimum": 0.0,
+      "title": "Short Cny",
+      "type": "number"
+     }
+    },
+    "required": [
+     "event"
+    ],
+    "title": "SimulateIn",
+    "type": "object"
+   },
+   "SpendAddIn": {
+    "properties": {
+     "amount_cny": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 10000000.0,
+      "title": "Amount Cny",
+      "type": "number"
+     },
+     "desc": {
+      "maxLength": 200,
+      "title": "Desc",
+      "type": "string"
+     }
+    },
+    "required": [
+     "desc",
+     "amount_cny"
+    ],
+    "title": "SpendAddIn",
+    "type": "object"
+   },
+   "SpendSimIn": {
+    "properties": {
+     "days": {
+      "default": 21,
+      "maximum": 1000000.0,
+      "minimum": -1000000.0,
+      "title": "Days",
+      "type": "integer"
+     }
+    },
+    "title": "SpendSimIn",
+    "type": "object"
+   },
+   "TargetIdIn": {
+    "properties": {
+     "target_id": {
+      "title": "Target Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "target_id"
+    ],
+    "title": "TargetIdIn",
+    "type": "object"
+   },
+   "TickIn": {
+    "properties": {
+     "days": {
+      "default": 1,
+      "maximum": 1000000.0,
+      "minimum": -1000000.0,
+      "title": "Days",
+      "type": "integer"
+     }
+    },
+    "title": "TickIn",
+    "type": "object"
+   },
+   "TrustIssueIn": {
+    "properties": {
+     "audience": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Audience"
+     },
+     "claims": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 11,
+      "title": "Claims",
+      "type": "array"
+     },
+     "thresholds": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "maxProperties": 3,
+      "title": "Thresholds",
+      "type": "object"
+     }
+    },
+    "required": [
+     "claims"
+    ],
+    "title": "TrustIssueIn",
+    "type": "object"
+   },
+   "TrustShareIn": {
+    "properties": {
+     "presentation": {
+      "additionalProperties": true,
+      "title": "Presentation",
+      "type": "object"
+     }
+    },
+    "required": [
+     "presentation"
+    ],
+    "title": "TrustShareIn",
+    "type": "object"
+   },
+   "TrustVcExportIn": {
+    "properties": {
+     "holder": {
+      "additionalProperties": true,
+      "title": "Holder",
+      "type": "object"
+     }
+    },
+    "required": [
+     "holder"
+    ],
+    "title": "TrustVcExportIn",
+    "type": "object"
+   },
+   "TrustZkIn": {
+    "properties": {
+     "credential": {
+      "additionalProperties": true,
+      "title": "Credential",
+      "type": "object"
+     },
+     "k": {
+      "maximum": 100000.0,
+      "minimum": 1.0,
+      "title": "K",
+      "type": "integer"
+     },
+     "kind": {
+      "maxLength": 8,
+      "title": "Kind",
+      "type": "string"
+     },
+     "openings": {
+      "additionalProperties": true,
+      "title": "Openings",
+      "type": "object"
+     }
+    },
+    "required": [
+     "credential",
+     "openings",
+     "kind",
+     "k"
+    ],
+    "title": "TrustZkIn",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "title": "Oasis API",
+  "version": "0.3.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/approve": {
+   "post": {
+    "description": "Approve (or decline) a held payment AS THE ROLE OF THE SESSION. Approving needs a signature, made with that\nrole's registered device key, over the pending payment's exact draft hash. The role string grants nothing.",
+    "operationId": "approve_api_approve_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApproveIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Approve"
+   }
+  },
+  "/api/approvers": {
+   "get": {
+    "operationId": "approvers_api_approvers_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Approvers"
+   }
+  },
+  "/api/audit": {
+   "get": {
+    "operationId": "audit_api_audit_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Audit"
+   }
+  },
+  "/api/audit/verify": {
+   "get": {
+    "operationId": "audit_verify_api_audit_verify_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Audit Verify"
+   }
+  },
+  "/api/auth/config": {
+   "get": {
+    "description": "What the login screen needs. Public. Never returns a passcode.",
+    "operationId": "auth_config_api_auth_config_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Auth Config"
+   }
+  },
+  "/api/auth/login": {
+   "post": {
+    "operationId": "login_api_auth_login_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "return_token",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Return Token",
+       "type": "boolean"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Login"
+   }
+  },
+  "/api/auth/logout": {
+   "post": {
+    "operationId": "logout_api_auth_logout_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Logout"
+   }
+  },
+  "/api/auth/me": {
+   "get": {
+    "description": "Who am I? 200 {\"role\": null} when logged out (a probe, not an error); the role and device key otherwise.",
+    "operationId": "me_api_auth_me_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Me"
+   }
+  },
+  "/api/auth/passkey/login/finish": {
+   "post": {
+    "operationId": "passkey_login_finish_api_auth_passkey_login_finish_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "return_token",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Return Token",
+       "type": "boolean"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PasskeyFinishIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Passkey Login Finish"
+   }
+  },
+  "/api/auth/passkey/register/begin": {
+   "post": {
+    "operationId": "passkey_register_begin_api_auth_passkey_register_begin_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Passkey Register Begin"
+   }
+  },
+  "/api/auth/passkey/register/finish": {
+   "post": {
+    "operationId": "passkey_register_finish_api_auth_passkey_register_finish_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PasskeyFinishIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Passkey Register Finish"
+   }
+  },
+  "/api/auth/passkey/status": {
+   "get": {
+    "operationId": "passkey_status_api_auth_passkey_status_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Passkey Status"
+   }
+  },
+  "/api/autonomy/tick": {
+   "post": {
+    "description": "Advance the simulated clock and let the agent do its Tier-1 work (rate targets, recurring bills).",
+    "operationId": "autonomy_tick_api_autonomy_tick_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TickIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Autonomy Tick"
+   }
+  },
+  "/api/benchmark": {
+   "get": {
+    "operationId": "benchmark_api_benchmark_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Benchmark"
+   }
+  },
+  "/api/breakit/attack": {
+   "post": {
+    "operationId": "breakit_attack_api_breakit_attack_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BreakItIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Breakit Attack"
+   }
+  },
+  "/api/breakit/generate": {
+   "post": {
+    "description": "Run `n` deterministic attacker variants (offline templates + mutations) against the defender; return a scoreboard.",
+    "operationId": "breakit_generate_api_breakit_generate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BreakItGenIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Breakit Generate"
+   }
+  },
+  "/api/chat": {
+   "post": {
+    "description": "Natural-language tasks (agent/chat.py). Every reply carries intent, status, pending_id, draft_hash, needs, money_moved and\nproof_id so a script can score it. A payment ends as a held draft that only the student's device-key signature releases.",
+    "operationId": "chat_api_chat_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChatIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChatOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Chat"
+   }
+  },
+  "/api/corridor/rules": {
+   "get": {
+    "description": "Every corridor rule with its value, precise source, retrieval date, confidence and status (confirmed-primary |\nresearched-secondary | unconfirmed). Read-only view of the YAML data file; any logged-in role may read it.",
+    "operationId": "corridor_rules_api_corridor_rules_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Corridor Rules"
+   }
+  },
+  "/api/corridors": {
+   "get": {
+    "operationId": "corridors_list_api_corridors_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Corridors List"
+   }
+  },
+  "/api/corridors/check": {
+   "post": {
+    "description": "Read-only rule findings (limits, tax) for one payment, each with its source and status. Not legal advice.",
+    "operationId": "corridors_check_api_corridors_check_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorridorCheckIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Corridors Check"
+   }
+  },
+  "/api/corridors/compare": {
+   "post": {
+    "description": "Read-only: what to send per route so the recipient gets `required` even in the worst case. Moves no money.",
+    "operationId": "corridors_compare_api_corridors_compare_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorridorCompareIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Corridors Compare"
+   }
+  },
+  "/api/credit-growth/opportunities": {
+   "get": {
+    "description": "Read-only: evidence held vs missing per ask, with a ready payload for /trust-pass/issue. No approval is promised.",
+    "operationId": "growth_opportunities_api_credit_growth_opportunities_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Growth Opportunities"
+   }
+  },
+  "/api/credit-growth/plan": {
+   "get": {
+    "description": "Read-only: milestones, what Oasis can and cannot verify, upcoming real obligations. Writes nothing.",
+    "operationId": "growth_plan_api_credit_growth_plan_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Growth Plan"
+   }
+  },
+  "/api/credit-growth/simulate": {
+   "post": {
+    "description": "Read-only what-if over Oasis's own metrics (hypothetical, not saved, not a score or a lender prediction).",
+    "operationId": "growth_simulate_api_credit_growth_simulate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrowthSimIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Growth Simulate"
+   }
+  },
+  "/api/demo/next": {
+   "post": {
+    "operationId": "demo_next_api_demo_next_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Demo Next"
+   }
+  },
+  "/api/demo/reset": {
+   "post": {
+    "description": "Back to a clean (non-demo) sandbox; also wipes the SQLite state.",
+    "operationId": "demo_reset_api_demo_reset_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Demo Reset"
+   }
+  },
+  "/api/demo/run": {
+   "post": {
+    "description": "Play a whole scripted demo run in one call (same result every time, no network).",
+    "operationId": "demo_run_api_demo_run_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Demo Run"
+   }
+  },
+  "/api/demo/start": {
+   "post": {
+    "description": "Reset to the scripted demo world (fixed seed, fixed MOCK data) and return the step list. `mode` \"offline\" (default)\nuses the offline LLM; \"live\" replays recorded Amazon Nova Pro responses from the fixture (no network).",
+    "operationId": "demo_start_api_demo_start_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Demo Start"
+   }
+  },
+  "/api/demo/state": {
+   "get": {
+    "operationId": "demo_state_api_demo_state_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Demo State"
+   }
+  },
+  "/api/device/register": {
+   "post": {
+    "description": "Register (or rotate to) the Ed25519 public key of THIS role's device. The private key never reaches the server.",
+    "operationId": "device_register_api_device_register_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeviceIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Device Register"
+   }
+  },
+  "/api/evidence-passport/check/{code}": {
+   "get": {
+    "description": "PUBLIC (what the QR opens): re-verifies the shared passport now. The code only locates it.",
+    "operationId": "evp_check_api_evidence_passport_check__code__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Evp Check"
+   }
+  },
+  "/api/evidence-passport/issue": {
+   "post": {
+    "operationId": "evp_issue_api_evidence_passport_issue_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EvpIssueIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Evp Issue"
+   }
+  },
+  "/api/evidence-passport/payments": {
+   "get": {
+    "description": "Student only: executed payments to registry-verified payees that an Evidence Passport can be issued for.",
+    "operationId": "evp_payments_api_evidence_passport_payments_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Evp Payments"
+   }
+  },
+  "/api/evidence-passport/share": {
+   "post": {
+    "description": "Student only: keeps a passport that verifies against this server under a short code for a QR.",
+    "operationId": "evp_share_api_evidence_passport_share_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EvpShareIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Evp Share"
+   }
+  },
+  "/api/evidence-passport/verify": {
+   "post": {
+    "description": "PUBLIC: verifies a pasted passport against THIS server's pinned keys. Needs no secrets, changes no state.",
+    "operationId": "evp_verify_api_evidence_passport_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Pas",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Evp Verify"
+   }
+  },
+  "/api/explain/savings": {
+   "get": {
+    "operationId": "savings_api_explain_savings_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Savings"
+   }
+  },
+  "/api/flightpath/benchmark": {
+   "get": {
+    "operationId": "flightpath_benchmark_api_flightpath_benchmark_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Flightpath Benchmark"
+   }
+  },
+  "/api/flightpath/compare": {
+   "post": {
+    "operationId": "flightpath_compare_api_flightpath_compare_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FlightPathIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Compare"
+   }
+  },
+  "/api/flightpath/journeys": {
+   "get": {
+    "operationId": "flightpath_journeys_api_flightpath_journeys_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Flightpath Journeys"
+   },
+   "post": {
+    "operationId": "flightpath_create_api_flightpath_journeys_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/JourneyIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Create"
+   }
+  },
+  "/api/flightpath/journeys/{jid}/advice": {
+   "get": {
+    "description": "Reconcile and advise. Advisory only: a new payment must go through the normal request, policy and approval path.",
+    "operationId": "flightpath_advice_api_flightpath_journeys__jid__advice_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "jid",
+      "required": true,
+      "schema": {
+       "title": "Jid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Advice"
+   }
+  },
+  "/api/flightpath/journeys/{jid}/refund": {
+   "post": {
+    "operationId": "flightpath_refund_api_flightpath_journeys__jid__refund_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "jid",
+      "required": true,
+      "schema": {
+       "title": "Jid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Refund"
+   }
+  },
+  "/api/flightpath/journeys/{jid}/simulate": {
+   "post": {
+    "description": "Layer a MOCK rail event (credit / delay / reject / short_credit) on the journey. Never touches the ledger.",
+    "operationId": "flightpath_simulate_api_flightpath_journeys__jid__simulate_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "jid",
+      "required": true,
+      "schema": {
+       "title": "Jid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SimulateIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Simulate"
+   }
+  },
+  "/api/flightpath/precheck": {
+   "post": {
+    "operationId": "flightpath_precheck_api_flightpath_precheck_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrecheckIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Flightpath Precheck"
+   }
+  },
+  "/api/fx/convert": {
+   "post": {
+    "description": "Student only: moves money between the student's OWN sandbox balances, so it never pays anyone. Audited.",
+    "operationId": "fx_convert_api_fx_convert_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FxIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Fx Convert"
+   }
+  },
+  "/api/fx/demo-obligation": {
+   "post": {
+    "description": "SANDBOX (MOCK): add a USD or EUR tuition bill to one of two fixed MOCK universities, issued by the MOCK registry. The payee\nand its account never come from the caller. Paying it still needs a plan, your signature and the executor.",
+    "operationId": "fx_demo_obligation_api_fx_demo_obligation_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FxBillIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Fx Demo Obligation"
+   }
+  },
+  "/api/fx/quote": {
+   "post": {
+    "operationId": "fx_quote_ep_api_fx_quote_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FxIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Fx Quote Ep"
+   }
+  },
+  "/api/health": {
+   "get": {
+    "operationId": "health_api_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health"
+   }
+  },
+  "/api/intake": {
+   "post": {
+    "operationId": "intake_api_intake_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IntakeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Intake"
+   }
+  },
+  "/api/intake/channels": {
+   "get": {
+    "description": "Which real channels are on (never any secret): the email upload is always available; Telegram and IMAP need env config.",
+    "operationId": "intake_channels_api_intake_channels_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Intake Channels"
+   }
+  },
+  "/api/intake/email": {
+   "post": {
+    "description": "A real email as a .eml file (in a mail client: Save as / Download message). Same pipeline as the paste box; the\nsender's authentication results, a diverging Reply-To and hidden text become risk evidence, never authority.",
+    "operationId": "intake_email_api_intake_email_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "remitter",
+      "required": false,
+      "schema": {
+       "default": "student",
+       "title": "Remitter",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_intake_email_api_intake_email_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Intake Email"
+   }
+  },
+  "/api/intake/image": {
+   "post": {
+    "description": "Image intake via the agent model. If the image cannot be read the result is a low-confidence hold\nasking the student to paste the text or confirm the fields; nothing is guessed.",
+    "operationId": "intake_image_api_intake_image_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "remitter",
+      "required": false,
+      "schema": {
+       "default": "student",
+       "title": "Remitter",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_intake_image_api_intake_image_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Intake Image"
+   }
+  },
+  "/api/intake/telegram/pair": {
+   "post": {
+    "operationId": "telegram_pair_api_intake_telegram_pair_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Telegram Pair"
+   }
+  },
+  "/api/intake/telegram/unpair": {
+   "post": {
+    "operationId": "telegram_unpair_api_intake_telegram_unpair_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Telegram Unpair"
+   }
+  },
+  "/api/netting/benchmark": {
+   "get": {
+    "operationId": "netting_benchmark_api_netting_benchmark_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Netting Benchmark"
+   }
+  },
+  "/api/netting/simulate": {
+   "post": {
+    "operationId": "netting_simulate_api_netting_simulate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NettingIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Netting Simulate"
+   }
+  },
+  "/api/parent/pending": {
+   "get": {
+    "operationId": "parent_pending_api_parent_pending_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "lang",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Lang"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Parent Pending"
+   }
+  },
+  "/api/pay-again": {
+   "post": {
+    "description": "The student's explicit \"pay again\" for a suspected duplicate (R17). It re-runs the held request with `pay_again`\nset and a FRESH draft: the result is an ordinary held payment, with the duplicate warning attached, that must still\nbe signed with the student's device key. Nothing is paid here.",
+    "operationId": "pay_again_api_pay_again_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PayAgainIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Pay Again"
+   }
+  },
+  "/api/plan": {
+   "post": {
+    "description": "The agent builds a plan by calling read-only tools and revising from the validator's errors. It is a PROPOSAL:\nnothing is paid or converted until the student accepts it, and executing it goes through the normal pipeline.",
+    "operationId": "plan_create_api_plan_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlanIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Create"
+   }
+  },
+  "/api/plan/fx": {
+   "post": {
+    "description": "A plan for obligations owed in USD or EUR over the extra corridors. A PROPOSAL like any plan: accepting and executing it\nruns through plan_exec (registry account, student signature, signed intent, executor). Refused (400) when nothing is owed\nin a foreign currency.",
+    "operationId": "plan_create_fx_api_plan_fx_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlanIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Create Fx"
+   }
+  },
+  "/api/plan/scenarios": {
+   "get": {
+    "operationId": "plan_scenarios_api_plan_scenarios_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Plan Scenarios"
+   }
+  },
+  "/api/plan/{plan_id}": {
+   "get": {
+    "operationId": "plan_get_api_plan__plan_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "title": "Plan Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Get"
+   }
+  },
+  "/api/plan/{plan_id}/accept": {
+   "post": {
+    "operationId": "plan_accept_api_plan__plan_id__accept_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "title": "Plan Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Accept"
+   }
+  },
+  "/api/plan/{plan_id}/consent": {
+   "post": {
+    "description": "The parent's SIGNED consent to one parent-remitted conversion step of an accepted plan.",
+    "operationId": "plan_consent_api_plan__plan_id__consent_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "title": "Plan Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Consent"
+   }
+  },
+  "/api/plan/{plan_id}/execute": {
+   "post": {
+    "description": "Run the accepted plan's steps that are due today. Payments go through the full pipeline; anything that needs\napproval is registered as a pending approval for the student (and parent) exactly like a normal intake. A\nparent-remitted conversion runs only once the parent has signed their consent.",
+    "operationId": "plan_execute_api_plan__plan_id__execute_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "title": "Plan Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Execute"
+   }
+  },
+  "/api/plans": {
+   "get": {
+    "operationId": "plans_list_api_plans_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Plans List"
+   }
+  },
+  "/api/proof/verify": {
+   "post": {
+    "description": "PUBLIC: verifies an uploaded pack against the pinned keys. Needs no secrets and changes no state.",
+    "operationId": "proof_verify_upload_api_proof_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Pack",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Proof Verify Upload"
+   }
+  },
+  "/api/proof/{intent_id}": {
+   "get": {
+    "operationId": "proof_api_proof__intent_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "intent_id",
+      "required": true,
+      "schema": {
+       "title": "Intent Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Proof"
+   }
+  },
+  "/api/proof/{intent_id}/verify": {
+   "get": {
+    "description": "PUBLIC and harmless: returns only check results for a pack that already exists.",
+    "operationId": "proof_verify_api_proof__intent_id__verify_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "intent_id",
+      "required": true,
+      "schema": {
+       "title": "Intent Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Proof Verify"
+   }
+  },
+  "/api/rate-target": {
+   "post": {
+    "operationId": "rate_target_api_rate_target_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RateTargetIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Rate Target"
+   }
+  },
+  "/api/rate-target/approve": {
+   "post": {
+    "operationId": "rate_target_approve_api_rate_target_approve_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TargetIdIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Rate Target Approve"
+   }
+  },
+  "/api/recovery/approve": {
+   "post": {
+    "description": "The 'ask' step after a freeze: the student approves the recovery plan. Nothing is paid here.",
+    "operationId": "recovery_approve_api_recovery_approve_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RecoveryIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Recovery Approve"
+   }
+  },
+  "/api/redteam": {
+   "post": {
+    "description": "Judge-only console. Runs in a SEPARATE sandbox world (its own ledger, registry and simulated approvers) that can\nnever touch the student's ledger. Rate-limited per client and size-limited; every attempt is logged.",
+    "operationId": "redteam_api_redteam_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RedTeamIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Redteam"
+   }
+  },
+  "/api/redteam/log": {
+   "get": {
+    "operationId": "redteam_log_api_redteam_log_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Redteam Log"
+   }
+  },
+  "/api/reliability/mine": {
+   "get": {
+    "operationId": "reliability_mine_api_reliability_mine_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Reliability Mine"
+   }
+  },
+  "/api/reliability/record": {
+   "post": {
+    "description": "Student only. Signs a payment-reliability record of the payments that completed the full pipeline with a verified\nproof pack. It is not a credit score.",
+    "operationId": "reliability_create_api_reliability_record_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReliabilityIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reliability Create"
+   }
+  },
+  "/api/reliability/verify": {
+   "post": {
+    "description": "PUBLIC: verifies a record against THIS server's pinned fingerprint and its proof packs. Needs no secrets, changes no state.",
+    "operationId": "reliability_verify_api_reliability_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Record",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reliability Verify"
+   }
+  },
+  "/api/reset": {
+   "post": {
+    "operationId": "reset_api_reset_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Reset"
+   }
+  },
+  "/api/screen": {
+   "post": {
+    "description": "Public-data checks on a payee (OFAC snapshot, card Luhn/length, IFSC shape). Evidence only; not a compliance clearance.",
+    "operationId": "screen_api_screen_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScreenIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Screen"
+   }
+  },
+  "/api/spending/add": {
+   "post": {
+    "operationId": "spending_add_api_spending_add_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SpendAddIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Spending Add"
+   }
+  },
+  "/api/spending/simulate": {
+   "post": {
+    "description": "Import MOCK wallet spending so the forecast can switch from cold start to the student's own pattern.",
+    "operationId": "spending_simulate_api_spending_simulate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SpendSimIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Spending Simulate"
+   }
+  },
+  "/api/state": {
+   "get": {
+    "operationId": "state_api_state_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "State"
+   }
+  },
+  "/api/student/language": {
+   "post": {
+    "description": "Save the student's interface language in the Passport (student.language). Only the whitelisted UI codes are accepted\n(`en`, `zh`; a region tag such as zh-CN is normalised); anything else is a 400 and changes nothing.",
+    "operationId": "set_language_api_student_language_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LanguageIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Set Language"
+   }
+  },
+  "/api/trust-pass/check/{code}": {
+   "get": {
+    "description": "PUBLIC (what the QR opens): re-verifies the shared presentation now. The code only locates it.",
+    "operationId": "trust_check_api_trust_pass_check__code__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Check"
+   }
+  },
+  "/api/trust-pass/claims": {
+   "get": {
+    "operationId": "trust_claims_api_trust_pass_claims_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Trust Claims"
+   }
+  },
+  "/api/trust-pass/issue": {
+   "post": {
+    "description": "Student only. Returns the holder copy; the salts in `disclosures` are what lets the student reveal payments later.",
+    "operationId": "trust_issue_api_trust_pass_issue_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrustIssueIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Issue"
+   }
+  },
+  "/api/trust-pass/ladder": {
+   "get": {
+    "operationId": "trust_ladder_api_trust_pass_ladder_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Trust Ladder"
+   }
+  },
+  "/api/trust-pass/ladder/accept": {
+   "post": {
+    "description": "Parent only: accepting the earned threshold is the parent's decision; the student cannot raise it.",
+    "operationId": "trust_ladder_accept_api_trust_pass_ladder_accept_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Trust Ladder Accept"
+   }
+  },
+  "/api/trust-pass/share": {
+   "post": {
+    "description": "Student only. Stores a presentation that verifies against this server, under a short code for a QR.",
+    "operationId": "trust_share_api_trust_pass_share_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrustShareIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Share"
+   }
+  },
+  "/api/trust-pass/vc/export": {
+   "post": {
+    "description": "Student only. Converts a Trust Pass this server issued into a W3C VC (did:key issuer, Ed25519 proof).",
+    "operationId": "trust_vc_export_api_trust_pass_vc_export_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrustVcExportIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Vc Export"
+   }
+  },
+  "/api/trust-pass/vc/verify": {
+   "post": {
+    "description": "PUBLIC: verifies a pasted W3C VC export against THIS server's pinned key.",
+    "operationId": "trust_vc_verify_api_trust_pass_vc_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Vc",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Vc Verify"
+   }
+  },
+  "/api/trust-pass/verify": {
+   "post": {
+    "description": "PUBLIC: verifies a pasted Trust Pass presentation against THIS server's pinned key and simulated clock.",
+    "operationId": "trust_verify_api_trust_pass_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Pres",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Verify"
+   }
+  },
+  "/api/trust-pass/zk-prove": {
+   "post": {
+    "description": "Student only: one zero-knowledge threshold claim ('at least 94% on time', 'at least 5 payments') for a credential the\nstudent holds. Refused (400) if the record does not meet it. The counts never leave the student's own request.",
+    "operationId": "trust_zk_prove_api_trust_pass_zk_prove_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrustZkIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Trust Zk Prove"
+   }
+  },
+  "/api/trust/fingerprint": {
+   "get": {
+    "description": "PUBLIC. The fingerprint (sha256 over the canonical public keys) that verifiers must pin, and the approver device\nkeys (public keys only) the server vouches for.",
+    "operationId": "trust_fingerprint_api_trust_fingerprint_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Trust Fingerprint"
+   }
+  },
+  "/api/twin": {
+   "get": {
+    "operationId": "twin_run_api_twin_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "seed",
+      "required": false,
+      "schema": {
+       "default": 7,
+       "title": "Seed",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "paths",
+      "required": false,
+      "schema": {
+       "default": 600,
+       "title": "Paths",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "rescue",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Rescue",
+       "type": "boolean"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Twin Run"
+   }
+  }
+ }
+}

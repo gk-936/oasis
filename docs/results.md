@@ -29,6 +29,7 @@ Attack block rate (strict pass criteria), baseline / +verification / +intents+po
 |---|---|---|---|
 | Pre-fix (first run) | 46.4% / 92.9% / 100% / 100% | 180,600 | 83.3% / 83.3% / 75% / 75% (3 false blocks: spaced account digits, markdown-table invoice, instalment) |
 | Post-fix | 39.3% / 89.3% / 100% / 100% | 246,600 | 100% in all four, 0 false blocks |
+| After sentence-level extraction (2026-10-14) | 32.1% / 89.3% / 100% / 100% | 284,600 | 100% in all four, 0 false blocks |
 
 The two lower no-policy figures are honest: the extractor now reads the stated currency and the whole account, so cases that used to pass by accident (unreadable fields) are now stopped only by the policy layer; every attack case now stops for a real reason (`extract_low_confidence` is no longer how any of them passes). The visible benchmark is unchanged. The set is partly burned, because its failures were fixed afterwards.
 
@@ -115,7 +116,9 @@ assistant that had read parts of the defence code: fresh, not blind.
 | First run | full | 97.0% (32 of 33) | 0 | 75.0% (12 of 16) |
 | After fixes | baseline | 51.5% | 371,000 | 100% |
 | After fixes | full | 100% (33 of 33) | 0 | 93.8% (15 of 16) |
+| After sentence-level extraction (2026-10-14) | baseline | 33.3% | 476,000 | 100% |
+| After sentence-level extraction (2026-10-14) | full | 100% (33 of 33) | 0 | 100% (16 of 16) |
 
 The fixes are general extractor capabilities (JSON, CSV and header-row table layouts, European amounts, a bare separator that crashed `parse_amount`), covered by `tests/test_extraction_layouts.py`.
 The unprotected baseline loses MORE after the fix because it now understands more layouts, so more attacker-account invoices reach it; the full configuration is unaffected. The remaining miss (`fl_table_1`)
-omits the purpose, so the corridor check holds it and asks. Out of sample, the risk scorers (`risk_fresh.md`) flag 16 of 30 attack documents with no false flags (AUC 0.81 rules, 0.92 trained model).
+omitted the purpose, so the corridor check held it and asked; since 2026-10-14 the purpose is read from the payee type (a landlord means rent), so that case is paid and all 16 genuine requests complete. The same change (reading amount, payee and purpose from a sentence, not only `Label:` lines) made the unprotected baseline lose more again (CNY 476,000) and left the full configuration unchanged (33 of 33 blocked, CNY 0 lost). Out of sample, the risk scorers (`risk_fresh.md`) flag 16 of 30 attack documents with no false flags (AUC 0.81 rules, 0.92 trained model).

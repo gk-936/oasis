@@ -36,9 +36,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .. import config
+from ..agent import chat as chatmod
 from ..agent import localize as loc
 from ..agent.i18n import LANGS, UI_LANGS, lang_from_accept, ui_lang
 from ..agent.zh_messages import route_zh
@@ -81,7 +82,7 @@ from ..trust.keyfile import default_session_secret_path, load_or_create_secret
 from ..trust import keyfile as _keyfile
 from ..trust.keystore import fingerprint, load_or_create_signer
 from ..world import Features, World
-from .auth import COOKIE, ROLES, Auth, Principal, judge_mode
+from .auth import COOKIE, ROLES, Auth, Principal, judge_mode, passcodes_from_env
 from .passkeys import PasskeyError, PasskeyService
 from .ratelimit import RateLimiter
 
@@ -297,6 +298,7 @@ class Session:
         self.demo: DemoRunner | None = None
         self.redteam_boxes: OrderedDict[str, RedTeamBox] = OrderedDict()     # judge session id -> sandbox (LRU, bounded)
         self.chat: list[dict] = []
+        self.dialogs: OrderedDict[str, dict] = OrderedDict()     # chat session (login token id) -> dialogue state; not persisted
         self.reliability_last = None
         self.trust_shares: dict[str, dict] = {}   # QR code -> shared Trust Pass presentation
         self.journeys: dict[str, fpath.Journey] = {}   # FlightPath journeys (MOCK rail events); persisted in kv "flightpath"
@@ -343,6 +345,7 @@ class Session:
         if self.store:
             self.store.clear()
         self.pending, self.demo, self.chat = {}, None, []
+        self.dialogs = OrderedDict()
         self.reliability_last = None
         self.trust_shares = {}
         lang = self.world.passport.student.language
@@ -354,6 +357,7 @@ class Session:
         if self.store:
             self.store.clear()
         self.pending, self.chat = {}, []
+        self.dialogs = OrderedDict()
         lang = self.world.passport.student.language
         w = new_demo_world(self.store, mode)      # its own registry with seeded SIMULATED approver devices
         w.passport.student.language = lang
@@ -528,6 +532,20 @@ class IntakeIn(Strict):
 
 class ChatIn(Strict):
     message: str = Field(max_length=20000)
+
+
+class ChatOut(BaseModel):
+    """What every chat turn returns, so a script can score a task without reading prose. `needs` lists what is still required:
+    `student_signature` / `parent_signature` (a device-key signature on the exact draft) or `info:<slot>` (a question to answer)."""
+    model_config = ConfigDict(extra="allow")        # intent-specific extras: outcome, target, refusal, plan_id, rule
+    reply: str
+    intent: str
+    status: str                     # held | paid | refused | rejected | needs_verification | needs_info | needs_confirmation | cancelled | done | info | unknown
+    pending_id: str | None = None
+    draft_hash: str | None = None
+    needs: list[str] = []
+    money_moved: float = 0.0        # CNY moved by this turn (a draft moves nothing)
+    proof_id: str | None = None
 
 
 class ApproveIn(Strict):
@@ -1061,77 +1079,15 @@ def parent_pending(lang: str | None = None, p: Principal = Depends(require("pare
             "device": ({"key_id": S.world.approvers.active("parent")["key_id"]} if S.world.approvers.active("parent") else None)}
 
 
-INVOICE_HINT = re.compile(r"(Payee|Account|Amount|收款人|账号|金额)\s*[:：]", re.I)
-TARGET_RE_ZH = re.compile(r"(?:汇率|rate)[^\d]{0,12}(0\.\d+)[^\d]{0,12}(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)"
-                          r"|(?:兑换|换成|转换)\s*(?:¥|CNY|RMB|人民币)?\s*([\d,]+(?:\.\d+)?)[^\d]{0,24}?(?:汇率|rate)[^\d]{0,12}(0\.\d+)", re.I)
-TARGET_RE = re.compile(r"convert\s+(?:cny\s*|¥|rmb\s*)?([\d,]+(?:\.\d+)?)[^.\n]*?(?:rate|inr)[^\d]{0,30}?(0\.\d+)", re.I)
-
-
-_STATUS_ZH = {"paid": "已支付", "held": "已暂缓，等待批准", "frozen": "已冻结", "rejected": "已拒绝", "needs_verification": "需要验证"}
-_OBL_ZH = {"tuition": "学费", "rent": "房租", "deposit": "押金", "living": "生活费", "family_support": "家庭资助"}
-
-
-@app.post("/api/chat")
+@app.post("/api/chat", response_model=ChatOut)
 def chat(body: ChatIn, p: Principal = Depends(STUDENT), ui: str = UI):
-    zh = ui == "zh"
+    """Natural-language tasks (agent/chat.py). Every reply carries intent, status, pending_id, draft_hash, needs, money_moved and
+    proof_id so a script can score it. A payment ends as a held draft that only the student's device-key signature releases."""
     S.chat.append({"role": "student", "text": body.message})
-    if INVOICE_HINT.search(body.message):
-        res = loc.localize_outcome(_intake(IntakeIn(text=body.message)), ui)
-        if zh:
-            reply = (f"我已检查完毕。状态：{_STATUS_ZH.get(res['status'], res['status'])}。" +
-                     (f" {res['card']['text']}" if res.get("card") else "") +
-                     (f" 证明包 {res['proof_id']} 已就绪。" if res.get("proof_id") else ""))
-        else:
-            reply = (f"I checked it. Status: {res['status']}." +
-                     (f" {res['card']['text']}" if res.get("card") else "") +
-                     (f" Proof pack {res['proof_id']} is ready." if res.get("proof_id") else ""))
-        S.chat.append({"role": "oasis", "text": reply, "outcome": res})
-        return {"reply": reply, "outcome": res}
-    m = TARGET_RE.search(body.message)
-    mz = None if m else TARGET_RE_ZH.search(body.message)
-    if mz:
-        m = (mz.group(2), mz.group(1)) if mz.group(1) else (mz.group(3), mz.group(4))
-    if m:
-        amount, rate = ((float(m[0].replace(",", "")), float(m[1])) if isinstance(m, tuple)
-                        else (float(m.group(1).replace(",", "")), float(m.group(2))))
-        t = S.agent.set_rate_target(rate, amount)
-        S.save()
-        lim = S.world.passport.rules.tier1_auto_convert_cny
-        if zh:
-            reply = (f"已设定汇率目标：我会关注 INR 对 CNY 的汇率，当它达到 {rate:.4f} 时，" +
-                     (f"自行兑换 ¥{amount:,.0f}（在您的 1 级自动额度之内）。" if amount <= lim
-                      else f"在您批准之后兑换 ¥{amount:,.0f}（超过 ¥{lim:,.0f} 的自动额度）。") +
-                     " 我不会预测汇率，只会按您设定的目标行动。")
-        else:
-            reply = (f"Rate target set: I will watch INR to CNY and, when it reaches {rate:.4f}, convert CNY {amount:,.0f} "
-                     + ("on my own (within your Tier-1 limit)." if amount <= lim else f"after you approve it (above your CNY {lim:,.0f} auto limit).")
-                     + " I do not predict rates; I only act on your target.")
-        S.chat.append({"role": "oasis", "text": reply, "target": t})
-        return {"reply": reply, "target": t}
-    w = S.world
-    pp = w.passport
-    tr_ = triggers(pp, w.rates, w.today, w.day_index)
-    pend = [o for o in pp.obligations if o.status != "paid"]
-    best = rank(quote_routes(w.rates, 100000, w.today, None, w.day_index))[0]
-    if zh:
-        alerts = loc.localize_triggers([t.__dict__ for t in tr_], ui)
-        reply = (f"您有 ₹{pp.balance('INR'):,.0f} 和 ¥{pp.balance('CNY'):,.0f}。"
-                 f"即将到期：" + "；".join(f"{_OBL_ZH.get(o.type, o.type)} ¥{o.amount:,.0f}，到期日 {o.due}" for o in pend) + "。"
-                 f"付清应付款项后的资金可维持：{runway_months(pp, w.rates, w.day_index):.1f} 个月。"
-                 f"当前最便宜且能按时到账的路线：{route_zh(best.route.name)}。"
-                 + ("提醒：" + " ".join(a["message"] for a in alerts) if alerts else "目前没有提醒。") +
-                 " 把任何发票或消息转发给我，我会在付款之前先检查。"
-                 "您也可以这样说：“convert 2000 when the rate reaches 0.0700”（汇率达到 0.0700 时兑换 2000）。")
-    else:
-        reply = (f"You have INR {pp.balance('INR'):,.0f} and CNY {pp.balance('CNY'):,.0f}. "
-                 f"Upcoming: " + "; ".join(f"{o.type} CNY {o.amount:,.0f} due {o.due}" for o in pend) + ". "
-                 f"Runway after obligations: {runway_months(pp, w.rates, w.day_index):.1f} months. "
-                 f"Cheapest on-time route right now: {best.route.name}. "
-                 + (" Alerts: " + " ".join(t.message for t in tr_) if tr_ else " No alerts.") +
-                 " Forward me any invoice or message and I'll check it before anything is paid. "
-                 "You can also say: 'convert 2000 when the rate reaches 0.0700'.")
-    S.chat.append({"role": "oasis", "text": reply})
-    return {"reply": reply}
+    res = chatmod.handle(S, body.message, ui, jti=p.jti, run_intake=_run_intake, secrets=list(passcodes_from_env().values()))
+    S.chat.append({"role": "oasis", "text": res["reply"]})
+    del S.chat[:-500]                      # a chat log, not an archive
+    return res
 
 
 # ------------------------------------------------------------------ agentic planning (spec step 2)

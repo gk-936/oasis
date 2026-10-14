@@ -1,5 +1,7 @@
 # Planner format v3 (calculator tools) vs v2: pre-registered evaluation
 
+> Rows for the qwen and gpt-oss models are a historical run on the Groq provider, which has since been removed; Amazon Nova Pro on Bedrock is now the only live provider.
+
 Scored by the deterministic plan validator, never by a model. 12 scenarios per repeat (8 original + 4 held-out `heldout_*`), temperature 0.3, a repeat-specific cache salt, the same per-plan token cap for both formats. **Model-only valid** = the model's own proposal passed the validator and no deterministic fallback was used. Protocol and commands: [docs/planner-efficiency.md](../../docs/planner-efficiency.md).
 
 Pre-registered decision rule (fixed before any live v3 result existed): v3 becomes the default planner format only if BOTH hold, on the plans pooled over every model that ran both formats: (A) the model-only valid rate of v3 exceeds that of v2 by at least 15 percentage points PLUS the observed spread of v2 (the widest max-minus-min of v2's per-repeat model-only valid rates in any model cell; needs at least two complete repeats); and (B) the held-out scenarios do not regress (v3 held-out model-only valid rate >= v2's). Otherwise v2 stays the default. The Fisher exact p-value is reported for context and is not part of the rule.

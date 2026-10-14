@@ -189,7 +189,10 @@ def _pct(x) -> str:
 
 def render(rows: list[dict]) -> str:
     s = summarize(rows)
+    hist = any(("qwen" in str(r.get("model", "")) or "gpt-oss" in str(r.get("model", ""))) for r in rows)
     L = ["# Planner format v3 (calculator tools) vs v2: pre-registered evaluation", "",
+         *(["> Rows for the qwen and gpt-oss models are a historical run on the Groq provider, which has since been removed; "
+            "Amazon Nova Pro on Bedrock is now the only live provider.", ""] if hist else []),
          "Scored by the deterministic plan validator, never by a model. 12 scenarios per repeat (8 original + 4 held-out `heldout_*`), temperature "
          f"{LIVE_TEMPERATURE}, a repeat-specific cache salt, the same per-plan token cap for both formats. **Model-only valid** = the model's own "
          "proposal passed the validator and no deterministic fallback was used. Protocol and commands: "

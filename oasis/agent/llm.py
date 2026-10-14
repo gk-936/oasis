@@ -542,6 +542,9 @@ class OfflineLLM(LLM):
         return TEMPLATE_ATTACKS.get(category, [])[:n]
 
 
+_ACTION_EN = {"needs_verification": "put on hold until the payee is verified"}     # others read naturally as they are
+
+
 def explain_template(kind: str, ctx: dict, language: str = "en") -> str:
     if language == "zh":                      # Simplified Chinese: a complete zh sentence, not appended to the English one
         if kind == "why_stopped":
@@ -553,9 +556,11 @@ def explain_template(kind: str, ctx: dict, language: str = "en") -> str:
     reasons = "; ".join(ctx.get("reasons", [])) or "no further detail"
     if kind == "why_stopped":
         loc = i18n.why_stopped(ctx, language) if language != "en" else ""
+        action = _ACTION_EN.get(ctx.get("action"), ctx.get("action") or "stopped")
+        nxt = str(ctx.get("next", "we will re-verify through the official registry and ask you before continuing")).rstrip(". ")
         base = (f"This payment of CNY {ctx.get('amount', 0):,.0f} to {ctx.get('payee', 'the recipient')} was "
-                f"{ctx.get('action', 'stopped')} by rule {ctx.get('rule', '?')}. Why: {reasons}. "
-                f"No money moved. Next: {ctx.get('next', 'we will re-verify through the official registry and ask you before continuing')}.")
+                f"{action} by rule {ctx.get('rule', '?')}. Why: {reasons.rstrip('. ')}. "
+                f"No money moved. Next: {nxt}.")
         if loc:
             base = loc + " " + base
     elif kind == "parent_approval":

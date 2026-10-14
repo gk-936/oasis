@@ -11,10 +11,11 @@ By default Oasis runs **offline** (`OASIS_LLM=offline`): a deterministic parser,
 | Variable | Default | Notes |
 |---|---|---|
 | `OASIS_LLM` | `offline` | `bedrock` to use Amazon Nova Pro on Amazon Bedrock for extraction, risk, explanations, red-team variants, image intake and the planner (set up: below) |
-| `OASIS_PLANNER_FORMAT` | `v2` | planner format: `v1`, `v2` (default) or `v3` (calculator tools, evaluation incomplete) |
+| `OASIS_PLANNER_FORMAT` | `v3` | planner format: `v1`, `v2` or `v3` (default; calculator tools, 24 of 24 valid without fallback live vs 16 of 24 for v2) |
 | `OASIS_BEDROCK_MODEL` / `AWS_REGION` | `us.amazon.nova-pro-v1:0` / `us-east-1` | **the default id is a best guess, not verified**: copy the exact model id or inference profile from the Bedrock console. `OASIS_BEDROCK_REGION` overrides `AWS_REGION` |
 | `OASIS_BEDROCK_FALLBACK_MODEL` | same as the model | optional second model tried if the first errors; default is none, so there is no silent downgrade |
 | `OASIS_BEDROCK_RPM` / `_DAILY_TOKENS` | 120 / 2000000 | client-side rate limit and a spend guard (about $1/day at $0.10 in / $0.50 out per 1M tokens) |
+| `OASIS_CHAT_LLM` | `0` | `1` lets a live model propose a label for a chat message the keyword router could not place (needs `OASIS_LLM=bedrock` and **your own** AWS/Bedrock access; Oasis ships no key). The proposal is validated against a closed list and cross-checked with the text; security refusals are decided first and a payment still ends as a held draft that only your device-key signature releases. Each call spends tokens (cached; capped by `OASIS_BEDROCK_DAILY_TOKENS`) |
 | `OASIS_LLM_RISK` | `0` | `1` adds the LLM risk scorer in live mode (`OASIS_EXTRACT=llm` only); combined as max(heuristic, llm), so it can only escalate |
 | `OASIS_TRUST_KEY` | `data/keys/trust_key.json` | where the persistent trust signing keys live (git-ignored) |
 | `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` | demo passcodes | role passcodes; `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses the defaults |

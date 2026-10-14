@@ -329,15 +329,15 @@ def test_v1_and_v2_prompts_tools_and_outputs_are_byte_for_byte_unchanged():
                 assert _tool_message("x", res, "propose_plan", f)["content"] == d[key][f], (sid, key, f)
 
 
-def test_agentic_planner_default_is_still_v2_and_v3_is_opt_in(monkeypatch):
+def test_agentic_planner_default_is_v3_and_v2_is_opt_in(monkeypatch):
     monkeypatch.delenv("OASIS_PLANNER_FORMAT", raising=False)
-    assert planner_format() == "v2"
+    assert planner_format() == "v3"
     llm = SimpleNamespace(name="bedrock", errors=[])
-    p = AgenticPlanner(llm)
-    assert p.fmt == "v2" and p.system is SYSTEM and p.tool_specs is TOOL_SPECS
-    monkeypatch.setenv("OASIS_PLANNER_FORMAT", "v3")
     p3 = AgenticPlanner(llm)
     assert p3.fmt == "v3" and p3.system is SYSTEM_V3 and p3.tool_specs is TOOL_SPECS_V3
+    monkeypatch.setenv("OASIS_PLANNER_FORMAT", "v2")
+    p = AgenticPlanner(llm)
+    assert p.fmt == "v2" and p.system is SYSTEM and p.tool_specs is TOOL_SPECS
     assert AgenticPlanner(llm, fmt="v1").system is SYSTEM
 
 
