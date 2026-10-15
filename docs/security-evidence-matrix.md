@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-15: `1188 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-16: `1229 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -46,7 +46,7 @@ Full suite on 2026-10-15: `1188 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Gaps (no automated test, or only indirect)
 
-- No dedicated test that changes only the payee id between approval and execution (row 5 uses account and amount changes).
+- Payee-id-only swap is now covered by `tests/test_recent_attacks.py::test_only_the_payee_id_swapped_cannot_redirect_money` (assertion is on outcome: no money outside the registry).
 - PQ-TLS handshake and live FISCO anchoring have no test that runs by default; they are manual, recorded runs (row 14).
 - No automated test that Secure-cookie, HSTS or TLS are applied by the app itself: it serves plain HTTP (Known limitation 4).
 - No automated test for key-file permissions on Windows (they are not restrictive; see row 8).
@@ -55,7 +55,7 @@ Full suite on 2026-10-15: `1188 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1188 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1229 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)
@@ -83,3 +83,9 @@ Full suite on 2026-10-15: `1188 passed, 2 skipped` (offline, about 2 minutes) (t
 | The extractor reads JSON, CSV, header-row tables and European amounts, never reads `30.000` or `1e5` as a smaller number, and never crashes on a bare separator; the full configuration blocks every case of the fresh attack set | `oasis/agent/llm.py`, `eval/fresh/` | `tests/test_extraction_layouts.py` (22), `tests/test_fresh_set.py` (2) | The fresh set is AI-written with knowledge of the defences (fresh, not blind); the offline extractor only. |
 | Sanctions screening covers the OFAC, UN, UK and EU public lists, each hit names its list, and an explicit single-file load still works | `oasis/screening.py`, `tools/fetch_extra_sanctions.py` | `tests/test_limits_reduced.py` | Snapshots, Latin-script fuzzy matching, common names give false matches; not a compliance clearance. |
 | Overseas tuition is not counted against the SAFE quota, other purposes are, and each finding carries its source (SAFE Tianjin bureau, 2025-07-14) | `oasis/corridors/core.py`, `oasis/planning/fxplan.py`, `oasis/agent/plan_exec.py` | `tests/test_limits_reduced.py` | A regional-bureau page; the bank applies its own checks. |
+
+## Attacks seen in the wild 2022 to 2026 (added 2026-10-16)
+
+| Claim | Code | Test | Limits |
+|---|---|---|---|
+| Bank-change pretexts (BEC), hidden instructions aimed at AI agents (comments, JSON-LD, meta, 1px or white text, zero-width), parallel approvals of one draft, overspend, look-alike payee names, repeated unsigned approvals and a stolen session cookie after logout each move no money outside the registry and never pay twice | `oasis/trust/*`, `oasis/mock/ledger.py`, `oasis/api/auth.py` | `tests/test_recent_attacks.py` (41, including the payee-id-only swap from the gaps list); sources in [recent-attacks.md](recent-attacks.md) | Our own replays of public attack classes, offline, MOCK money; sources are mostly secondary summaries; SIM swap and Confirmation of Payee not tested |
