@@ -2024,4 +2024,12 @@ def savings(p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
 
 DIST = ROOT / "frontend" / "dist"
 if DIST.exists():
-    app.mount("/", StaticFiles(directory=DIST, html=True), name="frontend")
+    class _SafeStatic(StaticFiles):
+        """A path the OS cannot open (for example one with ':' on Windows) is a 404, never a 500."""
+        async def get_response(self, path, scope):
+            try:
+                return await super().get_response(path, scope)
+            except OSError:
+                raise HTTPException(404, "Not Found")
+
+    app.mount("/", _SafeStatic(directory=DIST, html=True), name="frontend")

@@ -48,7 +48,7 @@ def detect_lang(text: str, ui: str = "en") -> str:
 
 # ------------------------------------------------------------------ normalisation
 _SPACED = re.compile(r"(?<![A-Za-z])(?:[A-Za-z][ .\-_]){3,}[A-Za-z](?![A-Za-z])")
-_B64 = re.compile(r"[A-Za-z0-9+/]{20,}={0,2}")
+_B64 = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 
 def normalise(text: str) -> str:
@@ -67,7 +67,7 @@ def decoded_views(text: str) -> list[str]:
             s = raw.decode("utf-8")
         except (binascii.Error, ValueError, UnicodeDecodeError):
             continue
-        if len(s) >= 6 and s.isprintable():
+        if len(s) >= 6 and all(c.isprintable() or c in "\n\t" for c in s):
             out.append(normalise(s))
     return out
 
@@ -80,10 +80,10 @@ _SECRET_WORDS = (r"pass ?code|password|passwd|\bpin\b|private key|signing key|se
 _SECRETS_ASK = re.compile(rf"(?:{_SECRET_WORDS})", re.I)
 _SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|find|config|stored|written down|what(?:'s| is| are)|list|export|"
                            r"告诉|显示|打印|泄露|给我|发给|是什么|输出|透露)", re.I)
-_OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|"
+_OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|(?:everyone|everybody|anyone|anybody)'?s? (?:else'?s? )?(?:payments?|accounts?|balances?|data|transactions?|details)|"
                           r"(?:someone|somebody) else'?s? (?:account|data|balance|payments?)|(?:其他|别人|所有)(?:用户|学生|账户|账号)", re.I)
 _INJECTION = re.compile(
-    r"ignore (?:all |any |the )?(?:previous|prior|above|earlier|your|these) (?:instructions?|rules?|prompts?|guidelines?|polic\w+)|"
+    r"ignore (?:all |any |the )?(?:previous|prior|above|earlier|your|these) (?:instructions?|rules?|prompts?|guidelines?|polic\w+)|ignore (?:everything|all|the) (?:above|before)\b|ignore the above|"
     r"ignore (?:all |any |the |your |these |my |safety |security |payment |approval )*(?:rules|instructions|guidelines|polic(?:y|ies)|checks|limits)\b|"
     r"disregard (?:all |any |the )?(?:previous|prior|above|your) |forget (?:all |your |the )?(?:previous |prior )?(?:instructions?|rules?)|"
     r"new instructions?:|system (?:note|message|override)|you (?:must|will) now|you are now|from now on you|act as (?:if|an?) |"
@@ -157,6 +157,26 @@ def _snap(norm: str, words) -> str:
     return " ".join(out)
 
 
+_SEC_VOCAB = ("ignore", "instructions", "previous", "passcode", "password", "private", "signing", "signature", "approval", "approve", "approved", "registry",
+              "verification", "credentials", "configuration", "device", "bypass", "disable", "forget", "authorized", "release", "waive", "override", "limit",
+              "safety", "secret", "system", "prompt", "guardian", "transfer", "everything", "pending", "checks", "remove", "raise", "daily", "called",
+              "behalf", "parent", "payments", "bedrock", "rules", "funds", "university", "everyone", "mother", "father")
+
+
+def snap_security(norm: str) -> str:
+    """Typos in an attack ('ignroe', 'passcod', 'apprval') are snapped onto the attack vocabulary so the same patterns apply. Used only as an EXTRA
+    view for the security check, so it can only add refusals; routing of ordinary messages never sees it."""
+    out = []
+    for tok in norm.split(" "):
+        w = tok.strip(".,!?;:'\"")
+        if len(w) >= 5 and w.isalpha() and w not in _SEC_VOCAB:
+            m = [v for v in difflib.get_close_matches(w, _SEC_VOCAB, 1, 0.8) if v[0] == w[0] or sorted(v) == sorted(w)]
+            if m:
+                tok = tok.replace(w, m[0])
+        out.append(tok)
+    return " ".join(out)
+
+
 def security_category(norm: str) -> str | None:
     """secrets | injection | bypass | role | social | None, for a normalised message."""
     # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
@@ -202,12 +222,12 @@ _CREDIT = re.compile(r"\bcredit\b|trust pass|\breputation\b|build (?:my )?(?:his
 _STATUS = re.compile(r"(?:did|has|have|was|is)[^?]{0,40}(?:go through|gone through|arrive|arrived|get paid|got paid|been paid|sent|paid|received|land|landed|reach)|"
                      r"where(?:'s| is| are)[^?]{0,20}(?:my )?(?:money|payment|transfer|funds)|(?:payment|transfer) status|\bstatus\b|\bpending\b|paid yet|"
                      r"到账|付了吗|付款了吗|进度|状态|有没有付|是否已付|支付成功", re.I)
-_RUNWAY = re.compile(r"run out|runway|how long (?:will|can|do)|last me|(?:enough|sufficient) (?:money|funds|cash)|will i (?:have|be) (?:able|enough)|"
+_RUNWAY = re.compile(r"run out|(?:money|funds|cash|savings) (?:will )?(?:last|run)|will (?:my )?(?:money|funds|cash|savings) last|runway|how long (?:will|can|do)|last me|(?:enough|sufficient) (?:money|funds|cash)|will i (?:have|be) (?:able|enough)|"
                      r"going to (?:run|be) (?:out|short|broke)|afford|够用|撑多久|够不够|用完|还能用", re.I)
-_BALANCE = re.compile(r"how much (?:money|cash|do i have\b(?! to)|have i got|is (?:in|left))|how much (?:\w+ ){0,2}(?:do )?i (?:have|got|have got|still have)\b(?! to)|how much (?:\w+ )?(?:is )?left\b|\bbalance|\bmy (?:funds|money|savings|wallet)\b|\bwhat do i have\b|\b(?:cny|inr|yuan|rupee) wallet\b|"
+_BALANCE = re.compile(r"(?:paisa|paise|balance) kitna|kitna (?:paisa|paise|bacha)|how much (?:money|cash|do i have\b(?! to)|have i got|is (?:in|left))|how much (?:\w+ ){0,2}(?:do )?i (?:have|got|have got|still have)\b(?! to)|how much (?:\w+ )?(?:is )?left\b|\bbalance|\bmy (?:funds|money|savings|wallet)\b|\bwhat do i have\b|\b(?:cny|inr|yuan|rupee) wallet\b|"
                       r"how much (?:is )?left|what(?:'s| is)? (?:remains?|left)|\bremain(?:s|ing)?\b[^?]{0,30}(?:wallet|balance|account)|\b(?:my|student|sandbox) (?:student |sandbox )?wallet\b|余额|还有多少钱|有多少钱|还剩|剩多少|账户里", re.I)
 _OBLIGATIONS = re.compile(r"how much (?:is|are|do i (?:owe|pay)|do i (?:have|need) to pay|must i pay|should i pay)[^?]{0,20}(?:rent|tuition|deposit|fees?|bills?)|what (?:do i|i) owe|how much (?:do )?i (?:still )?owe|how much (?:is )?(?:still )?(?:due|owed)|what(?:'s| is| are) (?:due|owed|upcoming|coming up)|\bupcoming\b|\bbills\b|\bobligations?\b|\bdue (?:soon|date|dates)\b|"
-                          r"when (?:is|are)[^?]{0,30}due|what (?:payments|bills)|应付|要付|欠|到期|待付|哪些费用", re.I)
+                          r"when (?:is|are)[^?]{0,30}due|(?:what|which) (?:payments|bills)|应付|要付|欠|到期|待付|哪些费用", re.I)
 _SPENDING = re.compile(r"\b(?:what|how much) (?:did|have) i (?:spend|spent|paid|pay)\b|\bmy (?:spending|expenses|transactions)\b|\bspending\b|\bexpenses?\b|"
                        r"\btransaction (?:history|list)\b|where (?:did|does) my money go|花了多少|花销|开销|消费|支出", re.I)
 _FRACTION = re.compile(r"\b(half|a third|one third|a quarter|one quarter|quarter)\b(?: of)?|一半", re.I)
@@ -263,6 +283,17 @@ _HINGLISH_PAY = re.compile(r"\b(?:bhej(?:o|na)?|bharo|bhar do|de do|dedo|chukao|
 _TYPO_SKIP = {"paid", "pays", "send", "sent", "rents", "fees", "bill", "dues", "last", "cancels", "cover", "urgent", "pays", "rental", "balances"}
 
 
+_FILLER = re.compile(r"^(?:(?:hey|hi|hello|ok|okay|um+|uh+|er+|so|well|oh|right|alright|yo|oasis|quick (?:one|question|favou?r)|one more thing|btw|by the way)[,:!.\s-]+)+", re.I)
+
+
+def strip_filler(norm: str) -> str:
+    """'ok so, hi oasis - pay my rent' routes like 'pay my rent'. Only used after the security checks, so it can never hide an attack."""
+    if _GREETING.match(norm):
+        return norm
+    t = _FILLER.sub("", norm)
+    return t if t else norm
+
+
 def fix_typos(norm: str) -> str:
     """Snap near-misses of a few core words ('paay', 'depsoit', 'rnet') onto the word; only used to route, after security checks."""
     out = []
@@ -286,13 +317,14 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
     if INVOICE_HINT.search(raw):
         return ChatIntent(PAY_INVOICE, {"labelled": True}, 1.0, lang)
     # 2. security first, on the normalised text and on anything hidden in base64
-    for view in [strip_mentions(norm), *decoded_views(raw)]:
+    snapped = snap_security(norm)
+    for view in [strip_mentions(norm), *([strip_mentions(snapped)] if snapped != norm else []), *decoded_views(raw)]:
         cat = security_category(view)
         if cat:
             return ChatIntent(SECRETS if cat == "secrets" else BYPASS, {"urgent": bool(_URGENCY.search(norm))}, 1.0, lang, cat)
     if _RESET.search(_snap(norm, ("reset", "password", "passcode", "login"))):
         return ChatIntent(HELP, {"reset": True}, 0.9, lang)
-    raw, norm = fix_typos(raw), fix_typos(norm)
+    raw, norm = fix_typos(strip_filler(raw)), fix_typos(strip_filler(norm))
     if _INVOICE_WORD.search(raw) and re.search(r"\d{3,}", raw) and not _PAY_IMPERATIVE.search(norm):
         return ChatIntent(PAY_INVOICE, {"labelled": False}, 0.8, lang)       # the pipeline judges it, as for a labelled invoice
     m = TARGET_RE.search(raw)
@@ -323,7 +355,8 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
                                     "wants_account": bool(re.search(r"account|payee|账号|账户|收款", norm))}, 0.85, lang)
     if _STATUS.search(norm) and re.search(r"到账|了吗|吗[？?]?$|有没有|是否|^(?:did|has|have|was|is|where)", norm):
         return ChatIntent(STATUS, {}, 0.85, lang)
-    if _PAY_IMPERATIVE.search(norm) or _DUE_PAY.search(norm) or (_HINGLISH_PAY.search(norm) and _OBL_WORD.search(norm))             or (_OBL_WORD.search(norm) and nl_extract.money(raw) and re.search(r"\bko\b|को|给", norm) and "?" not in norm)             or (_PAY_WORD.search(norm) and _OBL_WORD.search(norm) and not re.search(r"\bhow much\b|\bwhat\b|\bwhen\b|\bwhy\b|\bwhich\b|\bwill\b|\bwould\b|\bwhether\b|^if\b|\bif i\b|多少|为什么|什么时候|会不会|够不够", norm)):
+    zh_q = bool(CJK.search(norm) and re.search(r"哪些|多少|回执|收据|证明|凭证|什么|吗|[?？]", norm))     # "我有哪些待付账单" asks about bills, it does not pay one
+    if not zh_q and (_PAY_IMPERATIVE.search(norm) or _DUE_PAY.search(norm) or (_HINGLISH_PAY.search(norm) and _OBL_WORD.search(norm))             or (_OBL_WORD.search(norm) and nl_extract.money(raw) and re.search(r"\bko\b|को|给", norm) and "?" not in norm)             or (_PAY_WORD.search(norm) and _OBL_WORD.search(norm) and not re.search(r"\bhow much\b|\bwhat\b|\bwhen\b|\bwhy\b|\bwhich\b|\bwill\b|\bwould\b|\bwhether\b|^if\b|\bif i\b|多少|为什么|什么时候|会不会|够不够", norm))):
         if not _CONVERT.search(norm) or _OBL_WORD.search(norm):
             a = _amount(raw, bare=True)
             fr = _FRACTION.search(norm)
