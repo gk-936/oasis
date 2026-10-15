@@ -81,8 +81,23 @@ def _forecast_total(txs: list[dict], first: date, last: date) -> tuple[dict[str,
     return {c: round(v * factor, 2) for c, v in base.items()}, round(factor, 3)
 
 
+def _drop_partial_last_day(txs: list[dict]) -> list[dict]:
+    """The newest day is usually a partial day (e.g. one coffee logged today). Counting it stretches the window and lowers the
+    daily average, so adding a purchase made the monthly forecast FALL (QA 2026-10-15: 2,604 -> 2,344). A last day with under half
+    the usual number of transactions is left out of the forecast."""
+    by_day: dict[str, int] = {}
+    for t in txs:
+        by_day[t["date"]] = by_day.get(t["date"], 0) + 1
+    if len(by_day) < 3:
+        return txs
+    last = max(by_day)
+    usual = (len(txs) - by_day[last]) / (len(by_day) - 1)
+    return [t for t in txs if t["date"] != last] if by_day[last] < 0.5 * usual else txs
+
+
 def summarize(passport: Passport) -> dict:
-    txs = passport.transactions
+    all_txs = passport.transactions
+    txs = _drop_partial_last_day(all_txs)
     budget = float(max(passport.student.monthly_budget_cny, sum(REFERENCE_COSTS_CNY.values())))
     if not txs:
         days = 0
@@ -91,7 +106,7 @@ def summarize(passport: Passport) -> dict:
         first, last = dates[0], dates[-1]
         days = len({d for d in dates})
     own = bool(txs) and days >= MIN_DAYS_OWN_PATTERN and len(txs) >= MIN_TX_OWN_PATTERN
-    out = {"n_transactions": len(txs), "days_of_history": days, "min_days_needed": MIN_DAYS_OWN_PATTERN,
+    out = {"n_transactions": len(all_txs), "days_of_history": days, "min_days_needed": MIN_DAYS_OWN_PATTERN,
            "reference_costs_cny": REFERENCE_COSTS_CNY, "label": "MOCK reference costs and mock wallet data"}
     if not own:
         out.update(basis="cold_start", monthly_cny=budget,

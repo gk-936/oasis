@@ -319,3 +319,27 @@ def test_runner_stops_cleanly_on_quota_and_resumes(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "run_scenario", lambda sc, cfg, llm, seed=7, rep=0: real(sc, cfg, OfflineLLM(), seed, rep))
     runner.main(["--llm", "bedrock"])
     assert (tmp_path / "rep" / "benchmark.md").exists()
+
+
+def test_adding_a_purchase_today_does_not_lower_the_monthly_forecast():
+    # QA 2026-10-15: a single coffee logged on the partial last day made the forecast fall from 2,604 to 2,344.
+    w, _ = _auto()
+    p = w.passport
+    spending.simulate_spending(p, date(2026, 9, 21), 21)
+    before = spending.summarize(p)["monthly_cny"]
+    spending.add_transaction(p, date(2026, 10, 12), "Luckin coffee", 18.0)
+    after = spending.summarize(p)
+    assert after["monthly_cny"] >= before - 0.01 and after["n_transactions"] == len(p.transactions)
+
+
+def test_rate_target_far_from_the_market_is_refused(api_client):
+    assert api_client.post("/api/rate-target", json={"rate": 5, "convert_cny": 2000}).status_code == 400
+    assert api_client.post("/api/rate-target", json={"rate": 0.0001, "convert_cny": 2000}).status_code == 400
+    assert api_client.post("/api/rate-target", json={"rate": 0.07, "convert_cny": 2000}).status_code == 200
+
+
+def test_signed_draft_names_the_route_that_actually_converts(api_client):
+    # QA 2026-10-15: the draft/intent always said "Digital remitter B" while the conversion used the cheapest route.
+    c = api_client
+    o = c.post("/api/intake", json={"text": "Payee: Chen Wei\nPayee ID: payee_landlord_chen\nAccount: 6222021111110001\nAmount: CNY 6,000\nPurpose: rent\nDue: 2026-11-01"}).json()
+    assert o["draft"]["route_id"] == "route_inr_cny_3"          # Education payment specialist is the cheapest that arrives in time

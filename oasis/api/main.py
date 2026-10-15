@@ -667,7 +667,13 @@ def _rp(request: HttpRequest) -> tuple[str, str]:
     proxy), otherwise derived from the Host header of this request."""
     host = request.headers.get("host", "localhost")
     rp_id = os.environ.get("OASIS_WEBAUTHN_RP_ID") or host.rsplit(":", 1)[0].strip("[]")
-    return rp_id, os.environ.get("OASIS_WEBAUTHN_ORIGIN") or f"{request.url.scheme}://{host}"
+    origin = os.environ.get("OASIS_WEBAUTHN_ORIGIN")
+    if not origin:
+        # The browser's own Origin header (it passed the same-host guard) carries the scheme the user really sees; behind a
+        # TLS proxy the request scheme is http while the page is https, which made every passkey origin check fail.
+        seen = (request.headers.get("origin") or "").rstrip("/")
+        origin = seen if seen and seen.split("://", 1)[-1].rsplit(":", 1)[0].strip("[]") == rp_id and _origin_allowed(seen, request)             else f"{request.url.scheme}://{host}"
+    return rp_id, origin
 
 
 def _set_session_cookie(response: Response, request: HttpRequest, token: str) -> None:
@@ -1212,6 +1218,9 @@ def rate_target(body: RateTargetIn, p: Principal = Depends(STUDENT)):
         raise HTTPException(400, "rate and convert_cny must be positive")
     if body.rate >= 10 or body.convert_cny > 1e7:
         raise HTTPException(400, "rate must be below 10 and convert_cny at most 10,000,000")
+    mid = S.world.rates.mid(S.world.day_index)
+    if not mid * 0.3 <= body.rate <= mid * 3:          # QA 2026-10-15: a target of 5 (70x the market) was accepted and could never fire
+        raise HTTPException(400, f"rate is far from today's rate ({mid:.4f}); a target must be between {mid * 0.3:.4f} and {mid * 3:.4f}")
     t = S.agent.set_rate_target(body.rate, body.convert_cny)
     S.save()
     return t
@@ -1719,7 +1728,7 @@ def audit_verify(p: Principal = Depends(VIEWERS)):
 
 # ------------------------------------------------------------------ FlightPath (advisory; moves no money)
 class FlightPathIn(BaseModel):
-    required_cny: float = Field(gt=0)
+    required_cny: float = Field(gt=0, le=10_000_000)
     due_in_days: int | None = None
 
 
@@ -1741,7 +1750,7 @@ class PrecheckIn(BaseModel):
 
 class JourneyIn(BaseModel):
     route_id: str
-    required_cny: float = Field(gt=0)
+    required_cny: float = Field(gt=0, le=10_000_000)
     send_inr: float = Field(gt=0)
     due_in_days: int | None = None
 

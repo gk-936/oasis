@@ -185,3 +185,12 @@ def test_passkeys_persist(tmp_path):
     s.register_finish("student", b["challenge_id"], a.create(b["options"]), RP_ID, ORIGIN)
     assert PasskeyService(p).registered("student")
     assert "private" not in p.read_text()
+
+
+def test_rp_origin_follows_the_browsers_origin_behind_a_tls_proxy():
+    from types import SimpleNamespace as NS
+    from oasis.api import main
+    req = lambda origin: NS(headers={"host": "oasis.example.com", **({"origin": origin} if origin else {})}, url=NS(scheme="http"))
+    assert main._rp(req("https://oasis.example.com")) == ("oasis.example.com", "https://oasis.example.com")
+    assert main._rp(req(None)) == ("oasis.example.com", "http://oasis.example.com")
+    assert main._rp(req("https://evil.example"))[1] == "http://oasis.example.com"      # a different host never becomes the expected origin

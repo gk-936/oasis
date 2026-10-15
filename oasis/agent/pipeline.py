@@ -339,7 +339,7 @@ class OasisAgent:
         remitter = req.remitter
         from_ref = PARENT_ACCT if purpose == "family_support" else STUDENT_ACCT
         proposal = {"payee_id": payee_id, "account_ref": account_ref, "amount": amount, "currency": "CNY",
-                    "route_id": "route_inr_cny_2"}
+                    "route_id": w.planned_route_id(__import__("datetime").date.fromisoformat(ob.due) if ob else None)}
         # Poisoned tool output rewrites the instructions the (gullible) agent receives at execute time.
         exec_payload = dict(proposal)
         if req.tool_poison and w.llm.susceptible:

@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-14: `1158 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-15: `1164 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -52,7 +52,7 @@ Full suite on 2026-10-14: `1158 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1158 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1164 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)
@@ -68,6 +68,7 @@ Full suite on 2026-10-14: `1158 passed, 2 skipped` (offline, about 2 minutes) (t
 |---|---|---|---|
 | Every response carries a same-origin CSP, no-framing and no-referrer headers; HSTS only over https | `oasis/api/main.py` `security_headers` | `tests/test_security.py::test_security_headers_on_api_and_static`, `::test_hsts_only_when_secure`; checked in real Chrome (no CSP violations) | Headers protect the browser; they do not change what the server accepts. |
 | With `OASIS_REQUIRE_PASSKEY=1` a role with a registered passkey gets no session from the passcode alone; wrong key, wrong origin, a replayed challenge and a cloned counter are refused | `oasis/api/passkeys.py` | `tests/test_passkeys.py` (11), real Chrome with a virtual authenticator | Opt-in; first enrolment needs only the passcode; tested with software and virtual authenticators, not a hardware key; not audited. |
+| The passkey origin follows the browser's own `Origin` header only when its host equals the request host (behind a TLS proxy the scheme differs); a different host never becomes the expected origin (added 2026-10-15) | `oasis/api/main.py` (`_rp`) | `tests/test_passkeys.py::test_rp_origin_follows_the_browsers_origin_behind_a_tls_proxy` | Same-host check only; not audited. |
 | A forged email (failed authentication, diverging Reply-To, free-mail sender, hidden text) scores >= 0.5 and is not paid; a genuine one still needs a signed approval | `oasis/intake/mail.py`, `oasis/agent/llm.py` (`heuristic_risk`) | `tests/test_intake_email.py` (15) | The channel is evidence only; an uploaded .eml can carry any Authentication-Results header. |
 | Telegram: strangers are refused, pairing codes are single-use and expire, tokens and account numbers do not leak into replies or errors; IMAP: only allow-listed, authenticated senders are processed | `oasis/intake/telegram.py`, `oasis/intake/imap_poll.py` | `tests/test_intake_channels.py` (16) | Fake servers only; no live bot or mailbox was available. |
 | A payee name that closely matches an OFAC entity raises risk to a review; the benchmark and hidden-set payees produce no hits | `oasis/screening.py` | `tests/test_screening.py` (8) | One list, one snapshot, Latin names, fuzzy match; not a compliance clearance. |

@@ -197,6 +197,20 @@ class World:
                 if bal or any(b.currency == cur for b in self.passport.balances):    # a zero balance is not listed until it has been used
                     self.passport.set_balance(cur, bal)
 
+    def _pick_route(self, due: date | None):
+        """The route a conversion for this due date uses: the cheapest that arrives in time, else the fastest non-bank one."""
+        from .planning.routes import best_route, quote_routes
+        quote, bank = best_route(self.rates, 1_000_000, self.today, due, self.day_index)
+        if quote is None:      # nothing arrives by the due date: take the fastest route rather than fail
+            quote = min((q for q in quote_routes(self.rates, 1_000_000, self.today, None, self.day_index)
+                         if not q.route.typical_bank), key=lambda q: (q.arrives_in_days, -q.delivered_cny))
+        return quote, bank
+
+    def planned_route_id(self, due: date | None = None) -> str:
+        """Route id for the signed draft. It was a fixed 'Digital remitter B' while the conversion used the best route, so the
+        draft and intent named a different route than the one that moved the money (QA 2026-10-15)."""
+        return self._pick_route(due)[0].route.id
+
     def convert(self, cny_needed: float, due: date | None = None) -> dict | None:
         """Plan step: convert INR to CNY with the best on-time route if funds are short."""
         from .planning.routes import best_route, inr_needed, savings_vs_bank
@@ -204,11 +218,7 @@ class World:
         if short <= 0.005:
             return None
         short = max(short, MIN_CONVERSION_CNY)  # fixed fees make tiny conversions wasteful
-        quote, bank = best_route(self.rates, 1_000_000, self.today, due, self.day_index)
-        if quote is None:      # nothing arrives by the due date: take the fastest route rather than fail
-            from .planning.routes import quote_routes
-            quote = min((q for q in quote_routes(self.rates, 1_000_000, self.today, None, self.day_index)
-                         if not q.route.typical_bank), key=lambda q: (q.arrives_in_days, -q.delivered_cny))
+        quote, bank = self._pick_route(due)
         route = quote.route
         send = inr_needed(self.rates, route, short + 0.01, self.day_index)
         if send > self.passport.balance("INR"):

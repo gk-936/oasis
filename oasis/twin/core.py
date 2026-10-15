@@ -132,18 +132,33 @@ def simulate(inp: dict, plan: Plan = Plan(), paths: int = DEFAULT_PATHS, seed: i
             "deadlines": [{**o, "p_met": round(met[k] / paths, 4), "send_day": sends[k]} for k, o in enumerate(obs)], "fan": fan}
 
 
+def _sized_topup(inp: dict, start: float, seed: int, target: float = 0.85, step: float = 1000.0, max_steps: int = 40) -> float:
+    """Smallest top-up (in 1,000 steps, from `start`) that makes the simulation meet every deadline with probability >= target.
+    The simple gap formula ignores daily spending until the last deadline and the conversion spread, so it can recommend an amount
+    that still fails; this checks the amount against the same simulation the page shows (fewer paths, same seed: deterministic)."""
+    amt = start
+    # money cannot fix rail delays or short credits, so the goal is "almost as good as unlimited money", capped at `target`
+    ceiling = simulate(inp, Plan(extra_buffer_cny=1e7), 200, seed)["p_all_met"]
+    target = min(target, ceiling * 0.97)
+    for _ in range(max_steps):
+        if simulate(inp, Plan(extra_buffer_cny=amt), 200, seed)["p_all_met"] >= target:
+            return amt
+        amt += step
+    return amt
+
+
 def run_twin(passport: Passport, rates: MockRates, today: date, seed: int = 7, paths: int = DEFAULT_PATHS, rescue: bool = False) -> dict:
     inp = build_inputs(passport, rates, today)
     if rescue:
         # What-if (MOCK): the family has promised enough to cover the whole gap, arriving in 10 days (and it may arrive late).
         need0 = sum(o["amount_cny"] for o in inp["obligations"]) + inp["burn_per_day"] * 14
         gap0 = max(need0 - inp["cny"] - inp["inr"] * inp["rate0"], 0.0)
-        inp["income"] = inp["income"] + [{"label": "What-if family top-up", "amount_cny": float(math.ceil((gap0 + 1000) / 1000) * 1000), "day": 10}]
+        inp["income"] = inp["income"] + [{"label": "What-if family top-up", "amount_cny": _sized_topup(inp, float(math.ceil((gap0 + 1000) / 1000) * 1000), seed), "day": 10}]
     base = simulate(inp, Plan(), paths, seed)
     plans = {"convert_early": Plan(convert_early=True), "send_early": Plan(send_early=3), "faster_route": Plan(route_id="route_inr_cny_2")}
     need = sum(o["amount_cny"] for o in inp["obligations"]) + inp["burn_per_day"] * 14
     gap = max(need - inp["cny"] - inp["inr"] * inp["rate0"], 0.0)
-    topup = float(math.ceil((gap + 1000) / 1000) * 1000)   # covers the structural shortfall plus a 1,000 margin
+    topup = _sized_topup(inp, float(math.ceil((gap + 1000) / 1000) * 1000), seed)   # covers the shortfall, then grown until the simulation agrees
     plans["parent_topup"] = Plan(extra_buffer_cny=topup)
     options = []
     for m in MITIGATIONS:

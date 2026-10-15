@@ -40,3 +40,11 @@ def test_rescue_scenario_makes_deadlines_reachable():
     r = tw.run_twin(w.passport, w.rates, w.today, rescue=True)
     assert r["rescue"] is True and base["rescue"] is False
     assert r["baseline"]["p_all_met"] > base["baseline"]["p_all_met"]
+
+
+def test_recommended_topup_actually_fixes_the_shortfall():
+    # QA 2026-10-15: the top-up was sized from a 14-day burn, so the "best option" raised the chance of paying everything only 0% -> 6%.
+    w = _world()
+    r = tw.run_twin(w.passport, w.rates, w.today, seed=7)
+    top = next(m for m in r["mitigations"] if m["id"] == "parent_topup")
+    assert r["baseline"]["p_all_met"] < 0.1 and top["p_all_met"] >= 0.7 and top["topup_cny"] < 20000 and r["recommended"] == "parent_topup"
