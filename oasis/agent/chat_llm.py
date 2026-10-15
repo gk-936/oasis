@@ -1,4 +1,4 @@
-"""Optional model help for chat (newfixes.md F14). OFF by default; the deterministic router is the floor.
+"""Optional model help for chat (docs/internal/newfixes.md F14). OFF by default; the deterministic router is the floor.
 
 Only used when ALL of these hold: OASIS_CHAT_LLM=1, a live model is configured (OASIS_LLM=bedrock with the owner's OWN AWS
 credentials; none ships with Oasis), and the deterministic router could not place the message (`unknown`). Security refusals

@@ -52,7 +52,7 @@ Dockerfile
 *.zip
 submission*/
 SUBMISSION*
-PROGRESS.md
+docs/internal/
 JUDGE_GUIDE.md
 README.md
 LICENSE

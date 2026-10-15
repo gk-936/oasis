@@ -23,7 +23,8 @@ usage.json
 # frontend/dist is deliberately COMMITTED (about 190 KB): the API serves it, so the UI works
 # after `pip install` + uvicorn with no Node toolchain. Rebuild with `npm run build` after UI changes.
 
-# editor / OS
+# editor / OS / local agent settings
+.claude/
 .DS_Store
 Thumbs.db
 .vscode/
