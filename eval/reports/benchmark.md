@@ -1,6 +1,6 @@
 # Oasis benchmark results
 
-Run: 2026-10-14 18:56 | LLM: offline-deterministic | ruleset 2026.10.2 | repeats 1 | 32 attack + 12 legit scenarios (+4 AI red-team)
+Run: 2026-10-15 18:44 | LLM: offline-deterministic | ruleset 2026.10.2 | repeats 1 | 32 attack + 12 legit scenarios (+4 AI red-team)
 
 All money is sandbox money; rails, rates and the registry are mocks. Humans in the loop are simulated.
 

@@ -16,6 +16,7 @@ from collections import OrderedDict
 from ..mock.fx import CURRENCIES, FxError, mid as fx_mid, quote as fx_quote, table_for
 from ..mock.rates import ROUTES
 from ..passport import currency as currency_mod
+from ..planning import spending
 from ..planning.forecast import monthly_burn, runway_months, triggers
 from ..planning.routes import quote_routes, rank
 from ..market import provenance
@@ -144,6 +145,9 @@ _REFUSE = {
 def refuse(S, intent: ChatIntent, lang: str, secrets=None) -> dict:
     cat = intent.category or "bypass"
     en, zh = _REFUSE.get(cat, _REFUSE["bypass"])
+    if intent.slots.get("urgent"):                      # pressure is a fraud signal: say so, it never speeds anything up
+        en += " Pressure like 'urgent' or 'emergency' is a common fraud signal; it makes me stricter, not faster. If someone is in real trouble, call them on a number you already know."
+        zh += "“紧急”“马上”之类的催促是常见的诈骗信号，只会让我更严格，而不是更快。如果真有人遇到困难，请用您原本就知道的号码联系对方。"
     S.world.audit.append("chat_refused", {"category": cat})
     S.save()
     return _result(intent.kind, zh if lang == "zh" else en, secrets, status="refused", refusal=cat)
@@ -291,30 +295,6 @@ def _pay_obligation_now(S, run_intake, ob, amount: float | None, lang: str, d: d
 
 # ------------------------------------------------------------------ pay flows (F1, F2, F12)
 def _type_from_words(message: str) -> str | None:
-    return nl_extract.type_hint(message)
-
-
-def _pay_obligation_now(S, run_intake, ob, amount: float | None, lang: str, d: dict, intent: str, secrets=None) -> dict:
-    w = S.world
-    if ob.currency != "CNY":
-        t = (f"这笔账单是 {ob.currency}，请到“外币计划”里处理。" if lang == "zh" else
-             f"That bill is in {ob.currency}; use the foreign-currency plan to pay it.")
-        return _result(intent, t, secrets, status="info")
-    amt = round(float(amount if amount is not None else ob.remaining), 2)
-    ex = _existing_draft(S, ob.payee_id, amt, ob.type)
-    if ex:                                           # the same request twice is one draft, not two
-        pid, it = ex
-        o = {**it["outcome"], "pending_id": pid}
-        lead = "您已经有一份相同的草稿在等待签名。" if lang == "zh" else "You already have this exact draft waiting for your signature."
-        return _draft_reply(S, o, lang, d, intent, secrets, lead)
-    req = _registry_request(w, ob.payee_id, amt, ob.type, ob.due)
-    if req is None:
-        return _result(intent, "收款方不在登记册中。" if lang == "zh" else "That payee is not in the registry.", secrets, status="rejected")
-    return _run(S, run_intake, req, lang, d, intent, secrets)
-
-
-# ------------------------------------------------------------------ pay flows (F1, F2, F12)
-def _type_from_words(message: str) -> str | None:
     t = nlu.normalise(message)
     if re.search(r"universit|college|school|学校|大学", t):
         return "tuition"
@@ -393,6 +373,8 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
         t = (f"这笔{_OBL_ZH.get(ob.type, ob.type)}以人民币计价，我不能用 {cur} 支付。需要先兑换吗？" if lang == "zh" else
              f"Your {ob.type} is in {ob.currency}; I can't pay it in {cur}. Convert first?")
         return _result(it.kind, t, secrets, status="needs_info")
+    if not amt and it.slots.get("fraction"):                              # "pay half of my tuition": a part payment of this bill
+        amt = round(ob.remaining * float(it.slots["fraction"]), 2)
     if amt and amt > ob.remaining + 0.5:                                    # never more than is owed: refused outright, audited
         w.audit.append("chat_refused", {"category": "overpayment"})
         S.save()
@@ -412,9 +394,15 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
     return _pay_obligation_now(S, run_intake, ob, None, lang, d, it.kind, secrets)
 
 
+_INFO_KINDS = (nlu.BALANCE, nlu.OBLIGATIONS, nlu.RATE, nlu.ROUTES, nlu.RUNWAY, nlu.STATUS, nlu.PLAN, nlu.PROOF, nlu.CREDIT,
+               nlu.EXPLAIN, nlu.HELP, nlu.SPENDING)
+
+
 def _continue(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, secrets=None) -> dict | None:
     """Answer to the question asked last turn. None = this message is not an answer, so it is handled as a fresh request."""
     w, aw, ctx = S.world, d["awaiting"], d["ctx"]
+    if it.kind in _INFO_KINDS:                       # "when is my tuition due?" is a question, not a pick: answer it, keep ours open
+        return None
     if aw == "confirm_pay":
         ob = w.passport.obligation(ctx.get("ob", ""))
         if ob is None or ob.status == "paid":
@@ -606,9 +594,10 @@ def _balance(S, lang: str, secrets=None) -> dict:
     return _result("balance", t, secrets)
 
 
-def _obligations(S, lang: str, secrets=None) -> dict:
+def _obligations(S, lang: str, secrets=None, message: str = "") -> dict:
     w = S.world
-    o = _open_obligations(w)
+    typ = nl_extract.purpose_in_text(message) if message else None
+    o = _open_obligations(w, typ) or _open_obligations(w)
     if not o:
         return _result("obligations", "您目前没有待付款项。" if lang == "zh" else "You have nothing due right now.", secrets)
     lines = ("；" if lang == "zh" else "; ").join(_obl_line(w, x, lang) for x in sorted(o, key=lambda x: x.due))
@@ -779,6 +768,30 @@ def _status(S, lang: str, d: dict, secrets=None) -> dict:
     return _result("status", t, secrets, proof_id=proof)
 
 
+def _spending(S, lang: str, secrets=None) -> dict:
+    """This month's wallet spending by category and the bills paid, from the sandbox records (MOCK)."""
+    w = S.world
+    pp = w.passport
+    month = w.today.isoformat()[:7]
+    txs = [t for t in pp.transactions if t["date"].startswith(month)]
+    cats: dict[str, float] = {}
+    for t in txs:
+        cats[t["category"]] = cats.get(t["category"], 0.0) + t["amount_cny"]
+    paid = [o for o in pp.obligations if o.status == "paid"]
+    fc = spending.summarize(pp)["monthly_cny"]
+    if lang == "zh":
+        t = (f"本月钱包支出 ¥{sum(cats.values()):,.0f}（" + "，".join(f"{c} ¥{v:,.0f}" for c, v in sorted(cats.items(), key=lambda x: -x[1])) + "）。"
+             if txs else "本月还没有记录钱包支出。")
+        t += (f"已付账单：" + "；".join(f"{_OBL_ZH.get(o.type, o.type)} {money(o.amount, lang)}" for o in paid) + "。" if paid else "还没有账单付清。")
+        t += f"预计每月开销约 ¥{fc:,.0f}。（演示数据，MOCK）"
+    else:
+        t = (f"This month's wallet spending is CNY {sum(cats.values()):,.0f} (" + ", ".join(f"{c} CNY {v:,.0f}" for c, v in sorted(cats.items(), key=lambda x: -x[1])) + ")."
+             if txs else "No wallet spending is recorded this month yet.")
+        t += (" Bills paid: " + "; ".join(f"{o.type} {money(o.amount, lang)}" for o in paid) + "." if paid else " No bill paid yet.")
+        t += f" Expected monthly spending is about CNY {fc:,.0f}. (MOCK sandbox data)"
+    return _result("spending", t, secrets)
+
+
 def _explain(S, lang: str, secrets=None) -> dict:
     cards = S.world.cards
     if not cards:
@@ -847,6 +860,10 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         r = _continue(S, run_intake, it, message, lang, d, secrets)
         if r is not None:
             return r
+        if it.kind in _INFO_KINDS and d["awaiting"]:
+            res = _handle(S, it, message, {**d, "awaiting": None}, run_intake, secrets)
+            res["reply"] += (" （我之前的问题仍然有效。）" if lang == "zh" else " (My earlier question is still open.)")
+            return res
     k = it.kind
     if k in nlu.REFUSALS:
         return refuse(S, it, lang, secrets)
@@ -889,7 +906,7 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.BALANCE:
         return _balance(S, lang, secrets)
     if k == nlu.OBLIGATIONS:
-        return _obligations(S, lang, secrets)
+        return _obligations(S, lang, secrets, message)
     if k == nlu.RATE:
         return _rate(S, lang, secrets, message)
     if k == nlu.ROUTES:
@@ -902,6 +919,8 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         return _convert(S, it, lang, d, secrets, message)
     if k == nlu.STATUS:
         return _status(S, lang, d, secrets)
+    if k == nlu.SPENDING:
+        return _spending(S, lang, secrets)
     if k == nlu.EXPLAIN:
         return _explain(S, lang, secrets)
     if k == nlu.PROOF:

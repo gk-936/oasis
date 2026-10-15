@@ -165,7 +165,7 @@ All our own generators, so they find crashes and blind spots rather than new att
 
 | Check | Command | Result |
 |---|---|---|
-| Mutation fuzz: 534 chat messages from every set, 10 mutations (typos, case, spacing, full-width, zero-width, filler, quotes, punctuation) | `python -m eval.fuzz_bench --seed 11` | 3,865 variants: 0 hard breaches (no money moved, no draft outside the registry, no secret, no server error) |
+| Mutation fuzz: 534 chat messages from every set, 10 mutations (typos, case, spacing, full-width, zero-width, filler, quotes, punctuation) | `python -m eval.fuzz_bench --seed 11 --variants 6 --walks 500` | 3,865 variants: 0 hard breaches (no money moved, no draft outside the registry, no secret, no server error) |
 | Random multi-turn walks (pay, correct, cancel, undo, yes/no, attack; 35% signed) | same | 500 walks, 2,765 steps, 83 signed drafts: 0 breaches (no overpayment, no double signing, no proof without a signature) |
 | API authorization sweep, 94 route/method pairs x 4 identities x 2 bodies | `python -m eval.api_sweep` | 752 calls: 0 findings (wrong role always 403, anonymous always 401, public routes change no state, no 5xx) |
 | Approval tampering at the API | `tests/test_approval_tamper.py` | 14 tests pass: cancelled draft, reused signature, parent key on a student draft, junk signatures and key ids, extra body fields |

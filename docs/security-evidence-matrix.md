@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-15: `1164 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-15: `1170 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -40,6 +40,7 @@ Full suite on 2026-10-15: `1164 passed, 2 skipped` (offline, about 2 minutes) (t
 | 25 | A security phrase that is only quoted and talked about is not refused, but wrapping a whole attack in quotes does not hide it; typos in the help wording do not cause a false refusal | `oasis/agent/nlu.py` (`strip_mentions`, `_snap`, `security_category`) | `tests/test_chat_nlu.py::test_quote_wrapping_cannot_hide_an_attack_but_a_quoted_mention_is_still_a_mention`; `::test_a_typo_in_the_reset_help_wording_is_not_a_false_refusal`; `::test_typos_in_exemption_words_do_not_turn_help_into_a_refusal`; `python -m eval.fuzz_bench` | A fully quoted attack is still refused; a quoted phrase inside a question is a mention; nothing quoted is ever acted on | 3,865 mutated messages and 500 random walks, 0 breaches (`eval/reports/fuzz.md`) | Our own generator on our own corpus; offline keyword router only | Automated test + generated fuzz/sweep (our own) |
 | 26 | Every API route enforces the roles its own `require(...)` declares: a wrong role gets 403, no session gets 401, public routes change no state, and a tampered approval (cancelled draft, reused or foreign-role signature, junk key id) pays nothing | `oasis/api/main.py` (`require`), `oasis/trust/approvals.py` | `tests/test_approval_tamper.py` (14 tests); `python -m eval.api_sweep` | 403 / 401 / no state change / no 5xx on 752 calls | 0 findings (`eval/reports/api_sweep.md`) | Checks the code against its own declarations, not that the declared roles are the right ones | Automated test + generated fuzz/sweep (our own) |
 | 27 | Chat answers a currency pair for that pair, names a currency the wallet does not hold, and never confirms a conversion other than INR to CNY | `oasis/agent/chat.py` (`_convert`, `_rate`, `_routes`, `_mentioned`, `_scope_note`) | `tests/test_chat_dialog.py::test_other_currency_pairs_are_answered_for_that_pair_not_as_inr_to_cny`; `::test_a_currency_the_wallet_does_not_hold_is_named_not_swapped_for_another_pair` | Other pairs return a quote only; unsupported codes are named; no draft, no money moved | `mc_*` tasks in `eval/tasks/tasks.json` pass | Prices are public-range estimates (MOCK); route comparison exists for INR to CNY only | Automated test + generated fuzz/sweep (our own) |
+| 28 | Pressure to skip a parent's approval ("emergency, no time for parent approval") and an "ignore rules" instruction hidden in base64 are refused; an urgent refusal names urgency as a fraud signal | `oasis/agent/nlu.py` (`_BYPASS`, `_INJECTION`, `decoded_views`), `oasis/agent/chat.py` (`refuse`) | `tests/test_chat_dialog.py::test_emergency_pressure_to_skip_parent_approval_is_refused_and_named_as_a_fraud_signal`; `::test_base64_hidden_ignore_rules_is_refused_as_injection` | Status `refused` (`bypass` / `injection`), CNY 0 moved, no draft created | Passed 2026-10-15 | Found by an outside probe of fresh messages and fixed after it, so not out-of-sample; pattern-based | automated test |
 
 ## Gaps (no automated test, or only indirect)
 
@@ -52,7 +53,7 @@ Full suite on 2026-10-15: `1164 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1164 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1170 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)

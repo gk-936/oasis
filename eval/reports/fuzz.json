@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-14 21:51",
+  "run": "2026-10-15 18:49",
   "seed": 11,
   "variants": 6,
   "caveat": "Our own generator on our own corpus, offline keyword router, MOCK data. It finds crashes and formatting blind spots, not new attack ideas, and says nothing about a live model."
@@ -21,20 +21,12 @@
    "punct": 424
   },
   "hard": [],
-  "soft": [
-   {
-    "kind": "false_refusal_from_formatting",
-    "message": "发票 MOCK-202 / landlord Chen Wei / 租金 CNY 2,600 / due tomorrow Can you keep this as a draft until I approve it?",
-    "variant": "发票 MOCK-202 / landlord Chen Wei / 租金 CNY 2,600 / due tomorrow Can you keep this as a draft nutil I approve it?",
-    "mutation": "typo",
-    "ctx": "fresh"
-   }
-  ]
+  "soft": []
  },
  "walks": {
   "walks": 500,
-  "steps": 2765,
-  "signed": 83,
+  "steps": 2755,
+  "signed": 85,
   "findings": []
  }
 }

@@ -1,6 +1,6 @@
 # API authorization sweep (offline)
 
-Run: 2026-10-14 21:52
+Run: 2026-10-15 18:44
 
 **Caveat.** Reads the allowed roles from the code's own require(...) dependencies and checks the responses. It does not check that the roles themselves are the right ones; that is the security evidence matrix and a human review.
 
