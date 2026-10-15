@@ -1,12 +1,26 @@
 import React, { useCallback, useEffect, useState } from "react";
 import qrcode from "qrcode-generator";
-import { api, downloadJson, useGuard } from "../api.js";
-import { t, tl, tm } from "../i18n/index.js";
+import { api, downloadPdf, useGuard } from "../api.js";
+import { esc, kpis, qrSvg, section, table } from "../reports.js";
+import { t, tl, tm, tp } from "../i18n/index.js";
 import { announce, cny, ErrorBox, fmtDate, Hash, inr, Loading, Mock, Pill, R } from "../ui.jsx";
 
 /* ------------------------------------------------------------------ Oasis Trust Pass (portable payment reputation) */
 const TP_CHECKS = ["signature", "key_pinned", "credential_hash", "not_expired", "disclosures_valid", "proofs_checked", "zk_valid"];
 const THRESHOLD_IDS = ["on_time_pct_min", "history_months_min", "payments_min"];
+
+/** Printable Trust Pass: what the holder chose to show, and the signed data so it can still be verified. */
+function trustPassPdf(h, pres, zk, code) {
+  const c = h.credential || {};
+  const rows = pres.disclosures.map((d) => [tl("type", d.entry.obligation_type), cny(d.entry.amount_cny), fmtDate(d.entry.paid_date), tl("level", d.entry.payee_level || "verified_full"), d.entry.on_time ? t("rr.ontime") : t("rr.late.pill")]);
+  return [
+    kpis([[t("cp.pdf.shown"), String(rows.length), ""], [t("cp.pdf.valid"), fmtDate(c.valid_until), ""], [t("cp.pdf.audience"), c.audience || "—", ""]]),
+    section(t("cp.pdf.payments"), rows.length ? table([t("rr.col.what"), t("rr.col.amount"), t("rr.col.paid"), t("pass.col.level"), t("rr.col.ontime")], rows, [1]) : `<p>${esc(t("cp.nopayments"))}</p>`),
+    zk.length ? section(t("cp.zk.title"), `<ul>${zk.map((z) => `<li>${esc(zkText(z))}</li>`).join("")}</ul>`) : "",
+    code ? section(t("cp.pdf.verify"), `<div class="qrbox">${qrSvg(verifyUrl(code))}<div><p>${esc(t("cp.pdf.verify.text"))}</p><p><code>${esc(verifyUrl(code))}</code></p></div></div>`) : "",
+    section(t("cp.pdf.signed"), `<p>${esc(t("rr.fingerprint"))}: <code>${esc(c.trust_fingerprint)}</code></p>`),
+  ].join("");
+}
 
 export const claimText = (c) => {
   const v = c.value || {};
@@ -54,17 +68,34 @@ function PasteVerify({ initial }) {
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (initial) { setText(JSON.stringify(initial, null, 2)); setRes(null); } }, [initial]);
+  const sig = initial ? JSON.stringify(initial) : "";
+  useEffect(() => { setRes(null); }, [sig]);
+  const mine = async () => { setBusy(true); setErr(null); try { setRes(await api("/trust-pass/verify", initial)); announce(t("cp.announce.checked")); } catch (e) { setErr(e); setRes(null); } finally { setBusy(false); } };
   const go = async () => {
     setBusy(true); setErr(null);
-    try { JSON.parse(text); setRes(await api("/trust-pass/verify", text)); announce(t("cp.announce.checked")); }
+    // Accepts the pass itself (JSON), or the verification link / share code printed in the PDF. A bare key or fingerprint is not enough.
+    const x = text.trim();
+    try {
+      if (x.startsWith("{")) { JSON.parse(x); setRes(await api("/trust-pass/verify", x)); }
+      else {
+        const code = (/[?&]verify=([^&#\s]+)/.exec(x)?.[1] && decodeURIComponent(/[?&]verify=([^&#\s]+)/.exec(x)[1])) || (/^[A-Za-z0-9_-]{6,32}$/.test(x) ? x : null);
+        if (!code) throw new Error(t("cp.verify.notpass"));
+        setRes(await api(`/trust-pass/check/${encodeURIComponent(code)}`));
+      }
+      announce(t("cp.announce.checked"));
+    }
     catch (e) { setErr(e instanceof SyntaxError ? new Error(t("err.badjson")) : e); setRes(null); }
     finally { setBusy(false); }
   };
   return (
     <details><summary>{t("cp.verify.summary")}</summary>
       <p className="muted small">{t("cp.verify.intro")}</p>
-      <label>{t("cp.verify.label")}<textarea rows={8} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} data-testid="cp-verify-text" /></label>
+      {initial && <div className="row"><button type="button" disabled={busy} onClick={mine}>{t("verify.mine")}</button></div>}
+      <label className="filepick">{t("cp.verify.file")}
+        <input type="file" accept=".json,application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) f.text().then((x) => { setText(x); setRes(null); setErr(null); }); }} /></label>
+      <details className="rawbox"><summary>{t("cp.verify.raw")}</summary>
+        <label>{t("cp.verify.label")}<textarea rows={8} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} data-testid="cp-verify-text" /></label></details>
+      {text.trim() && <p className="muted small">{t("cp.verify.loaded", { n: text.length })}</p>}
       <div className="row"><button className="ghost" disabled={busy || !text.trim()} onClick={go} data-testid="cp-verify-btn">{t("cp.verify.btn")}</button></div>
       {res && <VerifyResult res={res} />}
       {err && <ErrorBox error={err} onDismiss={() => setErr(null)} />}
@@ -119,10 +150,12 @@ export function TrustPass() {
       <p className="muted small">{t("cp.threshold.intro")}</p>
       <ul className="choices">{THRESHOLD_IDS.map((id) => (
         <li key={id}><label className="check"><input type="checkbox" checked={!!pick[id]} onChange={(e) => setPick({ ...pick, [id]: e.target.checked })} data-testid={`cp-claim-${id}`} /> {t(`cp.threshold.${id}`)}</label>{" "}
-          <select aria-label={t(`cp.threshold.${id}`)} value={th[id] ?? ""} onChange={(e) => setTh({ ...th, [id]: e.target.value ? +e.target.value : undefined })}>
-            <option value="">–</option>
-            {info.thresholds[id].map((o) => <option key={o.at_least} value={o.at_least} disabled={!o.met}>{o.at_least}{o.met ? "" : ` (${t("cp.threshold.notmet")})`}</option>)}
-          </select></li>))}</ul>
+          {info.thresholds[id].some((o) => o.met)
+            ? <select aria-label={t(`cp.threshold.${id}`)} value={th[id] ?? ""} onChange={(e) => setTh({ ...th, [id]: e.target.value ? +e.target.value : undefined })}>
+              <option value="">–</option>
+              {info.thresholds[id].map((o) => <option key={o.at_least} value={o.at_least} disabled={!o.met}>{o.at_least}{o.met ? "" : ` (${t("cp.threshold.notmet")})`}</option>)}
+            </select>
+            : <span className="muted small">{t("cp.threshold.unavailable")}</span>}</li>))}</ul>
       <div className="row">
         <label className="grow">{t("cp.audience")}<input value={audience} maxLength={80} placeholder={t("cp.audience.ph")} onChange={(e) => setAudience(e.target.value)} /></label>
         <button disabled={busy || !Object.values(pick).some(Boolean)} onClick={issue} style={{ alignSelf: "flex-end" }} data-testid="cp-issue">{t("cp.issue")}</button>
@@ -166,8 +199,7 @@ export function TrustPass() {
         <h4>{t("cp.step3")}</h4>
         <div className="row">
           <button disabled={busy} onClick={share} data-testid="cp-share">{t("cp.share")}</button>
-          <button className="ghost" onClick={() => downloadJson(presentation, "oasis-trust-pass.json")} data-testid="cp-download">{t("cp.download")}</button>
-          <button className="ghost" disabled={busy} onClick={() => run(async () => { downloadJson(await api("/trust-pass/vc/export", { holder: { credential: holder.credential } }), "oasis-trust-pass.vc.json"); announce(t("vc.done")); })} data-testid="cp-vc">{t("vc.export")}</button>
+          <button className="ghost" disabled={busy} onClick={() => run(async () => { const r = shared || await api("/trust-pass/share", { presentation }); setShared(r); downloadPdf(trustPassPdf(holder, presentation, zkProofs, r.code), "oasis-trust-pass", { heading: t("cp.title"), subtitle: t("cp.pitch").replace(/\*\*|`/g, ""), note: t("pdf.mocknote") }); })} data-testid="cp-download">{t("cp.download")}</button>
         </div>
         {shared && (
           <div className="qr-box" data-testid="cp-qr">
@@ -208,17 +240,29 @@ export function VerifyPage({ code }) {
 /* ------------------------------------------------------------------ Earned autonomy ladder (student view; the parent accepts) */
 export function EarnedAutonomy({ ladder, onAccept, busy }) {
   if (!ladder) return null;
+  const need = ladder.next ? ladder.next.needs_streak : 0;
+  const pctDone = ladder.next ? Math.min(100, Math.round((ladder.streak / (need || 1)) * 100)) : 100;
   return (
-    <div data-testid="earned-autonomy">
-      <h4>{t("ea.title")}</h4>
-      <p>{R("ea.now", { level: ladder.level, streak: ladder.streak, cur: inr(ladder.current_threshold_inr) })}</p>
-      <ul className="feed">{ladder.levels.map((l) => (
-        <li key={l.level}>{l.level <= ladder.level ? "✓" : "○"} {t("ea.level", { level: l.level, n: l.needs_streak, th: inr(l.threshold_inr) })}</li>))}</ul>
+    <div data-testid="earned-autonomy" className="ea">
+      <h4 className="ea-title">{t("ea.title")}</h4>
+      <p className="ea-status"><b>{t("ea.status", { level: ladder.level, cur: inr(ladder.current_threshold_inr) })}</b></p>
+      <p className="muted small">{tp("ea.streak", ladder.streak)}</p>
+      <div className="prog-track ea-prog" role="img" aria-label={tp("ea.streak", ladder.streak)}><span className="prog-fill" style={{ width: `${pctDone}%` }} /></div>
       {ladder.proposal
         ? <p><Pill status="held">{t("ea.proposal.pill")}</Pill> {t("ea.proposal", { th: inr(ladder.earned_threshold_inr) })}{" "}
           {onAccept && <button disabled={busy} onClick={onAccept} data-testid="ea-accept">{t("ea.accept")}</button>}</p>
-        : ladder.next && <p className="muted">{t("ea.next", { n: ladder.next.needs_streak - ladder.streak, th: inr(ladder.next.threshold_inr) })}</p>}
-      <p className="muted small">{t("ea.note")}</p>
+        : ladder.next && <p className="muted small">{tp("ea.next", need - ladder.streak, { th: inr(ladder.next.threshold_inr) })}</p>}
+      <ul className="tiers" aria-label={t("ea.title")}>{ladder.levels.map((l) => {
+        const on = l.level <= ladder.level;
+        return (
+          <li key={l.level} className={on ? "on" : "locked"}>
+            <span className="tier-badge">{on ? <>✓ {t("ea.unlocked")}</> : <><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg> {t("ea.locked")}</>}</span>
+            <b>{t("ea.tier", { level: l.level })}</b>
+            <span className="tier-req">{t("ea.req", { n: l.needs_streak })}</span>
+            <span className="tier-th">{inr(l.threshold_inr)}</span>
+          </li>);
+      })}</ul>
+      <p className="ea-foot"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16v.5" /></svg>{t("ea.note")}</p>
     </div>
   );
 }

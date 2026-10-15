@@ -10,8 +10,18 @@ const creationOptions = (o) => ({ ...o, challenge: unb64u(o.challenge), user: { 
   excludeCredentials: (o.excludeCredentials || []).map((c) => ({ ...c, id: unb64u(c.id) })) });
 const requestOptions = (o) => ({ ...o, challenge: unb64u(o.challenge), allowCredentials: (o.allowCredentials || []).map((c) => ({ ...c, id: unb64u(c.id) })) });
 
+/** Browsers refuse passkeys on an IP address ("This is an invalid domain"). Say so, and where to go instead. */
+function needDomain() {
+  const h = window.location.hostname;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.includes(":")) {
+    const to = `${window.location.protocol}//localhost${window.location.port ? `:${window.location.port}` : ""}${window.location.pathname}`;
+    throw new Error(`Passkeys need a domain name, not an IP address. Open ${to} instead.`);
+  }
+}
+
 /** Register a passkey for the logged-in role. */
 export async function registerPasskey() {
+  needDomain();
   const b = await api("/auth/passkey/register/begin", {});
   const c = await navigator.credentials.create({ publicKey: creationOptions(b.options) });
   const credential = { id: c.id, rawId: b64u(c.rawId), type: c.type,
@@ -22,6 +32,7 @@ export async function registerPasskey() {
 
 /** Second login factor: answer the challenge the passcode step returned. */
 export async function assertPasskey(step) {
+  needDomain();
   const a = await navigator.credentials.get({ publicKey: requestOptions(step.options) });
   const credential = { id: a.id, rawId: b64u(a.rawId), type: a.type,
     response: { clientDataJSON: b64u(a.response.clientDataJSON), authenticatorData: b64u(a.response.authenticatorData),

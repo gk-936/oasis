@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api, signedApprove, short4, useGuard } from "../api.js";
 import { Card } from "../common.jsx";
 import { t, tl, tm, tp, useLang } from "../i18n/index.js";
-import { announce, approvable, cny, Empty, ErrorBox, fmt, fmtDate, inr, Loading, Mock, Pill, R, Skeleton } from "../ui.jsx";
+import { announce, approvable, cny, money, Empty, ErrorBox, fmt, fmtDate, inr, Loading, Mock, Pill, R, Skeleton } from "../ui.jsx";
 
 const short = (v, n = 150) => { const s = typeof v === "string" ? v : JSON.stringify(v); return s.length > n ? s.slice(0, n) + "…" : s; };
 
@@ -76,7 +76,7 @@ export function PlanPanel({ plan, onAccept, onRun, pending, onApprove, busy }) {
         </div>)}
       {waiting.length > 0 && onApprove && (
         <div className="card inner"><strong>{t("plan.waiting")}</strong>
-          {waiting.map((p) => <div className="row" key={p.id}><span>{tl("purpose", p.fields?.purpose)} <b className="money">{cny(p.fields?.amount)}</b> {t("out.to", { payee: p.fields?.payee_name })}</span>
+          {waiting.map((p) => <div className="row" key={p.id}><span>{tl("purpose", p.fields?.purpose)} <b className="money">{money(p.fields?.amount, p.fields?.currency)}</b> {t("out.to", { payee: p.fields?.payee_name })}</span>
             <button disabled={busy} onClick={() => onApprove(p)}>{t("plan.approve")}</button></div>)}</div>)}
     </div>
   );
@@ -109,7 +109,7 @@ export function AgentPlan({ s, refresh }) {
       <div className="row">
         <label className="grow">{t("plan.scenario.label")}
           <select value={pick} onChange={(e) => setPick(e.target.value)}>{scen.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></label>
-        <button className="ghost" disabled={busy || !scen.length} onClick={tryScenario} style={{ alignSelf: "flex-end" }}>{t("plan.scenario.show")}</button>
+        <button className="ghost" disabled={busy || !scen.length} onClick={() => (trial ? setTrial(null) : tryScenario())} style={{ alignSelf: "flex-end" }} aria-pressed={!!trial}>{trial ? t("plan.scenario.hide") : t("plan.scenario.show")}</button>
       </div>
       {sc && <p className="muted">{t("plan.scenario.line", { description: sc.description, tests: sc.tests })}</p>}
       <ErrorBox error={err} onRetry={load} onDismiss={() => setErr(null)} />

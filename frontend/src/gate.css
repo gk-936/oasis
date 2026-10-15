@@ -1,0 +1,133 @@
+/* Login screen ("gate"). Palette = the app's own dark theme, so the first screen and the product match.
+   The tokens are redeclared here (not inherited) so the screen stays dark even when the OS is set to light;
+   the existing Login card picks them up through the global --surface / --ink / --brand variables. */
+
+@import "./dark.css";
+
+.gate {
+  position: fixed; inset: 0; z-index: 100; overflow-x: hidden; overflow-y: auto;
+  /* globe: colours, speed, tilt and start longitude (Mumbai) */
+  --g-bg: #06070d; --g-glow: #1d3f8c;
+  --g-dot: #4fc7d6; --g-arc: #3a97a5; --g-pulse: #e8f2f4; --g-horizon: #4fc7d6;
+  --g-turn: 75; --g-tilt: 22; --g-start: 72.87;   /* start longitude: Mumbai centred */
+
+  /* set by Globe.jsx: planet centre and radius, and the login panel's centre */
+  --cx: 70vw; --cy: 50vh; --R: 38vh; --px: 26vw; --py: 50vh;
+}
+
+/* ---------- planet ---------- */
+.globe { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.globe-wash {
+  position: absolute; inset: 0; opacity: 0; animation: gate-fade 0.8s ease-out forwards;
+  background: radial-gradient(circle calc(var(--R) * 2.4) at var(--cx) var(--cy),
+    color-mix(in srgb, var(--g-glow) 38%, transparent), transparent 70%);
+}
+.globe-stage { position: absolute; inset: 0; opacity: 0; animation: gate-rise 1.4s cubic-bezier(.16, 1, .3, 1) 0.15s forwards; }
+.globe-par { position: absolute; inset: 0; will-change: transform; }
+.globe-par canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* thin horizon glow just outside the limb; the element is 2.6R wide so the limb sits at 1/1.3 = 76.9% */
+.globe-atmo {
+  position: absolute; border-radius: 50%;
+  left: calc(var(--cx) - var(--R) * 1.3); top: calc(var(--cy) - var(--R) * 1.3);
+  width: calc(var(--R) * 2.6); height: calc(var(--R) * 2.6);
+  background: radial-gradient(circle closest-side, transparent 0, transparent 74%,
+    color-mix(in srgb, var(--g-horizon) 6%, transparent) 76%,
+    color-mix(in srgb, var(--g-horizon) 18%, transparent) 76.9%,
+    color-mix(in srgb, var(--g-horizon) 7%, transparent) 78%, transparent 81%);
+}
+/* frosted-glass city labels, placed by script */
+.globe .pill {
+  position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 8px; font: 600 10.5px/1 "Manrope", var(--sans); letter-spacing: 0.16em;
+  color: color-mix(in srgb, var(--ink-2) 90%, transparent);
+  background: rgba(79, 199, 214, 0.08); border: 1px solid rgba(79, 199, 214, 0.28); border-radius: 999px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--g-dot) 10%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1);
+  visibility: hidden; opacity: 0; will-change: transform, opacity;
+}
+.globe .pill svg { width: 11px; height: 11px; flex: none; opacity: 0.85; }
+
+/* ---------- layout ---------- */
+.gate-lang { position: absolute; z-index: 3; top: 24px; right: 32px; opacity: 0; animation: gate-fade 0.9s ease-out 1.4s forwards; }
+/* the panel is a fixed-size column in the left half, centred on --px / --py; its content is centred inside it, so when the
+   card opens the (taller) content grows both ways and the name rides up while the planet stays put */
+.gate-panel {
+  position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 46px;
+  width: min(400px, calc(100vw - 32px)); height: 540px;
+  left: var(--px); margin-left: calc(min(400px, calc(100vw - 32px)) / -2);
+  top: calc(var(--py) - 270px);
+}
+.gate-brand {
+  margin: 0; font: 800 clamp(30px, 3.1vw, 46px)/1 "Manrope", var(--sans);
+  text-align: center;
+  color: color-mix(in srgb, var(--ink) 94%, transparent); text-shadow: 0 0 28px var(--bg), 0 0 8px var(--bg);
+  opacity: 0; animation: gate-fade 0.9s ease-out 1.5s forwards;
+}
+.gate-slot { width: 100%; display: grid; justify-items: center; gap: 12px; }
+.gate-enter {
+  min-width: 168px; min-height: 46px; padding: 10px 30px; border-radius: 10px; font-size: 1rem; letter-spacing: .02em;
+  box-shadow: 0 10px 30px rgba(79, 199, 214, .18);
+}
+.gate-cancel {
+  background: none; border: 0; min-height: 0; padding: 4px 8px; font-weight: 500; font-size: .85rem; color: var(--muted);
+  text-shadow: 0 1px 8px var(--bg);
+}
+.gate-cancel:hover:not(:disabled) { color: var(--ink); filter: none; }
+.gate-foot {
+  position: fixed; z-index: 3; left: 32px; bottom: 22px; margin: 0; padding: 6px 12px; font-size: .76rem; letter-spacing: .02em;
+  color: var(--muted); background: rgba(6, 8, 16, .62); border: 1px solid var(--line); border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+
+/* ---------- the login card (existing Login markup, compact dark glass) ---------- */
+.gate .login { width: 100%; max-width: none; margin: 0; }
+.gate .login .card {
+  padding: 22px 22px 18px; border-radius: 16px; border: 1px solid rgba(79, 199, 214, 0.22);
+  background: rgba(10, 14, 30, 0.78); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.gate .roles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 16px; padding: 4px; border-radius: 12px; background: rgba(6, 8, 16, .7); border: 1px solid var(--line); }
+.gate .rolebtn {
+  min-height: 38px; padding: 6px 8px; align-items: center; justify-content: center; text-align: center; border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink-2); font-size: .92rem; font-weight: 600; transition: background .15s, color .15s;
+}
+.gate .rolebtn:hover:not(:disabled) { color: var(--ink); background: rgba(79, 199, 214, .1); }
+.gate .rolebtn.on { background: var(--brand-soft); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(79, 199, 214, .55); }
+.gate .login label { font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.gate .login input { min-height: 46px; margin-top: 6px; padding: 10px 13px; border-radius: 10px; background: rgba(6, 8, 16, .72); border: 1px solid var(--line-strong); font-size: 1rem; letter-spacing: .08em; }
+.gate .login input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(79, 199, 214, .22); }
+.gate .pass-field { position: relative; }
+.gate .pass-field input { padding-right: 52px; margin-top: 6px; }
+.gate .pass-toggle {
+  position: absolute; right: 6px; top: 12px; bottom: 6px; width: 38px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 8px;
+  background: transparent; border: 1px solid transparent; color: var(--ink-2);
+}
+.gate .pass-toggle svg { width: 20px; height: 20px; }
+.gate .pass-toggle:hover:not(:disabled), .gate .pass-toggle[aria-pressed="true"] { background: rgba(79, 199, 214, .14); color: var(--ink); filter: none; }
+.gate .login .row { margin: 14px 0 0; }
+.gate .login .row button[type="submit"] { flex: 1 1 100%; min-height: 46px; border-radius: 10px; font-size: 1rem; letter-spacing: .01em; }
+.gate .demo-note { margin: 12px 0 0; text-align: center; font-size: .8rem; color: var(--muted); }
+.gate .demo-note::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--brand); vertical-align: 1px; }
+.gate .notice, .gate .err { margin: 0 0 14px; }
+
+/* language switch (top right) */
+.gate .seg { border-color: var(--line-strong); border-radius: 10px; }
+.gate .seg button { color: var(--ink-2); min-height: 32px; padding: 3px 11px; font-size: .84rem; }
+.gate .seg button + button { border-left-color: var(--line-strong); }
+.gate .seg button[aria-pressed="true"] { background: var(--brand-soft); color: var(--ink); }
+
+/* ---------- motion ---------- */
+@keyframes gate-fade { to { opacity: 1; } }
+@keyframes gate-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes gate-rise { from { opacity: 0; transform: translateY(8vh) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .globe-wash, .globe-stage, .gate-brand, .gate-lang { animation: none; opacity: 1; transform: none; }
+}
+
+/* ---------- small screens ---------- */
+@media (max-width: 640px) {
+  .gate-lang { top: 16px; right: 16px; }
+  .gate-brand { letter-spacing: 0.36em; text-indent: 0.36em; }
+  .gate .login .card { padding: 20px 18px 16px; }
+  .gate-foot { left: 16px; right: 16px; bottom: 14px; text-align: center; border-radius: 12px; }
+}

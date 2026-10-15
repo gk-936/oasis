@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { api, useGuard } from "../api.js";
-import { SAMPLE_ATTACK } from "../common.jsx";
+import { Card, SAMPLE_ATTACK } from "../common.jsx";
 import { t } from "../i18n/index.js";
 import { announce, cny, ErrorBox, Loading, Mock } from "../ui.jsx";
 
@@ -9,7 +9,7 @@ function Verdict({ v }) {
     <div className="card">
       <p><b className={v.blocked ? "ok" : "bad"}>{v.blocked ? t("brk.blocked") : t("brk.got_through")}</b> · {v.status} · {t("brk.rules")}: <code>{v.rules.join(", ") || "-"}</code></p>
       {v.reasons?.length > 0 && <ul>{v.reasons.map((r, i) => <li key={i}>{String(r)}</li>)}</ul>}
-      {v.why_card && <details><summary>{t("brk.why")}</summary><pre className="small">{JSON.stringify(v.why_card, null, 2)}</pre></details>}
+      {v.why_card && <details><summary>{t("brk.why")}</summary><Card card={v.why_card} /></details>}
     </div>
   );
 }
@@ -46,7 +46,7 @@ export function BreakIt() {
             <div className="kpi"><div className="k">{t("brk.saved")}</div><div className="v">{cny(sb.cny_saved, 2)}</div></div>
             <div className="kpi"><div className="k">{t("brk.lost")}</div><div className="v">{cny(sb.money_lost, 2)}</div></div>
           </div>
-          <ul className="small">{gen.variants.map((r) => <li key={r.id}>#{r.id} {r.kind}: {r.blocked ? t("brk.blocked") : t("brk.got_through")} ({r.rules.join(", ") || "-"})</li>)}</ul>
+          <ul className="small">{gen.variants.map((r) => <li key={r.id}>#{r.id} {String(r.kind).replace(/_/g, " ")}: {r.blocked ? t("brk.blocked") : t("brk.got_through")} ({r.rules.join(", ") || "-"})</li>)}</ul>
         </div>
       )}
     </section>

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { api, short4, signedApprove, upload, useGuard } from "../api.js";
 import { ApprovalActions, Card, Outcome, SAMPLE_INVOICE, TOPUP_TEXT } from "../common.jsx";
 import { t, tl } from "../i18n/index.js";
-import { ErrorBox, Mock, cny } from "../ui.jsx";
+import { ErrorBox, Mock, money } from "../ui.jsx";
 
 /* Messages the UI writes itself are stored as {k, vars} and translated when drawn, so they follow a language switch;
    the agent's own replies (r.reply) arrive already written in the language of the request. */
@@ -37,14 +38,31 @@ function Channels() {
   );
 }
 
-export function Chat({ refresh, openProof, s }) {
+const SUGG_ICON = {
+  rent: <path d="m3 11 9-8 9 8M5 10v10h5v-6h4v6h5V10" />,
+  tuition: <path d="m2 9 10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.500 6-3v-4.500M22 9v6" />,
+  owe: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />,
+  balance: <path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14.500h.01" />,
+  rate: <path d="M7 8h13M16 4l4 4-4 4M17 16H4M8 12l-4 4 4 4" />,
+  runway: <path d="m3 7 6 6 4-4 8 8M21 11v6h-6" />,
+};
+const Gly = ({ children, size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+);
+/* Small data tokens inside a reply (a rate, the MOCK label, a date) are drawn as monospace pills. */
+const TELE = /(INR\s*(?:→|->)\s*CNY\s+[\d.]+|MOCK|模拟|\d{4}-\d{2}-\d{2})/g;
+const Rich = ({ text }) => String(text).split(TELE).map((x, i) => (i % 2 ? <code key={i} className="tele">{x}</code> : x));
+
+export function Chat({ refresh, openProof, s, onBack }) {
   const [log, setLog] = useState([GREETING]);
   const [msg, setMsg] = useState("");
   const [thinking, setThinking] = useState(false);
   const [resolved, setResolved] = useState(() => new Set());
   const { busy, err, setErr, run } = useGuard();
   const end = useRef(null);
-  useEffect(() => { end.current?.scrollIntoView?.({ block: "nearest" }); }, [log, thinking]);
+  useEffect(() => { end.current?.scrollIntoView?.({ behavior: "smooth", block: "end" }); }, [log, thinking]);
+  const active = log.length > 1;                                // a conversation is under way
+  const toPrompts = () => { setLog([GREETING]); setResolved(new Set()); setMsg(""); setErr(null); };   // back to the starter view (the screen only; nothing server-side changes)
   const say = (m) => { setLog((l) => [...l, m]); };
   const send = (text) => run(async () => {
     if (!text.trim()) return;
@@ -80,6 +98,18 @@ export function Chat({ refresh, openProof, s }) {
     say({ role: "oasis", k: "chat.topup", vars: { status: o.status }, outcome: o }); refresh();
   });
   const fileRef = useRef(null);
+  const box = useRef(null), toolsRef = useRef(null);
+  const [tools, setTools] = useState(false);            // the "+" menu: sample invoice, email upload, top-up, other channels
+  const [showChannels, setShowChannels] = useState(false);
+  const fit = (el) => { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 200)}px`; };   // grows with the text
+  useEffect(() => { if (!msg && box.current) box.current.style.height = "auto"; }, [msg]);
+  useEffect(() => {
+    if (!tools) return undefined;
+    const off = (e) => { if (!toolsRef.current?.contains(e.target)) setTools(false); };
+    const esc = (e) => { if (e.key === "Escape") setTools(false); };
+    document.addEventListener("pointerdown", off); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", off); document.removeEventListener("keydown", esc); };
+  }, [tools]);
   const sendEmail = (file) => run(async () => {
     if (!file) return;
     say({ role: "student", k: "chat.email.said", vars: { name: file.name } }); setThinking(true);
@@ -106,32 +136,57 @@ export function Chat({ refresh, openProof, s }) {
     return t(m.k, v) + (m.k === "chat.email.checked" && m.vars?.notes ? ` (${m.vars.notes})` : "");
   };
   return (
-    <section aria-labelledby="chat-h" className="stack">
-      <h2 id="chat-h">{t("chat.title")}</h2>
-      <div className="chat" role="log" aria-label={t("chat.log.aria")}>
-        {log.map((m, i) => (
-          <div key={i} className={`msg ${m.role}${m.meta?.status === "refused" ? " refused" : ""}`} data-testid={m.meta?.status === "refused" ? "chat-refusal" : undefined}>
-            {m.meta?.status === "refused" && <p className="refusal-label"><span aria-hidden="true">🛡</span> <b>{t("chat.refused")}</b></p>}
-            <p>{text(m)}</p>
-            {m.meta?.needs?.length > 0 && <p className="muted small">{m.meta.needs.filter((n) => n.endsWith("_signature")).map((n) => t(`chat.needs.${n}`)).join(" · ")}</p>}
-            {i === log.length - 1 && !busy && chips(m).length > 0 && (
-              <div className="row chips" role="group" aria-label={t("chat.waiting.aria")}>
-                {chips(m).map(([k, fn]) => <button key={k} type="button" className="ghost chip" onClick={fn}>{t(`chat.${k}`)}</button>)}
-              </div>)}
-            {m.outcome && <Outcome o={m.outcome} onProof={openProof} onRecovery={recover}
-              {...(m.outcome.draft && resolved.has(`${m.outcome.pending_id}:${m.outcome.draft.draft_hash}`) ? {} : { onApprove: approve, onPayAgain: payAgain, onDismiss: dismiss })} />}
-          </div>
-        ))}
-        {thinking && <div className="msg oasis pending" role="status"><p>{t("chat.thinking")}</p></div>}
-        <div ref={end} />
-      </div>
-      <ErrorBox error={err} onDismiss={() => setErr(null)} />
-      {log.length === 1 && (
-        <div className="card" data-testid="chat-suggestions"><p className="muted small" style={{ marginTop: 0 }}>{t("chat.sugg.title")}</p>
-          <div className="row chips">
-            {SUGGESTIONS.map((k) => <button key={k} type="button" className="ghost chip" disabled={busy} onClick={() => send(t(`chat.sugg.${k}`))}>{t(`chat.sugg.${k}`)}</button>)}
-          </div>
-        </div>)}
+    <MotionConfig reducedMotion="user">
+    <section aria-labelledby="chat-h" className="chatpage">
+      <header className="chat-top">
+        <button type="button" className="chat-back" onClick={() => (active ? toPrompts() : onBack?.())}>
+          <Gly size={15}><path d="M19 12H5M11 6l-6 6 6 6" /></Gly>{t("chat.back")}
+        </button>
+        <h2 id="chat-h">{t("chat.title")}</h2>
+        <AnimatePresence>
+          {active && (
+            <motion.button type="button" className="chat-back chat-prompts" onClick={toPrompts}
+              initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}>
+              <Gly size={15}><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /></Gly>{t("chat.prompts")}
+            </motion.button>)}
+        </AnimatePresence>
+      </header>
+
+      <div className="chat-scroll">
+        <div className="chat" role="log" aria-label={t("chat.log.aria")}>
+          {log.map((m, i) => (
+            <motion.div key={i} className={`msg-row ${m.role}`} initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 26 }}>
+              {m.role === "oasis" && (
+                <span className="ai-av" aria-hidden="true"><Gly size={17}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.200L5 10l5.200-1.800z" /></Gly></span>)}
+              <div className={`msg ${m.role}${m.meta?.status === "refused" ? " refused" : ""}`} data-testid={m.meta?.status === "refused" ? "chat-refusal" : undefined}>
+                {m.meta?.status === "refused" && <p className="refusal-label"><span aria-hidden="true">🛡</span> <b>{t("chat.refused")}</b></p>}
+                <p>{m.role === "oasis" ? <Rich text={text(m)} /> : text(m)}</p>
+                {m.meta?.needs?.length > 0 && <p className="muted small">{m.meta.needs.filter((n) => n.endsWith("_signature")).map((n) => t(`chat.needs.${n}`)).join(" · ")}</p>}
+                {i === log.length - 1 && !busy && chips(m).length > 0 && (
+                  <div className="row chips" role="group" aria-label={t("chat.waiting.aria")}>
+                    {chips(m).map(([k, fn]) => <button key={k} type="button" className="ghost chip" onClick={fn}>{t(`chat.${k}`)}</button>)}
+                  </div>)}
+                {m.outcome && <Outcome o={m.outcome} onProof={openProof} onRecovery={recover}
+                  {...(m.outcome.draft && resolved.has(`${m.outcome.pending_id}:${m.outcome.draft.draft_hash}`) ? {} : { onApprove: approve, onPayAgain: payAgain, onDismiss: dismiss })} />}
+              </div>
+            </motion.div>
+          ))}
+          {thinking && (
+            <div className="msg-row oasis"><span className="ai-av" aria-hidden="true"><Gly size={17}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.200L5 10l5.200-1.800z" /></Gly></span>
+              <div className="msg oasis pending" role="status"><p>{t("chat.thinking")}</p></div></div>)}
+          <AnimatePresence>
+            {!active && (
+              <motion.div className="suggest" data-testid="chat-suggestions" exit={{ opacity: 0, y: 10, transition: { duration: 0.18 } }}>
+                <p className="suggest-h">{t("chat.sugg.title")}</p>
+                <div className="suggest-grid">
+                  {SUGGESTIONS.map((k) => (
+                    <button key={k} type="button" className="suggest-card" disabled={busy} onClick={() => send(t(`chat.sugg.${k}`))}>
+                      <span className="sg-ico"><Gly>{SUGG_ICON[k]}</Gly></span><span className="sg-t">{t(`chat.sugg.${k}`)}</span><i aria-hidden="true">→</i>
+                    </button>))}
+                </div>
+              </motion.div>)}
+          </AnimatePresence>
+          <ErrorBox error={err} onDismiss={() => setErr(null)} />
       {(() => {
         const inLog = new Set(log.map((m) => m.outcome?.pending_id).filter(Boolean));
         const waiting = (s?.pending || []).filter((p) => !inLog.has(p.id) && (p.required.includes("student") || p.required.includes("duplicate_confirmation")));
@@ -140,26 +195,47 @@ export function Chat({ refresh, openProof, s }) {
           <div className="card" aria-label={t("chat.waiting.aria")}><h3 style={{ marginTop: 0 }}>{t("chat.waiting.title")}</h3>
             {waiting.map((p) => (
               <div key={p.id} className="stack">
-                <p><b className="money">{cny(p.fields?.amount, 2)}</b> {p.fields?.purpose ? t("out.to.purpose", { payee: p.fields?.payee_name, purpose: tl("purpose", p.fields.purpose) }) : t("out.to", { payee: p.fields?.payee_name })}</p>
+                <p><b className="money">{money(p.fields?.amount, p.fields?.currency, 2)}</b> {p.fields?.purpose ? t("out.to.purpose", { payee: p.fields?.payee_name, purpose: tl("purpose", p.fields.purpose) }) : t("out.to", { payee: p.fields?.payee_name })}</p>
                 <Card card={p.card} />
                 <ApprovalActions pid={p.id} draft={p.draft} required={p.required} duplicate={p.duplicate} busy={busy}
                   onApprove={approve} onPayAgain={(id) => payAgain(id, null)} onDismiss={(id) => dismiss(id, null)} onProof={openProof} />
               </div>))}
           </div>);
       })()}
-      <label>{t("chat.input.label")}
-        <textarea rows={6} value={msg} onChange={(e) => setMsg(e.target.value)}
-          onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !busy) send(msg); }}
-          placeholder={t("chat.input.placeholder")} /></label>
-      <div className="row">
-        <button disabled={busy || !msg.trim()} onClick={() => send(msg)}>{t("chat.send")}</button>
-        <button className="ghost" disabled={busy} onClick={() => setMsg(SAMPLE_INVOICE)}>{t("chat.sample")}</button>
-        <button className="ghost" disabled={busy} onClick={() => send(t("chat.ask.msg"))}>{t("chat.ask")}</button>
-        <button className="ghost" disabled={busy} onClick={topup}>{t("chat.topup.btn")} <Mock /></button>
-        <button className="ghost" disabled={busy} onClick={() => fileRef.current?.click()} data-testid="chat-email-btn">{t("chat.email.btn")}</button>
-        <input ref={fileRef} type="file" accept=".eml,message/rfc822" hidden data-testid="chat-email-file" onChange={(e) => sendEmail(e.target.files?.[0])} />
+          <div ref={end} />
+        </div>
       </div>
-      <Channels />
+
+      <div className="chat-dock">
+      {showChannels && <Channels />}
+      <motion.form layout transition={{ type: "spring", stiffness: 260, damping: 30 }} className="composer" onSubmit={(e) => { e.preventDefault(); if (!busy && msg.trim()) send(msg); }}>
+        <label htmlFor="chat-msg" className="sr-only">{t("chat.input.label")}</label>
+        <textarea id="chat-msg" ref={box} rows={1} value={msg} placeholder={t("chat.input.placeholder")}
+          onChange={(e) => { setMsg(e.target.value); fit(e.target); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (!busy && msg.trim()) send(msg); } }} />
+        <div className="composer-bar">
+          <div className="composer-tools" ref={toolsRef}>
+            <button type="button" className="composer-plus" aria-haspopup="menu" aria-expanded={tools} aria-label={t("chat.tools")} onClick={() => setTools((v) => !v)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+            {tools && (
+              <div className="composer-menu" role="menu">
+                <button type="button" role="menuitem" disabled={busy} onClick={() => { setMsg(SAMPLE_INVOICE); setTools(false); setTimeout(() => { if (box.current) { box.current.focus(); fit(box.current); } }, 0); }}>{t("chat.sample")}</button>
+                <button type="button" role="menuitem" disabled={busy} onClick={() => { setTools(false); send(t("chat.ask.msg")); }}>{t("chat.ask")}</button>
+                <button type="button" role="menuitem" disabled={busy} onClick={() => { setTools(false); topup(); }}>{t("chat.topup.btn")} <Mock /></button>
+                <button type="button" role="menuitem" disabled={busy} data-testid="chat-email-btn" onClick={() => { setTools(false); fileRef.current?.click(); }}>{t("chat.email.btn")}</button>
+                <button type="button" role="menuitem" onClick={() => { setTools(false); setShowChannels((v) => !v); }}>{t("ch.title")}</button>
+              </div>)}
+            <span className="composer-hint">{t("chat.attach")}</span>
+            <input ref={fileRef} type="file" accept=".eml,message/rfc822" hidden data-testid="chat-email-file" onChange={(e) => sendEmail(e.target.files?.[0])} />
+          </div>
+          <button type="submit" className="composer-send" disabled={busy || !msg.trim()} aria-label={t("chat.send")} title={t("chat.send")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" /></svg>
+          </button>
+        </div>
+      </motion.form>
+      </div>
     </section>
+    </MotionConfig>
   );
 }

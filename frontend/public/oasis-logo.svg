@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="108 105 782 138" role="img" aria-labelledby="oasis-t">
+  <title id="oasis-t">OASIS</title>
+  <defs>
+    <path id="oring" fill-rule="evenodd" d="M113,175a65,65 0 1 0 130,0a65,65 0 1 0 -130,0ZM137,175a41,41 0 1 1 82,0a41,41 0 1 1 -82,0Z"/>
+    <clipPath id="oTL"><polygon points="-36.61,384.66 387.66,-39.61 175.53,-251.74 -248.74,172.53"/></clipPath>
+    <clipPath id="oBR"><polygon points="-31.66,389.61 392.61,-34.66 604.74,177.47 180.47,601.74"/></clipPath>
+  </defs>
+
+  <!-- O: global split. Ring cut on a 45deg line (7px gap); halves pushed 4px apart along the cut's normal -->
+  <g fill="#FFFFFF">
+    <g clip-path="url(#oTL)"><use href="#oring" transform="translate(-2.83 -2.83)"/></g>
+    <g clip-path="url(#oBR)"><use href="#oring" transform="translate(2.83 2.83)"/></g>
+  </g>
+
+  <!-- A: two legs, flat apex, no crossbar; teal transfer chevron 5px clear of both legs -->
+  <g fill="#FFFFFF">
+    <polygon points="317,240 343,240 389,110 363,110"/>
+    <polygon points="427,240 453,240 407,110 381,110"/>
+  </g>
+  <path d="M364.51,214.49L385,194L405.49,214.49" fill="none" stroke="#00F5D4" stroke-width="15" stroke-linejoin="miter" stroke-miterlimit="4" stroke-linecap="butt"/>
+
+  <!-- S I S: solid geometric sans, 24px stems, 130px tall -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="butt">
+    <path d="M599.39,130.74A31,20.5 0 1 0 574,175A31,20.5 0 1 1 548.61,219.26"/>
+    <path d="M869.39,130.74A31,20.5 0 1 0 844,175A31,20.5 0 1 1 818.61,219.26"/>
+  </g>
+  <rect x="697" y="110" width="24" height="130" fill="#FFFFFF"/>
+</svg>

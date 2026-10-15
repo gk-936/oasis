@@ -6,15 +6,18 @@ import { ErrorBox, Loading, Mock, Pill } from "../ui.jsx";
 /* More corridors beyond INR->CNY: compare routes on the amount the recipient must receive, and see the rules with their status. MOCK prices. */
 const num = (n, d = 2) => Number(n).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
 
-export function Corridors() {
+export function Corridors({ initial, onReset }) {
   const [list, setList] = useState(null);
-  const [cid, setCid] = useState("INR-USD");
+  const [cid, setCid] = useState(initial || "INR-USD");
+  useEffect(() => { if (initial) { setCid(initial); setRes(null); setChk(null); } }, [initial]);
   const [required, setRequired] = useState(5000);
   const [res, setRes] = useState(null);
   const [chk, setChk] = useState(null);
   const { busy, err, setErr, run } = useGuard();
   useEffect(() => { api("/corridors").then((r) => { setList(r.corridors); }).catch(setErr); }, [setErr]);
   const c = list?.find((x) => x.id === cid);
+  const dirty = !!(res || chk) || cid !== "INR-USD" || +required !== 5000;
+  const clear = () => { setRes(null); setChk(null); setErr(null); setCid("INR-USD"); setRequired(5000); onReset?.(); };
   const go = () => run(async () => {
     const r = await api("/corridors/compare", { corridor: cid, required: +required });
     setRes(r);
@@ -30,6 +33,7 @@ export function Corridors() {
           {list.map((x) => <option key={x.id} value={x.id}>{x.from} → {x.to}</option>)}</select></label>
         <label>{t("co.required", { cur: c?.to })}<input type="number" min={1} value={required} onChange={(e) => setRequired(e.target.value)} data-testid="co-required" /></label>
         <button disabled={busy || !(+required > 0)} onClick={go} style={{ alignSelf: "flex-end" }} data-testid="co-go">{t("co.compare")}</button>
+        {dirty && <button type="button" className="ghost clear-x" onClick={clear} style={{ alignSelf: "flex-end" }} aria-label={t("co.clear")} title={t("co.clear")}>✕ <span>{t("co.clear")}</span></button>}
       </div>
       <ErrorBox error={err} onDismiss={() => setErr(null)} />
       {res && <>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { api } from "../api.js";
+import { benchReport, planReport, simReport } from "../reports.js";
+import { api, downloadPdf } from "../api.js";
 import { t, tl, useLang } from "../i18n/index.js";
 import { cny, Empty, ErrorBox, fmt, Mock, R, Skeleton } from "../ui.jsx";
 
@@ -50,9 +51,17 @@ export function Numbers() {
         </>
       )}
       {b && !bm && <Empty title={t("num.empty.title")}>{R("num.empty.text")}</Empty>}
-      {b?.planning_md && <details><summary>{b.planning?.live ? t("num.planning.live", { n: b.planning.live.summary.scenarios_run }) : t("num.planning")}</summary>{english}<pre className="md">{b.planning_md}</pre></details>}
-      {b?.benchmark_md && <details><summary>{t("num.full")}</summary>{english}<pre className="md">{b.benchmark_md}</pre></details>}
-      {b?.simulation_md && <details><summary>{t("num.sim")}</summary>{english}<pre className="md">{b.simulation_md}</pre></details>}
+      {b && (
+        <div className="card reports">
+          <h3>{t("num.reports.title")}</h3>
+          <p className="muted small">{t("num.reports.text")}</p>
+          <ul className="reportlist">
+            {[[t("num.planning"), "plan-quality-evaluation", planReport], [t("num.full"), "full-benchmark-report", benchReport], [t("num.sim"), "student-outcome-simulation", simReport]]
+              .map(([title, file, build]) => ({ title, file, html: build(b) })).filter((x) => x.html).map((x) => (
+                <li key={x.file}><span>{x.title}</span>
+                  <button type="button" className="ghost" onClick={() => downloadPdf(x.html, x.file, { heading: x.title, subtitle: t("num.pdf.sub"), note: t("num.pdf.note") })}>{t("num.reports.pdf")}</button></li>))}
+          </ul>
+        </div>)}
     </section>
   );
 }

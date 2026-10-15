@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { has, locale, t, tl, tm } from "./i18n/index.js";
+import { motion } from "motion/react";
 
 /* ---------------------------------------------------------------- formatting
    Numbers and dates follow the active language, with one deliberate exception: rupees always use Indian digit grouping
@@ -10,6 +11,11 @@ export const fmt = (n, d = 0) => num(n).toLocaleString(locale(), { maximumFracti
 export const inr = (n, d = 0) => `₹${num(n).toLocaleString("en-IN", { minimumFractionDigits: d, maximumFractionDigits: d })}`;
 /** Yuan with standard grouping (1,234,567). */
 export const cny = (n, d = 0) => `¥${num(n).toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+const SYMBOL = { CNY: "¥", INR: "₹", USD: "$", EUR: "€" };
+/** An amount in its own currency: ¥ yuan, ₹ rupees (Indian grouping), $ dollars, € euros. Unknown or missing currency means yuan. */
+export const money = (n, cur = "CNY", d = 0) => (cur === "INR" ? inr(n, d) : cur === "CNY" || !SYMBOL[cur]
+  ? (SYMBOL[cur] ? cny(n, d) : `${cur} ${num(n).toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d })}`)
+  : `${SYMBOL[cur]}${num(n).toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d })}`);
 export const pct = (x, d = 0) => `${(num(x) * 100).toFixed(d)}%`;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -168,6 +174,30 @@ const KEYS = ["Understand", "Plan", "Verify", "Commit", "Execute", "Prove"];
 const ZH_STEP = { 理解: "Understand", 规划: "Plan", 验证: "Verify", 决定: "Commit", 执行: "Execute", 证明: "Prove" };
 const stepLabel = (i) => t(`pipe.${STEPS[i]}`);
 
+/** Plain-language reading of the executor's technical stop reasons (the raw text stays available as a tooltip / in the proof).
+    Returns [{ text, got?, signed? }]; empty when nothing is recognised. Works on the English and the Chinese trace. */
+const FIELD_KEY = { account_ref: "account", amount: "amount", payee_id: "payee", currency: "currency", purpose: "purpose" };
+export function parseReasons(raw) {
+  const s = String(raw ?? ""), out = [];
+  const diff = /(\w+)\s*(?:differs from signed intent|与签名意图不一致)\s*[（(]\s*['"]?([^'"\s)）]+)['"]?\s*(?:vs|对)\s*['"]?([^'"\s)）]+)['"]?\s*[）)]/g;
+  let m;
+  while ((m = diff.exec(s))) out.push({ text: t("plain.differs", { what: has(`plain.f.${FIELD_KEY[m[1]]}`) ? t(`plain.f.${FIELD_KEY[m[1]]}`) : m[1] }), got: m[2], signed: m[3] });
+  if (/signature invalid|签名无效/.test(s)) out.push({ text: t("plain.sig") });
+  if (/intent expired|签名意图已过期/.test(s)) out.push({ text: t("plain.expired") });
+  if (/nonce already used|随机数已被使用/.test(s)) out.push({ text: t("plain.replay") });
+  const can = /(?:canary tripped|诱饵警报被触发)[:：]\s*([\w.-]+)/.exec(s);
+  if (can) out.push({ text: t("plain.canary", { kind: can[1] }) });
+  if (/no valid signature over this payment|没有针对这笔付款的有效签名/.test(s)) out.push({ text: t("plain.nosig") });
+  if (!out.length && /matches signed intent|与签名意图一致/.test(s)) out.push({ text: t("plain.ok") });
+  return out;
+}
+/** Short, readable sentence for an Execute trace line; falls back to the line with its list brackets removed. */
+export function plainExecute(line) {
+  const r = parseReasons(line);
+  if (r.length) return r.map((x) => x.text).join(" ");
+  return String(line ?? "").replace(/^\s*\w+\s*\[(.*)\]\s*$/, "$1").replace(/^['"]|['"]$/g, "");
+}
+
 /** Derive the per-step trail of one payment outcome from its trace lines, status and verification. In Chinese the API sends
     the trace already translated (`trace_localized`); the step is recognised from either spelling. */
 export function trailOf(o) {
@@ -187,11 +217,11 @@ export function trailOf(o) {
   const f = o.fields, dec = o.decision, ver = o.verification;
   const nice = {
     Understand: () => o.canary_hits?.length ? t("pipe.d.decoy", { kinds: o.canary_hits.map((h) => h.kind).join(", ") })
-      : f ? t(o.risk ? "pipe.d.read.risk" : "pipe.d.read", { amount: cny(f.amount), payee: f.payee_name, risk: o.risk?.score }) : "",
+      : f ? t(o.risk ? "pipe.d.read.risk" : "pipe.d.read", { amount: money(f.amount, f.currency), payee: f.payee_name, risk: o.risk?.score }) : "",
     Plan: () => (by.Plan?.[0] || (o.savings?.route ? route(o.savings.route) : t("pipe.d.single"))),
     Verify: () => ver ? `${tl("level", ver.level)}${ver.account_changed ? t("pipe.d.acct_differs") : ""}${ver.reasons?.[0] ? `${t("misc.colon")}${ver.reasons[0]}` : ""}` : "",
     Commit: () => dec ? `${dec.action === "hold" ? t("pipe.d.held") : tl("action", dec.action)} ${t("pipe.d.by", { rule: dec.rule })}${dec.required_approvals?.length ? `${t("misc.colon")}${t("pipe.d.needs", { what: needsText(dec.required_approvals) })}` : ""}` : "",
-    Execute: () => by.Execute?.[0] || "",
+    Execute: () => (by.Execute?.[0] ? plainExecute(by.Execute[0]) : ""),
     Prove: () => by.Prove?.[0] || "",
   };
   return KEYS.map((k, i) => {
@@ -223,7 +253,7 @@ export function trailOf(o) {
 export function PipelineTrail({ outcome }) {
   if (!outcome?.trace?.length) return null;
   const steps = trailOf(outcome);
-  const max = locale().startsWith("en") ? 96 : 60;
+  const max = locale().startsWith("en") ? 150 : 90;
   return (
     <div>
       <ol className="trail" aria-label={t("pipe.aria")}>
@@ -246,5 +276,68 @@ export function MiniTrail({ items }) {
     <ol className="minitrail" aria-label={t("pipe.mini.aria")}>
       {STEPS.map((k, i) => <li key={k} className={items?.includes(k) ? "on" : ""}>{stepLabel(i)}{items?.includes(k) && <span className="sr-only"> {t("pipe.mini.exercised")}</span>}</li>)}
     </ol>
+  );
+}
+
+/** Sliding-pill segmented control (Framer Motion shared layout). `id` must be unique per control on the page. */
+export function SubNav({ id, items, value, onChange, label }) {
+  return (
+    <div className="subnav" role="group" aria-label={label}>
+      {items.map(([k, text, icon]) => (
+        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}>
+          {value === k && <motion.span layoutId={id} className="subnav-pill" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+          {icon && <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>}
+          <span>{text}</span>
+        </button>))}
+    </div>
+  );
+}
+
+/** Renderer for the saved benchmark reports (Markdown): headings, tables, lists, paragraphs; inline `code` and **bold**.
+    Each "## " section becomes a collapsible panel (the first one open), so a long report reads like a web page, not a document.
+    Table columns of numbers are right-aligned, text columns left-aligned. */
+const NUMERIC = /^~?[\d.,]+(\s*(\/|of|vs)\s*[\d.,]+)?\s*(\(\d+%\))?%?$/;
+function mdBlocks(lines, key) {
+  const out = [];
+  const cells = (l) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (!l.trim()) continue;
+    const h = /^(#{1,4})\s+(.*)$/.exec(l);
+    if (h) { const Tag = `h${Math.min(h[1].length + 2, 5)}`; out.push(<Tag key={`${key}${i}`}>{rich(h[2])}</Tag>); continue; }
+    if (l.trim().startsWith("|")) {
+      const rows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) { if (!/^[\s|:-]+$/.test(lines[i])) rows.push(cells(lines[i])); i++; }
+      i--;
+      const [head, ...body] = rows;
+      const num = head.map((_, k) => k > 0 && body.length > 0 && body.every((r) => NUMERIC.test((r[k] || "").replace(/,/g, ""))));
+      out.push(<div className="tbl md-tbl" key={`${key}${i}`}><table><thead><tr>{head.map((c, k) => <th key={k} className={num[k] ? "r" : ""}>{rich(c)}</th>)}</tr></thead>
+        <tbody>{body.map((r, a) => <tr key={a}>{head.map((_, k) => <td key={k} className={num[k] ? "r" : ""}>{rich(r[k] || "")}</td>)}</tr>)}</tbody></table></div>);
+      continue;
+    }
+    if (/^\s*[-*]\s+/.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*[-*]\s+/, "")); i++; }
+      i--;
+      out.push(<ul key={`${key}${i}`}>{items.map((x, k) => <li key={k}>{rich(x)}</li>)}</ul>);
+      continue;
+    }
+    const para = [l];
+    while (i + 1 < lines.length && lines[i + 1].trim() && !/^(#|\||\s*[-*]\s)/.test(lines[i + 1])) para.push(lines[++i]);
+    out.push(<p key={`${key}${i}`}>{rich(para.join(" "))}</p>);
+  }
+  return out;
+}
+export function Md({ text, allOpen }) {
+  const parts = String(text || "").split(/\n(?=## )/);
+  const intro = parts[0].startsWith("## ") ? [] : parts.shift().split("\n");
+  return (
+    <div className="mdview">
+      {mdBlocks(intro, "i")}
+      {parts.map((sec, n) => {
+        const [title, ...rest] = sec.split("\n");
+        return <details key={n} className="mdsec" open={allOpen || n === 0}><summary>{rich(title.replace(/^##\s+/, ""))}</summary><div className="mdsec-body">{mdBlocks(rest, `s${n}`)}</div></details>;
+      })}
+    </div>
   );
 }

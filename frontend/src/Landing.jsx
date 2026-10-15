@@ -8,7 +8,7 @@ const ROLE_KEY = "oasis.role";
 export function storedRole() {
   try { const r = localStorage.getItem(ROLE_KEY); return ROLES.includes(r) ? r : null; } catch { return null; }
 }
-function saveRole(r) { try { localStorage.setItem(ROLE_KEY, r); } catch { /* storage blocked: lasts for this page */ } }
+export function saveRole(r) { try { localStorage.setItem(ROLE_KEY, r); } catch { /* storage blocked: lasts for this page */ } }
 
 /** Misty valley drawn as inline SVG: no image files, nothing fetched, works under the strict CSP. Deterministic (no Math.random). */
 function ridge(seed, base, amp, step = 40) {

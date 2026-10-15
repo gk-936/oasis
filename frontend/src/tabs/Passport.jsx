@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { api, downloadJson, useGuard } from "../api.js";
+import { api, downloadPdf, useGuard } from "../api.js";
+import { esc, kpis, section, table } from "../reports.js";
 import { Card, RateBadge } from "../common.jsx";
 import { has, t, tl, tm, tp, useLang } from "../i18n/index.js";
-import { announce, cny, Empty, ErrorBox, fmt, fmtDate, Hash, inr, Loading, Mock, pct, Pill, R, Skeleton } from "../ui.jsx";
+import { announce, cny, Empty, ErrorBox, fmt, fmtDate, Hash, inr, Loading, Mock, pct, Pill, R, Skeleton, SubNav } from "../ui.jsx";
 import { AgentPlan } from "./plan.jsx";
 import { TrustPass } from "./trustpass.jsx";
 import { CreditGrowth } from "./CreditGrowth.jsx";
-import { Corridors } from "./Corridors.jsx";
 import { FxPlan } from "./FxPlan.jsx";
 
 /* ------------------------------------------------------------------ Spending + Tier-1 autonomy */
-function Spending({ s, refresh }) {
+export function Spending({ s, refresh }) {
   const sp = s.spending;
   const [desc, setDesc] = useState("Luckin coffee");
   const [amt, setAmt] = useState("18");
@@ -20,12 +20,15 @@ function Spending({ s, refresh }) {
   const simulate = () => run(async () => { await api("/spending/simulate", { days: 21 }); announce(t("spend.announce.import")); refresh(); });
   const add = () => run(async () => { await api("/spending/add", { desc, amount_cny: parseFloat(amt) || 0 }); announce(t("spend.announce.add")); refresh(); });
   return (
-    <div className="card">
+    <div className="card pp-card spend">
       <div className="hd"><h3>{t("spend.title")}</h3><Mock /></div>
-      <p><Pill status={sp.basis === "own_pattern" ? "paid" : "held"}>{sp.basis === "own_pattern" ? t("spend.own") : t("spend.cold")}</Pill>{" "}
-        <b className="money">{cny(sp.monthly_cny)}</b>{t("spend.permonth")} · {sp.basis_text}</p>
-      <p className="muted small">{tp("spend.tx", sp.n_transactions, { d: sp.days_of_history })}{" "}
-        {sp.basis === "cold_start" ? sp.note : t("spend.trend", { f: sp.trend_factor, e: sp.forecast_error_pct != null ? `${sp.forecast_error_pct}%` : t("misc.na") })}</p>
+      <div className="spend-kpis">
+        <div><span>{t("spend.kpi.monthly")}</span><b>{cny(sp.monthly_cny)}</b><small>{sp.basis === "own_pattern" ? t("spend.own") : t("spend.cold")}</small></div>
+        <div><span>{t("spend.kpi.trend")}</span><b>{sp.basis === "cold_start" ? t("misc.na") : `×${sp.trend_factor}`}</b><small>{sp.basis_text}</small></div>
+        <div><span>{t("spend.kpi.error")}</span><b>{sp.forecast_error_pct != null ? `${sp.forecast_error_pct}%` : t("misc.na")}</b><small>{t("spend.kpi.error.sub")}</small></div>
+        <div><span>{t("spend.kpi.runway")}</span><b>{s.runway_months != null ? t("home.months", { n: s.runway_months }) : t("misc.na")}</b><small>{tp("spend.tx", sp.n_transactions, { d: sp.days_of_history })}</small></div>
+      </div>
+      {sp.basis === "cold_start" && sp.note && <p className="muted small">{sp.note}</p>}
       {cats.length === 0 && <Empty title={t("spend.empty.title")}>{t("spend.empty.text")}</Empty>}
       {cats.map(([c, v]) => (
         <div key={c} className="bar-row"><span className="bar-label">{tl("cat", c)}</span>
@@ -112,7 +115,7 @@ function CorridorRules() {
       {err && <ErrorBox error={err} onRetry={load} />}
       {!d && !err && <Loading />}
       {d && <>
-        <p className="muted small">{tm(d.disclaimer)} {t("rules.note")}</p>
+        <p className="muted small">{t("rules.short")}</p>
         <ul className="rules" aria-label={t("rules.list.aria")}>{d.rules.map((r) => {
           const policy = r.kind === "oasis_policy";
           const cls = policy ? "neutral" : (RULE_STATUS[r.status] || "neutral");
@@ -167,16 +170,27 @@ function CurrencyView({ s, refresh }) {
   const rows = cv.holdings.filter((h) => h.amount > 0 || h.currency === "INR" || h.currency === "CNY");
   const cov = cv.coverage;
   return (
-    <div className="card" data-testid="currency-view">
+    <div className="card pp-card" data-testid="currency-view">
       <div className="hd"><h3>{t("cur.title")}</h3><Mock /></div>
       <div className="tbl"><table aria-label={t("cur.title")}><thead><tr><th>{t("cur.currency")}</th><th className="r">{t("cur.holding")}</th><th className="r">{t("cur.worth")}</th><th className="r">{t("cur.exposure")}</th></tr></thead>
         <tbody>{rows.map((h) => (
           <tr key={h.currency}><td>{h.currency}</td><td className="r money">{money(h, h.amount)}</td>
             <td className="r money">{cny(h.value_cny, 2)}</td><td className="r num">{cv.exposure_pct[h.currency]}%</td></tr>))}</tbody></table></div>
-      <p>{R("cur.total", { cny: cny(cv.total_cny, 2), inr: inr(cv.total_inr, 2), rate: cv.rate_cny_per_inr })} <RateBadge rates={s.rates} rate={s.rate_mid} /></p>
+      <p>{R("cur.total", { cny: cny(cv.total_cny, 2), inr: inr(cv.total_inr, 2), rate: cv.rate_cny_per_inr })}</p>
       {cov && <p>{cov.shortfall_cny > 0 ? <Pill status="shortfall" /> : <Pill status="paid">{t("cur.covered.pill")}</Pill>}{" "}
         {R(cov.shortfall_cny > 0 ? "cur.short" : "cur.covered", { due: cny(cov.due_cny), have: cny(cov.cny_on_hand), short: cny(cov.shortfall_cny), days: cov.days })}</p>}
       <p className="muted small">{t("cur.note")}</p>
+    </div>
+  );
+}
+
+function FxConverter({ s, refresh }) {
+  const cv = s.currency_view;
+  if (!cv) return null;
+  const hints = (s.triggers || []).filter((x) => x.kind === "rate_move" || x.kind === "rate_target" || x.kind === "shortfall");
+  const targets = s.autonomy?.targets || [];
+  return (
+    <div className="card pp-card">
       <Converter cv={cv} refresh={refresh} />
       <h4>{t("cur.timing")}</h4>
       {hints.length ? hints.map((x, i) => <p key={i}><Pill status={x.kind} /> {x.message}</p>) : <p className="muted">{t("cur.timing.none")}</p>}
@@ -190,6 +204,17 @@ const RR_CHECKS = ["signature", "key_pinned", "record_hash", "summary_consistent
 
 // The signed record's caveats and amount bands are English text inside signed data, so they are translated for display only.
 const caveat = (c) => tm(c);
+
+function reliabilityPdf(rec) {
+  const sm = rec.summary;
+  return [
+    kpis([[t("rr.pdf.payments"), String(sm.payments), ""], [t("rr.pdf.ontime"), String(sm.on_time), sm.late ? t("rr.late", { n: sm.late }) : ""], ...(sm.total_cny != null ? [[t("rr.pdf.total"), cny(sm.total_cny), ""]] : [])]),
+    section(t("rr.pdf.student"), `<p>${esc(rec.student.name ? `${rec.student.name} · ` : "")}${esc(rec.student.pseudonym)} · ${esc(rec.period.from ? t("rr.period", { from: fmtDate(rec.period.from), to: fmtDate(rec.period.to) }) : t("rr.noperiod"))}</p>`),
+    rec.payments.length ? section(t("rr.pdf.list"), table([t("rr.col.what"), t("rr.col.to"), t("rr.col.amount"), t("rr.col.paid"), t("rr.col.due"), t("rr.col.ontime")],
+      rec.payments.map((e) => [tl("type", e.obligation_type), tl("ptype", e.payee_type), e.amount_cny != null ? cny(e.amount_cny) : tm(e.amount_band), fmtDate(e.paid_date), fmtDate(e.due_date), e.on_time ? t("rr.ontime") : t("rr.late.pill")]), [2])) : "",
+    section(t("rr.pdf.notes"), `<ul>${rec.caveats.map((c) => `<li>${esc(tm(c))}</li>`).join("")}</ul><p>${esc(t("rr.fingerprint"))}: <code>${esc(rec.trust_fingerprint)}</code><br>${esc(t("rr.record"))} hash: <code>${esc(rec.record_hash)}</code></p>`),
+  ].join("");
+}
 
 function RecordSummary({ rec }) {
   const sm = rec.summary;
@@ -215,7 +240,8 @@ function ReliabilityVerify({ initial }) {
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (initial) { setText(JSON.stringify(initial, null, 2)); setRes(null); } }, [initial]);
+  useEffect(() => { setRes(null); }, [initial]);
+  const mine = async () => { setBusy(true); setErr(null); try { setRes(await api("/reliability/verify", initial)); announce(t("rr.announce.checked")); } catch (e) { setErr(e); setRes(null); } finally { setBusy(false); } };
   const go = async () => {
     setBusy(true); setErr(null);
     try { JSON.parse(text); setRes(await api("/reliability/verify", text)); announce(t("rr.announce.checked")); }
@@ -225,6 +251,7 @@ function ReliabilityVerify({ initial }) {
   return (
     <details><summary>{t("rr.verify.summary")}</summary>
       <p className="muted small">{t("rr.verify.intro")}</p>
+      {initial && <div className="row"><button type="button" disabled={busy} onClick={mine}>{t("verify.mine")}</button></div>}
       <label>{t("rr.verify.label")}<textarea rows={8} value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} data-testid="rr-verify-text" /></label>
       <div className="row"><button className="ghost" disabled={busy || !text.trim()} onClick={go} data-testid="rr-verify-btn">{t("rr.verify.btn")}</button>
         {res && (res.ok ? <Pill status="verified">{t("rr.verify.ok")}</Pill> : <Pill status="failed">{t("rr.verify.bad")}</Pill>)}</div>
@@ -248,14 +275,14 @@ function ReliabilityRecord() {
     <div className="card" data-testid="reliability-card">
       <div className="hd"><h3>{t("rr.title")}</h3><Mock>{t("mock.sandbox")}</Mock></div>
       <p className="muted">{R("rr.intro")}</p>
-      <p className="muted small">{n == null ? "" : `${t("rr.eligible", { n })} `}{t("rr.default")}</p>
+      <p className="muted small">{n == null ? "" : `${tp("rr.eligible", n)} `}{t("rr.default")}</p>
       <div className="row">
         <label className="check"><input type="checkbox" checked={name} onChange={(e) => setName(e.target.checked)} /> {t("rr.name")}</label>
         <label className="check"><input type="checkbox" checked={amounts} onChange={(e) => setAmounts(e.target.checked)} /> {t("rr.amounts")}</label>
       </div>
       <div className="row">
         <button disabled={busy} onClick={create} data-testid="rr-create">{t("rr.create")}</button>
-        <button className="ghost" disabled={!rec} onClick={() => downloadJson(rec, "oasis-payment-reliability-record.json")} data-testid="rr-download">{t("rr.download")}</button>
+        <button className="ghost" disabled={!rec} onClick={() => downloadPdf(reliabilityPdf(rec), "oasis-payment-reliability-record", { heading: t("rr.title"), subtitle: t("rr.intro").replace(/\*\*|`/g, ""), note: t("pdf.mocknote") })} data-testid="rr-download">{t("rr.download")}</button>
       </div>
       <ErrorBox error={err} onDismiss={() => setErr(null)} />
       {rec && <RecordSummary rec={rec} />}
@@ -265,68 +292,112 @@ function ReliabilityRecord() {
 }
 
 /* ------------------------------------------------------------------ Passport tab */
-export function Passport({ s, refresh }) {
+/** One collapsible panel: a clear title and a one-line summary when closed, the full card when open. Keeps a busy tab readable. */
+function Fold({ title, hint, open = false, children }) {
+  return (
+    <details className="fold" open={open}>
+      <summary><span className="fold-t">{title}</span>{hint && <span className="fold-h">{hint}</span>}<svg className="chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></summary>
+      <div className="fold-body">{children}</div>
+    </details>
+  );
+}
+const SECTIONS = ["treasury", "obligations", "registry", "security"];
+const ICON = {
+  treasury: <><path d="M20 7H5a2 2 0 0 1 0-4h13v4zM3 5v14a2 2 0 0 0 2 2h15V7" /><circle cx="16.5" cy="14" r="1.2" /></>,
+  obligations: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18M12 14v3l2 1" /></>,
+  registry: <><path d="M12 3 4.5 6v5.5c0 4.7 3 8 7.5 9.5 4.5-1.5 7.5-4.8 7.5-9.5V6z" /><path d="m9 12 2.2 2.2L15.5 10" /></>,
+  security: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2" /></>,
+};
+
+export function Passport({ s, refresh, sec = "treasury", onSec }) {
   if (!s) return <Skeleton rows={6} />;
   const p = s.passport;
-  const tcm = s.persistence.enabled ? t(s.persistence.encrypted_at_rest ? "pass.persist.enc" : "pass.persist") : t("pass.memory");
+  const bal = (
+    <div className="card pp-card">
+      <div className="hd"><h3>{t("pass.balances")}</h3><Mock /></div>
+      <div className="kpis">{p.balances.map((b) => (
+        <div className="kpi" key={b.currency}><div className="k">{b.currency}</div><div className="v">{money({ currency: b.currency, symbol: s.currency_view?.holdings.find((h) => h.currency === b.currency)?.symbol || "" }, b.amount)}</div></div>))}</div>
+      <p className="muted">{R("pass.runway", { m: s.runway_months, burn: cny(s.burn.monthly_cny), basis: s.burn.basis })}</p>
+      <p className="muted small">{t("pass.simdate", { date: fmtDate(s.now) })} {tm(s.rates?.spreads_and_fees) || ""} {t("rate.foot")}</p>
+    </div>);
+  const obl = (
+    <div className="card pp-card">
+      <h3>{t("pass.obligations")}</h3>
+      <div className="tbl"><table aria-label={t("pass.obligations")}><thead><tr><th>{t("pass.col.what")}</th><th className="r">{t("pass.col.amount")}</th><th>{t("pass.col.due")}</th><th>{t("pass.col.status")}</th></tr></thead>
+        <tbody>{p.obligations.map((o) => (
+          <tr key={o.id}><td>{o.label ? tm(o.label) : tl("type", o.type)}</td><td className="r money">{o.currency && o.currency !== "CNY" ? `${{ USD: "$", EUR: "€" }[o.currency] || ""}${fmt(o.amount, 2)}` : cny(o.amount)}</td><td>{fmtDate(o.due)}</td><td><Pill status={o.status} /></td></tr>))}
+        </tbody></table></div>
+    </div>);
+  const rec = (
+    <div className="card pp-card">
+      <div className="hd"><h3>{t("pass.recipients")}</h3><Mock>{t("mock.registry")}</Mock></div>
+      <div className="tbl"><table aria-label={t("pass.recipients")}><thead><tr><th>{t("pass.col.payee")}</th><th>{t("pass.col.account")}</th><th>{t("pass.col.level")}</th><th className="r">{t("pass.col.limit")}</th></tr></thead>
+        <tbody>{Object.values(p.recipients).map((r) => (
+          <tr key={r.id}><td>{r.name}</td><td className="acct"><Hash value={r.account_ref} n={6} what={t("hash.account")} /></td><td className="nw"><Pill status={r.verification.level} /></td>
+            <td className="r money">{cny(r.verification.limit_cny)}</td></tr>))}
+        </tbody></table></div>
+    </div>);
+  const routes = (
+    <div className="card pp-card">
+      <div className="hd"><h3>{t("pass.routes")}</h3><Mock /></div>
+      <div className="tbl"><table aria-label={t("pass.routes.aria")}><thead><tr><th>{t("demo.routes.route")}</th><th className="r">{t("pass.col.delivered")}</th><th className="r">{t("demo.routes.days")}</th><th className="r">{t("pass.col.vsmid")}</th></tr></thead>
+        <tbody>{s.routes.map((r) => (
+          <tr key={r.id}><td>{tm(r.name)}{r.typical_bank && <span className="muted"> {t("pass.typicalbank")}</span>}</td><td className="r money">{cny(r.delivered_cny_per_100k_inr, 2)}</td><td className="r">{r.days}</td><td className="r num">{r.cost_vs_mid_pct}%</td></tr>))}
+        </tbody></table></div>
+      <p className="muted small">{t("pass.lastmile", { extra: cny(s.last_mile_rent_6000.extra_cost_cny) })}</p>
+    </div>);
+  const cur = <CurrencyView s={s} refresh={refresh} />;
+  const conv = <FxConverter s={s} refresh={refresh} />;
+  const alertsA = (
+    <div className="card pp-card">
+      <h3>{t("pass.alerts")}</h3>
+      {s.triggers.length ? s.triggers.map((x, i) => <p key={i}><Pill status={x.kind} /> {x.message}</p>) : <p className="muted">{t("pass.alerts.none")}</p>}
+      <h3 style={{ marginTop: 16 }}>{t("pass.why")}</h3>
+      {s.cards.length ? s.cards.slice().reverse().map((c) => <Card key={c.id} card={c} />) : <p className="muted">{t("pass.why.none")}</p>}
+    </div>);
+  const alertsB = (
+    <div className="card pp-card">
+      <h3>{t("pass.feed")}</h3>
+      <p>{t("pass.tripwires")} {s.canaries_tripped ? <Pill status="frozen">{t("pass.tripped")}</Pill> : <Pill status="paid">{t("pass.quiet")}</Pill>}</p>
+      <p className="muted small">{t("pass.decoys")}</p>
+      {s.security_feed.length === 0 ? <p className="muted">{t("pass.feed.none")}</p>
+        : <ul className="feed">{s.security_feed.slice().reverse().map((e) => <li key={e.i}><code>#{e.i}</code> {tl("audit", e.kind)}</li>)}</ul>}
+      <p className="muted small">{t("pass.counter", { n: p.reputation.verified_on_time_payments })}</p>
+    </div>);
+  const F = (title, hint, node, open) => <Fold key={title} title={title} hint={hint} open={open}>{node}</Fold>;
+  const balHint = p.balances.map((x) => money({ currency: x.currency, symbol: s.currency_view?.holdings.find((h) => h.currency === x.currency)?.symbol || "" }, x.amount, 0)).join(" · ");
+  const open = p.obligations.filter((o) => o.status !== "paid").length;
+  const body = {
+    treasury: (<>
+      <div className="ratebar"><RateBadge rates={s.rates} rate={s.rate_mid} /></div>
+      {F(t("pass.balances"), balHint, bal, true)}
+      {s.currency_view && F(t("cur.title"), cny(s.currency_view.total_cny), cur)}
+      {s.currency_view && F(t("fold.conv"), t("fold.conv.hint"), conv)}
+      {F(t("pass.routes"), tm(s.routes[0]?.name), routes)}
+      {F(t("fxp.title"), t("fold.fxp.hint"), <FxPlan s={s} refresh={refresh} />)}
+    </>),
+    obligations: (<>
+      {F(t("pass.obligations"), t("fold.obl.hint", { n: open }), obl, true)}
+      {F(t("plan.agentic.title"), t("fold.plan.hint"), <AgentPlan s={s} refresh={refresh} />)}
+      {F(t("auto.title"), t("fold.auto.hint"), <Autonomy s={s} refresh={refresh} />)}
+    </>),
+    registry: (<>
+      {F(t("pass.recipients"), t("fold.rec.hint", { n: Object.keys(p.recipients).length }), rec, true)}
+      {F(t("rules.title"), t("fold.rules.hint"), <CorridorRules />)}
+    </>),
+    security: (<>
+      {F(t("cp.title"), t("fold.trust.hint"), <TrustPass />, true)}
+      {F(t("cg.title"), t("fold.credit.hint"), <CreditGrowth />)}
+      {F(t("rr.title"), t("fold.rr.hint"), <ReliabilityRecord />)}
+      {F(t("pass.alerts"), s.triggers.length ? String(s.triggers.length) : t("pass.alerts.none"), alertsA)}
+      {F(t("pass.feed"), s.canaries_tripped ? t("pass.tripped") : t("pass.quiet"), alertsB)}
+    </>),
+  }[sec] || null;
   return (
-    <section className="grid" aria-label={t("pass.aria")}>
-      <div className="card">
-        <div className="hd"><h3>{t("pass.balances")}</h3><Mock /></div>
-        <div className="kpis">{p.balances.map((b) => (
-          <div className="kpi" key={b.currency}><div className="k">{b.currency}</div><div className="v">{money({ currency: b.currency, symbol: s.currency_view?.holdings.find((h) => h.currency === b.currency)?.symbol || "" }, b.amount)}</div></div>))}</div>
-        <p className="muted">{R("pass.runway", { m: s.runway_months, burn: cny(s.burn.monthly_cny), basis: s.burn.basis })}</p>
-        <p><RateBadge rates={s.rates} rate={s.rate_mid} /></p>
-        <p className="muted small">{t("pass.simdate", { date: fmtDate(s.now) })} {tm(s.rates?.spreads_and_fees) || ""} {t("rate.foot")}</p>
-        <p className="muted small">{tcm}</p>
-      </div>
-      <div className="card">
-        <h3>{t("pass.obligations")}</h3>
-        <div className="tbl"><table aria-label={t("pass.obligations")}><thead><tr><th>{t("pass.col.what")}</th><th className="r">{t("pass.col.amount")}</th><th>{t("pass.col.due")}</th><th>{t("pass.col.status")}</th></tr></thead>
-          <tbody>{p.obligations.map((o) => (
-            <tr key={o.id}><td>{o.label ? tm(o.label) : tl("type", o.type)}</td><td className="r money">{o.currency && o.currency !== "CNY" ? `${{ USD: "$", EUR: "€" }[o.currency] || ""}${fmt(o.amount, 2)}` : cny(o.amount)}</td><td>{fmtDate(o.due)}</td><td><Pill status={o.status} /></td></tr>))}
-          </tbody></table></div>
-      </div>
-      <div className="card">
-        <div className="hd"><h3>{t("pass.recipients")}</h3><Mock>{t("mock.registry")}</Mock></div>
-        <div className="tbl"><table aria-label={t("pass.recipients")}><thead><tr><th>{t("pass.col.payee")}</th><th>{t("pass.col.account")}</th><th>{t("pass.col.level")}</th><th className="r">{t("pass.col.limit")}</th></tr></thead>
-          <tbody>{Object.values(p.recipients).map((r) => (
-            <tr key={r.id}><td>{r.name}</td><td className="acct"><Hash value={r.account_ref} n={6} what={t("hash.account")} /></td><td><Pill status={r.verification.level} /></td>
-              <td className="r money">{cny(r.verification.limit_cny)}</td></tr>))}
-          </tbody></table></div>
-      </div>
-      <div className="card">
-        <div className="hd"><h3>{t("pass.routes")}</h3><Mock /></div>
-        <div className="tbl"><table aria-label={t("pass.routes.aria")}><thead><tr><th>{t("demo.routes.route")}</th><th className="r">{t("pass.col.delivered")}</th><th className="r">{t("demo.routes.days")}</th><th className="r">{t("pass.col.vsmid")}</th></tr></thead>
-          <tbody>{s.routes.map((r) => (
-            <tr key={r.id}><td>{tm(r.name)}{r.typical_bank && <span className="muted"> {t("pass.typicalbank")}</span>}</td><td className="r money">{cny(r.delivered_cny_per_100k_inr, 2)}</td><td className="r">{r.days}</td><td className="r num">{r.cost_vs_mid_pct}%</td></tr>))}
-          </tbody></table></div>
-        <p className="muted small">{t("pass.lastmile", { extra: cny(s.last_mile_rent_6000.extra_cost_cny) })}</p>
-      </div>
-      <CurrencyView s={s} refresh={refresh} />
-      <Corridors />
-      <FxPlan s={s} refresh={refresh} />
-      <TrustPass />
-      <CreditGrowth />
-      <ReliabilityRecord />
-      <AgentPlan s={s} refresh={refresh} />
-      <Spending s={s} refresh={refresh} />
-      <Autonomy s={s} refresh={refresh} />
-      <CorridorRules />
-      <div className="card">
-        <h3>{t("pass.alerts")}</h3>
-        {s.triggers.length ? s.triggers.map((x, i) => <p key={i}><Pill status={x.kind} /> {x.message}</p>) : <p className="muted">{t("pass.alerts.none")}</p>}
-        <h3 style={{ marginTop: 16 }}>{t("pass.why")}</h3>
-        {s.cards.length ? s.cards.slice().reverse().map((c) => <Card key={c.id} card={c} />) : <p className="muted">{t("pass.why.none")}</p>}
-      </div>
-      <div className="card">
-        <h3>{t("pass.feed")}</h3>
-        <p>{t("pass.tripwires")} {s.canaries_tripped ? <Pill status="frozen">{t("pass.tripped")}</Pill> : <Pill status="paid">{t("pass.quiet")}</Pill>}</p>
-        <p className="muted small">{t("pass.decoys")}</p>
-        {s.security_feed.length === 0 ? <p className="muted">{t("pass.feed.none")}</p>
-          : <ul className="feed">{s.security_feed.slice().reverse().map((e) => <li key={e.i}><code>#{e.i}</code> {tl("audit", e.kind)}</li>)}</ul>}
-        <p className="muted small">{t("pass.counter", { n: p.reputation.verified_on_time_payments })}</p>
-      </div>
+    <section className="stack pp folds" aria-label={t("pass.aria")}>
+      <h2>{t("tab.passport")}</h2>
+      <SubNav id="passportSubNav" label={t("pass.sub.aria")} value={sec} onChange={(k) => onSec && onSec(k)} items={SECTIONS.map((k) => [k, t(`pass.sub.${k}`), ICON[k]])} />
+      {body}
     </section>
   );
 }

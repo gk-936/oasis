@@ -1,0 +1,30 @@
+/* Shared dark theme for the logged-out screen (.gate) and the logged-in shell (.shell): the app's own dark tokens, redeclared
+   so both stay dark even when the OS is set to light. Everything inside picks them up through the global variables. */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+.gate, .shell {
+  color-scheme: dark;
+  color: var(--ink);
+  /* black base with a blue wash top right and a purple touch bottom left */
+  background:
+    radial-gradient(62% 52% at 92% 0%, rgba(44, 92, 190, .30), transparent 72%),
+    radial-gradient(58% 52% at 0% 100%, rgba(104, 66, 200, .24), transparent 72%),
+    var(--bg);
+  font-family: "Manrope", var(--sans);
+
+  --bg: #06070d; --surface: #0e1324; --surface-2: #131a2f; --ink: #e8f2f4; --ink-2: #bfd3d8; --muted: #9ab3ba;
+  --line: #212a47; --line-strong: #37426b;
+  --brand: #4fc7d6; --brand-ink: #03242a; --brand-soft: #12294f; --head: #0a0f1f; --head-ink: #e8f2f4; --head-muted: #8fb5bd;
+  --ok-bg: #123a2a; --ok-fg: #92e6bd; --ok-line: #3fb883;
+  --warn-bg: #3e300c; --warn-fg: #f5d27f; --warn-line: #d09a35;
+  --bad-bg: #4b1c17; --bad-fg: #ffb8ac; --bad-line: #e0685a;
+  --info-bg: #12304f; --info-fg: #b0d2ff; --info-line: #5a9be0;
+  --neu-bg: #1d333a; --neu-fg: #bdd0d6;
+  --mock-bg: #3a300f; --mock-fg: #f3dc9a; --mock-line: #7a6320;
+  --focus: #8ab4ff; --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}

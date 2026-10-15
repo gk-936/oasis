@@ -11,7 +11,11 @@ export function Netting() {
   const [err, setErr] = useState(null);
   const load = useCallback(() => { setErr(null); api("/netting/benchmark").then(setBench).catch(setErr); }, []);
   useEffect(() => { load(); }, [load]);
-  const run = () => { setErr(null); api("/netting/simulate", { pool_size: Number(size) }).then(setSim).catch(setErr); };
+  const run = () => {
+    const n = Number(size);
+    if (!Number.isInteger(n) || n < 1 || n > 2000) { setSim(null); setErr(new Error(t("net.size.invalid"))); return; }   // QA: a bad size left the old result on screen and showed a raw 422
+    setErr(null); api("/netting/simulate", { pool_size: n }).then(setSim).catch(setErr);
+  };
   return (
     <section aria-labelledby="net-h" className="stack">
       <div>
@@ -20,9 +24,11 @@ export function Netting() {
         <p className="muted small">{t("net.disclaimer")}</p>
       </div>
       <ErrorBox error={err} onRetry={load} />
-      <div className="card">
-        <label>{t("net.size")} <input type="number" min="1" max="2000" value={size} onChange={(e) => setSize(e.target.value)} /></label>{" "}
-        <button type="button" onClick={run}>{t("net.run")}</button>
+      <div className="card net-form">
+        <div className="formgrid">
+          <label className="c6">{t("net.size")} <input type="number" min="1" max="2000" value={size} onChange={(e) => setSize(e.target.value)} /></label>
+          <div className="c3"><button type="button" className="cta" onClick={run}>{t("net.run")}</button></div>
+        </div>
         {sim && (
           <div className="kpis">
             <div className="kpi"><div className="k">{t("net.matched")}</div><div className="v">{cny(sim.matched_volume_cny)}</div></div>

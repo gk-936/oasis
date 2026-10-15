@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Signed } from "../common.jsx";
 import { t, tl, tm, tp } from "../i18n/index.js";
-import { announce, cny, Empty, ErrorBox, Hash, Loading, Mock, Pill, R, Skeleton } from "../ui.jsx";
+import { announce, cny, money, Empty, ErrorBox, Hash, Loading, Mock, Pill, R, Skeleton } from "../ui.jsx";
 
 /* Edit a copy of the loaded pack and verify it: any change must make the checks fail. The text is the server's own bytes,
    only re-indented (re-serialising through JS would turn 30000.0 into 30000 and break the signed canonical form). */
@@ -98,7 +98,7 @@ export function Proof({ s, selected }) {
         <div className={`card ${failed ? "tone-bad" : "tone-ok"}`}>
           <div className="hd"><h3>{t("proof.pack")} <code>{id}</code></h3>
             {check && (failed ? <Pill status="invalid">{tp("proof.failed", failed)}</Pill> : <Pill status="verified">{tp("proof.passed", passed)}</Pill>)}</div>
-          <p>{R("proof.paid", { amount: cny(pack.intent.amount, 2), acct: pack.intent.account_ref, purpose: tl("purpose", pack.intent.purpose) })}{pack.intent.approvals.length ? "" : t("proof.auto")}</p>
+          <p>{R("proof.paid", { amount: money(pack.intent.amount, pack.intent.currency, 2), acct: pack.intent.account_ref, purpose: tl("purpose", pack.intent.purpose) })}{pack.intent.approvals.length ? "" : t("proof.auto")}</p>
           <Signed approvals={pack.intent.approvals} />
           <p>{t("proof.signatures", { list: Object.keys(pack.intent.signatures).join(" + ") })}</p>
           {pack.decision && <p>{R("proof.decision", { action: tl("action", pack.decision.action), rule: pack.decision.rule, tier: pack.decision.tier })}</p>}
