@@ -135,6 +135,8 @@ We could not hire a human red team, so the attack sets were written by outside A
 | G | `*G.json` | Google (Gemini) | 410 | router later fixed on its failures |
 | C | `*C.json` | OpenAI (ChatGPT), second set | 410 | router later fixed on its failures |
 
+The large offline stress tests (`eval/mega_bench.py`, `eval/mega2_bench.py`: 92k generated messages, 14.5k conversations, 8k multi-turn tasks, 6k poisoned invoices, 3k API abuse rounds) were written and run by Claude (Anthropic) **with full access to the code**, so they are white-box tests that find blind spots, not blind attacks. Their reports (`eval/reports/mega*.md`) say so.
+
 Four of the five sets come from one model family (OpenAI) and one from Google, so the diversity is lower than the number of sets suggests. Every set has been used to fix general router gaps, so **none of them is still blind**; the first-run row of each report is the only out-of-sample number. AI attackers share blind spots (templated phrasings, chat-box attacks), which is why two further layers exist: the executor attacks in the Break it tab (`/api/breakit/executor`: tamper, replay, forge a signed payment) and the role matrix test (`tests/test_role_matrix.py`: every guarded endpoint refuses every other role and anonymous callers). Mean user turns per task are reported in `eval/reports/tasks.md` (1.39 per task, 1.08 per completed payment, our own 92 tasks).
 
 ## Independent set (2026-10-14)
