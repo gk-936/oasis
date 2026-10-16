@@ -1488,6 +1488,13 @@ def breakit_executor(body: BreakItExecIn, request: HttpRequest, p: Principal = D
         raise HTTPException(400, "unknown attack")
     _bk_guard(request)
     return run_attack(S.redteam_box(p.jti).world, body.attack)
+@app.post("/api/breakit/executor/all")
+def breakit_executor_all(request: HttpRequest, p: Principal = Depends(STUDENT_JUDGE)):
+    """Every executor attack in one request (counts once against the red-team limit)."""
+    from ..trust.breakit_exec import ATTACKS, run_attack
+    _bk_guard(request)
+    w = S.redteam_box(p.jti).world
+    return {"results": [run_attack(w, k) for k in ATTACKS], "mock": True}
 # ================================================================== end BREAK-IT block
 
 

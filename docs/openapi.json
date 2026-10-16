@@ -1479,6 +1479,23 @@
     "summary": "Breakit Executor"
    }
   },
+  "/api/breakit/executor/all": {
+   "post": {
+    "description": "Every executor attack in one request (counts once against the red-team limit).",
+    "operationId": "breakit_executor_all_api_breakit_executor_all_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Breakit Executor All"
+   }
+  },
   "/api/breakit/generate": {
    "post": {
     "description": "Run `n` deterministic attacker variants (offline templates + mutations) against the defender; return a scoreboard.",

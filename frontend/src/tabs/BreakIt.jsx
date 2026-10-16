@@ -20,7 +20,7 @@ function ExecAttacks() {
   const { busy, err, setErr, run } = useGuard();
   useEffect(() => { api("/breakit/executor").then((r) => setList(r.attacks)).catch(() => {}); }, []);
   const one = async (id) => { const r = await api("/breakit/executor", { attack: id }); setRes((m) => ({ ...m, [id]: r })); return r; };
-  const all = () => run(async () => { for (const a of list) await one(a.id); announce(t("brk.exec.all")); });
+  const all = () => run(async () => { const r = await api("/breakit/executor/all", {}); setRes(Object.fromEntries(r.results.map((x) => [x.attack, x]))); announce(t("brk.exec.all")); });
   return (
     <div className="card">
       <h3>{t("brk.exec.title")}</h3>

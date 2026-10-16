@@ -32,3 +32,11 @@ def test_breakit_executor_attacks(api_client, as_role):
 
 def test_breakit_executor_parent_refused(as_role):
     assert as_role("parent").post("/api/breakit/executor", json={"attack": "control"}).status_code in (401, 403)
+
+
+def test_breakit_executor_all_is_one_request_against_the_limit(api_client, as_role):
+    j = as_role("judge")
+    r = j.post("/api/breakit/executor/all", json={}).json()
+    by = {x["attack"]: x for x in r["results"]}
+    assert len(by) >= 8 and not by["control"]["blocked"]
+    assert all(v["blocked"] and v["extra_money_moved"] == 0 for k, v in by.items() if k != "control")

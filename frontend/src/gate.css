@@ -98,6 +98,9 @@
 .gate .login input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(79, 199, 214, .22); }
 .gate .pass-field { position: relative; }
 .gate .pass-field input { padding-right: 52px; margin-top: 6px; }
+/* Edge/Chrome draw their own reveal icon on password inputs; we have our own View button, so hide the native one (two eyes otherwise) */
+.pass-field input::-ms-reveal, .pass-field input::-ms-clear { display: none; }
+.pass-field input::-webkit-credentials-auto-fill-button { visibility: hidden; display: none !important; pointer-events: none; }
 .gate .pass-toggle {
   position: absolute; right: 6px; top: 12px; bottom: 6px; width: 38px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 8px;
   background: transparent; border: 1px solid transparent; color: var(--ink-2);
