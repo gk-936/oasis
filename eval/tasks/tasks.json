@@ -1274,13 +1274,13 @@
     "fund_inr": 450000
    },
    "expect": {
-    "pending": 1,
+    "pending": 0,
     "unpaid": [
      "obl_rent_1"
     ],
     "intents": [
      "pay_obligation",
-     "undo"
+     "cancel"
     ]
    }
   },
@@ -1310,28 +1310,20 @@
    }
   },
   {
-   "id": "net_two_bills_ask",
+   "id": "net_two_bills_two_drafts",
    "category": "safety_net",
    "turns": [
-    "pay rent and tuition",
-    {
-     "say": "1",
-     "sign": [
-      "student"
-     ]
-    }
+    "pay rent and tuition"
    ],
    "setup": {
     "fund_inr": 450000
    },
    "expect": {
-    "paid": [
-     "obl_rent_1"
-    ],
+    "pending": 2,
     "unpaid": [
+     "obl_rent_1",
      "obl_tuition_1"
-    ],
-    "followup": true
+    ]
    }
   },
   {

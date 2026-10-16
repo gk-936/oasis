@@ -136,7 +136,9 @@ def test_undo_before_and_after_payment(st):
     assert "nothing" in say(st, "undo")["reply"].lower()
     st.post("/api/fx/convert", json={"amount": 100000, "from": "INR", "to": "CNY"})
     j = say(st, "pay my rent")
-    assert "hasn't been sent" in say(st, "undo that")["reply"]
+    u = say(st, "undo that")                                   # nothing was sent, so undoing a draft withdraws it
+    assert u["status"] == "cancelled" and not pending(st)
+    j = say(st, "pay my rent")
     Approver(st, "student").approve(j["pending_id"])
     assert "can't be reversed" in say(st, "undo the payment")["reply"]
 
@@ -230,9 +232,15 @@ def test_real_bypass_requests_are_still_refused(st, msg):
     assert j["status"] == "refused" and j["money_moved"] == 0 and not pending(st), msg
 
 
-def test_two_bills_in_one_message_ask_which_first(st):
+def test_two_bills_in_one_message_get_one_draft_each(st):
     j = say(st, "pay rent and tuition")
-    assert j["status"] == "needs_info" and not pending(st) and "rent" in j["reply"] and "tuition" in j["reply"]
+    assert j["status"] == "held" and len(j["pending_ids"]) == 2 and j["money_moved"] == 0
+    assert sorted(p["draft"]["purpose"] for p in pending(st).values()) == ["rent", "tuition"]
+
+
+def test_two_bills_with_an_amount_still_ask_which_one(st):
+    j = say(st, "pay rent and tuition 3000")
+    assert j["status"] == "needs_info" and not pending(st)
 
 
 def test_change_the_amount_then_a_bare_number_redrafts(st):

@@ -37,7 +37,7 @@ _ROLE_NEEDS = {"student": "student_signature", "parent": "parent_signature"}
 
 
 def new_dialog() -> dict:
-    return {"awaiting": None, "ctx": {}, "last_pending": None, "last_paid": None}
+    return {"awaiting": None, "ctx": {}, "last_pending": None, "last_paid": None, "last_cancelled": None}
 
 
 def dialog_for(dialogs: OrderedDict, key: str) -> dict:
@@ -274,7 +274,7 @@ def _existing_draft(S, payee_id: str, amount: float, purpose: str) -> tuple[str,
     return None
 
 
-def _pay_obligation_now(S, run_intake, ob, amount: float | None, lang: str, d: dict, intent: str, secrets=None) -> dict:
+def _pay_obligation_now(S, run_intake, ob, amount: float | None, lang: str, d: dict, intent: str, secrets=None, lead: str = "") -> dict:
     w = S.world
     if ob.currency != "CNY":
         t = (f"这笔账单是 {ob.currency}，请到“外币计划”里处理。" if lang == "zh" else
@@ -285,12 +285,12 @@ def _pay_obligation_now(S, run_intake, ob, amount: float | None, lang: str, d: d
     if ex:                                           # the same request twice is one draft, not two
         pid, it = ex
         o = {**it["outcome"], "pending_id": pid}
-        lead = "您已经有一份相同的草稿在等待签名。" if lang == "zh" else "You already have this exact draft waiting for your signature."
-        return _draft_reply(S, o, lang, d, intent, secrets, lead)
+        again = "您已经有一份相同的草稿在等待签名。" if lang == "zh" else "You already have this exact draft waiting for your signature."
+        return _draft_reply(S, o, lang, d, intent, secrets, (lead + " " + again).strip())
     req = _registry_request(w, ob.payee_id, amt, ob.type, ob.due)
     if req is None:
         return _result(intent, "收款方不在登记册中。" if lang == "zh" else "That payee is not in the registry.", secrets, status="rejected")
-    return _run(S, run_intake, req, lang, d, intent, secrets)
+    return _run(S, run_intake, req, lang, d, intent, secrets, lead)
 
 
 # ------------------------------------------------------------------ pay flows (F1, F2, F12)
@@ -304,7 +304,67 @@ def _type_from_words(message: str) -> str | None:
 
 
 _PHONE = re.compile(r"phone|mobile|\bsim\b|telecom|话费|手机", re.I)       # the registered carrier (Shenzhen Mobile) is the one bill of this kind
-_UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|gym|membership|subscription|airline|flight|ticket|\bvisa\b|hospital|medical|clinic|insurance|credit card|\bfriend|external (?:bank|account)|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
+_UTILITY = nlu.UNREGISTERED                           # bill types with no registered payee (one list, shared with the router)
+
+
+_AGAIN = re.compile(r"\bagain\b|\bonce more\b|\bre-?draft\b|phir se|फिर से|重新|再来", re.I)
+_USUAL = re.compile(r"\b(?:usual|normal|regular|same as (?:last|every)|as always|monthly|again)\b|照旧|老样子", re.I)
+_SOME = re.compile(r"\b(?:some|part|partial|portion|thoda|kuch)\b|一部分|部分", re.I)
+
+
+_BILL_NAME = {"living": ("phone bill", "话费")}
+
+
+def _overpay(S, ob, amt: float, lang: str, kind: str, secrets=None, d: dict | None = None) -> dict:
+    """Never more than is owed: refused and audited. An amount exactly 10x the bill is most likely a typo (an extra zero), so
+    that one asks whether the bill's real amount was meant; the answer can only ever pay the bill's own amount."""
+    w = S.world
+    w.audit.append("chat_refused", {"category": "overpayment"})
+    S.save()
+    en, zh = _BILL_NAME.get(ob.type, (ob.type, _OBL_ZH.get(ob.type, ob.type)))
+    slip = d is not None and ob.remaining > 0 and abs(amt - ob.remaining * 10) < 0.5
+    if slip:
+        d["awaiting"], d["ctx"] = "confirm_pay", {"ob": ob.id, "amount": None}
+    if lang == "zh":
+        t = (f"账单是 {_obl_line(w, ob, lang)}，您说的 {money(amt, lang)} 超过了应付金额，我不会多付。"
+             + (f"是不是多打了一个零？按账单实际金额 {money(ob.remaining, lang)} 付款吗？（回复“是”或“否”）" if slip else
+                f"您是想付全额 {money(ob.remaining, lang)} 吗？说“交{zh}”即可，或说一个较小的金额作为部分付款。"))
+    else:
+        t = (f"The bill is {_obl_line(w, ob, lang)}, and {money(amt, lang)} is more than is owed, so I won't pay that. "
+             + (f"Was there an extra zero? Pay the bill's actual {money(ob.remaining, lang)} instead? (yes / no)" if slip else
+                f"Did you mean the full {money(ob.remaining, lang)}? Say 'pay my {en}' for that, or give a smaller amount as a part payment."))
+    return _result(kind, t, secrets, status="needs_confirmation" if slip else "rejected", refusal="overpayment",
+                   **({"needs": ["info:confirm"]} if slip else {}))
+
+
+def _part_prompt(w, ob, amt: float, lang: str, d: dict, kind: str, secrets=None) -> dict:
+    """A smaller amount than the bill: a part payment, confirmed first."""
+    d["awaiting"], d["ctx"] = "confirm_pay", {"ob": ob.id, "amount": amt}
+    t = (f"账单 {_obl_line(w, ob, lang)}，而您说的是 {money(amt, lang)}（部分付款）。按 {money(amt, lang)} 付款吗？（回复“是”，或告诉我其他金额）"
+         if lang == "zh" else
+         f"The bill is {_obl_line(w, ob, lang)}, but you said {money(amt, lang)} (a part payment). Pay {money(amt, lang)}? "
+         f"(yes, or tell me another amount)")
+    return _result(kind, t, secrets, status="needs_confirmation", needs=["info:confirm"])
+
+
+def _pay_several(S, run_intake, obs: list, it: ChatIntent, lang: str, d: dict, secrets=None) -> dict:
+    """Two or more bills named in one message: one draft each. Every draft is signed on its own, so nothing is bundled."""
+    results = [_pay_obligation_now(S, run_intake, ob, None, lang, d, it.kind, secrets) for ob in obs]
+    held = [r for r in results if r["status"] == "held" and r.get("pending_id")]
+    if not held:
+        return results[0]
+    lines = []
+    for r in held:
+        dr = (r.get("outcome") or {}).get("draft") or {}
+        lines.append(f"{money(float(dr.get('amount') or 0), lang)} → {_payee_name(S.world, dr.get('payee_id', ''))} ({_OBL_ZH.get(dr.get('purpose'), dr.get('purpose')) if lang == 'zh' else dr.get('purpose')})")
+    sep = "；" if lang == "zh" else "; "
+    if lang == "zh":
+        t = f"我准备了 {len(held)} 份草稿：{sep.join(lines)}。每一份都需要您用设备密钥单独签名，签名前不会转出任何款项。说“取消学费那笔”可以只撤销其中一份。"
+    else:
+        t = (f"I prepared {len(held)} drafts: {sep.join(lines)}. Each needs its own device-key signature and nothing moves until you sign. "
+             f"Say 'cancel the tuition one' to drop just one.")
+    d["last_pending"] = held[-1]["pending_id"]
+    return {**held[0], "reply": redact(t, secrets), "pending_ids": [r["pending_id"] for r in held]}
 
 
 _MULTI_KINDS = (("rent", re.compile(r"\brent\b|房租|租金", re.I)), ("tuition", re.compile(r"\btuition\b|学费", re.I)),
@@ -316,12 +376,18 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
     typ = it.slots.get("type") or _type_from_words(message)
     amt, cur = it.slots.get("amount"), it.slots.get("currency")
     named = nl_extract.registry_payee(message, _recipients(w))
-    if not named and not typ and _PHONE.search(nlu.normalise(message)):
+    if not typ and not named and _AGAIN.search(message) and d.get("last_cancelled"):
+        typ = d["last_cancelled"]                                               # "ok, prepare it again" after a cancel: the same bill
+    if not named and not typ and _PHONE.search(nlu.fix_typos(nlu.normalise(message))):
         named = next((r for r in _recipients(w) if r.id == "payee_telecom"), None)    # None where the world has no carrier: falls to the unregistered-bill reply
     unreg = None if named else nl_extract.unregistered_payee_name(message)
     cands = _open_obligations(w, typ, named.id if named else None)
     kinds = {k for k, rx in _MULTI_KINDS if rx.search(message)}
-    if len(kinds) > 1 and not named and not unreg:                              # "rent and tuition": one draft per signature, so ask which first
+    if len(kinds) > 1 and not unreg and not _SOME.search(message):                                # "rent and tuition": one draft each, every one signed on its own
+        both = [o for k in sorted(kinds) for o in _open_obligations(w, k, named.id if named else None)]
+        if len(both) > 1 and (not amt or all(abs(o.remaining - amt) < 0.5 for o in both)):
+            return _pay_several(S, run_intake, both, it, lang, d, secrets)
+    if len(kinds) > 1 and not named and not unreg:                              # with an amount it is unclear which bill the amount is for: ask
         cands = [o for k in sorted(kinds) for o in _open_obligations(w, k)] or cands
         typ = None
     if not typ and not named and _UTILITY.search(nlu.normalise(message)):       # a bill type with no registered payee: say so, never guess
@@ -366,6 +432,9 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
         listing = ("；" if lang == "zh" else "; ").join(_obl_line(w, o, lang) for o in allo) if allo else ("没有待付款项" if lang == "zh" else "nothing")
         t = (f"没有找到匹配的待付账单。目前待付：{listing}。" if lang == "zh" else f"I found no open bill like that. Open bills: {listing}.")
         return _result(it.kind, t, secrets, status="info")
+    if len(cands) > 1 and not typ and named and _USUAL.search(message):                   # "the usual", "same as last month": the recurring bill, which is rent
+        rents = [o for o in cands if o.type == "rent"]
+        cands = rents if len(rents) == 1 else cands
     if len(cands) > 1:
         d["awaiting"], d["ctx"] = "choose_obligation", {"options": [o.id for o in cands], "amount": amt}
         lines = ("；" if lang == "zh" else "; ").join(f"{i}) {_obl_line(w, o, lang)}" for i, o in enumerate(cands, 1))
@@ -378,23 +447,20 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
         return _result(it.kind, t, secrets, status="needs_info")
     if not amt and it.slots.get("fraction"):                              # "pay half of my tuition": a part payment of this bill
         amt = round(ob.remaining * float(it.slots["fraction"]), 2)
+    if not amt and _SOME.search(message) and not re.search(r"\d", message):                                   # "pay some of my tuition": how much? never a guess
+        d["awaiting"], d["ctx"] = "slot_part_amount", {"ob": ob.id}
+        t = (f"{_obl_line(w, ob, lang)}。您想付多少（人民币）？" if lang == "zh" else
+             f"The bill is {_obl_line(w, ob, lang)}. How much of it would you like to pay (in CNY)?")
+        return _result(it.kind, t, secrets, status="needs_info", needs=["info:amount"])
     if amt and amt > ob.remaining + 0.5:                                    # never more than is owed: refused outright, audited
-        w.audit.append("chat_refused", {"category": "overpayment"})
-        S.save()
-        t = (f"账单是 {_obl_line(w, ob, lang)}，您说的 {money(amt, lang)} 超过了应付金额，我不会多付。可以说“交{_OBL_ZH.get(ob.type, ob.type)}”付清全额，或说一个较小的金额作为部分付款。"
-             if lang == "zh" else
-             f"The bill is {_obl_line(w, ob, lang)}, and {money(amt, lang)} is more than is owed, so I won't pay it. Say 'pay my {ob.type}' for the full amount, "
-             f"or give a smaller amount as a part payment.")
-        return _result(it.kind, t, secrets, status="rejected", refusal="overpayment")
+        return _overpay(S, ob, amt, lang, it.kind, secrets, d)
     if amt and abs(amt - ob.remaining) > 0.5:                              # a smaller amount than the bill: a part payment, confirmed first
-        d["awaiting"], d["ctx"] = "confirm_pay", {"ob": ob.id, "amount": amt}
-        kind_en, kind_zh = "a part payment", "部分付款"
-        t = (f"账单 {_obl_line(w, ob, lang)}，而您说的是 {money(amt, lang)}（{kind_zh}）。按 {money(amt, lang)} 付款吗？（回复“是”，或告诉我其他金额）"
-             if lang == "zh" else
-             f"The bill is {_obl_line(w, ob, lang)}, but you said {money(amt, lang)} ({kind_en}). Pay {money(amt, lang)}? "
-             f"(yes, or tell me another amount)")
-        return _result(it.kind, t, secrets, status="needs_confirmation", needs=["info:confirm"])
-    return _pay_obligation_now(S, run_intake, ob, None, lang, d, it.kind, secrets)
+        return _part_prompt(w, ob, amt, lang, d, it.kind, secrets)
+    lead = ""
+    if nl_extract._ACCT_RUN.search(nlu.normalise(message)):                 # an account number in the sentence is never used, and the reply says so
+        lead = ("我忽略了消息里的账号：款项只会汇到登记册中的账户。" if lang == "zh" else
+                "I ignored the account number in your message: money goes only to the registry's account.")
+    return _pay_obligation_now(S, run_intake, ob, None, lang, d, it.kind, secrets, lead)
 
 
 _INFO_KINDS = (nlu.BALANCE, nlu.OBLIGATIONS, nlu.RATE, nlu.ROUTES, nlu.RUNWAY, nlu.STATUS, nlu.PLAN, nlu.PROOF, nlu.CREDIT,
@@ -451,6 +517,33 @@ def _continue(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, s
         if it.kind == nlu.UNKNOWN:
             return _result("pay_obligation", "请回复编号（例如 1）或账单名称。" if lang == "zh" else "Please reply with a number (for example 1) or the bill's name.",
                            secrets, status="needs_info", needs=["info:obligation"])
+    elif aw == "confirm_switch":
+        d["awaiting"], d["ctx"] = None, {}
+        if it.kind == nlu.CONFIRM and ctx.get("pid") in S.pending:
+            old = S.pending[ctx["pid"]]["outcome"].get("draft") or {}
+            _decline(S, ctx["pid"], "switched_via_chat")
+            S.save()
+            d["last_pending"], d["last_cancelled"] = None, old.get("purpose")
+            swap = nlu.ChatIntent(nlu.PAY_OBLIGATION, {"type": ctx.get("type"), "amount": ctx.get("amount"), "currency": ctx.get("currency")}, lang=lang)
+            r = _pay_obligation(S, run_intake, swap, ctx.get("message") or "", lang, d, secrets)
+            r["reply"] = ("好的，已撤下上一份草稿。" if lang == "zh" else "Okay, I withdrew the earlier draft.") + " " + r["reply"]
+            return r
+        if it.kind in (nlu.DENY, nlu.CANCEL):
+            return _result("deny", "好的，保留原来的草稿。" if lang == "zh" else "Okay, I'm keeping the draft you have.", secrets, status="held")
+        return None
+    elif aw == "slot_part_amount":
+        ob = w.passport.obligation(ctx.get("ob", ""))
+        a = nlu._amount(message, bare=True)
+        if ob is not None and ob.status != "paid" and a and a[1] == "CNY" and not nl_extract.account_in_text(message):
+            d["awaiting"], d["ctx"] = None, {}
+            if a[0] > ob.remaining + 0.5:
+                return _overpay(S, ob, a[0], lang, "pay_obligation", secrets, d)
+            if abs(a[0] - ob.remaining) <= 0.5:
+                return _pay_obligation_now(S, run_intake, ob, None, lang, d, "pay_obligation", secrets)
+            return _part_prompt(w, ob, a[0], lang, d, "pay_obligation", secrets)
+        if it.kind in (nlu.CANCEL, nlu.DENY):
+            d["awaiting"], d["ctx"] = None, {}
+            return _result("cancel", "好的，已取消。" if lang == "zh" else "Okay, cancelled.", secrets, status="cancelled")
     elif aw == "slot_amount":
         a = nlu._amount(message, bare=True)
         if a and a[1] in ("CNY",) and not nl_extract.account_in_text(message):
@@ -517,8 +610,36 @@ def _pay_text(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, s
 
 
 # ------------------------------------------------------------------ cancel, correct, undo
-def _cancel(S, lang: str, d: dict, secrets=None) -> dict:
+_KEEP = re.compile(r"\b(?:keep|but|except|leave)\b|保留|留着|但是", re.I)
+
+
+def _cancel_one(S, lang: str, d: dict, message: str, secrets=None) -> dict | None:
+    """'cancel the tuition one, keep rent': withdraw only the draft of the bill named before 'keep'. None = no such part in the message."""
+    typ = nl_extract.purpose_in_text(_KEEP.split(message)[0])
+    if not typ or len(S.pending) < 1:
+        return None
+    hit = [pid for pid, it_ in S.pending.items() if (it_["outcome"].get("draft") or {}).get("purpose") == typ]
+    if not hit:
+        t = (f"没有等待签名的{_OBL_ZH.get(typ, typ)}草稿。其他草稿保持不变。" if lang == "zh" else f"There is no {typ} draft waiting. Your other drafts are unchanged.")
+        return _result("cancel", t, secrets, status="info")
+    for pid in hit:
+        _decline(S, pid, "cancelled_via_chat")
+    S.save()
+    d["awaiting"], d["ctx"] = None, {}
+    d["last_cancelled"] = typ
+    if d.get("last_pending") in hit:
+        d["last_pending"] = None
+    left = len(S.pending)
+    t = (f"已取消{_OBL_ZH.get(typ, typ)}草稿，没有任何资金转出。" + (f"还有 {left} 份草稿等待您签名。" if left else "") if lang == "zh" else
+         f"Cancelled the {typ} draft. Nothing moved." + (f" {left} other draft(s) still wait for your signature." if left else ""))
+    return _result("cancel", t, secrets, status="cancelled", pending_id=hit[0])
+
+
+def _cancel(S, lang: str, d: dict, secrets=None, message: str = "") -> dict:
     had_q = d["awaiting"] is not None
+    part = _cancel_one(S, lang, d, message, secrets) if message else None
+    if part is not None:
+        return part
     d["awaiting"], d["ctx"] = None, {}
     f = _find_pending(S, d)
     if not f:
@@ -530,10 +651,21 @@ def _cancel(S, lang: str, d: dict, secrets=None) -> dict:
     _decline(S, pid, "cancelled_via_chat")
     S.save()
     d["last_pending"] = None
+    d["last_cancelled"] = dr.get("purpose")
     amt, payee = float(dr.get("amount") or 0), _payee_name(S.world, dr.get("payee_id", ""))
     t = (f"已取消向 {payee} 支付 {money(amt, lang)} 的草稿，没有任何资金转出。" if lang == "zh" else
          f"Cancelled the draft of {money(amt, lang)} to {payee}. Nothing moved.")
     return _result("cancel", t, secrets, status="cancelled", pending_id=pid)
+
+
+def _switch_target(S, message: str, dr: dict) -> bool:
+    """True when the message names a bill (type, registered payee or the phone bill) other than the one in the current draft."""
+    w = S.world
+    typ = nl_extract.purpose_in_text(message)
+    named = nl_extract.registry_payee(message, _recipients(w))
+    if not typ and not named and _PHONE.search(nlu.normalise(message)):
+        named = next((r for r in _recipients(w) if r.id == "payee_telecom"), None)
+    return bool((typ and typ != dr.get("purpose")) or (named and named.id != dr.get("payee_id")))
 
 
 def _correct(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, secrets=None) -> dict:
@@ -547,6 +679,16 @@ def _correct(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, se
     if not f:
         t = ("目前没有可修改的草稿。您可以说“交房租”来生成一份。" if lang == "zh" else "There is no draft to change yet. Say 'pay my rent' to create one.")
         return _result("correct", t, secrets, status="info")
+    if _switch_target(S, message, f[1]["outcome"].get("draft") or {}):          # a different bill is named: ask before withdrawing the draft
+        dr0 = f[1]["outcome"].get("draft") or {}
+        typ = nl_extract.purpose_in_text(message)
+        d["awaiting"], d["ctx"] = "confirm_switch", {"pid": f[0], "message": message, "type": typ, "amount": it.slots.get("amount"),
+                                                       "currency": it.slots.get("currency")}
+        what = (_OBL_ZH.get(typ, typ) if lang == "zh" else typ) if typ else ("话费" if lang == "zh" else "phone bill")
+        have = (_OBL_ZH.get(dr0.get("purpose"), dr0.get("purpose")) if lang == "zh" else dr0.get("purpose")) or ""
+        t = (f"您有一份{have}草稿（{money(float(dr0.get('amount') or 0), lang)}）在等待签名。要撤下它，改付{what}吗？（回复“是”或“否”）" if lang == "zh" else
+             f"You have a {have} draft ({money(float(dr0.get('amount') or 0), lang)}) waiting for your signature. Withdraw it and pay the {what} instead? (yes / no)")
+        return _result("correct", t, secrets, status="needs_confirmation", needs=["info:confirm"])
     amt = it.slots.get("amount")
     if not amt:
         d["awaiting"], d["ctx"] = "slot_new_amount", {}
@@ -570,9 +712,8 @@ def _correct(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, se
 
 
 def _undo(S, lang: str, d: dict, secrets=None) -> dict:
-    if _find_pending(S, d):
-        t = ("这笔付款还没有发出，说“取消”即可撤销草稿。" if lang == "zh" else "That payment hasn't been sent yet. Say 'cancel' to withdraw the draft.")
-        return _result("undo", t, secrets, status="info")
+    if _find_pending(S, d):                 # nothing was sent yet, so undoing a draft is withdrawing it
+        return _cancel(S, lang, d, secrets)
     proofs = list(S.world.proofs)
     if proofs:
         j = next(iter(S.journeys), None)
@@ -608,8 +749,8 @@ def _obligations(S, lang: str, secrets=None, message: str = "") -> dict:
     return _result("obligations", t, secrets)
 
 
-_CUR_RE = re.compile(r"(?<![a-z])(inr|cny|rmb|usd|eur|gbp|aud|jpy|hkd|cad|sgd|rupees?|yuan|dollars?|euros?|pounds?)(?![a-z])|[₹¥$€£]|人民币|卢比", re.I)
-_CUR_CANON = {"rmb": "CNY", "yuan": "CNY", "人民币": "CNY", "¥": "CNY", "rupee": "INR", "rupees": "INR", "卢比": "INR", "₹": "INR", "dollar": "USD", "dollars": "USD",
+_CUR_RE = re.compile(r"(?<![a-z])(inr|cny|rmb|usd|eur|gbp|aud|jpy|hkd|cad|sgd|rupees?|rupaye|rupiya|yuan|dollars?|euros?|pounds?)(?![a-z])|[₹¥$€£]|人民币|卢比", re.I)
+_CUR_CANON = {"rmb": "CNY", "yuan": "CNY", "人民币": "CNY", "¥": "CNY", "rupee": "INR", "rupees": "INR", "rupaye": "INR", "rupiya": "INR", "卢比": "INR", "₹": "INR", "dollar": "USD", "dollars": "USD",
               "$": "USD", "euro": "EUR", "euros": "EUR", "€": "EUR", "pound": "GBP", "pounds": "GBP", "£": "GBP"}
 
 
@@ -690,7 +831,7 @@ def _routes(S, it: ChatIntent, lang: str, secrets=None, message: str = "") -> di
     return _result("routes", t, secrets)
 
 
-def _runway(S, lang: str, secrets=None) -> dict:
+def _runway(S, lang: str, secrets=None, message: str = "") -> dict:
     w = S.world
     pp = w.passport
     m = runway_months(pp, w.rates, w.day_index)
@@ -703,6 +844,14 @@ def _runway(S, lang: str, secrets=None) -> dict:
         short = " You may run short; I can build a plan." if m < pp.rules.runway_alert_months else ""
         t = (f"After your open bills, your money lasts about {m:.1f} month(s) at roughly CNY {burn:,.0f} a month." + short +
              (" Alerts: " + " ".join(a.message for a in alerts) if alerts else " No alerts.") + " This is an estimate, not a guarantee.")
+    typ = nl_extract.purpose_in_text(message)
+    need = sum(o.remaining for o in _open_obligations(w, typ)) if typ else 0
+    if need:                                  # "do I have enough to cover tuition?": compare the CNY balance with that bill
+        bal = pp.balance("CNY")
+        if lang == "zh":
+            t += f" 您的人民币余额 {money(bal, lang)}，{_OBL_ZH.get(typ, typ)}待付 {money(need, lang)}：" + ("够付。" if bal + 0.005 >= need else "不够，需要先兑换一部分卢比。")
+        else:
+            t += f" Your CNY balance is {money(bal, lang)} and your open {typ} is {money(need, lang)}: " + ("covered." if bal + 0.005 >= need else "not enough yet, convert some INR first.")
     return _result("runway", t, secrets)
 
 
@@ -732,6 +881,8 @@ def _convert(S, it: ChatIntent, lang: str, d: dict, secrets=None, message: str =
     src, dst = (curs[0], curs[1]) if len(curs) >= 2 else (("INR", "CNY") if cur in (None, "INR") else ("CNY", "INR"))
     if len(curs) == 1 and curs[0] not in ("INR", "CNY"):
         src, dst = curs[0], "CNY"
+    if len(curs) >= 2 and cur in curs[:2] and curs[0] != cur and re.search(r"how many", message, re.I):
+        src, dst = cur, curs[0]               # "how many yuan for 1 lakh rupees?": the amount's currency is the one being sold
     try:
         q = fx_quote(float(amt), src, dst, table_for(w.rates, w.day_index))
     except FxError as e:
@@ -795,12 +946,50 @@ def _spending(S, lang: str, secrets=None) -> dict:
     return _result("spending", t, secrets)
 
 
+def _held_note(S, lang: str) -> str:
+    """What 'held' means for a draft that is waiting: it is not stuck or lost, it waits for the signature."""
+    if not S.pending:
+        return ""
+    needs = _needs(next(reversed(S.pending.values())))
+    co = "parent_signature" in needs
+    if lang == "zh":
+        return "“暂缓/待批准”表示这是一份等待签名的草稿，没有卡住也没有付款：只有您用设备密钥对这份确切的草稿签名" + ("，并且家长共同批准，" if co else "") + "款项才会转出。"
+    return ("'Held' means the payment is a draft waiting for approval, not stuck and not paid: it moves only after you sign this exact draft with your device key"
+            + (" and a parent co-approves." if co else "."))
+
+
 def _explain(S, lang: str, secrets=None) -> dict:
     cards = S.world.cards
+    held = _held_note(S, lang)
     if not cards:
-        return _result("explain", "目前没有被拦截的付款。" if lang == "zh" else "Nothing has been stopped so far.", secrets)
+        return _result("explain", held or ("目前没有被拦截的付款。" if lang == "zh" else "Nothing has been stopped so far."), secrets)
     c = loc.localize_card(cards[-1], lang) if lang == "zh" else cards[-1]
-    return _result("explain", c["text"], secrets, rule=c.get("rule"))
+    return _result("explain", (held + " " + c["text"]).strip(), secrets, rule=c.get("rule"))
+
+
+def _next(S, lang: str, secrets=None) -> dict:
+    if S.pending:
+        t = (_held_note(S, lang) + (" 下一步：打开待批准的草稿，点击“签名并批准”。" if lang == "zh" else " Next: open the pending draft and tap Sign and approve."))
+        return _result("help", t.strip(), secrets, status="info")
+    allo = _open_obligations(S.world)
+    listing = ("；" if lang == "zh" else "; ").join(_obl_line(S.world, o, lang) for o in allo) or ("无" if lang == "zh" else "none")
+    t = (f"目前没有等待签名的草稿。待付账单：{listing}。说“交房租”即可开始。" if lang == "zh" else
+         f"Nothing is waiting for your signature. Open bills: {listing}. Say 'pay my rent' (or tuition, deposit, phone bill) to start.")
+    return _result("help", t, secrets, status="info")
+
+
+def _unknown(S, message: str, lang: str, secrets=None) -> dict:
+    """No dead end: name the nearest options and end with one question."""
+    typ = nl_extract.purpose_in_text(message)
+    pend = bool(S.pending)
+    if lang == "zh":
+        t = (f"您是想交{_OBL_ZH.get(typ, typ)}吗？说“交{_OBL_ZH.get(typ, typ)}”，我会起草一份等您签名的草稿。" if typ else
+             "我没听明白。您想交账单、查余额，还是看汇率" + ("，或者取消草稿" if pend else "") + "？可以说“交房租”“交学费”“交押金”或“交话费”。")
+    else:
+        t = (f"Do you want me to prepare your {typ} payment? Say 'pay my {typ}' and I'll draft it for your signature." if typ else
+             "I didn't catch that. Pay a bill, check your balance, or see the rate" + (", or cancel your draft" if pend else "") + "? "
+             "Say for example 'pay my rent', 'pay my tuition', 'pay the deposit' or 'pay my phone bill'.")
+    return _result(nlu.UNKNOWN, t, secrets, status="unknown")
 
 
 def _proof(S, lang: str, secrets=None) -> dict:
@@ -900,7 +1089,7 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.PAY_TEXT:
         return _pay_text(S, run_intake, it, message, lang, d, secrets)
     if k == nlu.CANCEL:
-        return _cancel(S, lang, d, secrets)
+        return _cancel(S, lang, d, secrets, message)
     if k == nlu.DENY:
         return _cancel(S, lang, d, secrets) if _find_pending(S, d) and d.get("last_pending") else \
             _result("deny", "好的。" if lang == "zh" else "Okay.", secrets)
@@ -925,7 +1114,7 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.ROUTES:
         return _routes(S, it, lang, secrets, message)
     if k == nlu.RUNWAY:
-        return _runway(S, lang, secrets)
+        return _runway(S, lang, secrets, message)
     if k == nlu.PLAN:
         return _plan(S, lang, secrets)
     if k == nlu.CONVERT:
@@ -949,6 +1138,8 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.GREETING:
         return _result(k, ("您好！" if lang == "zh" else "Hello! ") + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets)
     if k == nlu.HELP:
+        if it.slots.get("next"):
+            return _next(S, lang, secrets)
         if it.slots.get("reset"):
             t = ("我无法重置或查看登录口令；请联系沙盒的运营者。我可以帮您付账单、查余额。" if lang == "zh" else
                  "I can't reset or show a login passcode; ask whoever runs this sandbox. I can help with bills, balances and rates.")
@@ -958,8 +1149,7 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         t = ("现在没有等待确认的兑换。先说“convert INR 10000 to CNY”，我会先报价，再由您确认。" if lang == "zh" else
              "No conversion is waiting for confirmation. Ask for a quote first (for example 'convert INR 10,000 to CNY') and I'll ask you to confirm it.")
         return _result(nlu.CONFIRM, t, secrets, status="info")
-    pre = "我没有理解这条消息。您想做什么？" if lang == "zh" else "I didn't understand that. What would you like to do? "
-    return _result(nlu.UNKNOWN, pre + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets, status="unknown")
+    return _unknown(S, message, lang, secrets)
 
 
 def _faq(S, topic: str, lang: str, secrets) -> dict:

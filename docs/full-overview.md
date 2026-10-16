@@ -162,7 +162,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (passcodes: see below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests (1393 passed, 2 skipped, no network):
+# tests (1458 passed, 2 skipped, no network):
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench

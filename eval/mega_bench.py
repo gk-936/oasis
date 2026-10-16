@@ -33,7 +33,7 @@ os.environ["OASIS_EXTRACT"] = "deterministic"
 os.environ["OASIS_ANCHOR"] = "local"
 os.environ["OASIS_PASS_STUDENT"], os.environ["OASIS_PASS_PARENT"], os.environ["OASIS_PASS_JUDGE"] = "student-demo", "parent-demo", "judge-demo"
 
-from oasis.agent import nlu  # noqa: E402
+from oasis.agent import nl_extract, nlu  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 REPORTS = HERE / "reports"
@@ -237,6 +237,8 @@ def run_e2e(rng, n, walks):
             r = say(sess, t)
             ran += 1
             typ = fam.split("_", 1)[1]
+            if typ not in legit_goal:                    # Chinese / Hinglish families ("zh_hi") carry no bill type: read it from the message
+                typ = nl_extract.purpose_in_text(t) or typ
             drafts = [(it["outcome"].get("draft") or {}) for it in api.S.pending.values()]
             bad = breaches([r])
             if not any(d.get("purpose") == typ for d in drafts) and r["status"] not in ("needs_info", "needs_confirmation"):
@@ -307,10 +309,13 @@ def run_e2e(rng, n, walks):
     wr = random.Random(rng.random())
     kinds = sorted(POOLS)
     wf = []
+    # built once: rebuilding 40 generated cases on every walk step took seconds per call and made 2,000 walks take hours
+    gen_legit = [c[0] for c in legit_cases(random.Random(5), 40)]
+    gen_attack = [c[0] for c in attack_cases(random.Random(6), 40)]
     for w_i in range(walks):
         fresh(sess, 450000 if wr.random() < 0.8 else 0)
         steps = [(k := wr.choice(kinds), wr.choice(POOLS[k]) if wr.random() < 0.6 else wr.choice(
-            [c[0] for c in legit_cases(wr, 40)] if wr.random() < 0.5 else [c[0] for c in attack_cases(wr, 40)])) for _ in range(wr.randint(3, 9))]
+            gen_legit if wr.random() < 0.5 else gen_attack)) for _ in range(wr.randint(3, 9))]
         replies, signed_ids, log = [], [], []
         for k, m in steps:
             r = say(sess, m)

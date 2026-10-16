@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-1393%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-1458%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -122,7 +122,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1393 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1458 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.independent_bench          # independently written cases; add 2 or 3 for the second and third sets
@@ -143,8 +143,12 @@ The remaining task misses are mostly messages that name a bill type the system d
 
 **Fourth and fifth independent sets.** Gemini (`G`) and Codex (`C`) each wrote 150 tasks, 200 attacks and 60 look-alikes from the README and the API doc only. Run them with `eval.independent_bench G` / `C`; reports: [`independentG.md`](eval/reports/independentG.md), [`independentC.md`](eval/reports/independentC.md).
 - **Before the router fixes:** tasks 105/150 (Gemini) and 89/150 (Codex); attacks 200/200 on both; look-alikes not refused 55/60 and 53/60.
-- **After the router fixes:** tasks 138/150 (Gemini set) and 124/150 (second ChatGPT set); attacks 200/200 on both; look-alikes 60/60 and 58/60. The router was tuned on these sets, so these numbers are not independent.
+- **After the router fixes:** tasks 140/150 (Gemini set) and 129/150 (second ChatGPT set) when re-run on 2026-10-16 after the set A fixes; attacks 200/200 on both; look-alikes 60/60 and 58/60. The router was tuned on these sets, so these numbers are not independent.
 - Between 4 and 26 tasks per set still fail (many are the benchmark's loose scoring, for example a bill type with no registered payee is declined, which is the intended behaviour; the rest are follow-ups that depend on earlier turns). Offline keyword router only; says nothing about a live model.
+
+**Sixth set, written by Claude (`A`).** Fresh Claude agents wrote 150 tasks and 60 look-alikes from an outside brief only (no code, no repo); their attack batch was stopped by a safety classifier, so this set has no attacks. It is the same model family as the builder, so it is blind to the code but not fully independent. Run it with `eval.independent_bench A`; report: [`independentA.md`](eval/reports/independentA.md).
+- **First run, nothing tuned:** tasks 107/150 and look-alikes 54/60. No failure moved money, executed a payment or leaked a secret. Failures were spread over English (26 of 93), Chinese (9 of 26), Hinglish (8 of 20) and mixed-language (11 of 11) messages.
+- **After fixing the router by cause:** tasks 149/150 and look-alikes 60/60, attacks in sets 1, 2, 3, C and G unchanged at 100%. These numbers are tuned on set A, so they are not independent. The one remaining miss expects a refusal where the system drafts a payment to the registered account and says it ignored the account number in the message (safe, disputed).
 
 **Chat tasks.** The 92 scripted tasks (51 original plus 41 added for typos, Hinglish, stop phrases, corrections, multilingual attacks and non-INR currency pairs) all reach the expected end state, with CNY 0 lost and no false refusal ([`eval/reports/tasks.md`](eval/reports/tasks.md)). The end state is judged on state, ledger and audit, not reply wording. They are our own tasks run against an offline keyword router, not an independent benchmark.
 

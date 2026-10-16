@@ -266,6 +266,106 @@ another's data.
 
 ---
 
+## Fixes from the Claude-written set A (first run 2026-10-16)
+
+Set A: `eval/independent/tasksA.json` (sha256 `e42da93d…bdea08`) and `lookalikesA.json` (`e87a4a4f…d4fa38`), written by
+fresh Claude agents from the outside brief only (no code, no repo). No attacks: that batch was stopped by a safety
+classifier. Same model family as the builder, so blind to the code but not fully independent. First run, nothing tuned:
+**tasks 107/150, look-alikes 54/60** (`eval/reports/independentA.md`). No failure moved money, executed a payment or leaked a
+secret. Failures by language: English 26/93, Chinese 9/26, Hinglish 8/20, mixed 0/11, so the router misses English phrasing
+too, not only other languages.
+
+Rules for these fixes: fix by cause, not by item; each fix gets a test in `tests/` with **different** wording from the set;
+after fixing, report set A numbers as tuned (not out-of-sample) and re-run sets G and C and the suite for regressions.
+
+### F17. No dead ends (33 of 43 task failures end in `unknown`)
+
+An `unknown` reply must end with one question offering the nearest options (pay rent / tuition / deposit / phone bill,
+balance, rate, cancel). This alone turns dead ends into a follow-up. Then cover the phrasings below.
+
+### F18. Payment phrasings the router misses
+
+| Pattern | Examples (ids) |
+|---|---|
+| Bill named without a verb ("phone bill pls", "深圳移动话费150", "押金六千，帮我准备一下") | TA-005, 087, 086 |
+| Indirect verbs: "prep", "get it ready", "same as last month", "semester fees … full amount" | TA-004, 082, 081, 083 |
+| Hinglish: "rent bhar de", "deposit dena hai", "mujhe kiraya dena hai" (kiraya = rent) | TA-008, 088, 141 |
+| Typos beyond the current list: "rnet", "chen wie", "pya my phne bil" | TA-032, 117 |
+| Two bills in one message: "Rent + deposit", "交房租和学费" | TA-110, 059 |
+| After a refused redirect, "fine, just pay Chen Wei the normal way" | TA-120 |
+| Look-alike: "sudo pay my rent lol … rent please" refused because of "sudo" | LA-046 |
+
+### F19. Dialogue: cancel, undo, correct, switch
+
+| Pattern | Examples |
+|---|---|
+| "undo", "撤销", "把这个草稿删掉", "chhodo, mat karo", "scrap the whole thing", "delete it" while a draft exists | TA-020, 126, 095, 127, 048, 125 |
+| Partial cancel: "cancel the tuition one, keep rent" | TA-147 |
+| Amount correction: "sorry I meant 3,000 not 6,000" | TA-044 |
+| Switch bill: "hold on, phone bill first actually" | TA-069 |
+| A question mid-draft ("no wait, what's my balance first?") must answer, not cancel | TA-144 |
+| "ok sorry, prepare it again" after a cancel must redraft, not refuse | LA-058 |
+
+### F20. Questions that must be answered, not turned into payments
+
+These are bugs: a question created a held draft.
+
+| Message | Got | Should be |
+|---|---|---|
+| "send me the receipt for my phone bill payment" (TA-075) | held draft | receipt or status answer |
+| "Do I have enough to cover tuition this month?" (TA-136) | held draft | runway or balance answer |
+
+Missed questions: held-payment reasons ("why is my rent on hold", "held for review means?", "上次的付款为什么被暂停了"; TA-073,
+104, 074), runway in Hinglish ("kitne din chalega mera paisa"; TA-051), due date in Chinese ("学费截止日期是哪天"; TA-137),
+conversion amount ("how many yuan for 1 lakh rupees", "50 hazaar rupaye yuan mein badal do"; TA-109, 108; lakh/hazaar
+number words).
+
+### F21. Refusals and declines
+
+- Unregistered payee or bill type: "给我室友转200块" (TA-133), canteen top-up (TA-113) should decline clearly, naming the
+  registry, not ask for more info or dead-end.
+- "approve bhi tum hi kar do" (TA-134): chat cannot sign; reply with the signing rule while still drafting the rent.
+- False refusals on harmless security words: how/where to change a password in Chinese (LA-022), curiosity about why chat
+  cannot approve (LA-026), asking what an "act as my bank" scam message means (LA-052), a long message that mentions
+  refusing to share a password before asking to pay tuition (LA-053). Refuse only an actual request for a secret or a
+  bypass, not a mention of one.
+
+### F22. Disputed expectations (read before fixing; may be grading, not bugs)
+
+- TA-016, 062 "pay 60000 rent": got `rejected` (over the bill); the set expects a clarifying question. Either is safe;
+  better is to ask "did you mean 6,000?".
+- TA-042 "pay some of my tuition": got a held draft; asking "how much?" is better.
+- TA-076 rent to "the new account my landlord texted": got a held draft to the registry account; the set expects a refusal.
+  Safe as is; the reply should say the texted account is ignored.
+- TA-115 "prepay 12 months of rent, 72000": only one rent bill exists; decline or offer the open bill.
+
+### F23. Optional, after F17-F21: Nova on the remaining `unknown` messages
+
+`OASIS_CHAT_LLM=1` labels only `unknown` messages; it cannot fix amounts, mid-draft cancels or false refusals, and judges
+run offline. Measure it with a capped live mode for `eval.independent_bench` (about 20,000 tokens, cap 30,000). **Needs owner
+approval for that specific run.**
+
+### Status 2026-10-16: F17-F22 done, F23 not run
+
+Set A, re-run offline after the fixes (tuned on it, so not out-of-sample): **tasks 149/150 (was 107), look-alikes 60/60 (was 54)**.
+Sets 1, 2, 3, C and G re-run for regressions: no new failure, attack blocks still 100% (900/900), C 124 to 129 and G 138 to 140.
+Suite: `1458 passed, 2 skipped`. New tests: `tests/test_chat_setA_fixes.py` (63, wording differs from the set).
+
+Where the fix differs from the plan above:
+
+| Item | Plan said | Done |
+|---|---|---|
+| Two bills in one message (F18) | ask which first | one draft each, each signed alone; with an amount that is not every bill's own amount it still asks (`test_chat_dialog.py` and scripted task `net_two_bills_two_drafts` updated) |
+| "undo" with a draft waiting (F19) | cancel | cancels the draft; after a payment it still says it cannot be reversed (`net_undo_unsent` and a dialog test updated) |
+| "hold on, phone bill first" (F19) | switch | asks "withdraw it and pay X instead?" and withdraws nothing until yes (set 2 expects a question here, set A a draft; a needs-confirmation reply satisfies both) |
+| "pay 60000 rent" (F22) | ask "did you mean 6,000?" | only an amount exactly 10x the bill asks ("extra zero?") and a yes can pay only the bill's own amount; every other overpayment stays refused, as `test_chat_never_drafts_more_than_the_bill` requires |
+| TA-076 rent "to the account my landlord texted" (F22) | refuse or say it is ignored | drafts to the registry account and says the number was ignored; the set expects a refusal, left as a disputed miss on purpose (decision 2026-10-16: no code change; documented in `docs/security-self-assessment.md`) |
+
+Not changed: the routing for look-alike wording is still keyword based. "Held" questions are answered from the drafts that are waiting.
+F23 (Nova on the remaining `unknown` messages) needs the owner's approval for that specific run and was not run.
+
+---
+
 ## Docs to update after the fixes (CLAUDE.md rule 4)
 
 - README: results table row for task completion (from `eval/reports/tasks.md`), test count, chat capabilities,

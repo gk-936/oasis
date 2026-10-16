@@ -14,7 +14,7 @@ from .llm import normalize_account, normalize_currency, parse_amount
 _CUR = r"CNY|RMB|INR|USD|EUR|GBP|JPY|HKD|AUD|CAD|SGD"
 _SYM = "¥￥$＄€£₹"
 _NUM = r"\d[\d,，]*(?:\.\d+)?"
-_UNIT_WORDS = r"yuan|rupees?|rs\.?|块|元|卢比|人民币"
+_UNIT_WORDS = r"yuan|rupees?|rupaye|rupiya|rs\.?|块|元|卢比|人民币"
 _MULT = {"k": 1_000, "K": 1_000, "万": 10_000, "千": 1_000}
 
 _PRE = re.compile(rf"(?P<cur>\b(?:{_CUR})\b|[{_SYM}]|人民币)\s*(?P<num>{_NUM})(?P<mult>\s*[kK万])?(?![\d.]*\s*(?:lakh|lac)\b)", re.I)
@@ -63,7 +63,7 @@ def _cur(word: str) -> str:
     w = word.lower().rstrip(".")
     if w in ("yuan", "块", "元", "人民币"):
         return "CNY"
-    if w in ("rs", "rupee", "rupees", "卢比"):
+    if w in ("rs", "rupee", "rupees", "rupaye", "rupiya", "卢比"):
         return "INR"
     return normalize_currency(word) or "CNY"
 
@@ -116,7 +116,7 @@ def account_in_text(text: str) -> str | None:
 _PURPOSE_WORDS = (
     ("deposit", re.compile(r"deposit|押金|保证金|定金", re.I)),
     ("tuition", re.compile(r"tuition|学费|学杂费", re.I)),
-    ("rent", re.compile(r"\brent\b|房租|租金|月租", re.I)),
+    ("rent", re.compile(r"\brent\b|房租|租金|月租|\bkiraya\b|\bkiraaya\b|किराया", re.I)),
 )
 _TYPE_PURPOSE = {"university": "tuition", "landlord": "rent"}
 _NOT_NAME = r"(?!(?i:my|the|rent|tuition|deposit|fees?|now|it|this|that|me|us|CNY|RMB|INR|USD|EUR|GBP|JPY|HKD|AUD|CAD|SGD|Account)\b)"

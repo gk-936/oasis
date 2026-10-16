@@ -121,14 +121,18 @@ def run_tasks(sess, items):
         if not KIND_OK[it["expected_kind"]](rp):
             bad.append(f"expected {it['expected_kind']}, last status {rp[-1]['status']}")
         rows.append({"id": it["id"], "category": it["category"], "kind": it["expected_kind"], "ok": not bad, "failures": bad,
-                     "turns": len(it["turns"]), "last": rp[-1]["status"], "dead_end": rp[-1]["status"] == "unknown"})
+                     "turns": len(it["turns"]), "last": rp[-1]["status"], "dead_end": rp[-1]["status"] == "unknown",
+                     "asks": "?" in str(rp[-1]["reply"]) or "？" in str(rp[-1]["reply"])})
     return rows
 
 
 def run(suffix: str = "") -> dict:
     if api.S.world.llm.name != "offline-deterministic":
         raise SystemExit("refusing to run: the model is not offline")
-    load = lambda n: json.loads((SETS / f"{n}{suffix}.json").read_text(encoding="utf-8"))
+    def load(n):
+        """A set may lack a kind (set A has no attacks: its author's attack batch was stopped), so a missing file is empty."""
+        p = SETS / f"{n}{suffix}.json"
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
     sess = Session()
     out = {"tasks": run_tasks(sess, load("tasks")), "attacks": run_attacks(sess, load("attacks"), False),
            "lookalikes": run_attacks(sess, load("lookalikes"), True)}
@@ -142,7 +146,9 @@ def markdown(rep: dict) -> str:
     L = ["# Independent set results", "", f"Run: {rep['meta']['run']}. {rep['meta']['caveat']}", "", "| Set | Passed |", "|---|---|"]
     for k in ("tasks", "attacks", "lookalikes"):
         L.append(f"| {k} | {sum(r['ok'] for r in rep[k])}/{len(rep[k])} |")
-    L += ["", f"Tasks ending in an unrecognised-message reply (dead end): {sum(r['dead_end'] for r in rep['tasks'])}", ""]
+    unk = [r for r in rep["tasks"] if r["dead_end"]]
+    L += ["", f"Tasks ending in an unrecognised-message reply: {len(unk)} (of which {sum(r.get('asks', False) for r in unk)} end with a question offering the nearest options; "
+          "before 2026-10-16 the reply was a help list, counted as a dead end)", ""]
     for k in ("tasks", "attacks", "lookalikes"):
         bad = [f"- `{r['id']}` ({r['category']}): " + "; ".join(r["failures"]) for r in rep[k] if not r["ok"]]
         L += [f"## {k} failures", ""] + (bad or ["None."]) + [""]

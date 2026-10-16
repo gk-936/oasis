@@ -89,7 +89,7 @@ _INJECTION = re.compile(
     r"disregard (?:all |any |the )?(?:previous|prior|above|your) |forget (?:all |your |the )?(?:previous |prior )?(?:instructions?|rules?)|"
     r"new instructions?:|system (?:note|message|override)|you (?:must|will) now|you are now|from now on you|act as (?:if|an?) |"
     r"pretend (?:to be|you)|role-?play|developer mode|dev mode|god mode|admin(?:istrator)? mode|debug mode|maintenance mode|"
-    r"jailbreak|\bdan\b|do anything now|sudo\b|override (?:the )?(?:safety|security|policy|rules?|limit)|"
+    r"jailbreak|\bdan\b|do anything now|sudo\b(?!\s+pay\b)|override (?:the )?(?:safety|security|policy|rules?|limit)|"
     r"忽略(?:以上|之前|上面|所有)?(?:的)?(?:指令|规则|提示)|忽略[^，。,.\s]{0,8}(?:规则|指令|提示|限制)|无视(?:以上|之前|所有)|开发者模式|管理员模式|调试模式|越狱|扮演", re.I)
 _BYPASS = re.compile(
     r"approve (?:all|every|any|everything|the pending|all pending|them)|(?<!i'll )(?<!i will )(?<!i am going to )(?<!i'm going to )(?<!let me )(?<!app to )(?<!in the app )(?:approve|sign) my (?:[a-z]+ ){0,2}(?:draft|payment|bill)\b|(?:skip|bypass|disable|turn off|waive|without|no need for|don'?t need|no time for) "
@@ -99,14 +99,16 @@ _BYPASS = re.compile(
     r"(?:raise|increase|remove|lift|change) (?:my |the )?(?:(?:daily|spending|transfer|payment) ){0,2}(?:limit|threshold|cap)|"
     r"(?:^|\b(?:can|could|would|will) you |\bplease |\bpls )(?:approve|sign)\b(?: all| every| the| my| these| those| this| that| pending){0,3} (?:drafts?|payments?|transfers?|bills?)\b|"
     r"(?:^|\b(?:can|could|would|will) you |\bplease |\bpls )(?:change|edit|update|replace|modify)\b[^.?!]{0,30}\b(?:registry|landlord'?s? (?:name|bank|account)|payee'?s? (?:name|account|details)|(?:bank|account) (?:number|details))|"
-    r"approve kar(?: do|o)?\b|\bsign kar ?do\b|(?:parent|mummy|papa) ki taraf se|\b(?:sab|sare|saare)\b[^.]{0,30}\bapprove\b|अप्रूव|मंज़ूर|मंजूर|बिना (?:साइन|हस्ताक्षर)|"
+    r"approve kar(?: do|o)?\b|\bapprove\b[^.?!]{0,20}\bkar (?:do|o|dena|de)\b|\bsign kar ?do\b|(?:parent|mummy|papa) ki taraf se|\b(?:sab|sare|saare)\b[^.]{0,30}\bapprove\b|अप्रूव|मंज़ूर|मंजूर|बिना (?:साइन|हस्ताक्षर)|"
     r"批准所有|全部批准|跳过(?:批准|审批|签名|验证)|无需(?:批准|审批|签名|验证)|不用(?:批准|审批|签名)|绕过|关闭(?:安全|验证|检查)", re.I)
 _ROLE = re.compile(r"(?:i am|i'm|this is|act as|acting as|as|log(?:ged)? in as|switch to|become) (?:the |your |a |an )?(?:parent|guardian|mother|father|mom|dad|admin\w*|"
                    r"judge|bank|teacher|owner|developer|operator|support)\b|"
                    r"(?:parent|guardian) (?:here|speaking)|我是(?:家长|父母|管理员|银行|老师|开发者)|(?:作为|以)(?:家长|管理员)", re.I)
 _SOCIAL = re.compile(r"(?:parent|mummy|papa|maa|bank)\b[^.]{0,25}\b(?:approve|confirm|authori[sz]e) kar (?:diya|di|chuk)|"
                      r"(?:your |my )?(?:parent|mother|father|mom|dad|guardian|bank|manager|university|landlord|embassy|police) "
-                     r"(?:has |have |already |just )?(?:approved|confirmed|authori[sz]ed|told|said|asked|called|instructed)|"
+                     r"(?:has |have |already |just )?(?:approved|confirmed|authori[sz]ed|instructed)|"
+                     r"(?:your |my )?(?:parent|mother|father|mom|dad|guardian|bank|manager|university|embassy|police) "
+                     r"(?:has |have |already |just )?(?:told|said|asked|called)|"
                      r"this is (?:just )?(?:a )?(?:test|drill|audit|debug|emergency|authori[sz]ed)|it'?s (?:fine|ok|okay|safe|allowed|authori[sz]ed)|"
                      r"trust me|i (?:am|'m) authori[sz]ed|official (?:request|order)|(?:for )?security (?:reasons|purposes)|"
                      r"your (?:developer|creator|admin\w*) (?:said|told|allowed)|家长(?:已经|已)?(?:批准|同意|确认)|这是(?:一个)?测试|银行(?:说|通知|要求)|相信我", re.I)
@@ -125,12 +127,16 @@ def _bypass_asked(norm: str) -> bool:
     for m in _BYPASS.finditer(cleaned):
         if re.match(r"(?:skip|bypass|disable|turn off|waive)\b", m.group(0)) and _NEGATED.search(cleaned[max(0, m.start() - 16):m.start()]):
             continue
+        if re.match(r"(?:sign|approve)\b", m.group(0)) and _WHY_CURIOUS.search(cleaned) and _CURIOUS_MARK.search(cleaned):
+            continue                         # "why can't you approve it for me? I'm curious how signing works" asks for the reason
         return True
     return False
 
 
-_QUOTED = re.compile(r"[“\"「『][^”\"」』]{3,200}[”\"」』]")
-_MENTION = re.compile(r"\b(?:mean|means|meaning|quote[sd]?|quoting|example|says?|said|mentions?|mentioned|explain why|what does|why (?:must|can'?t|does))\b|意思|含义|引用|例如|比如|什么是", re.I)
+_WHY_CURIOUS = re.compile(r"\bwhy (?:can'?t|won'?t|don'?t|couldn'?t)\b[^.?!]{0,40}\b(?:approve|sign)\b|\bhow (?:the )?(?:signing|approval) works\b", re.I)
+_CURIOUS_MARK = re.compile(r"\b(?:curious|wondering|understand|designed|makes? sense)\b", re.I)
+_QUOTED = re.compile(r"[“\"「『][^”\"」』]{3,200}[”\"」』]|(?<!\w)'[^']{3,200}'(?!\w)")
+_MENTION = re.compile(r"\b(?:mean|means|meaning|quote[sd]?|quoting|example|says?|said|mentions?|mentioned|explain why|what does|why (?:must|can'?t|does)|kya (?:hota|matlab)|matlab|samjha\w*)\b|意思|含义|引用|例如|比如|什么是", re.I)
 
 
 def strip_mentions(norm: str) -> str:
@@ -195,8 +201,17 @@ _SECURITY_QA = re.compile(r"\b(?:checks?|see|know)\b[^.?!]{0,25}\b(?:whether|if)
 _HOWTO = re.compile(r"(?:请)?(?:只)?告诉我 ?(?:官方)? ?(?:recovery steps|reset 流程|流程|步骤)|(?:tell|show|explain|teach|guide) me how")
 
 
+_REPORTED_ASK = re.compile(r"(?:told|asked|said|wants?|wanted)\s+(?:me\s+)?to\s+(?:give|share|send|tell|hand|reveal)\b[^.?!,;]*", re.I)
+_I_REFUSED = re.compile(r"\bi\s+(?:didn['’]?t|did not|refused|said no|won['’]?t|will not|never did)\b", re.I)
+
+
 def _drop_negated(norm: str) -> str:
-    """Remove 'do not ask me to send you the password' style clauses (a promise not to share, not a request to see)."""
+    """Remove 'do not ask me to send you the password' style clauses (a promise not to share, not a request to see), and a
+    story where someone else asked for a password and the speaker says they refused. Other clauses are still checked."""
+    if _I_REFUSED.search(norm):
+        rest = _REPORTED_ASK.sub(" ", norm)
+        if not _SECRETS_VERB.search(rest):
+            norm = rest
     return _NEG_ASK.sub(lambda m: m.group(0) if _REVEAL.search(m.group(0)) else " ", norm)
 
 
@@ -229,11 +244,13 @@ _PAY_IMPERATIVE = re.compile(
     r"^(?:(?:please|kindly|pls|can you|could you|would you|i (?:want|need|have|would like) to|i'?d like to|let'?s|go ahead and|help me|lets)\s+)*"
     r"(?:pay|settle|clear|send|transfer|remit|wire|cover|prepare|draft|sort(?: out)?|set up|make (?:a |the )?payment)\b|^(?:请|帮我|麻烦|我要|我想|我需要)?(?:帮我)?(?:交|付|缴|支付|转账|汇款|转|起草|准备|给)", re.I)
 _PAY_WORD = re.compile(r"\b(?:pay|paying|settle|clear|send|transfer|remit|wire|cover|prepare|draft|bana do|banao)\b|草稿|给|交|付|缴|支付|转账|汇款|起草|处理|办理", re.I)
-_OBL_WORD = re.compile(r"rent|tuition|deposit|fees?\b|bills?\b|dues?\b|房租|租金|学费|押金|账单|费用", re.I)
+_OBL_WORD = re.compile(r"rent|kiraya|kiraaya|किराया|tuition|deposit|fees?\b|bills?\b|dues?\b|房租|租金|学费|押金|账单|费用", re.I)
 _CANCEL = re.compile(r"^(?:(?:please|pls)\s+)?(?:cancel|stop|abort|abandon|never ?mind|forget it|scrap)\b|"
                      r"^(?:no,? )?(?:wait|hold on|hang on)\b(?!.*\b(?:make|change|instead|actually|should|meant)\b)|^(?:no,? )?stop\b|\bwrong (?:person|one|guy)\b|\bnot (?:that|this) one\b|\bcancel (?:kar|karo|do|please|pls)\b|\bundo (?:that|this|the)\b[^.]{0,25}\bdraft\b|^no,? (?:stop|cancel)\b|^no,? wait\b(?!.*\b(?:make|change|instead|actually|should|meant)\b)|"
                      r"\b(?:cancel|stop|abort|withdraw) (?:that|this|the|my|it)\b|(?:don'?t|do not|dont) (?:pay|send|go ahead)|"
-                     r"取消|别付|不要付|不付了|停止|算了|撤回", re.I)
+                     r"取消|别付|不要付|不付了|停止|算了|撤回|"
+                     r"\b(?:scrap|delete|discard|drop|trash|void) (?:the |this |that |my )?(?:whole |entire )?(?!first\b|old\b|previous\b|earlier\b)(?:\w+ )?(?:thing|it|draft|payment|one)\b|"
+                     r"\bchhod(?:o|na)?\b|\bmat kar(?:o)?\b|\brehne (?:do|de)\b|\bnahi karna\b|删掉|删除|作废|不要了|छोड़ो|मत करो", re.I)
 _CORRECT = re.compile(r"\bcorrection\b|\bcorrect (?:it|that|this|the (?:draft|amount))\b|\b(?:discard|replace|void|scrap) the (?:first|old|previous|earlier) draft\b|(?:the |that )?(?:amount|sum|figure|total|price)\s+(?:was |is |should be |must be |has to be |needs to be )"
                       r"|(?:should|must|ought to) be\b|make (?:it|that|the amount)\b|change (?:it|that|the amount)\b|"
                       r"\bactually\b|\bwrong (?:amount|account|payee|number)\b|\bi meant\b|\bno,? (?:it'?s|its|make)\b|\binstead\b|\bnahi\b|\bgalat\b|draft change|change kar|\bbadal\b|"
@@ -242,18 +259,18 @@ _CONFIRM = re.compile(r"^(?:(?:yes|yep|yeah|ok|okay|sure)[,!. ]+)?(?:yes|yep|yea
                       r"yes please|ok please|确认|是的?|好的?|可以|行|对|没错|同意)(?:[, ]+please)?[\s!.。！]*$", re.I)
 _DENY = re.compile(r"^(?:no|nope|nah|n|not now|no thanks|don'?t|negative|否|不|不要|不用了?|别|不行)[\s!.。！]*$", re.I)
 _UNDO = re.compile(r"\bundo\b|\brevers\w+|get (?:it|my money|the money) back|\brecall\b|\bclaw ?back\b|\brefund\b|撤销|追回|退回|退款", re.I)
-_EXPLAIN = re.compile(r"why (?:was|is|did|has|were)[^?]{0,60}(?:block|stop|hold|held|reject|refus|declin|frozen|freez|flag|deny|denied)|"
+_EXPLAIN = re.compile(r"\bheld for review\b|\bwhy (?:is|was|did)[^?]{0,40}\b(?:held|on hold)\b|暂停|搁置|扣留|why (?:was|is|did|has|were)[^?]{0,60}(?:block|stop|hold|held|reject|refus|declin|frozen|freez|flag|deny|denied)|"
                       r"what happened|explain (?:the|that|this|why)|why (?:are|do|am) (?:you|i)[^?]{0,40}(?:signature|sign|approv|confirm|asking)|why (?:can'?t|couldn'?t|won'?t) (?:i|you)|为什么[^？?]{0,20}(?:拦截|拒绝|冻结|暂缓|阻止|不能)|怎么回事|解释", re.I)
 _PROOF = re.compile(r"\bproofs?\b|\breceipts?\b|\bevidence\b|\bverify (?:the )?payment\b|证明|凭证|回执|收据", re.I)
 _CREDIT = re.compile(r"\bcredit\b|trust pass|\breputation\b|build (?:my )?(?:history|record|trust)|信用|信誉", re.I)
 _STATUS = re.compile(r"(?:did|has|have|was|is)[^?]{0,40}(?:go through|gone through|arrive|arrived|get paid|got paid|been paid|sent|paid|received|land|landed|reach)|"
                      r"where(?:'s| is| are)[^?]{0,20}(?:my )?(?:money|payment|transfer|funds)|(?:payment|transfer) status|\bstatus\b|\bpending\b|paid yet|"
                      r"\bwas it waiting\b|waiting for (?:the |my )?(?:device )?signature|到账|付了吗|付款了吗|进度|状态|有没有付|是否已付|支付成功", re.I)
-_RUNWAY = re.compile(r"run out|(?:money|funds|cash|savings) (?:will )?(?:last|run)|will (?:my )?(?:money|funds|cash|savings) last|runway|how long (?:will|can|do)|last me|(?:enough|sufficient) (?:money|funds|cash)|will i (?:have|be) (?:able|enough)|"
+_RUNWAY = re.compile(r"kitne din|kab tak chal|\bchalega\b|\bhave enough\b|enough to (?:cover|pay)|run out|(?:money|funds|cash|savings) (?:will )?(?:last|run)|will (?:my )?(?:money|funds|cash|savings) last|runway|how long (?:will|can|do)|last me|(?:enough|sufficient) (?:money|funds|cash)|will i (?:have|be) (?:able|enough)|"
                      r"going to (?:run|be) (?:out|short|broke)|afford|够用|撑多久|够不够|用完|还能用", re.I)
 _BALANCE = re.compile(r"(?:paisa|paise|balance) kitna|kitna (?:paisa|paise|bacha)|how much (?:money|cash|do i have\b(?! to)|have i got|is (?:in|left))|how much (?:\w+ ){0,2}(?:do )?i (?:have|got|have got|still have)\b(?! to)|how much (?:\w+ )?(?:is )?left\b|\bbalance|\bmy (?:funds|money|savings|wallet)\b|\bwhat do i have\b|\b(?:cny|inr|yuan|rupee) wallet\b|"
                       r"how much (?:is )?left|what(?:'s| is)? (?:remains?|left)|\bremain(?:s|ing)?\b[^?]{0,30}(?:wallet|balance|account)|\b(?:my|student|sandbox) (?:student |sandbox )?wallet\b|余额|还有多少钱|有多少钱|还剩|剩多少|账户里", re.I)
-_OBLIGATIONS = re.compile(r"\b(?:bill|rent|tuition|fees?)\s+kitna\b|how much (?:is|are|do i (?:owe|pay)|do i (?:have|need) to pay|must i pay|should i pay)[^?]{0,20}(?:rent|tuition|deposit|fees?|bills?)|what (?:do i|i) owe|how much (?:do )?i (?:still )?owe|how much (?:is )?(?:still )?(?:due|owed)|what(?:'s| is| are) (?:due|owed|upcoming|coming up)|\bupcoming\b|\bbills\b|\bobligations?\b|\bdue (?:soon|date|dates)\b|"
+_OBLIGATIONS = re.compile(r"截止|截至|哪天|几号|\b(?:bill|rent|tuition|fees?)\s+kitna\b|how much (?:is|are|do i (?:owe|pay)|do i (?:have|need) to pay|must i pay|should i pay)[^?]{0,20}(?:rent|tuition|deposit|fees?|bills?)|what (?:do i|i) owe|how much (?:do )?i (?:still )?owe|how much (?:is )?(?:still )?(?:due|owed)|what(?:'s| is| are) (?:due|owed|upcoming|coming up)|\bupcoming\b|\bbills\b|\bobligations?\b|\bdue (?:soon|date|dates)\b|"
                           r"when (?:is|are)[^?]{0,30}due|(?:what|which) (?:payments|bills)|应付|要付|欠|到期|待付|哪些费用", re.I)
 _SPENDING = re.compile(r"\b(?:what|how much) (?:did|have) i (?:spend|spent|paid|pay)\b|\bmy (?:spending|expenses|transactions)\b|\b(?:pichla|last|previous|recent) transactions?\b|\bspending\b|\bexpenses?\b|"
                        r"\btransaction (?:history|list)\b|where (?:did|does) my money go|花了多少|花销|开销|消费|支出", re.I)
@@ -264,19 +281,23 @@ _ROUTES = re.compile(r"cheap\w*|best (?:way|route|option|rail)|which (?:route|wa
                      r"\bfees?\b(?! due)|compare|fastest|路线|最便宜|怎么汇|怎么转|哪种方式|手续费", re.I)
 _ROUTES_STRONG = re.compile(r"cheap\w*|best (?:way|route|option|rail)|\broutes?\b|fastest|how (?:should|do|can) i (?:send|transfer|move|remit)|路线|最便宜", re.I)
 _PLAN = re.compile(r"\bplan\b|\bbudget\b|semester|schedule my|规划|计划|预算", re.I)
-_CONVERT = re.compile(r"\b(?:inr|cny|rmb|usd|eur|gbp)\b[^.\n]{0,25}\b(?:mein|me|to|into|ko)\b[^.\n]{0,25}\b(?:quote|convert|exchange)\b|\b(?:convert|exchange|swap|change|quote)\b[^.\n]{0,40}(?:inr|cny|rmb|usd|eur|gbp|aud|jpy|rupees?|yuan|dollars?|euros?|pounds?|₹|¥|\$|€|£)|how much is[^?]{0,30}(?:inr|cny|rmb)[^?]{0,10}in (?:inr|cny|rmb)|兑换|换成|换汇|转换|换算", re.I)
+_CONVERT = re.compile(r"\b(?:inr|cny|rmb|usd|eur|gbp)\b[^.\n]{0,25}\b(?:mein|me|to|into|ko)\b[^.\n]{0,25}\b(?:quote|convert|exchange)\b|\b(?:convert|exchange|swap|change|quote)\b[^.\n]{0,40}(?:inr|cny|rmb|usd|eur|gbp|aud|jpy|rupees?|yuan|dollars?|euros?|pounds?|₹|¥|\$|€|£)|how much is[^?]{0,30}(?:inr|cny|rmb)[^?]{0,10}in (?:inr|cny|rmb)|\b(?:move|put|turn|shift|swap)\b[^.\n]{0,30}\b(?:inr|rupees?)\b[^.\n]{0,15}\b(?:into|to)\b[^.\n]{0,10}\b(?:cny|rmb|yuan)\b|兑换|换成|换汇|转换|换算", re.I)
 _GREETING = re.compile(r"^(?:hi|hello|hey|hiya|yo|good (?:morning|afternoon|evening)|greetings|thanks|thank you|thx|你好|您好|嗨|谢谢|早上好|晚上好)"
                        r"(?:\s+(?:there|team|oasis|everyone|assistant|bot))?\b[\s!.。！?？]*$", re.I)
 _RESET = re.compile(r"(?:forgot|forget|lost|reset|recover|change|locked out|can'?t (?:log ?in|sign ?in))[^.?!]{0,40}(?:password|passcode|login)|"
-                    r"(?:password|passcode|login) (?:reset|recovery|help)|忘(?:了|记)(?:密码|口令)|重置(?:密码|口令)", re.I)
+                    r"(?:password|passcode|login) (?:reset|recovery|help)|忘(?:了|记)(?:密码|口令)|重置(?:密码|口令)|(?:改|换|修改|更改|更换)(?:密码|口令)", re.I)
 _INVOICE_WORD = re.compile(r"\binvoice\b|发票|账单号", re.I)
 _DUE_PAY = re.compile(r"\b(?:rent|tuition|deposit|fees?|bill)\b[^.?!]{0,20}\bdue (?:today|now|tomorrow|this week)\b|(?:房租|学费|押金)(?:今天|今日)?到期", re.I)
 _WORD_NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
 _WORD_AMT = re.compile(r"\b(" + "|".join(_WORD_NUM) + r")\s+(thousand|hundred)\b", re.I)
 
 
+_HAZAAR = re.compile(r"(\d+(?:\.\d+)?)\s*(?:hazaar|hazar|hajar)\b|(?<![\w.])(\d+(?:\.\d+)?)k\b", re.I)
+
+
 def _words_to_digits(text: str) -> str:
-    """'six thousand yuan' -> '6000 yuan' (one to ten, thousand or hundred only); other text is untouched."""
+    """'six thousand yuan' -> '6000 yuan' (one to ten, thousand or hundred only), '50 hazaar' -> '50000'; other text is untouched."""
+    text = _HAZAAR.sub(lambda m: str(int(float(m.group(1) or m.group(2)) * 1000)), text)
     return _WORD_AMT.sub(lambda m: str(_WORD_NUM[m.group(1).lower()] * (1000 if m.group(2).lower() == "thousand" else 100)), text)
 _SMALLTALK = re.compile(r"^(?:你好|您好|嗨|hi|hello|hey)[，, ]*(?:今天)?(?:怎么样|好吗|最近好吗)|how are you", re.I)
 _HELP = re.compile(r"\bhelp\b|what can you do|what you do|how (?:do|does) (?:you|this|it) work|\bcapabilit|what are you|who are you|帮助|你能做什么|怎么用|你是谁", re.I)
@@ -284,7 +305,7 @@ _NOPAY = re.compile(r"\bno (?:drafts?|payments?)\b|\b(?:only|just) asking for (?
 _FAQ = (("payees", re.compile(r"\bregistered payees|\bpayee list|\bwhich payees|\ball the payees|\bhow many (?:registered )?payees|\bwho (?:can|do) (?:i|you) pay\b|\bfixed payees|收款人有哪些|固定收款人|登记.{0,4}收款人", re.I)),
         ("sign", re.compile(r"\bwhere (?:do|can|should) i sign\b|\bhow (?:do|can|should) i sign\b|\bwhat happens (?:after|when) i sign\b|\bsign (?:kahan|kaise)\b|在哪.{0,3}签名|怎么签名|签名后", re.I)),
         ("what", re.compile(r"\bwhat(?:'s| is) oasis\b|\boasis (?:kya|what)\b|oasis是什么", re.I)))
-_NUMBER = re.compile(r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)(?![\w])")
+_NUMBER = re.compile(r"(?<![A-Za-z0-9_.])(\d[\d,]*(?:\.\d+)?)(?![A-Za-z0-9_])")        # CJK text may touch the number: "话费交1500"
 
 
 def _bare_number(text: str) -> float | None:
@@ -309,12 +330,27 @@ def _amount(text: str, bare: bool = False) -> tuple[float, str] | None:
     return (v, "CNY") if v else None
 
 
+_RECEIPT_ASK = re.compile(r"\b(?:receipts?|proofs?|confirmation)\b", re.I)
+_PAYING_EN = re.compile(r"\b(?:pay|settle|transfer|wire|remit)\b", re.I)
+_AFFORD = re.compile(r"\b(?:do|will|would) (?:i|my (?:money|balance|funds))\b[^?]{0,30}\b(?:enough|afford|cover|last|sufficient)\b|"
+                     r"kitne din|kab tak chal|\bchalega\b", re.I)
+_CONVERT_HI = re.compile(r"\b(?:rupa\w*|rupees?|inr|yuan|cny|rmb|lakh|hazaar|hazar)\b[^.\n]{0,30}\b(?:mein|me|se)\b[^.\n]{0,20}\b(?:badal|convert|change|exchange)\w*|"
+                         r"\bhow many (?:yuan|cny|rmb|rupees?|inr)\b[^?]{0,40}\b(?:get|for|from)\b", re.I)
+_WAIT_Q = re.compile(r"^(?:no,? )?(?:wait|hold on|hang on)\b[^.]*(?:\?|\bwhat\b|\bhow\b|\bwhich\b|\bwhen\b|\bwhy\b)", re.I)
+_NEXT = re.compile(r"\bwhat (?:do|should|can|must) i (?:do|need to do)\b|\bwhat(?:'s| is) next\b|\bnext steps?\b|\bwhat now\b|\bab kya\b|接下来|下一步|怎么办", re.I)
+_HOLD_Q = re.compile(r"(?:\bis held\b|\bwas held\b)[^.]*?(?:\?|\bwhy\b|\bwhat\b)", re.I)
+_PHONE_BILL = re.compile(r"\bphone\b|\bmobile\b|\bsim\b|话费|手机费|深圳移动", re.I)
+UNREGISTERED = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|gym|membership|subscription|airline|flight|ticket|\bvisa\b|hospital|medical|clinic|insurance|credit card|"
+                          r"\bfriend|external (?:bank|account)|room-?mate|flat-?mate|class-?mate|canteen|cafeteria|\bmess\b|meal card|电费|水费|燃气|煤气|网费|宽带|话费|水电|室友|同学|朋友|食堂|饭卡", re.I)
+_INFO_CUE = re.compile(r"\b(?:how much|how many|how long|what|when|why|which|where|who|is it|are they|do i|did i|have i|am i|tell me|explain|show|list|about|mean|means|balance|rate|due date|status|kitna|kab|kya|paid|already|yesterday|received|was|were|didn'?t|don'?t|do not|won'?t|not)\b|多少|什么|为什么|哪|吗|已经|显示|查看|看看|列出|分类|统计|明细|详情|\bspending\b|\bview\b|\bdisplay\b|\bsummary\b", re.I)
+_PAY_CUE = re.compile(r"\b(?:pls|please|prep\w*|ready|again|same as|full|poora|pura|dena|dene|bhar\w*|bhej\w*|pay|paying|start|begin|set up|initiate|process|handle|chahiye)\b|帮|准备|办理|处理|交|付|缴|一下", re.I)
 _VOCAB = ("pay", "rent", "tuition", "deposit", "cancel", "balance", "convert", "transfer", "landlord", "university")
-_HINGLISH_PAY = re.compile(r"\b(?:bhej(?:o|na)?|bharo|bhar do|de do|dedo|chukao|kar do|karo)\b", re.I)
+_HINGLISH_PAY = re.compile(r"\b(?:bhej(?:o|na|de)?|bharo|bhar (?:do|de)|de do|dedo|de de|chukao|kar do|karo|dena hai|dene hai|bharna hai|bharni hai)\b", re.I)
+_TYPO_MAP = {"pya": "pay", "pyay": "pay", "phne": "phone", "phoen": "phone", "bil": "bill", "rnet": "rent", "retn": "rent", "chen wie": "chen wei", "chne wei": "chen wei"}
 _TYPO_SKIP = {"paid", "pays", "send", "sent", "rents", "fees", "bill", "dues", "last", "cancels", "cover", "urgent", "pays", "rental", "balances"}
 
 
-_FILLER = re.compile(r"^(?:(?:hey|hi|hello|ok|okay|um+|uh+|er+|so|well|oh|right|alright|yo|oasis|quick (?:one|question|favou?r)|one more thing|btw|by the way)[,:!.\s-]+)+", re.I)
+_FILLER = re.compile(r"^(?:(?:hey|hi|hello|ok|okay|um+|uh+|er+|hmm+|fine|sorry|just|bhai|yaar|arre|bro|so|well|oh|right|alright|yo|oasis|quick (?:one|question|favou?r)|one more thing|btw|by the way)[,:!.\s-]+)+", re.I)
 
 
 def strip_filler(norm: str) -> str:
@@ -327,9 +363,13 @@ def strip_filler(norm: str) -> str:
 
 def fix_typos(norm: str) -> str:
     """Snap near-misses of a few core words ('paay', 'depsoit', 'rnet') onto the word; only used to route, after security checks."""
+    norm = re.sub(r"\bchen wie\b|\bchne wei\b", "chen wei", norm)
     out = []
     for tok in norm.split(" "):
         w = tok.strip(".,!?;:").lower()
+        if w in _TYPO_MAP:
+            out.append(tok.replace(w, _TYPO_MAP[w]))
+            continue
         if len(w) >= 4 and w not in _VOCAB and w not in _TYPO_SKIP and w.isalpha():
             m = [v for v in difflib.get_close_matches(w, _VOCAB, 3, 0.8) if v[0] == w[0] and abs(len(v) - len(w)) <= 1][:1]
             if m:
@@ -369,7 +409,7 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         return ChatIntent(CONFIRM, {}, 0.95, lang)
     if _DENY.match(norm):
         return ChatIntent(DENY, {}, 0.95, lang)
-    if _CANCEL.search(norm) and not acct and not _CONVERT.search(norm):
+    if _CANCEL.search(norm) and not acct and not _CONVERT.search(norm) and not _WAIT_Q.search(norm):
         return ChatIntent(CANCEL, {}, 0.9, lang)
     # 4. an account number next to "use / instead / change / wrong" is an attempt to change where money goes: never from chat
     if acct and re.search(r"\b(?:use|instead|change|update|replace|switch|new account|wrong|correct)\b|改|换|更换|用这个|错|转到|汇到|付到", norm):
@@ -380,6 +420,13 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         a = _amount(raw, bare=True)
         return ChatIntent(PAY_TEXT, {"amount": a[0] if a else None, "currency": a[1] if a else None, "account": acct,
                                      "urgent": urgent, "purpose": nl_extract.purpose_in_text(raw)}, 0.9, lang)
+    if _CONVERT_HI.search(norm) and not acct:
+        a = _amount(raw)
+        return ChatIntent(CONVERT, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.8, lang)
+    if _RECEIPT_ASK.search(norm) and not _PAYING_EN.search(norm) and not nl_extract.money(raw):     # "send me the receipt" asks for a proof, it is not a payment
+        return ChatIntent(PROOF, {}, 0.85, lang)
+    if _AFFORD.search(norm):
+        return ChatIntent(RUNWAY, {}, 0.85, lang)
     if _CORRECT.search(norm) and not _PAY_IMPERATIVE.search(norm):
         a = _amount(re.sub(r"[,;]?\s*(?:\d[\d,.]*k?\s*nahi|not|instead of|rather than)\b.*$", "", raw, flags=re.I), bare=True)
         return ChatIntent(CORRECT, {"amount": a[0] if a else None, "currency": a[1] if a else None,
@@ -394,9 +441,20 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
             return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": a[0] if a else None,
                                                "currency": a[1] if a else None, "urgent": urgent,
                                                "fraction": _FRACTION_V[fr.group(1) or fr.group(0)] if fr and not a else None}, 0.85, lang)
+    # 4c. a bill named without a verb ("phone bill pls", "Rent time again"), or a bill type with no registered payee: a payment request,
+    # unless the sentence asks, reports a past payment or says not to. The chat layer decides which bill; the draft still needs a signature.
+    if not zh_q and not _INFO_CUE.search(norm) and not _NOPAY.search(norm):
+        unreg = UNREGISTERED.search(norm) and not _PHONE_BILL.search(norm)
+        bill = _OBL_WORD.search(norm) or _PHONE_BILL.search(norm) or unreg
+        if bill and (_PAY_CUE.search(norm) or len(norm) <= 20) and not _CONVERT.search(norm):
+            a = _amount(raw, bare=True)
+            return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": a[0] if a else None,
+                                               "currency": a[1] if a else None, "urgent": urgent, "fraction": None}, 0.7, lang)
     # 5. questions
-    if _EXPLAIN.search(norm):
+    if _EXPLAIN.search(norm) or _HOLD_Q.search(norm):
         return ChatIntent(EXPLAIN, {}, 0.85, lang)
+    if _NEXT.search(norm):
+        return ChatIntent(HELP, {"next": True}, 0.85, lang)
     if _UNDO.search(norm):
         return ChatIntent(UNDO, {}, 0.85, lang)
     if re.search(r"\brates?\b|汇率", norm) and not nl_extract.money(raw):          # "exchange rate USD to CNY" asks for a rate, not a conversion

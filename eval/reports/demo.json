@@ -1,6 +1,6 @@
 {
   "legit": {
-    "audit_head": "38417365ea11d0c3c51b9ad4d555858e860b4e7b491ca6cc29bab7c048d1cf72",
+    "audit_head": "1c2a752a7fb3ebe48fa681cb02fda309a159e48c40ab26df2c2ff7c8d4318641",
     "audit_entries": 29,
     "audit_ok": true,
     "money_lost_cny": 0,
@@ -36,7 +36,7 @@
     ]
   },
   "attack": {
-    "audit_head": "64f5aa04bca100693c35d34f1692f4d8987623a433307d72b255a40e38c1a449",
+    "audit_head": "5acc5728bce68a8efe419b04a2dabcd87da3a0b6c280aeb697835dd642373561",
     "audit_entries": 22,
     "audit_ok": true,
     "money_lost_cny": 0,

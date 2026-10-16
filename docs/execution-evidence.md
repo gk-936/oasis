@@ -23,12 +23,13 @@ Everything below ran on the simulated sandbox (MOCK rates, rails, registry and b
 | Fresh attack set, first run (before any fix) | `benchmark_fresh_prefix.md/.json` | 49 new cases (33 attacks, 16 genuine): full configuration blocked 32 of 33 and completed 12 of 16; found an unhandled error, missing layouts and a European-amount misread | `python -m eval.runner --llm offline --suite fresh` |
 | Fresh attack set, after the general fixes | `benchmark_fresh.md/.json` | the same 49 cases: full configuration blocks 33 of 33 and completes 16 of 16 (after the 2026-10-14 sentence-level extraction; before it, 15 of 16: `fl_table_1` omits the purpose and was held) | `python -m eval.runner --llm offline --suite fresh --fresh-stem benchmark_fresh` |
 | Risk scorers out of sample | `risk_fresh.md` | rules and trained model on the fresh set: 16 of 30 attacks flagged, 0 of 16 legitimate; AUC 0.81 vs 0.92; cross-validation in the training corpus 1.00 | `python -m eval.risk_fresh` |
+| Execution evidence by problem (unprotected vs protected) | folder `execution_evidence/` at the repository root: `Execution_Evidence_Report.pdf`, `operation_log.jsonl`, `evidence_results.json`, `evidence_summary.md`, `verify_evidence.py` (plus copies of the benchmark and demo data) | 8 sandbox cases (6 scams, 2 genuine controls) each run with protections off and on: CNY 126,000 lost unprotected vs CNY 0 protected, genuine payments 2 of 2 in both; 9 of 9 tampered signed payments refused; cost, runway and verified-record logs; audit-chain tamper test. MOCK, offline, seeded; our own scenarios (white-box) | `PYTHONPATH=. python -m eval.execution_evidence`, then `python -m eval.build_evidence_pdf`; check with `python execution_evidence/verify_evidence.py` |
 | Scripted demo log | `demo.md`, `demo.json` | Both demo runs, step headlines, money lost, chain verification and the audit-chain head hash, replayed twice to show identical heads | `python -m eval.demo_log` |
 
 Audit-chain heads for the seeded demo (offline model, seed 7, seeded DEMO keys, simulated clock), reproduced on every run:
 
-- Run 1 (legit): `38417365ea11d0c3c51b9ad4d555858e860b4e7b491ca6cc29bab7c048d1cf72` (29 entries, money lost 0)
-- Run 2 (attack): `64f5aa04bca100693c35d34f1692f4d8987623a433307d72b255a40e38c1a449` (money lost 0)
+- Run 1 (legit): `1c2a752a7fb3ebe48fa681cb02fda309a159e48c40ab26df2c2ff7c8d4318641` (29 entries, money lost 0)
+- Run 2 (attack): `5acc5728bce68a8efe419b04a2dabcd87da3a0b6c280aeb697835dd642373561` (22 entries, money lost 0)
 
 If the code or ruleset changes, these hashes change; regenerate with `python -m eval.demo_log` and read `demo.md`. The API exposes the same data live: `GET /api/audit`, `GET /api/audit/verify`, `GET /api/proof/{intent_id}/verify`, `POST /api/demo/run`.
 

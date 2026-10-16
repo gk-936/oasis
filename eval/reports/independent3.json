@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 13:44",
+  "run": "2026-10-16 18:27",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -12,7 +12,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-002",
@@ -21,8 +22,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "held",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-003",
@@ -32,7 +34,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-004",
@@ -42,7 +45,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-005",
@@ -52,7 +56,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-006",
@@ -62,7 +67,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-007",
@@ -72,7 +78,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-008",
@@ -82,7 +89,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-009",
@@ -92,7 +100,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-010",
@@ -102,7 +111,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-011",
@@ -112,7 +122,8 @@
    "failures": [],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-012",
@@ -124,7 +135,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-013",
@@ -136,7 +148,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-014",
@@ -146,7 +159,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-015",
@@ -158,7 +172,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-016",
@@ -167,8 +182,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-017",
@@ -180,7 +196,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-018",
@@ -190,7 +207,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-019",
@@ -200,7 +218,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-020",
@@ -210,7 +229,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-021",
@@ -222,7 +242,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-022",
@@ -232,7 +253,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-023",
@@ -242,7 +264,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-024",
@@ -252,7 +275,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-025",
@@ -262,7 +286,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-026",
@@ -272,7 +297,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-027",
@@ -282,7 +308,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-028",
@@ -294,7 +321,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-029",
@@ -306,7 +334,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-030",
@@ -316,7 +345,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-031",
@@ -328,7 +358,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-032",
@@ -338,7 +369,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-033",
@@ -348,7 +380,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-034",
@@ -358,7 +391,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_verification",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-035",
@@ -368,7 +402,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-036",
@@ -378,7 +413,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-037",
@@ -388,7 +424,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-038",
@@ -398,7 +435,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-039",
@@ -407,8 +445,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "held",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-040",
@@ -418,7 +457,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-041",
@@ -427,8 +467,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "info",
-   "dead_end": false
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-042",
@@ -438,7 +479,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-043",
@@ -448,7 +490,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-044",
@@ -458,7 +501,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-045",
@@ -468,7 +512,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-046",
@@ -478,7 +523,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-047",
@@ -488,7 +534,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-048",
@@ -498,7 +545,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-049",
@@ -510,7 +558,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-050",
@@ -522,7 +571,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-051",
@@ -534,7 +584,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-052",
@@ -546,7 +597,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-053",
@@ -556,7 +608,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-054",
@@ -568,7 +621,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-055",
@@ -578,7 +632,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-056",
@@ -588,7 +643,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-057",
@@ -598,7 +654,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-058",
@@ -608,7 +665,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-059",
@@ -618,7 +676,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-060",
@@ -628,7 +687,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-061",
@@ -637,8 +697,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "info",
-   "dead_end": false
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-062",
@@ -648,7 +709,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-063",
@@ -658,7 +720,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-064",
@@ -666,11 +729,12 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status info"
+    "expected redrafted, last status cancelled"
    ],
    "turns": 1,
-   "last": "info",
-   "dead_end": false
+   "last": "cancelled",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-065",
@@ -682,7 +746,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-066",
@@ -692,7 +757,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-067",
@@ -702,7 +768,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-068",
@@ -712,7 +779,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-069",
@@ -722,7 +790,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-070",
@@ -732,7 +801,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-071",
@@ -744,7 +814,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-072",
@@ -754,7 +825,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-073",
@@ -764,7 +836,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-074",
@@ -774,7 +847,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-075",
@@ -784,7 +858,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-076",
@@ -793,8 +868,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "held",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-077",
@@ -804,7 +880,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-078",
@@ -814,7 +891,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-079",
@@ -824,7 +902,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-080",
@@ -834,7 +913,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-081",
@@ -844,7 +924,8 @@
    "failures": [],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-082",
@@ -854,7 +935,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-083",
@@ -864,7 +946,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-084",
@@ -874,7 +957,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-085",
@@ -884,7 +968,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-086",
@@ -896,7 +981,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-087",
@@ -908,7 +994,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-088",
@@ -920,7 +1007,8 @@
    ],
    "turns": 1,
    "last": "rejected",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-089",
@@ -932,7 +1020,8 @@
    ],
    "turns": 1,
    "last": "unknown",
-   "dead_end": true
+   "dead_end": true,
+   "asks": true
   },
   {
    "id": "T3-090",
@@ -941,8 +1030,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_confirmation",
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-091",
@@ -954,7 +1044,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-092",
@@ -964,7 +1055,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-093",
@@ -974,7 +1066,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-094",
@@ -984,7 +1077,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-095",
@@ -994,7 +1088,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-096",
@@ -1004,7 +1099,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-097",
@@ -1014,7 +1110,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-098",
@@ -1024,7 +1121,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-099",
@@ -1034,7 +1132,8 @@
    "failures": [],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-100",
@@ -1044,7 +1143,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-101",
@@ -1053,8 +1153,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "info",
-   "dead_end": false
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-102",
@@ -1066,7 +1167,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-103",
@@ -1078,7 +1180,8 @@
    ],
    "turns": 1,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-104",
@@ -1088,7 +1191,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-105",
@@ -1098,7 +1202,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-106",
@@ -1108,7 +1213,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-107",
@@ -1118,7 +1224,8 @@
    "failures": [],
    "turns": 1,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-108",
@@ -1128,7 +1235,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_verification",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-109",
@@ -1138,7 +1246,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-110",
@@ -1148,7 +1257,8 @@
    "failures": [],
    "turns": 1,
    "last": "refused",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-111",
@@ -1160,7 +1270,8 @@
    ],
    "turns": 2,
    "last": "info",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-112",
@@ -1170,7 +1281,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-113",
@@ -1179,8 +1291,9 @@
    "ok": true,
    "failures": [],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "held",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-114",
@@ -1190,7 +1303,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-115",
@@ -1200,7 +1314,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-116",
@@ -1210,7 +1325,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-117",
@@ -1220,7 +1336,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   },
   {
    "id": "T3-118",
@@ -1230,7 +1347,8 @@
    "failures": [],
    "turns": 2,
    "last": "cancelled",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-119",
@@ -1240,7 +1358,8 @@
    "failures": [],
    "turns": 1,
    "last": "held",
-   "dead_end": false
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "T3-120",
@@ -1250,7 +1369,8 @@
    "failures": [],
    "turns": 1,
    "last": "needs_confirmation",
-   "dead_end": false
+   "dead_end": false,
+   "asks": true
   }
  ],
  "attacks": [
@@ -2832,7 +2952,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -2925,7 +3045,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -3019,7 +3139,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown"
+    "held"
    ]
   },
   {
@@ -3112,7 +3232,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -3205,7 +3325,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {

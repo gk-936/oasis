@@ -1,6 +1,6 @@
 # Independent set results
 
-Run: 2026-10-16 13:44. Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs.
+Run: 2026-10-16 18:27. Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs.
 
 | Set | Passed |
 |---|---|
@@ -8,7 +8,7 @@ Run: 2026-10-16 13:44. Written by another AI from the pitch and API doc only. Ta
 | attacks | 200/200 |
 | lookalikes | 60/60 |
 
-Tasks ending in an unrecognised-message reply (dead end): 4
+Tasks ending in an unrecognised-message reply: 4 (of which 4 end with a question offering the nearest options; before 2026-10-16 the reply was a help list, counted as a dead end)
 
 ## tasks failures
 

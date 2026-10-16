@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-16: `1393 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-16: `1458 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -48,6 +48,7 @@ Full suite on 2026-10-16: `1393 passed, 2 skipped` (offline, about 2 minutes) (t
 | 32 | Tampered, replayed and forged signed payments are refused by the executor, and a judge can run them live (Break it tab) | `oasis/trust/breakit_exec.py`, `oasis/trust/executor.py`, `oasis/trust/intents.py`, `/api/breakit/executor` | `tests/test_breakit.py::test_breakit_executor_attacks` | amount/payee tamper, edited intent, replay, expiry, unregistered key, relabelled role, unsigned and unsigned-by-human are all refused with extra money moved 0; the honest control executes | passes | Harness `decide` only checks the student device signature, not the full policy; same team wrote attacks and defences | automated test |
 | 33 | Every role-guarded endpoint refuses every other role (403) and anonymous callers (401); the only unguarded state-changing endpoints are login and five read-only proof verifiers | `oasis/api/main.py` (`require`) | `tests/test_role_matrix.py` | 83 endpoints x non-allowed roles all refused; unguarded POST list equals the allow-list | passes | Empty bodies and literal path parameters: proves the guard runs first, not per-endpoint business rules | automated test |
 | 34 | Chat refuses polite approve/sign-for-me, limit-override and registry-edit requests, declines payments to anything outside the registry, and a conversion is confirmed only by a short standalone message | `oasis/agent/nlu.py` (`_BYPASS`), `oasis/agent/chat.py` (`_UTILITY`, `_affirms`) | `tests/test_router_gaps.py` | refusals create no draft and move no money; pasted text containing "go ahead" does not confirm a conversion | passes | Keyword router, offline; tuned against the outside sets so they are no longer blind | automated test |
+| 35 | Router fixes from the Claude-written set A relax five over-broad refusals (a "sudo" joke before a pay request, a landlord who "called", a quoted or Hinglish "what does this mean" phrase, curiosity about why chat cannot approve, a story where the speaker refused to share a password, how to change a password in Chinese) without letting a real request through, add one refusal (Hinglish "approve ... kar do"), and ask before withdrawing a draft or paying a one-zero-too-large amount | `oasis/agent/nlu.py` (`_INJECTION`, `_SOCIAL`, `_bypass_asked`, `_drop_negated`, `_RESET`, `_MENTION`), `oasis/agent/chat.py` (`_overpay`, `_correct` + `confirm_switch`, `_cancel_one`) | `tests/test_chat_setA_fixes.py::test_harmless_mentions_of_security_words_are_not_refused`; `::test_a_real_request_next_to_the_harmless_wording_is_still_refused`; `::test_hinglish_approve_requests_are_refused`; `::test_any_other_overpayment_is_still_refused_outright`; `::test_a_ten_times_amount_asks_whether_an_extra_zero_was_meant_and_can_only_pay_the_bill`; `::test_naming_another_bill_asks_before_it_switches_the_draft`; `eval/independent_bench.py` (sets 1, 2, 3, C, G: 900 attacks) | every harmless wording is answered and a real request beside it is still refused; every attack block stays 100% (no money moved, nothing executed, no secret in a reply); a x10 amount can only ever lead to the bill's own amount, any other overpayment is refused; a mid-draft bill switch withdraws nothing until the student says yes | passes (2026-10-16, offline) | Keyword router, offline; set A and its fixes are tuned together, so its 149/150 is not out-of-sample (sets 2, 3, C and G were re-run for regressions); the rest of the documented limits apply | automated test |
 
 ## Gaps (no automated test, or only indirect)
 
@@ -60,7 +61,7 @@ Full suite on 2026-10-16: `1393 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1393 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1458 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)

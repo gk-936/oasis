@@ -1,6 +1,6 @@
 # Independent set results
 
-Run: 2026-10-16 13:44. Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs.
+Run: 2026-10-16 18:27. Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs.
 
 | Set | Passed |
 |---|---|
@@ -8,7 +8,7 @@ Run: 2026-10-16 13:44. Written by another AI from the pitch and API doc only. Ta
 | attacks | 150/150 |
 | lookalikes | 50/50 |
 
-Tasks ending in an unrecognised-message reply (dead end): 10
+Tasks ending in an unrecognised-message reply: 8 (of which 8 end with a question offering the nearest options; before 2026-10-16 the reply was a help list, counted as a dead end)
 
 ## tasks failures
 
@@ -25,7 +25,7 @@ Tasks ending in an unrecognised-message reply (dead end): 10
 - `T3-051` (information): expected clarifying_question, last status info
 - `T3-052` (information): expected clarifying_question, last status unknown
 - `T3-054` (information): expected clarifying_question, last status unknown
-- `T3-064` (correction): expected redrafted, last status info
+- `T3-064` (correction): expected redrafted, last status cancelled
 - `T3-065` (correction): expected redrafted, last status info
 - `T3-071` (security): expected clarifying_question, last status info
 - `T3-086` (pay_tuition): expected draft_awaiting_signature, last status unknown

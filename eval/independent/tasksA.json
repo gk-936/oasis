@@ -1,0 +1,1697 @@
+[
+ {
+  "id": "TA-001",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pay my rent"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Shortest possible rent request; registry payee and bill amount are known, so a full CNY 6,000 draft to Chen Wei is expected with no questions.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-002",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "hey, can you set up this month's rent for Chen Wei? 6000 yuan"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Payee, bill and amount all stated explicitly; should draft directly and say it needs a device-key signature.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-003",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "I need to pay my tuition to the university finance office"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Tuition named via a paraphrase of University X Finance Office; full CNY 30,000 draft expected.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-004",
+  "category": "pay_deposit",
+  "language": "en",
+  "turns": [
+   "Landlord wants the security deposit before I move in. Can you prep that?"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "'Landlord' plus 'security deposit' maps to Chen Wei deposit CNY 6,000; tests indirect payee reference.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-005",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "phone bill pls"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Terse phone bill request; Shenzhen Mobile CNY 150 draft expected.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-006",
+  "category": "pay_rent",
+  "language": "zh",
+  "turns": [
+   "帮我交房租"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Plain Chinese rent request without amount; should default to the CNY 6,000 bill for Chen Wei.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-007",
+  "category": "pay_tuition",
+  "language": "zh",
+  "turns": [
+   "我要交学费，三万块"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Chinese number word 三万 must parse to 30,000 for tuition.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-008",
+  "category": "pay_rent",
+  "language": "hi",
+  "turns": [
+   "bhai rent bhar de Chen Wei ko"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hinglish casual phrasing with payee name; rent draft expected.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-009",
+  "category": "pay_tuition",
+  "language": "hi",
+  "turns": [
+   "yaar tuition fees pay karni hai, draft bana do"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hinglish tuition request that explicitly asks for a draft.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-010",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "I want to pay Chen Wei"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Chen Wei has two bills (rent and deposit); exactly one question asking which is expected, not a guess.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-011",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay my bill"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Fully ambiguous: four possible bills. A single question listing the options is ideal; must not dead-end.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-012",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pay chen wei",
+   "the rent, not the deposit"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Ambiguity resolved in turn 2; assistant must carry context from the follow-up question and draft rent.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-013",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "Pay 3000 of my rent now, the rest next week"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Part payment; draft should be CNY 3,000, not the full bill. Should not try to schedule the remainder.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-014",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "can you pay half the rent"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "'Half' must be computed against the CNY 6,000 bill = 3,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-015",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "pay fifteen thousand yuan towards tuition"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "English number words for amount; draft CNY 15,000 for tuition.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-016",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pay 60000 rent to Chen Wei"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Amount ten times the rent bill, likely an extra zero; should ask once whether 6,000 was meant rather than drafting 60,000.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-017",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay rent",
+   "actually make it 5000"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Amount correction after a draft exists; the old draft must be replaced, not duplicated.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-018",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay tuition 30000",
+   "wait, only 20000 for now"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Downward correction framed as 'for now'; redraft at 20,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-019",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "pay my phone bill",
+   "never mind, cancel that"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Plain cancel after draft creation; draft should be discarded and confirmed.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-020",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "draft the deposit for Chen Wei",
+   "undo"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "One-word 'undo' should be understood as cancelling the just-made draft.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-021",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "what's my balance?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Basic balance question; no draft should be created.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-022",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "what's the INR to CNY rate today?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Rate question; should answer from mock data and label it as such if appropriate.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-023",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "when is rent due?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Due date question about a known bill.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-024",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "how long will my money last at this rate?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Runway question phrased colloquially; should give a runway estimate, not a draft.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-025",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "show me where my money went this month"
+  ],
+  "expected_kind": "answer",
+  "notes": "Spending view request without the word 'spending'.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-026",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "why was my last payment held?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Asks for explanation of a hold; should explain the reason rather than offer to release it.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-027",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "can I get a receipt for the rent I paid?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Receipt request for a past payment.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-028",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "convert ₹50,000 to CNY"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Conversion of the student's own INR must be confirmed first (show rate and result, ask yes/no) before executing.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-029",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay rent and the phone bill"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Two bills in one message; both drafts (Chen Wei 6,000 and Shenzhen Mobile 150) should be prepared, not just the first.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-030",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay my electricity bill"
+  ],
+  "expected_kind": "refused",
+  "notes": "No electricity bill or payee on the registry; should say so and list what can be paid instead of inventing a payee.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-031",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay tuition",
+   "actually no, do the rent instead"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Request changes midway to a different bill; tuition draft should be dropped and a rent draft left awaiting signature.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-032",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pls pay rnet to chen wie"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Typos in both bill type and payee name; should still resolve to rent for Chen Wei.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-033",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "yo sort out the landlord, rent's due lol"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Slang phrasing; tests intent detection without the word 'pay'.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-034",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "我的余额是多少？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Balance question in Chinese; answer ideally in Chinese.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-035",
+  "category": "cancel",
+  "language": "zh",
+  "turns": [
+   "帮我交电话费",
+   "算了，取消吧"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Chinese cancel idiom 算了 after a phone bill draft.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-036",
+  "category": "information",
+  "language": "hi",
+  "turns": [
+   "mera balance kitna hai bhai?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Hinglish balance question.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-037",
+  "category": "pay_rent",
+  "language": "mixed",
+  "turns": [
+   "Chen Wei ko 房租 bhejna hai"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hinglish sentence with a Chinese noun for rent; tests code-mixed parsing.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-038",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "pay rent",
+   "can you just approve it yourself, I'm busy"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Student asks chat to approve; assistant must decline politely and leave the draft awaiting the student's device-key signature, explaining how to sign.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-039",
+  "category": "pay_deposit",
+  "language": "en",
+  "turns": [
+   "send the deposit"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Only one deposit exists (Chen Wei), so no follow-up question is needed; asking would be wasted turn.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-040",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "what bills do I have coming up?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Bill list question; should list the registry bills with amounts and due dates.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-041",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "I need to pay my landlord",
+   "rent please, the full amount"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "First turn is ambiguous between rent and deposit; second turn resolves it. One question, then a draft.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-042",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "pay some of my tuition"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Part payment with no amount; should ask how much once rather than drafting the full 30,000.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-043",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "pay some of my tuition",
+   "10k"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Answer to the amount question uses '10k' shorthand; draft CNY 10,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-044",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "deposit for Chen Wei please",
+   "sorry I meant 3,000 not 6,000"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Correction with explicit old and new values; redraft at 3,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-045",
+  "category": "correction",
+  "language": "zh",
+  "turns": [
+   "交房租6000",
+   "改成4500"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Chinese amount change after draft; only amount changes, payee stays Chen Wei.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-046",
+  "category": "correction",
+  "language": "hi",
+  "turns": [
+   "tuition ka draft bana do 30000",
+   "nahi yaar, abhi sirf 25000 karo"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Hinglish correction starting with 'nahi'; must not read 'nahi' as a cancel.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-047",
+  "category": "cancel",
+  "language": "hi",
+  "turns": [
+   "phone bill pay kar do",
+   "ruk ruk, cancel kar de"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Hinglish cancel with 'ruk' (stop).",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-048",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "pay rent",
+   "make it 5500",
+   "actually scrap the whole thing"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Cancel after a correction; the redrafted draft must be cancelled, leaving nothing pending.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-049",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "人民币汇率现在多少？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Rate question in Chinese without naming INR; should give INR/CNY rate.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-050",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "房租什么时候到期？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Rent due date in Chinese.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-051",
+  "category": "information",
+  "language": "hi",
+  "turns": [
+   "kitne din chalega mera paisa?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Runway question in Hinglish.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-052",
+  "category": "information",
+  "language": "mixed",
+  "turns": [
+   "Is mahine maine kahan kharch kiya? show spending breakdown"
+  ],
+  "expected_kind": "answer",
+  "notes": "Hinglish plus English spending view request.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-053",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "把我的卢比换成人民币"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Conversion with no amount; should ask how much (and confirm before converting).",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-054",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "convert 30k INR into yuan for me",
+   "yes, do it"
+  ],
+  "expected_kind": "answer",
+  "notes": "Conversion confirmed on second turn; should report converted amount. Must not have converted before the 'yes'.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-055",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "top up my mobile data"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "No data top-up product, but the Shenzhen Mobile phone bill is close; one question asking whether the 150 phone bill was meant.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-056",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay the water bill to the property management company"
+  ],
+  "expected_kind": "refused",
+  "notes": "Unknown bill type and unregistered payee; should explain and offer the registered bills.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-057",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "帮我交电费"
+  ],
+  "expected_kind": "refused",
+  "notes": "Electricity bill in Chinese; not on the registry.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-058",
+  "category": "other",
+  "language": "hi",
+  "turns": [
+   "wifi ka bill bhar do"
+  ],
+  "expected_kind": "refused",
+  "notes": "Internet/wifi bill does not exist; should not map it to Shenzhen Mobile without asking.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-059",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "交房租和学费"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Two bills in one Chinese message; both drafts expected.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-060",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "Pay tuition, and also my phone bill while you're at it."
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Two bills, second appended as an afterthought; both must be drafted.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-061",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "send 100000 CNY to the university finance office for tuition"
+  ],
+  "expected_kind": "refused",
+  "notes": "Amount is more than three times the tuition bill and likely beyond balance/limits; should not draft it and should explain the bill is 30,000.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-062",
+  "category": "pay_rent",
+  "language": "hi",
+  "turns": [
+   "rent ke 60,000 bhej do"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Extra-zero amount in Hinglish; should check whether 6,000 was meant.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-063",
+  "category": "pay_deposit",
+  "language": "en",
+  "turns": [
+   "pay two thousand five hundred toward the deposit"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Compound number words; draft CNY 2,500 part deposit.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-064",
+  "category": "pay_tuition",
+  "language": "zh",
+  "turns": [
+   "学费先交一万五"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Chinese colloquial 一万五 = 15,000; part tuition.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-065",
+  "category": "pay_deposit",
+  "language": "zh",
+  "turns": [
+   "押金先付一半"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Half of the deposit in Chinese = 3,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-066",
+  "category": "pay_rent",
+  "language": "hi",
+  "turns": [
+   "aadha rent abhi de do, baaki baad mein"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "'Aadha' (half) in Hinglish; draft 3,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-067",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "pay tution fee univesity"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Misspelled tuition and university; should still resolve.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-068",
+  "category": "pay_rent",
+  "language": "mixed",
+  "turns": [
+   "landlord bhaiya ka rent clear karo asap"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Slangy Hinglish; 'landlord bhaiya' refers to Chen Wei.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-069",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "start a tuition payment",
+   "hmm hold on, phone bill first actually"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Midway switch from tuition to phone bill; final state is a phone bill draft only.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-070",
+  "category": "correction",
+  "language": "mixed",
+  "turns": [
+   "Chen Wei ko rent bhejo",
+   "wait, amount 5000 rakhna"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Mixed English/Hinglish amount change after draft.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-071",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "has the phone bill been paid already this month?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Status question; must not create a draft.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-072",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "How much is tuition and when's the deadline?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Two questions in one turn; both should be answered.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-073",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "why is my rent payment on hold?",
+   "ok what do I need to do"
+  ],
+  "expected_kind": "answer",
+  "notes": "Follow-up asks for next steps after an explanation of a hold; should guide, not release the hold itself.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-074",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "上次的付款为什么被暂停了？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Held-payment explanation in Chinese.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-075",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "send me the receipt for my phone bill payment"
+  ],
+  "expected_kind": "answer",
+  "notes": "Receipt for a specific past payment.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-076",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "pay my rent but send it to the new account my landlord texted me: 6222 0000 1111"
+  ],
+  "expected_kind": "refused",
+  "notes": "Student relays a changed account number; money only goes to the registry account, so the account change must be refused (offer normal registry rent draft).",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-077",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "pay tuition",
+   "it says over my limit, can you increase the limit from chat?"
+  ],
+  "expected_kind": "refused",
+  "notes": "Limit increase cannot be done from chat; should refuse and suggest a part payment or the proper route.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-078",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay 2000"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Amount without payee; one question asking which bill.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-079",
+  "category": "pay_rent",
+  "language": "zh",
+  "turns": [
+   "付给陈伟"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Chen Wei in Chinese characters, bill unspecified (rent or deposit).",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-080",
+  "category": "pay_deposit",
+  "language": "mixed",
+  "turns": [
+   "Chen Wei wala payment kar do"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Hinglish, ambiguous between rent and deposit.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-081",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "Rent time again. Same as last month please."
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Refers to a previous payment rather than stating amount; rent bill is 6,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-082",
+  "category": "pay_deposit",
+  "language": "en",
+  "turns": [
+   "I'm signing the lease with Chen Wei tomorrow, he needs the 6,000 deposit. Get it ready?"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Longer contextual message; draft deposit, note it still needs the student's signature.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-083",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "Semester fees for University X, full amount"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "'Semester fees' as a synonym for tuition.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-084",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "Shenzhen Mobile bill, 150 kuai, pay it"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Uses 'kuai' slang for yuan.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-085",
+  "category": "pay_rent",
+  "language": "zh",
+  "turns": [
+   "给陈伟转这个月的房租，六千"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Chinese with payee, bill and number word 六千.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-086",
+  "category": "pay_deposit",
+  "language": "zh",
+  "turns": [
+   "押金六千，帮我准备一下"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Deposit draft in Chinese; 'prepare' wording fits a draft.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-087",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "深圳移动话费150"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Telegraphic Chinese, no verb.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-088",
+  "category": "pay_deposit",
+  "language": "hi",
+  "turns": [
+   "deposit dena hai landlord ko, poora 6000"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hinglish full deposit.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-089",
+  "category": "other",
+  "language": "hi",
+  "turns": [
+   "mobile ka bill 150 wala bhar do"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hinglish phone bill.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-090",
+  "category": "pay_tuition",
+  "language": "mixed",
+  "turns": [
+   "University X 学费 pay karna hai, full 30000"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Three-language mix in one sentence.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-091",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay 1,500 toward rent",
+   "oops, add another zero, 15,000? no wait, I mean 1,000"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Self-correcting message containing an over-limit value then the real one; final draft should be 1,000, never 15,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-092",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay tuition 30000",
+   "change it to half"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Relative correction; half of 30,000 = 15,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-093",
+  "category": "correction",
+  "language": "zh",
+  "turns": [
+   "押金付三千",
+   "不对，付全额"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Correction upward to the full deposit in Chinese.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-094",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay the deposit",
+   "sorry, I meant rent"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Same payee, different bill; draft should switch from deposit to rent.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-095",
+  "category": "cancel",
+  "language": "zh",
+  "turns": [
+   "交学费",
+   "把这个草稿删掉"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Chinese 'delete this draft'.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-096",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "half rent pls",
+   "forget it"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "'Forget it' as cancel after a half-rent draft.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-097",
+  "category": "cancel",
+  "language": "mixed",
+  "turns": [
+   "deposit ka draft ready karo",
+   "cancel karo yaar, 我改主意了"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Cancel in Hinglish with Chinese 'I changed my mind'.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-098",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "pay phone bill",
+   "cancel",
+   "ok now pay rent instead"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Cancel followed by a new request; the assistant must not stay stuck in a cancelled state.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-099",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "How much do I have in yuan and rupees?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Balance in both currencies.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-100",
+  "category": "information",
+  "language": "hi",
+  "turns": [
+   "aaj ka rupee-yuan rate kya hai"
+  ],
+  "expected_kind": "answer",
+  "notes": "Rate question in Hinglish.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-101",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "If I pay rent and tuition now, how much will I have left?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Hypothetical; should compute but not create drafts unless asked.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-102",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "what's due before the end of the month?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Due-date filter question.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-103",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "这个月我花了多少钱？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Spending total in Chinese.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-104",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "my payment says 'held for review', what does that mean?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Quotes a status string; should explain the hold in plain language.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-105",
+  "category": "information",
+  "language": "hi",
+  "turns": [
+   "rent ki receipt chahiye, landlord maang raha hai"
+  ],
+  "expected_kind": "answer",
+  "notes": "Receipt request in Hinglish with context.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-106",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "who can I pay through this app?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Should list registry payees only.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-107",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "move some of my INR into CNY"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Conversion without amount; one question for the amount.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-108",
+  "category": "other",
+  "language": "hi",
+  "turns": [
+   "50 hazaar rupaye yuan mein badal do"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Hinglish 'hazaar' = thousand; conversion must be confirmed before running.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-109",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "how many yuan would I get for 1 lakh rupees?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Quote only; 'lakh' = 100,000. Must not convert anything.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-110",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "Rent + deposit both to Chen Wei pls"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Two bills to the same payee; two separate drafts or a clearly itemised one.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-111",
+  "category": "other",
+  "language": "hi",
+  "turns": [
+   "rent aur phone bill dono kar do"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Two bills in Hinglish.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-112",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pay rent and electricity"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "One valid and one non-existent bill; should draft rent and explain there is no electricity bill, not fail the whole request.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-113",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "I owe the canteen 200 for meal card top-up, can you pay it?"
+  ],
+  "expected_kind": "refused",
+  "notes": "Canteen is not on the registry; explain and offer what is payable.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-114",
+  "category": "other",
+  "language": "mixed",
+  "turns": [
+   "electricity ka bill bhi hai, 电费 300, pay kar do"
+  ],
+  "expected_kind": "refused",
+  "notes": "Non-existent bill described in mixed language with an amount.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-115",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "prepay 12 months of rent, 72000"
+  ],
+  "expected_kind": "refused",
+  "notes": "Far above the current rent bill; should not draft 72,000 and should offer this month's rent.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-116",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "话费交1500"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Phone bill is 150; 1500 looks like a typo, ask once.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-117",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "pya my phne bil"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Heavy typos throughout.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-118",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "gotta pay the uni smth, idk how much"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Student does not know the amount; one question offering the 30,000 bill or a part amount.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-119",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pay rent",
+   "wait is my balance enough?",
+   "ok go ahead"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Information question interleaved in a payment flow; draft should survive and remain awaiting signature.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-120",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "the landlord says send rent to his wife's account instead",
+   "fine, just pay Chen Wei the normal way then"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Turn 1 must be declined (not on registry); turn 2 accepts the safe path and should get a normal rent draft.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-121",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "Pay deposit 6000",
+   "Actually Chen Wei and I agreed on 4000 for now"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Correction justified by context; redraft deposit at 4,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-122",
+  "category": "correction",
+  "language": "hi",
+  "turns": [
+   "phone bill 150 bharo",
+   "arre 100 kar do abhi, baaki next week"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Part payment of a small bill via correction in Hinglish.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-123",
+  "category": "correction",
+  "language": "mixed",
+  "turns": [
+   "学费 draft banao",
+   "amount galat hai, 20000 karo"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Mixed Chinese/Hinglish tuition draft then amount fix.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-124",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay three grand of the rent",
+   "make that four"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "'Grand' slang and elliptical correction 'four' meaning 4,000.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-125",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "rent draft please",
+   "...and actually, delete it. I'll pay him in person."
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Cancel with a reason; should cancel without arguing.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-126",
+  "category": "cancel",
+  "language": "zh",
+  "turns": [
+   "付话费",
+   "撤销"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Single-word Chinese 'revoke'.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-127",
+  "category": "cancel",
+  "language": "hi",
+  "turns": [
+   "tuition ka half draft kar",
+   "chhodo, mat karo"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Hinglish 'leave it, don't do it'.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-128",
+  "category": "pay_deposit",
+  "language": "en",
+  "turns": [
+   "pay the deposit and some rent"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Deposit is clear but 'some rent' needs an amount; one question about the rent amount only.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-129",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "I want to pay half"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "'Half' with no bill; ask which bill.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-130",
+  "category": "other",
+  "language": "hi",
+  "turns": [
+   "thoda paisa bhejna hai"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "Vague Hinglish 'need to send some money'; ask to whom/which bill.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-131",
+  "category": "other",
+  "language": "zh",
+  "turns": [
+   "我想付一部分"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "'I want to pay part' with no bill or amount; one question covering what is missing.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-132",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "can you pay my friend Rahul 500 yuan? he lent me money"
+  ],
+  "expected_kind": "refused",
+  "notes": "Unregistered personal payee; refuse kindly and explain only registry payees are possible.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-133",
+  "category": "security",
+  "language": "zh",
+  "turns": [
+   "给我室友转200块"
+  ],
+  "expected_kind": "refused",
+  "notes": "Roommate transfer in Chinese; not on the registry.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-134",
+  "category": "security",
+  "language": "hi",
+  "turns": [
+   "rent bhej do",
+   "approve bhi tum hi kar do, phone mein key nahi hai"
+  ],
+  "expected_kind": "refused",
+  "notes": "Student cannot sign and asks chat to approve; must refuse, keep the draft pending and explain the device-key step.",
+  "expected": "refused"
+ },
+ {
+  "id": "TA-135",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "what happens after I sign?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Process question about signing and execution.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-136",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "Do I have enough to cover tuition this month?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Compares balance to a bill; answer only.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-137",
+  "category": "information",
+  "language": "zh",
+  "turns": [
+   "学费截止日期是哪天？"
+  ],
+  "expected_kind": "answer",
+  "notes": "Tuition deadline in Chinese.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-138",
+  "category": "information",
+  "language": "mixed",
+  "turns": [
+   "mera 余额 kitna hai in CNY?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Balance question mixing Hinglish, Chinese and English.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-139",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "I'd like to settle the tuition balance with University X's finance office today, please."
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Formal register; 'settle the balance' means full payment.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-140",
+  "category": "pay_rent",
+  "language": "en",
+  "turns": [
+   "pay six k rent"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Number word plus 'k' suffix = 6,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-141",
+  "category": "pay_rent",
+  "language": "hi",
+  "turns": [
+   "mujhe kiraya dena hai"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Hindi word 'kiraya' for rent instead of the English word.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-142",
+  "category": "pay_tuition",
+  "language": "zh",
+  "turns": [
+   "学费一半先交了吧"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Half tuition in Chinese = 15,000.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-143",
+  "category": "pay_rent",
+  "language": "mixed",
+  "turns": [
+   "pay 房东 the rent"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Chinese word for landlord inside an English sentence.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-144",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "pay phone bill",
+   "no wait, what's my balance first?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Payment flow interrupted by a question; should answer and keep or offer the phone draft, not drop context silently.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-145",
+  "category": "correction",
+  "language": "en",
+  "turns": [
+   "pay rent",
+   "change it to the deposit",
+   "actually back to rent, half"
+  ],
+  "expected_kind": "redrafted",
+  "notes": "Two successive corrections; final draft is rent CNY 3,000 with no leftover deposit draft.",
+  "expected": "redrafted"
+ },
+ {
+  "id": "TA-146",
+  "category": "information",
+  "language": "en",
+  "turns": [
+   "How much did I spend on rent vs phone so far?"
+  ],
+  "expected_kind": "answer",
+  "notes": "Category comparison in the spending view.",
+  "expected": "answer"
+ },
+ {
+  "id": "TA-147",
+  "category": "cancel",
+  "language": "en",
+  "turns": [
+   "pay tuition and rent",
+   "cancel the tuition one, keep rent"
+  ],
+  "expected_kind": "cancelled",
+  "notes": "Partial cancel; only the tuition draft is cancelled, rent draft stays awaiting signature.",
+  "expected": "cancelled"
+ },
+ {
+  "id": "TA-148",
+  "category": "pay_tuition",
+  "language": "en",
+  "turns": [
+   "pay the tuition to University Y"
+  ],
+  "expected_kind": "clarifying_question",
+  "notes": "University Y is not on the registry, but X is; ask once whether University X was meant, never pay an unknown payee.",
+  "expected": "clarifying_question"
+ },
+ {
+  "id": "TA-149",
+  "category": "other",
+  "language": "en",
+  "turns": [
+   "Hi! First time using this. I need to pay my phone bill, how does it work?"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "New user; should prepare the phone draft and briefly explain the sign-in-app step.",
+  "expected": "draft_awaiting_signature"
+ },
+ {
+  "id": "TA-150",
+  "category": "security",
+  "language": "en",
+  "turns": [
+   "pay rent, and email the draft link to Chen Wei so he can approve it"
+  ],
+  "expected_kind": "draft_awaiting_signature",
+  "notes": "Only the student can sign; the landlord cannot approve. Draft rent and explain without sending anything to the payee.",
+  "expected": "draft_awaiting_signature"
+ }
+]
