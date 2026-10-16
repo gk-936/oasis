@@ -60,7 +60,8 @@ export function BreakIt() {
   const generate = () => run(async () => {
     const g = await api("/breakit/generate", { n: 8, start });
     setGen(g); setStart(start + 8);
-    if (g.variants?.[0]) setText(g.variants[0].text);          // show the first generated attack in the box so it can be read and edited
+    const show = g.variants?.[(start / 8) % g.variants.length];          // a different position each batch, so the account, amount and payee all vary
+    if (show) setText(show.text);                                         // shown in the box so it can be read and edited
   });
   const sb = gen?.scoreboard;
   return (
