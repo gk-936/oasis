@@ -21,22 +21,30 @@ function ExecAttacks() {
   useEffect(() => { api("/breakit/executor").then((r) => setList(r.attacks)).catch(() => {}); }, []);
   const one = async (id) => { const r = await api("/breakit/executor", { attack: id }); setRes((m) => ({ ...m, [id]: r })); return r; };
   const all = () => run(async () => { const r = await api("/breakit/executor/all", {}); setRes(Object.fromEntries(r.results.map((x) => [x.attack, x]))); announce(t("brk.exec.all")); });
+  const verdict = (a, r) => {                   // expected outcome = green, anything else = red
+    const control = a.id === "control";
+    const good = control ? !r.blocked : r.blocked;
+    return { cls: good ? "ok" : "bad", text: control ? (r.blocked ? t("brk.exec.refused") : t("brk.exec.control")) : (r.blocked ? t("brk.exec.refused") : t("brk.got_through")) };
+  };
   return (
     <div className="card">
       <h3>{t("brk.exec.title")}</h3>
       <p className="small">{t("brk.exec.lead")}</p>
-      <ul className="small">{list.map((a) => {
+      <div className="row"><button disabled={busy || !list.length} onClick={all}>{t("brk.exec.all")}</button></div>
+      <ul className="exec-list">{list.map((a) => {
         const r = res[a.id];
+        const v = r && verdict(a, r);
         return (
-          <li key={a.id}>
-            <button className="ghost" disabled={busy} onClick={() => run(() => one(a.id))}>{t("brk.exec.run")}</button>{" "}
-            {a.label}
-            {r && <> → <b className={a.id === "control" ? (r.blocked ? "bad" : "ok") : (r.blocked ? "ok" : "bad")}>{a.id === "control" ? (r.blocked ? t("brk.exec.refused") : t("brk.exec.control")) : (r.blocked ? t("brk.exec.refused") : t("brk.got_through"))}</b> ({r.status}) · {t("brk.exec.moved")}: {cny(r.extra_money_moved, 2)}
-              <div><code>{(r.reasons || []).join("; ")}</code></div></>}
+          <li key={a.id} className="exec-row">
+            <button className="ghost" disabled={busy} onClick={() => run(() => one(a.id))}>{t("brk.exec.run")}</button>
+            <div className="exec-main">
+              <span>{a.label}</span>
+              {r && <small className="exec-why"><code>{(r.reasons || []).join("; ")}</code> · {t("brk.exec.moved")}: {cny(r.extra_money_moved, 2)}</small>}
+            </div>
+            {r && <span className={`pill ${v.cls}`}>{v.text}</span>}
           </li>
         );
       })}</ul>
-      <div className="row"><button disabled={busy || !list.length} onClick={all}>{t("brk.exec.all")}</button></div>
       <ErrorBox error={err} onDismiss={() => setErr(null)} />
     </div>
   );
@@ -48,7 +56,12 @@ export function BreakIt() {
   const [gen, setGen] = useState(null);
   const { busy, err, setErr, run } = useGuard();
   const attack = () => run(async () => { const r = await api("/breakit/attack", { text }); setV(r); announce(r.blocked ? t("brk.blocked") : t("brk.got_through")); });
-  const generate = () => run(async () => { setGen(await api("/breakit/generate", { n: 8 })); });
+  const [start, setStart] = useState(0);          // each click moves on to the next 8 variants
+  const generate = () => run(async () => {
+    const g = await api("/breakit/generate", { n: 8, start });
+    setGen(g); setStart(start + 8);
+    if (g.variants?.[0]) setText(g.variants[0].text);          // show the first generated attack in the box so it can be read and edited
+  });
   const sb = gen?.scoreboard;
   return (
     <section aria-labelledby="brk-h" className="stack">
@@ -75,7 +88,8 @@ export function BreakIt() {
             <div className="kpi"><div className="k">{t("brk.saved")}</div><div className="v">{cny(sb.cny_saved, 2)}</div></div>
             <div className="kpi"><div className="k">{t("brk.lost")}</div><div className="v">{cny(sb.money_lost, 2)}</div></div>
           </div>
-          <ul className="small">{gen.variants.map((r) => <li key={r.id}>#{r.id} {String(r.kind).replace(/_/g, " ")}: {r.blocked ? t("brk.blocked") : t("brk.got_through")} ({r.rules.join(", ") || "-"})</li>)}</ul>
+          <ul className="small">{gen.variants.map((r) => <li key={r.id}>#{r.id} {String(r.kind).replace(/_/g, " ")}: {r.blocked ? t("brk.blocked") : t("brk.got_through")} ({r.rules.join(", ") || "-"}){" "}
+            <button type="button" className="ghost" onClick={() => { setText(r.text); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{t("brk.load")}</button></li>)}</ul>
         </div>
       )}
     </section>

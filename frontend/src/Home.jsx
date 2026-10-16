@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { MotionConfig, animate, motion, useMotionValue, useTransform } from "motion/react";
 import { t, tl } from "./i18n/index.js";
 import { api } from "./api.js";
-import { cny, money } from "./ui.jsx";
+import { money } from "./ui.jsx";
 import { Corridors as CorridorTool } from "./tabs/Corridors.jsx";
 import { Spending } from "./tabs/Passport.jsx";
 
@@ -20,6 +20,16 @@ const rise = { hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transiti
 const group = { hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } };
 
 /** Numbers shown under the cards, taken from the same /state the other pages use. */
+// Judge-only evidence tiles. Every number comes from a file in eval/reports/ or the test suite (see docs/results.md); our own tests,
+// offline, MOCK data. Update with the README when the counts change.
+const EVIDENCE = [
+  { id: "tests", v: "1,393" },
+  { id: "cases", v: "1,870", sub: "ChatGPT · Codex · Gemini" },
+  { id: "attacks", v: "900 / 900" },
+  { id: "stress", v: "92,104", sub: "Claude" },
+  { id: "exec", v: "9 + 1", sub: "tamper · replay · forge" },
+];
+
 function stats(role, s) {
   if (!s) return [];
   const open = (s.passport?.obligations || []).filter((o) => o.status !== "paid");
@@ -29,7 +39,7 @@ function stats(role, s) {
   const proofs = { id: "proofs", v: String(s.proofs?.length ?? 0) };
   const date = { id: "date", v: String(s.now || "").slice(0, 10) };
   if (role === "parent") return [waiting, proofs, date];
-  if (role === "judge") return [{ id: "lost", v: cny(s.ledger_money_lost ?? 0, 0) }, { id: "tripped", v: String(s.canaries_tripped ?? 0) }, proofs, date];
+  if (role === "judge") return [];                  // the judge's home shows the evidence panel instead of "At a glance"
   return [
     { id: "bills", v: String(open.length) },
     { id: "next", v: next ? <>{money(next.amount, next.currency, 0)}<small>{tl("purpose", next.type)} · {next.due}</small></> : "–" },
@@ -227,14 +237,23 @@ export function Home({ role, tabs, roleTabs, onOpen, s, refresh }) {
             </div>
           </motion.div>)}
 
-        <Corridors canOpen={role !== "judge"} />
+        {role === "judge" && (
+          <div className="stats">
+            <h3 className="home-h3">{t("home.evidence")}</h3>
+            <div className="stat-row">
+              {EVIDENCE.map((x) => (
+                <div key={x.id} className="stat"><span>{t(`home.ev.${x.id}`)}</span><b>{x.v}{x.sub && <small>{x.sub}</small>}</b></div>))}
+            </div>
+          </div>)}
+
+        {role !== "judge" && <Corridors canOpen />}
         {role === "student" && s?.spending && <div className="home-tool home-spend"><Spending s={s} refresh={refresh} /></div>}
 
-        <motion.aside className="rule" variants={rise} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.5 }} aria-label={t("land.safe.h")}>
+        {role !== "judge" && <motion.aside className="rule" variants={rise} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.5 }} aria-label={t("land.safe.h")}>
           <b>{t("land.safe.h")}</b>
           <p>{t("land.safe.p1")}</p>
           <p>{t("land.safe.p2")}</p>
-        </motion.aside>
+        </motion.aside>}
       </section>
     </MotionConfig>
   );

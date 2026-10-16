@@ -204,7 +204,7 @@ body:has(.shell) { background: #000; }
 .flow-steps span { font-size: .85rem; line-height: 1.5; color: var(--ink-2); }
 .rule { margin-top: 40px; padding: 20px 22px; border-radius: 16px; border: 1px solid var(--line-strong); border-left: 3px solid var(--brand); background: linear-gradient(120deg, rgba(44, 92, 190, .12), rgba(104, 66, 200, .07)); }
 .rule b { font-size: 1.05rem; }
-.rule p { margin: 8px 0 0; max-width: 78ch; color: var(--ink-2); font-size: .92rem; line-height: 1.6; }
+.rule p { margin: 8px 0 0; max-width: none; color: var(--ink-2); font-size: .92rem; line-height: 1.6; }
 .home { padding-bottom: 24px; }
 
 /* ---------- top bar: brand, breadcrumb pill, matching glass icon buttons ---------- */
