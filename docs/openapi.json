@@ -69,6 +69,19 @@
     "title": "Body_intake_image_api_intake_image_post",
     "type": "object"
    },
+   "BreakItExecIn": {
+    "properties": {
+     "attack": {
+      "title": "Attack",
+      "type": "string"
+     }
+    },
+    "required": [
+     "attack"
+    ],
+    "title": "BreakItExecIn",
+    "type": "object"
+   },
    "BreakItGenIn": {
     "properties": {
      "n": {
@@ -1413,6 +1426,57 @@
      }
     },
     "summary": "Breakit Attack"
+   }
+  },
+  "/api/breakit/executor": {
+   "get": {
+    "operationId": "breakit_executor_list_api_breakit_executor_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Breakit Executor List"
+   },
+   "post": {
+    "description": "Hand the real executor a tampered, replayed or forged signed intent in the caller's own sandbox (MOCK money).",
+    "operationId": "breakit_executor_api_breakit_executor_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BreakItExecIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Breakit Executor"
    }
   },
   "/api/breakit/generate": {

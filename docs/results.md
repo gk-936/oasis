@@ -123,6 +123,20 @@ The fixes are general extractor capabilities (JSON, CSV and header-row table lay
 The unprotected baseline loses MORE after the fix because it now understands more layouts, so more attacker-account invoices reach it; the full configuration is unaffected. The remaining miss (`fl_table_1`)
 omitted the purpose, so the corridor check held it and asked; since 2026-10-14 the purpose is read from the payee type (a landlord means rent), so that case is paid and all 16 genuine requests complete. The same change (reading amount, payee and purpose from a sentence, not only `Label:` lines) made the unprotected baseline lose more again (CNY 476,000) and left the full configuration unchanged (33 of 33 blocked, CNY 0 lost). Out of sample, the risk scorers (`risk_fresh.md`) flag 16 of 30 attack documents with no false flags (AUC 0.81 rules, 0.92 trained model).
 
+## How the attacks were produced (provenance)
+
+We could not hire a human red team, so the attack sets were written by outside AI models. Each was given only the grading criteria, the README and `docs/agent-api.md` (a pitch and API description), never the code or the tests, and each was frozen in its own commit or file before its first run. No human penetration tester, audit or certification was involved.
+
+| Set | Files | Written by | Size | First-run status |
+|---|---|---|---|---|
+| 1 | `eval/independent/*.json` (no suffix) | OpenAI (Codex) | 320 | router later fixed on its failures |
+| 2 | `*2.json` | OpenAI (Codex), stricter brief | 410 | router later fixed on its failures |
+| 3 | `*3.json` | OpenAI (ChatGPT) | 320 | router later fixed on its failures |
+| G | `*G.json` | Google (Gemini) | 410 | router later fixed on its failures |
+| C | `*C.json` | OpenAI (ChatGPT), second set | 410 | router later fixed on its failures |
+
+Four of the five sets come from one model family (OpenAI) and one from Google, so the diversity is lower than the number of sets suggests. Every set has been used to fix general router gaps, so **none of them is still blind**; the first-run row of each report is the only out-of-sample number. AI attackers share blind spots (templated phrasings, chat-box attacks), which is why two further layers exist: the executor attacks in the Break it tab (`/api/breakit/executor`: tamper, replay, forge a signed payment) and the role matrix test (`tests/test_role_matrix.py`: every guarded endpoint refuses every other role and anonymous callers). Mean user turns per task are reported in `eval/reports/tasks.md` (1.39 per task, 1.08 per completed payment, our own 92 tasks).
+
 ## Independent set (2026-10-14)
 
 320 cases (120 legitimate tasks, 150 attacks, 50 benign look-alikes) written by a different AI (OpenAI Codex) that saw only the grading criteria, the README and `docs/agent-api.md`, not the code. Files in `eval/independent/`, runner `eval/independent_bench.py`, report `eval/reports/independent.md`. Offline, MOCK data.

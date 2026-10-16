@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api, useGuard } from "../api.js";
 import { Card, SAMPLE_ATTACK } from "../common.jsx";
 import { t } from "../i18n/index.js";
@@ -10,6 +10,34 @@ function Verdict({ v }) {
       <p><b className={v.blocked ? "ok" : "bad"}>{v.blocked ? t("brk.blocked") : t("brk.got_through")}</b> · {v.status} · {t("brk.rules")}: <code>{v.rules.join(", ") || "-"}</code></p>
       {v.reasons?.length > 0 && <ul>{v.reasons.map((r, i) => <li key={i}>{String(r)}</li>)}</ul>}
       {v.why_card && <details><summary>{t("brk.why")}</summary><Card card={v.why_card} /></details>}
+    </div>
+  );
+}
+
+function ExecAttacks() {
+  const [list, setList] = useState([]);
+  const [res, setRes] = useState({});
+  const { busy, err, setErr, run } = useGuard();
+  useEffect(() => { api("/breakit/executor").then((r) => setList(r.attacks)).catch(() => {}); }, []);
+  const one = async (id) => { const r = await api("/breakit/executor", { attack: id }); setRes((m) => ({ ...m, [id]: r })); return r; };
+  const all = () => run(async () => { for (const a of list) await one(a.id); announce(t("brk.exec.all")); });
+  return (
+    <div className="card">
+      <h3>{t("brk.exec.title")}</h3>
+      <p className="small">{t("brk.exec.lead")}</p>
+      <ul className="small">{list.map((a) => {
+        const r = res[a.id];
+        return (
+          <li key={a.id}>
+            <button className="ghost" disabled={busy} onClick={() => run(() => one(a.id))}>{t("brk.exec.run")}</button>{" "}
+            {a.label}
+            {r && <> → <b className={a.id === "control" ? (r.blocked ? "bad" : "ok") : (r.blocked ? "ok" : "bad")}>{a.id === "control" ? (r.blocked ? t("brk.exec.refused") : t("brk.exec.control")) : (r.blocked ? t("brk.exec.refused") : t("brk.got_through"))}</b> ({r.status}) · {t("brk.exec.moved")}: {cny(r.extra_money_moved, 2)}
+              <div><code>{(r.reasons || []).join("; ")}</code></div></>}
+          </li>
+        );
+      })}</ul>
+      <div className="row"><button disabled={busy || !list.length} onClick={all}>{t("brk.exec.all")}</button></div>
+      <ErrorBox error={err} onDismiss={() => setErr(null)} />
     </div>
   );
 }
@@ -39,6 +67,7 @@ export function BreakIt() {
         <ErrorBox error={err} onDismiss={() => setErr(null)} />
       </div>
       {v && <Verdict v={v} />}
+      <ExecAttacks />
       {sb && (
         <div className="card" aria-live="polite">
           <div className="kpis">

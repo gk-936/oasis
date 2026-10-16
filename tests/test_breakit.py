@@ -15,3 +15,20 @@ def test_breakit(api_client, as_role):
 
 def test_breakit_parent_refused(as_role):
     assert as_role("parent").post("/api/breakit/attack", json={"text": "x"}).status_code in (401, 403)
+
+
+def test_breakit_executor_attacks(api_client, as_role):
+    j = as_role("judge")
+    ids = [a["id"] for a in j.get("/api/breakit/executor").json()["attacks"]]
+    assert "control" in ids and len(ids) >= 8
+    r = {i: j.post("/api/breakit/executor", json={"attack": i}).json() for i in ids}
+    assert r["control"]["status"] == "executed" and not r["control"]["blocked"]
+    for i in ids:
+        if i != "control":
+            assert r[i]["blocked"] and r[i]["extra_money_moved"] == 0 and r[i]["money_lost"] == 0, (i, r[i])
+    assert any("replay" in x for x in r["replay"]["reasons"])
+    assert j.post("/api/breakit/executor", json={"attack": "nope"}).status_code == 400
+
+
+def test_breakit_executor_parent_refused(as_role):
+    assert as_role("parent").post("/api/breakit/executor", json={"attack": "control"}).status_code in (401, 403)

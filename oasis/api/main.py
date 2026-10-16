@@ -1470,6 +1470,24 @@ def breakit_generate(body: BreakItGenIn, request: HttpRequest, p: Principal = De
             "scoreboard": {"blocked": sum(r["blocked"] for r in rows), "total": len(rows),
                            "cny_saved": round(sum(r["cny_saved"] for r in rows), 2),
                            "money_lost": round(sum(r["money_lost"] for r in rows), 2)}}
+@app.get("/api/breakit/executor")
+def breakit_executor_list(p: Principal = Depends(STUDENT_JUDGE)):
+    from ..trust.breakit_exec import ATTACKS
+    return {"attacks": [{"id": k, "label": v} for k, v in ATTACKS.items()], "mock": True}
+
+
+class BreakItExecIn(Strict):
+    attack: str
+
+
+@app.post("/api/breakit/executor")
+def breakit_executor(body: BreakItExecIn, request: HttpRequest, p: Principal = Depends(STUDENT_JUDGE)):
+    """Hand the real executor a tampered, replayed or forged signed intent in the caller's own sandbox (MOCK money)."""
+    from ..trust.breakit_exec import ATTACKS, run_attack
+    if body.attack not in ATTACKS:
+        raise HTTPException(400, "unknown attack")
+    _bk_guard(request)
+    return run_attack(S.redteam_box(p.jti).world, body.attack)
 # ================================================================== end BREAK-IT block
 
 
