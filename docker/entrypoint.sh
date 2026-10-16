@@ -15,22 +15,18 @@ rm -f "$DATA/.write_test"
 
 # ---- hosted-mode checks (OASIS_HOSTED=1 is the image default; set 0 only for local experiments) ----
 if [ "${OASIS_HOSTED:-1}" = "1" ]; then
-  if [ "${OASIS_ALLOW_DEMO_PASSCODES:-0}" != "1" ]; then
-    bad=""
-    [ "${OASIS_PASS_STUDENT:-student-demo}" = "student-demo" ] && bad="$bad OASIS_PASS_STUDENT"
-    [ "${OASIS_PASS_PARENT:-parent-demo}" = "parent-demo" ] && bad="$bad OASIS_PASS_PARENT"
-    [ "${OASIS_PASS_JUDGE:-judge-demo}" = "judge-demo" ] && bad="$bad OASIS_PASS_JUDGE"
-    if [ -n "$bad" ]; then
-      fail "refusing to start with the PUBLIC demo passcodes (unset or default:$bad). Set your own OASIS_PASS_STUDENT, OASIS_PASS_PARENT and OASIS_PASS_JUDGE (see .env.docker.example), or set OASIS_ALLOW_DEMO_PASSCODES=1 if you accept that anyone who has read the repo can log in."
-    fi
-    for v in OASIS_PASS_STUDENT OASIS_PASS_PARENT OASIS_PASS_JUDGE; do
-      eval "val=\${$v}"
-      [ "${#val}" -ge 8 ] || fail "$v is shorter than 8 characters; use a longer passcode"
-    done
-    export OASIS_REQUIRE_CUSTOM_PASSCODES=1      # the app re-checks and refuses on a default as well
-  else
-    warn "OASIS_ALLOW_DEMO_PASSCODES=1: the public demo passcodes are accepted; the sandbox is open to anyone who can reach it."
+  bad=""
+  [ -n "${OASIS_PASS_STUDENT:-}" ] || bad="$bad OASIS_PASS_STUDENT"
+  [ -n "${OASIS_PASS_PARENT:-}" ] || bad="$bad OASIS_PASS_PARENT"
+  [ -n "${OASIS_PASS_JUDGE:-}" ] || bad="$bad OASIS_PASS_JUDGE"
+  if [ -n "$bad" ]; then
+    fail "refusing to start: no passcode set for:$bad. There are no built-in passcodes; set your own OASIS_PASS_STUDENT, OASIS_PASS_PARENT and OASIS_PASS_JUDGE (see .env.docker.example)."
   fi
+  for v in OASIS_PASS_STUDENT OASIS_PASS_PARENT OASIS_PASS_JUDGE; do
+    eval "val=\${$v}"
+    [ "${#val}" -ge 8 ] || fail "$v is shorter than 8 characters; use a longer passcode"
+  done
+  export OASIS_REQUIRE_CUSTOM_PASSCODES=1      # the app re-checks and refuses to run on generated passcodes
   [ -n "${OASIS_KEY_PASSPHRASE:-}" ] || warn "OASIS_KEY_PASSPHRASE is not set: key files in $DATA/keys are plaintext, protected only by file permissions."
   if [ "${OASIS_LLM:-offline}" != "offline" ]; then
     warn "OASIS_LLM=${OASIS_LLM}: live-LLM mode sends user text to the model provider. NOT recommended for a public judge instance."

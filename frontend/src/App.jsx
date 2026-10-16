@@ -62,8 +62,6 @@ async function startSession(role, passcode) {
 }
 
 /** `role` / `setRole` come from the landing's "who are you" choice, so the card opens on the visitor's role. */
-// The public demo passcodes (README, docs/agent-api.md). They are prefilled only for a role the server reports as still on its default.
-const DEMO_PASS = { student: "student-demo", parent: "parent-demo", judge: "judge-demo" };
 
 function Login({ onDone, cfg, cfgErr, retryCfg, notice, role, setRole, gate }) {
   const [pass, setPass] = useState("");
@@ -81,8 +79,7 @@ function Login({ onDone, cfg, cfgErr, retryCfg, notice, role, setRole, gate }) {
     const n = e.key === "ArrowRight" || e.key === "ArrowDown" ? ROLES[(i + 1) % 3] : e.key === "ArrowLeft" || e.key === "ArrowUp" ? ROLES[(i + 2) % 3] : null;
     if (n) { e.preventDefault(); setRole(n); e.currentTarget.querySelector(`[data-role="${n}"]`)?.focus(); }
   };
-  const demoOn = !!cfg?.demo_passcodes_in_use?.includes(role);
-  useEffect(() => { if (gate) setPass(demoOn ? DEMO_PASS[role] : ""); }, [gate, role, demoOn]);
+  useEffect(() => { if (gate) setPass(""); }, [gate, role]);          // no passcode is built in or prefilled
   if (gate) return (
     <section className="login" aria-labelledby="login-h">
       <form className="card" onSubmit={go}>
@@ -104,7 +101,6 @@ function Login({ onDone, cfg, cfgErr, retryCfg, notice, role, setRole, gate }) {
           </button>
         </div>
         <div className="row"><button type="submit" disabled={busy || !pass}>{t("login.submit", { role: tl("role", role) })}</button>{busy && <Loading>{t("login.signingin")}</Loading>}</div>
-        {demoOn && <p className="demo-note">{t("gate.demo")}</p>}
         {err && <ErrorBox error={err.status === 401 ? new ApiError(401, t("login.wrong")) : err} />}
       </form>
     </section>
@@ -129,7 +125,6 @@ function Login({ onDone, cfg, cfgErr, retryCfg, notice, role, setRole, gate }) {
           <div className="row"><button type="submit" disabled={busy || !pass}>{t("login.submit", { role: tl("role", role) })}</button>{busy && <Loading>{t("login.signingin")}</Loading>}</div>
         </form>
         {err && <ErrorBox error={err.status === 401 ? new ApiError(401, t("login.wrong")) : err} />}
-        {cfg?.demo_passcodes_in_use?.length > 0 && <p className="hint">{R("login.demo")}</p>}
         <p className="hint">{R("login.devicekey")}</p>
       </div>
     </section>
@@ -200,7 +195,7 @@ export default function App() {
           {view !== "home" && <span className="shell-crumb"><span>{t(`tab.${view}`)}</span></span>}
           <span className="shell-spacer" />
           <PageHelp tab={view} open={helpOpen} onToggle={() => setHelpOpen((v) => !v)} onClose={() => setHelpOpen(false)} onAll={() => { setHelpOpen(false); setTab("help"); }} />
-          {needsKey && <KeyLock role={auth.role} dev={dev} onUnlocked={setDev} demoPass={cfg?.demo_passcodes_in_use?.includes(auth.role) ? DEMO_PASS[auth.role] : null} />}
+          {needsKey && <KeyLock role={auth.role} dev={dev} onUnlocked={setDev} />}
           <AppMenu tabs={tabs} tab={view} sec={passSec} onPick={pick} role={auth.role} />
         </div>
       </header>}

@@ -25,6 +25,7 @@ import os
 import re
 from collections import OrderedDict
 import secrets
+import contextvars
 import threading
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -168,6 +169,9 @@ async def guard(request: HttpRequest, call_next):
             return JSONResponse({"detail": "request body too large"}, status_code=413)
     if path == "/api/health" or not path.startswith("/api/"):
         return await call_next(request)
+    if judge_mode() and isinstance(S, SandboxRouter):
+        p = _principal(request)
+        S.use((p.sandbox or f"jti:{p.jti}") if p else None)       # no valid token: only the shared, unauthenticated endpoints
     while not _STATE_LOCK.acquire(blocking=False):       # polling keeps the worker threads free for the handler that holds it
         await asyncio.sleep(0.002)
     try:
@@ -408,7 +412,46 @@ def _request_from(d: dict) -> Request:
                    channel=d.get("channel"))
 
 
-S = Session()
+class SandboxRouter:
+    """What `S` is for the whole app. Normally it is the one Session. In judge mode every login gets its OWN Session (a private
+    in-memory world: ledger, audit chain, registry, pending drafts, chat), chosen by the signed `sandbox` claim in the caller's
+    token, so one judge can never read or change another judge's state. Login throttling and token revocation stay shared. At
+    most `max_sandboxes` live at once; the least recently used is dropped (its owner simply gets a fresh sandbox)."""
+
+    def __init__(self, root: Session):
+        object.__setattr__(self, "_root", root)
+        object.__setattr__(self, "_boxes", OrderedDict())
+        object.__setattr__(self, "_cur", contextvars.ContextVar("oasis_sandbox", default=None))
+
+    def _session(self) -> Session:
+        key = self._cur.get()
+        return self._boxes[key] if key is not None and key in self._boxes else self._root
+
+    def use(self, key: str | None) -> None:
+        """Make `key` the sandbox for the rest of this request (created on first use); None means the shared root."""
+        if key is None:
+            self._cur.set(None)
+            return
+        box = self._boxes.get(key)
+        if box is None:
+            box = Session(":memory:", attempts_path=self._root.attempts_path)
+            box.auth, box.login_limiter = self._root.auth, self._root.login_limiter
+            self._boxes[key] = box
+            while len(self._boxes) > int(os.environ.get("OASIS_MAX_SANDBOXES") or MAX_SANDBOXES):
+                self._boxes.popitem(last=False)
+        else:
+            self._boxes.move_to_end(key)
+        self._cur.set(key)
+
+    def __getattr__(self, name):
+        return getattr(self._session(), name)
+
+    def __setattr__(self, name, value):
+        setattr(self._session(), name, value)
+
+
+MAX_SANDBOXES = 40
+S = SandboxRouter(Session())
 
 
 def _out(o) -> dict:
@@ -416,6 +459,9 @@ def _out(o) -> dict:
 
 
 # ------------------------------------------------------------------ access control
+SANDBOX_COOKIE = "oasis_sandbox"
+
+
 def _client(request: HttpRequest) -> str:
     return request.client.host if request.client else "unknown"
 
@@ -637,8 +683,7 @@ def health():
 @app.get("/api/auth/config")
 def auth_config():
     """What the login screen needs. Public. Never returns a passcode."""
-    return {"roles": list(ROLES), "demo_passcodes_in_use": S.auth.demo_defaults,
-            "note": "Demo passcodes are documented in the README and are PUBLIC: set OASIS_PASS_* for a real deployment."}
+    return {"roles": list(ROLES), "note": "Passcodes are provided by the operator; none is built in or shown here."}
 
 
 @app.post("/api/auth/login")
@@ -646,11 +691,20 @@ def login(body: LoginIn, request: HttpRequest, response: Response, return_token:
     key = f"login:{_client(request)}"
     if S.login_limiter.blocked(key):                      # only FAILED logins count toward the limit
         raise HTTPException(429, "too many failed logins; wait a minute", headers={"Retry-After": str(S.login_limiter.retry_after(key))})
-    res = S.auth.login(body.role, body.passcode)
+    sb = ""
+    if judge_mode():            # a browser keeps one sandbox across its student and parent logins; a new browser gets a new one
+        sb = request.cookies.get(SANDBOX_COOKIE, "")
+        if not re.fullmatch(r"[0-9a-f]{32}", sb):
+            sb = secrets.token_hex(16)
+    res = S.auth.login(body.role, body.passcode, sandbox=sb)
     if res is None:
         S.login_limiter.record(key)
         raise HTTPException(401, "wrong role or passcode")
     token, p = res
+    if sb and isinstance(S, SandboxRouter):
+        S.use(sb)               # everything below (fresh-on-login reset, passkey check) acts on this judge's own sandbox
+        response.set_cookie(SANDBOX_COOKIE, sb, max_age=30 * 24 * 3600, httponly=True, samesite="strict",
+                            secure=_cookie_secure(request), path="/")
     if S.passkeys.must_use(p.role):          # second factor: no cookie until the passkey assertion verifies
         return S.passkeys.login_begin(p.role, _rp(request)[0], token, p)
     if p.role == "student" and os.environ.get("OASIS_FRESH_ON_LOGIN") == "1":

@@ -24,7 +24,7 @@ docker run -d --name oasis --restart unless-stopped -p 127.0.0.1:8000:8000 \
   --read-only --tmpfs /tmp --security-opt no-new-privileges --cap-drop ALL oasis
 ```
 
-The container refuses to start (exit code 78 and a clear message) if a passcode is unset, still the public demo value, or shorter than 8 characters, unless `OASIS_ALLOW_DEMO_PASSCODES=1`. Judge-mode and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` enforce the same rule again inside the app.
+The container refuses to start (exit code 78 and a clear message) if a passcode is unset or shorter than 8 characters. There are no built-in passcodes. Judge-mode and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` enforce the same rule again inside the app.
 
 Windows: Docker Desktop must be running; commands are the same in PowerShell. On Windows the `.env.docker` file must use plain `KEY=value` lines (no quotes, no `export`).
 
@@ -51,7 +51,6 @@ Set secrets at run time, never in the image. The full annotated list is `.env.do
 | Variable | Default in image | Notes |
 |---|---|---|
 | `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` | none (required) | refused if unset, default or under 8 chars |
-| `OASIS_ALLOW_DEMO_PASSCODES` | unset | `1` accepts the public demo passcodes |
 | `OASIS_KEY_PASSPHRASE` | unset (warning) | wraps the key files; needed at every start |
 | `OASIS_JUDGE_MODE` | `1` | `0` for personal use (`/docs` on, looser limits) |
 | `OASIS_LLM` / AWS credentials | `offline` / unset | live mode sends text to Amazon Bedrock; not for a public instance |
@@ -99,7 +98,7 @@ General rules whichever you pick: 1 replica, 1 worker, the platform's `PORT` is 
 
 ## 5. Hosted security checklist
 
-- [ ] Custom passcodes (8+ chars, different per role), never the public demo ones.
+- [ ] Custom random passcodes (8+ chars, different per role); none is built in.
 - [ ] `OASIS_KEY_PASSPHRASE` set **before first start** (a plaintext key file is not rewrapped by adding it later; for a fresh sandbox, wipe the volume first).
 - [ ] Keep `OASIS_LLM=offline`. Live mode sends strangers' input to Bedrock on your AWS account and bill.
 - [ ] HTTPS only; cookie is `Secure`; HTTP redirects to HTTPS (Caddy does this).

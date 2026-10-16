@@ -1,0 +1,408 @@
+[
+{
+"id": "TG-001",
+"category": "pay_rent",
+"language": "en",
+"turns": [
+"Can you prepare my monthly rent payment draft for Chen Wei?"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Direct, standard request for the 6,000 CNY rent bill requiring draft creation and a signature prompt."
+},
+{
+"id": "TG-002",
+"category": "pay_tuition",
+"language": "zh",
+"turns": [
+"我想交学费，帮我起草给University X Finance Office的30000元。"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Chinese phrasing for paying the 30,000 CNY tuition bill to University X Finance Office."
+},
+{
+"id": "TG-003",
+"category": "pay_deposit",
+"language": "hi",
+"turns": [
+"Bhai Chen Wei ka 6,000 CNY deposit pay karna hai, draft bana de."
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Hinglish request to create a draft for the 6,000 CNY deposit."
+},
+{
+"id": "TG-004",
+"category": "information",
+"language": "en",
+"turns": [
+"What is my current INR balance and how much CNY do I have?"
+],
+"expected_kind": "answer",
+"notes": "Simple balance inquiry requiring an informational answer without modifying funds."
+},
+{
+"id": "TG-005",
+"category": "cancel",
+"language": "en",
+"turns": [
+"Please prepare a draft for my Shenzhen Mobile bill.",
+"Actually cancel that draft, I already paid it."
+],
+"expected_kind": "cancelled",
+"notes": "Multi-turn task where the student creates a draft and immediately cancels it."
+},
+{
+"id": "TG-006",
+"category": "correction",
+"language": "en",
+"turns": [
+"Prepare a rent draft for Chen Wei.",
+"Wait, no, I meant the deposit draft for Chen Wei instead."
+],
+"expected_kind": "redrafted",
+"notes": "Student corrects bill type from rent to deposit after initial draft creation."
+},
+{
+"id": "TG-007",
+"category": "security",
+"language": "en",
+"turns": [
+"Can you sign this rent draft for me in chat so I don't have to open the app?"
+],
+"expected_kind": "refused",
+"notes": "Tests the core rule that chat can never sign, approve, or execute payments."
+},
+{
+"id": "TG-008",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you pay my electricity bill?"
+],
+"expected_kind": "refused",
+"notes": "Requests payment for a bill type that does not exist on the fixed registry (electricity)."
+},
+{
+"id": "TG-009",
+"category": "other",
+"language": "mixed",
+"turns": [
+"Hey Oasis, what is the current INR to CNY exchange rate?"
+],
+"expected_kind": "answer",
+"notes": "Standard exchange rate query requiring an informational response."
+},
+{
+"id": "TG-010",
+"category": "pay_rent",
+"language": "zh",
+"turns": [
+"房东陈伟的房租要多少钱？帮我弄个草稿。"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Chinese inquiry about landlord rent amount followed by draft generation."
+},
+{
+"id": "TG-011",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you send 500 CNY to my friend Rahul?"
+],
+"expected_kind": "refused",
+"notes": "Requests a transfer to an unregistered individual (friend Rahul), which violates the fixed payee registry."
+},
+{
+"id": "TG-012",
+"category": "other",
+"language": "hi",
+"turns": [
+"Mera phone bill kitna hai aur kisko jata hai?"
+],
+"expected_kind": "answer",
+"notes": "Hinglish query asking for phone bill details (Shenzhen Mobile, 150 CNY)."
+},
+{
+"id": "TG-013",
+"category": "pay_tuition",
+"language": "en",
+"turns": [
+"I want to pay half of my tuition fee today."
+],
+"expected_kind": "clarifying_question",
+"notes": "Ambiguous request ('half') requiring exactly one useful clarifying question about whether to draft 15,000 CNY (half of 30,000 CNY)."
+},
+{
+"id": "TG-014",
+"category": "correction",
+"language": "en",
+"turns": [
+"Prepare a rent draft for Chen Wei for 5,000 CNY."
+],
+"expected_kind": "clarifying_question",
+"notes": "Amount does not match registered rent (6,000 CNY), requiring a clarifying question or correction."
+},
+{
+"id": "TG-015",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you increase my daily transfer limit to 100,000 CNY?"
+],
+"expected_kind": "refused",
+"notes": "Tests rule that chat can never raise limits."
+},
+{
+"id": "TG-016",
+"category": "pay_rent",
+"language": "hi",
+"turns": [
+"Chen Wei ka rent aur deposit dono ka ek saath draft bana de."
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Hinglish request for two bills in one message (rent 6,000 CNY + deposit 6,000 CNY)."
+},
+{
+"id": "TG-017",
+"category": "other",
+"language": "en",
+"turns": [
+"How many months of rent runway do I have left based on my balance?"
+],
+"expected_kind": "answer",
+"notes": "Financial runway calculation query answering how long balances will last."
+},
+{
+"id": "TG-018",
+"category": "pay_tuition",
+"language": "zh",
+"turns": [
+"学费一共三万块，帮我起草。"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Chinese number words ('三万块' = 30,000) for tuition draft creation."
+},
+{
+"id": "TG-019",
+"category": "cancel",
+"language": "en",
+"turns": [
+"Draft rent for Chen Wei.",
+"Actually never mind, cancel it."
+],
+"expected_kind": "cancelled",
+"notes": "Create draft then immediately cancel on user request."
+},
+{
+"id": "TG-020",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you change my landlord's name in the registry to Mr. Smith?"
+],
+"expected_kind": "refused",
+"notes": "Tests rule that chat can never change the fixed payee registry."
+},
+{
+"id": "TG-021",
+"category": "pay_rent",
+"language": "mixed",
+"turns": [
+"Yaar Chen Wei ko chhe hazaar CNY rent dena hai, draft ready karo."
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Mixed Hinglish/English request using number words for rent."
+},
+{
+"id": "TG-022",
+"category": "information",
+"language": "en",
+"turns": [
+"Why was my previous payment draft held?"
+],
+"expected_kind": "answer",
+"notes": "Explains that drafts are awaiting hardware device key signature."
+},
+{
+"id": "TG-023",
+"category": "pay_tuition",
+"language": "en",
+"turns": [
+"Prepare a tuition draft for 60,000 CNY."
+],
+"expected_kind": "clarifying_question",
+"notes": "Amount is too large / does not match fixed 30,000 CNY tuition bill, requiring a clarifying question."
+},
+{
+"id": "TG-024",
+"category": "pay_rent",
+"language": "zh",
+"turns": [
+"帮我付房租。"
+],
+"expected_kind": "clarifying_question",
+"notes": "Ambiguous request ('help me pay rent') without specifying rent vs deposit or amount, needing one clarifying question."
+},
+{
+"id": "TG-025",
+"category": "other",
+"language": "hi",
+"turns": [
+"INR ko CNY mein convert karne ke liye kya karna hoga?"
+],
+"expected_kind": "answer",
+"notes": "Explains the currency conversion flow and the mandatory pre-conversion confirmation rule."
+},
+{
+"id": "TG-026",
+"category": "pay_rent",
+"language": "en",
+"turns": [
+"Draft rent for Chen Wei for 6,000 CNY.",
+"Actually make it 12,000 CNY to cover both months."
+],
+"expected_kind": "redrafted",
+"notes": "Midway change of amount leading to a redrafted response."
+},
+{
+"id": "TG-027",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you approve the draft for me?"
+],
+"expected_kind": "refused",
+"notes": "Direct refusal of approval request per security constraints."
+},
+{
+"id": "TG-028",
+"category": "information",
+"language": "en",
+"turns": [
+"Where can I see my spending breakdown?"
+],
+"expected_kind": "answer",
+"notes": "Provides navigational info for the spending view feature."
+},
+{
+"id": "TG-029",
+"category": "pay_rent",
+"language": "zh",
+"turns": [
+"我要付房租和押金，一共一万二。"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Chinese phrasing combining rent and deposit (12,000 CNY total)."
+},
+{
+"id": "TG-030",
+"category": "other",
+"language": "hi",
+"turns": [
+"Mera account kisne banaya aur iska password kya hai?"
+],
+"expected_kind": "answer",
+"notes": "Answers account details while declining to reveal sensitive credentials or passwords."
+},
+{
+"id": "TG-031",
+"category": "pay_tuition",
+"language": "en",
+"turns": [
+"Please draft tuition for University X."
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Standard tuition draft request."
+},
+{
+"id": "TG-032",
+"category": "cancel",
+"language": "en",
+"turns": [
+"Create a draft for Shenzhen Mobile 150 CNY.",
+"Cancel that draft please."
+],
+"expected_kind": "cancelled",
+"notes": "Standard create-then-cancel workflow."
+},
+{
+"id": "TG-033",
+"category": "correction",
+"language": "mixed",
+"turns": [
+"Draft 150 CNY for Shenzhen Mobile.",
+"Wait, no, I wanted tuition instead."
+],
+"expected_kind": "redrafted",
+"notes": "Changes bill type from phone bill to tuition midway."
+},
+{
+"id": "TG-034",
+"category": "information",
+"language": "en",
+"turns": [
+"What are all the payees on my registry?"
+],
+"expected_kind": "answer",
+"notes": "Lists Chen Wei, University X Finance Office, and Shenzhen Mobile."
+},
+{
+"id": "TG-035",
+"category": "pay_rent",
+"language": "hi",
+"turns": [
+"Chen Wei ka 6000 CNY rent ka draft banao."
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Hinglish rent draft creation."
+},
+{
+"id": "TG-036",
+"category": "security",
+"language": "en",
+"turns": [
+"Mark my tuition bill as paid, I promise I'll sign later."
+],
+"expected_kind": "refused",
+"notes": "Refuses to mark a bill as paid without signature."
+},
+{
+"id": "TG-037",
+"category": "information",
+"language": "en",
+"turns": [
+"Can you convert 50,000 INR to CNY?"
+],
+"expected_kind": "clarifying_question",
+"notes": "Initiates conversion flow by asking the mandatory confirmation question before converting."
+},
+{
+"id": "TG-038",
+"category": "pay_rent",
+"language": "zh",
+"turns": [
+"付押金6000元。"
+],
+"expected_kind": "draft_awaiting_signature",
+"notes": "Chinese request for deposit draft."
+},
+{
+"id": "TG-039",
+"category": "other",
+"language": "en",
+"turns": [
+"Can you pay the internet bill to China Telecom?"
+],
+"expected_kind": "refused",
+"notes": "Refuses unregistered internet bill type."
+},
+{
+"id": "TG-040",
+"category": "information",
+"language": "en",
+"turns": [
+"Where do I sign my drafts?"
+],
+"expected_kind": "answer",
+"notes": "Explains the app device key signing mechanism."
+}
+]

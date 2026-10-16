@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from auth_helpers import new_client
+from auth_helpers import login, new_client
 from oasis.api import main as api
 from oasis.api.auth import Auth
 
@@ -83,29 +83,35 @@ def test_rate_limit_is_still_enforced_per_client(api_session):
 
 
 # ----------------------------------------------------------------------------------------------- judge mode
-def test_judge_mode_refuses_public_passcodes_unless_explicitly_allowed(monkeypatch):
+def test_judge_mode_refuses_to_start_without_explicit_passcodes(monkeypatch):
     monkeypatch.setenv("OASIS_JUDGE_MODE", "1")
-    monkeypatch.delenv("OASIS_ALLOW_DEMO_PASSCODES", raising=False)
-    with pytest.raises(RuntimeError, match="OASIS_JUDGE_MODE"):
+    for r in ("STUDENT", "PARENT", "JUDGE"):
+        monkeypatch.delenv(f"OASIS_PASS_{r}")
+    with pytest.raises(RuntimeError, match="explicitly"):
         Auth()
-    monkeypatch.setenv("OASIS_ALLOW_DEMO_PASSCODES", "1")
-    assert Auth().demo_defaults == ["student", "parent", "judge"]
-    monkeypatch.delenv("OASIS_ALLOW_DEMO_PASSCODES")
     for r in ("STUDENT", "PARENT", "JUDGE"):
         monkeypatch.setenv(f"OASIS_PASS_{r}", f"custom-{r.lower()}-x9")
-    assert Auth().demo_defaults == []
+    assert Auth().generated == []
 
 
-def test_normal_mode_still_accepts_public_passcodes(monkeypatch):
+def test_unset_passcodes_are_random_alphanumeric_and_never_a_fixed_string(monkeypatch):
+    from oasis.api import auth
     monkeypatch.delenv("OASIS_JUDGE_MODE", raising=False)
-    assert Auth().demo_defaults == ["student", "parent", "judge"]
+    for r in ("STUDENT", "PARENT", "JUDGE"):
+        monkeypatch.delenv(f"OASIS_PASS_{r}")
+    monkeypatch.setattr(auth, "_GENERATED", {})
+    a = Auth()
+    got = auth.passcodes_from_env()
+    assert a.generated == ["student", "parent", "judge"]
+    assert len(set(got.values())) == 3 and all(len(v) == 16 and v.isalnum() for v in got.values())
+    assert not {"student-demo", "parent-demo", "judge-demo"} & set(got.values())
+    assert auth.passcodes_from_env() == got                        # stable within one process
 
 
 def test_judge_mode_disables_docs_and_tightens_limits(monkeypatch):
     c = TestClient(api.app)
     assert c.get("/docs").status_code == 200 and c.get("/openapi.json").status_code == 200      # normal mode
     monkeypatch.setenv("OASIS_JUDGE_MODE", "1")
-    monkeypatch.setenv("OASIS_ALLOW_DEMO_PASSCODES", "1")
     for path in ("/docs", "/redoc", "/openapi.json"):
         assert c.get(path).status_code == 404, path
     assert c.get("/api/health").status_code == 200
@@ -119,7 +125,6 @@ def test_judge_mode_disables_docs_and_tightens_limits(monkeypatch):
 
 def test_judge_mode_session_still_logs_in_and_runs_the_console(monkeypatch):
     monkeypatch.setenv("OASIS_JUDGE_MODE", "1")
-    monkeypatch.setenv("OASIS_ALLOW_DEMO_PASSCODES", "1")
     saved = api.S
     api.S = api.Session(":memory:")
     try:
@@ -150,3 +155,57 @@ def test_without_the_flag_a_student_login_keeps_the_sandbox(monkeypatch):
     st.post("/api/reset")
     st.post("/api/chat", json={"message": "Pay my rent"})
     assert len(new_client("student").get("/api/state").json()["pending"]) == 1
+
+
+# ------------------------------------------------------------------------------------- one sandbox per login (judge mode)
+def _judge_app(monkeypatch):
+    monkeypatch.setenv("OASIS_JUDGE_MODE", "1")
+    saved = api.S
+    api.S = api.SandboxRouter(api.Session(":memory:"))
+    return saved
+
+
+def test_each_judge_login_has_its_own_sandbox(monkeypatch):
+    saved = _judge_app(monkeypatch)
+    try:
+        a, b = TestClient(api.app), TestClient(api.app)          # two browsers = two cookie jars
+        for c in (a, b):
+            login(c, "student")
+            c.post("/api/reset")
+        assert a.post("/api/chat", json={"message": "Pay my rent"}).json()["status"] == "held"
+        assert len(a.get("/api/state").json()["pending"]) == 1
+        assert b.get("/api/state").json()["pending"] == []        # b sees nothing of a's draft
+        b.post("/api/reset")                                       # b wiping its sandbox ...
+        assert len(a.get("/api/state").json()["pending"]) == 1     # ... leaves a untouched
+    finally:
+        api.S = saved
+
+
+def test_one_browser_keeps_its_sandbox_across_logins(monkeypatch):
+    saved = _judge_app(monkeypatch)
+    try:
+        c = TestClient(api.app)
+        login(c, "student")
+        c.post("/api/reset")
+        c.post("/api/chat", json={"message": "Pay my rent"})
+        c.post("/api/auth/logout")
+        login(c, "parent")
+        c.post("/api/auth/logout")
+        login(c, "student")
+        assert len(c.get("/api/state").json()["pending"]) == 1     # logging in again from the same browser keeps its sandbox
+    finally:
+        api.S = saved
+
+
+def test_sandbox_claim_cannot_be_forged_from_the_cookie(monkeypatch):
+    saved = _judge_app(monkeypatch)
+    try:
+        a, b = TestClient(api.app), TestClient(api.app)
+        login(a, "student"); a.post("/api/reset"); a.post("/api/chat", json={"message": "Pay my rent"})
+        victim = a.cookies.get("oasis_sandbox")
+        b.cookies.set("oasis_sandbox", "0" * 32)
+        login(b, "student")
+        b.cookies.set("oasis_sandbox", victim)                      # swapping the cookie after login changes nothing
+        assert b.get("/api/state").json()["pending"] == []
+    finally:
+        api.S = saved

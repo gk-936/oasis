@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-15 18:40",
+  "run": "2026-10-16 12:46",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -118,11 +118,13 @@
    "id": "T3-012",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected draft_awaiting_signature, last status unknown"
+   ],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-013",
@@ -152,11 +154,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status rejected"
+    "expected clarifying_question, last status unknown"
    ],
    "turns": 1,
-   "last": "rejected",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-016",
@@ -504,11 +506,13 @@
    "id": "T3-049",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected draft_awaiting_signature, last status unknown"
+   ],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-050",
@@ -540,11 +544,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status rejected"
+    "expected clarifying_question, last status unknown"
    ],
    "turns": 1,
-   "last": "rejected",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-053",
@@ -888,11 +892,13 @@
    "id": "T3-086",
    "category": "pay_tuition",
    "kind": "draft_awaiting_signature",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected draft_awaiting_signature, last status unknown"
+   ],
    "turns": 1,
-   "last": "needs_confirmation",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-087",
@@ -924,11 +930,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status rejected"
+    "expected clarifying_question, last status unknown"
    ],
    "turns": 1,
-   "last": "rejected",
-   "dead_end": false
+   "last": "unknown",
+   "dead_end": true
   },
   {
    "id": "T3-090",

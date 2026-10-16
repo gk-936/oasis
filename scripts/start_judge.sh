@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start Oasis for a judge: offline, mock rates, a fresh sandbox database, the already-built UI. No API key, no Node, no network.
 # Usage: scripts/start_judge.sh [--port 8000] [--host 127.0.0.1] [--random-passcodes] [--data-dir DIR]
-# Contains no secrets. With the default (public) demo passcodes the sandbox is open to anyone who can reach the port,
+# Contains no secrets and no built-in passcode (fresh random ones are printed at each start). Anyone who has them can log in,
 # so keep the host at 127.0.0.1 unless you mean to share it.
 set -euo pipefail
 PORT=8000; HOST=127.0.0.1; RANDOM_PASS=0
@@ -24,13 +24,9 @@ export OASIS_LLM=offline OASIS_EXTRACT=deterministic OASIS_RATES=mock OASIS_ANCH
 export OASIS_DB="$DATA_DIR/oasis.db" OASIS_DATA_KEY="$DATA_DIR/keys/data_key.json" OASIS_TRUST_KEY="$DATA_DIR/keys/trust_key.json"
 export OASIS_SESSION_SECRET_FILE="$DATA_DIR/keys/session_secret.json" OASIS_ATTEMPTS_FILE="$DATA_DIR/redteam_attempts.jsonl"
 export OASIS_JUDGE_MODE=1 OASIS_FRESH_ON_LOGIN=1 PYTHONPATH="$ROOT"
-if [ "$RANDOM_PASS" = 1 ]; then
-  rnd() { "$PY" -c "import secrets;print(secrets.token_urlsafe(9))"; }
-  export OASIS_PASS_STUDENT="$(rnd)" OASIS_PASS_PARENT="$(rnd)" OASIS_PASS_JUDGE="$(rnd)"
-  unset OASIS_ALLOW_DEMO_PASSCODES
-else
-  export OASIS_PASS_STUDENT=student-demo OASIS_PASS_PARENT=parent-demo OASIS_PASS_JUDGE=judge-demo OASIS_ALLOW_DEMO_PASSCODES=1
-fi
+rnd() { "$PY" -c "import secrets,string;a=string.ascii_letters+string.digits;print(''.join(secrets.choice(a) for _ in range(16)))"; }
+# There are no built-in passcodes. Use the ones already set in the environment, otherwise make fresh random ones for this run.
+export OASIS_PASS_STUDENT="${OASIS_PASS_STUDENT:-$(rnd)}" OASIS_PASS_PARENT="${OASIS_PASS_PARENT:-$(rnd)}" OASIS_PASS_JUDGE="${OASIS_PASS_JUDGE:-$(rnd)}"
 echo "Oasis judge sandbox (offline, MOCK rates, fresh database in $DATA_DIR)"
 echo "  URL:         http://$HOST:$PORT"
 echo "  Judge login: role judge, passcode $OASIS_PASS_JUDGE"

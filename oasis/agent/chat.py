@@ -303,6 +303,7 @@ def _type_from_words(message: str) -> str | None:
     return None
 
 
+_PHONE = re.compile(r"phone|mobile|\bsim\b|telecom|话费|手机", re.I)       # the registered carrier (Shenzhen Mobile) is the one bill of this kind
 _UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
 
 
@@ -315,6 +316,8 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
     typ = it.slots.get("type") or _type_from_words(message)
     amt, cur = it.slots.get("amount"), it.slots.get("currency")
     named = nl_extract.registry_payee(message, _recipients(w))
+    if not named and not typ and _PHONE.search(nlu.normalise(message)):
+        named = next((r for r in _recipients(w) if r.id == "payee_telecom"), None)    # None where the world has no carrier: falls to the unregistered-bill reply
     unreg = None if named else nl_extract.unregistered_payee_name(message)
     cands = _open_obligations(w, typ, named.id if named else None)
     kinds = {k for k, rx in _MULTI_KINDS if rx.search(message)}
@@ -927,6 +930,12 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         return _proof(S, lang, secrets)
     if k == nlu.CREDIT:
         return _credit(S, lang, secrets)
+    if k == nlu.NOPAY:
+        t = ("明白了：我不会创建或更改任何付款。需要时可以问我余额、到期日、汇率或兑换报价。" if lang == "zh" else
+             "Understood: I won't create or change any payment. Ask me for a balance, due dates, a rate or a conversion quote whenever you like.")
+        return _result(k, t, secrets, status="info")
+    if k == nlu.FAQ:
+        return _faq(S, it.slots.get("topic"), lang, secrets)
     if k == nlu.GREETING:
         return _result(k, ("您好！" if lang == "zh" else "Hello! ") + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets)
     if k == nlu.HELP:
@@ -937,6 +946,21 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         return _result(k, _HELP_ZH if lang == "zh" else _HELP_EN, secrets)
     pre = "我没有理解这条消息。您想做什么？" if lang == "zh" else "I didn't understand that. What would you like to do? "
     return _result(nlu.UNKNOWN, pre + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets, status="unknown")
+
+
+def _faq(S, topic: str, lang: str, secrets) -> dict:
+    """Fixed how-it-works answers. Nothing here reads a credential or changes state."""
+    zh = lang == "zh"
+    if topic == "payees":
+        names = ("、" if zh else ", ").join(f"{r.name}" for r in _recipients(S.world) if r.payee_type != "student")
+        t = f"我只能付给登记册里的收款方：{names}。" if zh else f"I can pay only the payees in the registry: {names}."
+    elif topic == "sign":
+        t = ("在应用里签名：打开待批准的草稿，点击“签名并批准”，由您的设备密钥对这份确切的草稿签名。签名后系统会再次核对草稿和规则，才会付款到登记账户。我不能替您签名。" if zh else
+             "Sign in the app: open the pending draft and tap Sign and approve, so your device key signs that exact draft. After you sign, the system re-checks the signed draft and the rules, then pays the registry account; if anything changed, nothing is paid. I can't sign for you.")
+    else:
+        t = ("Oasis 是一个模拟（MOCK）沙盒里的助手，帮在国外的学生付账单：它只起草付给登记收款方的付款，由您用设备密钥签名后才会执行。所有数据和资金都是模拟的。" if zh else
+             "Oasis is an assistant in a MOCK sandbox that helps a student abroad pay bills: it only drafts payments to registered payees, and nothing is paid until you sign with your device key. All data and money are simulated.")
+    return _result(nlu.FAQ, t, secrets, status="info")
 
 
 _STATUS_ZH = {"paid": "已支付", "held": "已暂缓，等待批准", "frozen": "已冻结", "rejected": "已拒绝", "needs_verification": "需要验证"}

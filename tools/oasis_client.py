@@ -26,7 +26,6 @@ from pathlib import Path
 from nacl.signing import SigningKey
 
 VERSION = "oasis-approval-v1"          # must match oasis/trust/approvals.py
-DEFAULT_PASS = {"student": "student-demo", "parent": "parent-demo"}
 
 
 class ApiError(RuntimeError):
@@ -39,7 +38,7 @@ class OasisClient:
     def __init__(self, base: str = "http://127.0.0.1:8000", role: str = "student", passcode: str | None = None,
                  key_file: str | os.PathLike | None = None, lang: str | None = None):
         self.base, self.role, self.lang = base.rstrip("/"), role, lang
-        self.passcode = passcode or os.environ.get(f"OASIS_PASS_{role.upper()}") or DEFAULT_PASS.get(role, "")
+        self.passcode = passcode or os.environ.get(f"OASIS_PASS_{role.upper()}") or ""
         self.key_file = Path(key_file or f".oasis_device_key_{role}")
         self._jar = CookieJar()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._jar))

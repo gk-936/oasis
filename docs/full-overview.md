@@ -96,7 +96,7 @@ Cited external evidence (sources, dates and gaps: [docs/problem-evidence.md](pro
 
 **Languages**: English (default) and Simplified Chinese interface and server messages; parent approval in Tamil, Hindi, Chinese or English. All non-English text is machine-drafted ([docs/i18n-glossary.md](i18n-glossary.md)).
 
-**Hosting and optional extras**: Docker image with live rates that refuses the public demo passcodes; FISCO BCOS 4-node local-chain anchoring (`OASIS_ANCHOR=fisco`); post-quantum TLS recipe (OpenSSL client only).
+**Hosting and optional extras**: Docker image with live rates that refuses to start without explicitly set passcodes; FISCO BCOS 4-node local-chain anchoring (`OASIS_ANCHOR=fisco`); post-quantum TLS recipe (OpenSSL client only).
 
 ## A student story: Arjun
 
@@ -160,9 +160,9 @@ Requires Python 3.10+ and, only to rebuild the UI, Node 18+. No API key is neede
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt     # Windows; on macOS/Linux use .venv/bin/python
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
-# open http://localhost:8000 and log in (demo passcodes below); API docs at /docs
+# open http://localhost:8000 and log in (passcodes: see below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests (1229 passed, 2 skipped, no network):
+# tests (1270 passed, 2 skipped, no network):
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench
@@ -183,15 +183,15 @@ OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.risk_fresh
 
 **Live model (optional):** follow [docs/bedrock-setup.md](bedrock-setup.md), then `OASIS_LLM=bedrock`. Keep offline for tests and any public instance.
 
-**Hosting (Docker):** `docker compose up -d --build` runs a single-worker container that refuses the public demo passcodes and fetches live ECB rates server-side; see [docs/deployment-docker.md](deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
+**Hosting (Docker):** `docker compose up -d --build` runs a single-worker container that refuses to start without explicitly set passcodes and fetches live ECB rates server-side; see [docs/deployment-docker.md](deployment-docker.md) (statically checked and run from a clean venv, not yet built in Docker).
 
 **Demo logins** (public, from `.env.example`; set `OASIS_PASS_*` for anything real):
 
 | Role | Passcode | May do |
 |---|---|---|
-| student | `student-demo` | intake, chat, plans, rate targets, signed approvals, the scripted demo, reset |
-| parent | `parent-demo` | signed approval of top-ups, sees only their own items |
-| judge | `judge-demo` | read-only views, the rate-limited red-team console and the Break it tab |
+| student | `<student passcode>` | intake, chat, plans, rate targets, signed approvals, the scripted demo, reset |
+| parent | `<parent passcode>` | signed approval of top-ups, sees only their own items |
+| judge | `<judge passcode>` | read-only views, the rate-limited red-team console and the Break it tab |
 
 Approvals are signed by browser-held Ed25519 device keys ([docs/technical-documentation.md](technical-documentation.md) section 11).
 

@@ -87,7 +87,6 @@ export default {
   "login.submit": "以{role}身份登录",
   "login.signingin": "正在登录…",
   "login.wrong": "该口令与所选角色不匹配。请检查角色后重试。",
-  "login.demo": "演示版本：口令为 `student-demo`、`parent-demo` 和 `judge-demo`（公开口令；正式使用时请在 `.env` 中设置 `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE`）。",
   "login.devicekey": "学生和家长首次登录时会获得一把 Ed25519 **设备密钥**。其私钥在此浏览器中生成并保存（用您的口令加密包裹），绝不会发送给服务器；每一次批准都是对这笔具体付款的签名。",
   "role.student.desc": "Arjun：付款、规划，并批准自己的付款",
   "role.parent.desc": "Lakshmi：共同批准大额家庭汇款",

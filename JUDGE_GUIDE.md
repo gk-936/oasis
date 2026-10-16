@@ -24,15 +24,15 @@ The script sets `OASIS_LLM=offline` (a deterministic parser, no network, no key)
 
 ## Log in
 
-Open the URL. The login screen offers three roles. The demo passcodes are **public** (they are in `.env.example` and the README):
+Open the URL. The login screen offers three roles. The passcodes are **not in this repository**: the organisers send them to you separately (they are random, one per role). Every judge login gets its own private sandbox, so nothing you do affects another judge:
 
 | Role | Passcode | Use it to |
 |---|---|---|
-| judge | `judge-demo` | the red-team console and read-only views (start here) |
-| student | `student-demo` | chat, pay an invoice, sign an approval, run the scripted demo |
-| parent | `parent-demo` | co-sign larger payments, see the parent view (English, Tamil, Hindi, Chinese). Interface language: English by default; switch to 简体中文 with the picker (`?lang=zh` also works) |
+| judge | `<judge passcode>` | the red-team console and read-only views (start here) |
+| student | `<student passcode>` | chat, pay an invoice, sign an approval, run the scripted demo |
+| parent | `<parent passcode>` | co-sign larger payments, see the parent view (English, Tamil, Hindi, Chinese). Interface language: English by default; switch to 简体中文 with the picker (`?lang=zh` also works) |
 
-The start scripts run in **judge mode** (`OASIS_JUDGE_MODE=1`): API docs (`/docs`) are off, the red-team limit is 10 attempts a minute, failed logins are limited to 5 a minute, sessions last 30 minutes, and the public passcodes are only accepted because the script sets `OASIS_ALLOW_DEMO_PASSCODES=1` for you. With `-RandomPasscodes` / `--random-passcodes` the script generates random passcodes for this run and prints them instead. Outside the scripts, `OASIS_JUDGE_MODE=1` refuses the default passcodes unless you set `OASIS_PASS_*` or the allow flag, and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuses them always. Each judge login gets **its own red-team sandbox** (its own ledger, registry and attempt log); other judges' attempts are invisible to you. The server keeps at most 20 sandboxes at once and drops the least recently used.
+The start scripts run in **judge mode** (`OASIS_JUDGE_MODE=1`): API docs (`/docs`) are off, the red-team limit is 10 attempts a minute, failed logins are limited to 5 a minute, sessions last 30 minutes, and there are no built-in passcodes: the script uses the `OASIS_PASS_*` values already in your environment and generates random ones for any that are unset, then prints them. Outside the scripts, `OASIS_JUDGE_MODE=1` and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuse to start unless all three `OASIS_PASS_*` are set. Every judge login also gets its own private sandbox. Each judge login gets **its own red-team sandbox** (its own ledger, registry and attempt log); other judges' attempts are invisible to you. The server keeps at most 20 sandboxes at once and drops the least recently used.
 
 **Why shared passcodes, not personal logins.** The sandbox has no user database, no password reset and no MFA service, and it handles only simulated money, so each role has one shared passcode. A hosted copy should set its own `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` (judge mode refuses the public defaults) and give them only to the judges. This is a deliberate demo choice, not a claim of real authentication.
 
@@ -113,7 +113,7 @@ Not claimed anywhere: a licence, regulator approval, real settlement, an indepen
 
 These are choices, not features, and none needs Docker or an account on our side.
 
-- **Public repository.** Judges clone it and run the script. Cheapest and most transparent, and it exposes the code and the public demo passcodes to everyone, which is fine for a sandbox with no secrets. Check the history for keys before making it public (`.env` is git-ignored; rotate any key that was ever pasted into a chat or log).
+- **Public repository.** Judges clone it and run the script. Cheapest and most transparent, and it exposes the code to everyone; it contains no passcode, because none is built in. Check the history for keys before making it public (`.env` is git-ignored; rotate any key that was ever pasted into a chat or log).
 - **ZIP of the repository.** Same experience without a public URL, good if the organisers want an offline artefact. Exclude `.env`, `data/` and `node_modules/`; the ZIP is large because of the virtual environment, so ship `requirements.txt` and let the judge create the venv.
 - **Run at the final.** We start the script on a laptop on the day (`127.0.0.1`, or a LAN address with `-RandomPasscodes` so only people we hand a passcode to can log in) and let judges try it at our table or screen-shared. Most controllable; each judge still gets an isolated sandbox. Running it on the public internet is a separate decision: the build serves plain HTTP and has shared passcodes and no MFA, so it needs TLS and its own passcodes first (see Deployment in the README).
 - **Hosted container.** A Docker image, compose file and hosting notes are in [docs/deployment-docker.md](docs/deployment-docker.md) (built and run locally on 2026-10-13, not yet deployed publicly; the judge scripts above remain the tested path).

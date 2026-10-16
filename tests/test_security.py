@@ -148,12 +148,14 @@ def test_bearer_token_header_is_accepted(api_session):
     assert fresh.get("/api/auth/me", headers={"Authorization": f"Bearer {tok}"}).json()["role"] == "judge"
 
 
-def test_strict_mode_refuses_demo_passcodes(monkeypatch):
+def test_strict_mode_refuses_generated_passcodes(monkeypatch):
     monkeypatch.setenv("OASIS_REQUIRE_CUSTOM_PASSCODES", "1")
+    for r in ("STUDENT", "PARENT", "JUDGE"):
+        monkeypatch.delenv(f"OASIS_PASS_{r}")
     with pytest.raises(RuntimeError):
         Auth()
     ok = Auth(passcodes={"student": "s3cret-a", "parent": "s3cret-b", "judge": "s3cret-c"})
-    assert ok.demo_defaults == []
+    assert ok.generated == []
 
 
 # ======================================================================================= signed approvals

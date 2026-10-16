@@ -24,6 +24,7 @@ CONVERT, RATE_TARGET, STATUS, CANCEL, CORRECT, CONFIRM, DENY, EXPLAIN, PROOF, CR
     "convert", "rate_target", "status", "cancel", "correct", "confirm", "deny", "explain", "proof", "credit", "undo")
 SECRETS, BYPASS, PAY_INVOICE, HELP, GREETING, UNKNOWN = "secrets", "bypass", "pay_invoice", "help", "greeting", "unknown"
 SPENDING = "spending"
+NOPAY, FAQ = "nopay", "faq"            # "no payment, I am only asking" and fixed how-it-works answers: neither can move money
 REFUSALS = (SECRETS, BYPASS)
 
 INVOICE_HINT = re.compile(r"(Payee|Account|Amount|收款人|账号|金额)\s*[:：]", re.I)
@@ -78,7 +79,7 @@ _SECRET_WORDS = (r"pass ?code|password|passwd|\bpin\b|private key|signing key|se
                  r"system prompt|your prompt|your instructions|initial prompt|hidden prompt|prompt above|"
                  r"密码|口令|私钥|密钥|令牌|系统提示|提示词|你的指令|环境变量|凭证|पासवर्ड|पासकोड|सीक्रेट")
 _SECRETS_ASK = re.compile(rf"(?:{_SECRET_WORDS})", re.I)
-_SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|find|config|stored|written down|what(?:'s| is| are)|list|export|"
+_SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|find|config(?!uration)|stored|written down|what(?:'s| is| are)|list|export|"
                            r"告诉|显示|打印|泄露|给我|发给|是什么|输出|透露)", re.I)
 _OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|(?:everyone|everybody|anyone|anybody)'?s? (?:else'?s? )?(?:payments?|accounts?|balances?|data|transactions?|details)|"
                           r"(?:someone|somebody) else'?s? (?:account|data|balance|payments?)|(?:其他|别人|所有)(?:用户|学生|账户|账号)", re.I)
@@ -91,7 +92,7 @@ _INJECTION = re.compile(
     r"jailbreak|\bdan\b|do anything now|sudo\b|override (?:the )?(?:safety|security|policy|rules?|limit)|"
     r"忽略(?:以上|之前|上面|所有)?(?:的)?(?:指令|规则|提示)|忽略[^，。,.\s]{0,8}(?:规则|指令|提示|限制)|无视(?:以上|之前|所有)|开发者模式|管理员模式|调试模式|越狱|扮演", re.I)
 _BYPASS = re.compile(
-    r"approve (?:all|every|any|everything|the pending|all pending|them)|(?:skip|bypass|disable|turn off|waive|without|no need for|don'?t need|no time for) "
+    r"approve (?:all|every|any|everything|the pending|all pending|them)|(?<!i'll )(?<!i will )(?<!i am going to )(?<!i'm going to )(?<!let me )(?<!app to )(?<!in the app )(?:approve|sign) my (?:[a-z]+ ){0,2}(?:draft|payment|bill)\b|(?:skip|bypass|disable|turn off|waive|without|no need for|don'?t need|no time for) "
     r"(?:the |a |an |any |my |your )?(?:(?:parent|mum|mom|dad|guardian)(?:'?s'?)? |parental )?(?:approval|signature|signing|verification|check|checks|2fa|otp|registry|policy|limits?|safety|security|co-?approv\w*)|"
     r"auto[- ]?approve|pre-?approved|already approved|i (?:hereby )?approve|(?:sign|approve) (?:it |this |that )?(?:for me|on my behalf)|"
     r"mark [a-z ]{0,30}?(?:as )?(?:approved|verified|paid|signed)|(?<!can )(?<!only )(?<!must )(?<!will )(?<!to )(?<!cannot )(?<!can't )release (?:the )?(?:funds?|money|payments?)|set (?:the )?status (?:to )?(?:paid|approved|verified)|"
@@ -159,7 +160,7 @@ def _snap(norm: str, words) -> str:
 
 _SEC_VOCAB = ("ignore", "instructions", "previous", "passcode", "password", "private", "signing", "signature", "approval", "approve", "approved", "registry",
               "verification", "credentials", "configuration", "device", "bypass", "disable", "forget", "authorized", "release", "waive", "override", "limit",
-              "safety", "secret", "system", "prompt", "guardian", "transfer", "everything", "pending", "checks", "remove", "raise", "daily", "called",
+              "safety", "secret", "system", "prompt", "guardian", "transfer", "every", "everything", "pending", "checks", "remove", "raise", "daily", "called",
               "behalf", "parent", "payments", "bedrock", "rules", "funds", "university", "everyone", "mother", "father")
 
 
@@ -177,18 +178,42 @@ def snap_security(norm: str) -> str:
     return " ".join(out)
 
 
+# Honest context that is not an attack. Each only RELAXES one pattern and never skips the others.
+_STILL_SIGN = re.compile(r"\b(?:still|myself|my own)\b[^.?!]{0,25}\bsign\w*|\bsign\w*\b[^.?!]{0,15}\bmyself|\bnot asking you to (?:approve|sign)|"
+                         r"leave it for my[^.?!]{0,20}signature|我(?:自己|会)[^。]{0,6}签名", re.I)
+_NEG_ASK = re.compile(r"\b(?:do not|don'?t|never)\s+(?:ask|make|have|require)\s+me\s+to\s+(?:send|share|give|provide|enter|paste|type|tell|submit|upload)\b[\w' ,/]{0,45}|"
+                      r"不要让我[^。！？]{0,40}|"
+                      r"\bi\s+(?:do not|don'?t)\s+need\b[\w' ,/]{0,40}?\b(?:information|info|data|details)\s+(?:about|of|on|from)\s+(?:other|another|all)\s+(?:users?|students?)\b",
+                      re.I)
+_REVEAL = re.compile(r"show|reveal|print|display|dump|leak|read|repeat|output|list|export|显示|打印|泄露|输出|透露|告诉我", re.I)
+_SECURITY_QA = re.compile(r"\b(?:checks?|see|know)\b[^.?!]{0,25}\b(?:whether|if)\b[^.?!]{0,50}\b(?:registered|signed|updated|status)\b|explain why |忘记.{0,6}密码.{0,25}(?:流程|怎么|如何)|忘记.{0,6}(?:device key|密钥|设备密钥).{0,20}(?:怎么|如何|联系)|\bwhy (?:does|do|is|are)\b|\bwhere (?:do|can|should) i locate\b[^.?!]{0,30}\bsettings\b|"
+                          r"\b(?:can|could|would) (?:they|someone|somebody|an attacker|a hacker|anyone)\b[^.?!]{0,30}\bsteal\b|\bhow (?:does|do)\b[^.?!]{0,30}\bprotect", re.I)
+
+
+_HOWTO = re.compile(r"(?:请)?(?:只)?告诉我 ?(?:官方)? ?(?:recovery steps|reset 流程|流程|步骤)|(?:tell|show|explain|teach|guide) me how")
+
+
+def _drop_negated(norm: str) -> str:
+    """Remove 'do not ask me to send you the password' style clauses (a promise not to share, not a request to see)."""
+    return _NEG_ASK.sub(lambda m: m.group(0) if _REVEAL.search(m.group(0)) else " ", norm)
+
+
 def security_category(norm: str) -> str | None:
     """secrets | injection | bypass | role | social | None, for a normalised message."""
+    norm = _drop_negated(norm)
     # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
     asked = re.sub(r"\bwithout (?:sending|giving|telling|sharing|showing|revealing)[^.?!]{0,30}|\bwhere is\b", "", _snap(norm, _EXEMPT_WORDS))
+    asked = _HOWTO.sub(" ", asked)
     reset_help = bool(_RESET.search(_snap(norm, ("reset", "password", "passcode", "login")))) and not _SECRETS_VERB.search(asked)
+    plain = _HOWTO.sub(" ", norm)           # "tell me the recovery steps" asks for steps, not for a secret
+    reset_help = reset_help or bool(_SECURITY_QA.search(norm) and not _SECRETS_VERB.search(plain) and not _REVEAL.search(plain))
     if not reset_help and _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
         return "secrets"
     if _OTHER_USERS.search(norm):
         return "secrets"
     if _INJECTION.search(norm):
         return "injection"
-    if _SOCIAL.search(norm):
+    if _SOCIAL.search(norm) and not (_STILL_SIGN.search(norm) and not _bypass_asked(norm)):
         return "social"
     if _ROLE.search(norm):
         return "role"
@@ -253,6 +278,10 @@ def _words_to_digits(text: str) -> str:
     return _WORD_AMT.sub(lambda m: str(_WORD_NUM[m.group(1).lower()] * (1000 if m.group(2).lower() == "thousand" else 100)), text)
 _SMALLTALK = re.compile(r"^(?:你好|您好|嗨|hi|hello|hey)[，, ]*(?:今天)?(?:怎么样|好吗|最近好吗)|how are you", re.I)
 _HELP = re.compile(r"\bhelp\b|what can you do|what you do|how (?:do|does) (?:you|this|it) work|\bcapabilit|what are you|who are you|帮助|你能做什么|怎么用|你是谁", re.I)
+_NOPAY = re.compile(r"\b(?:do not|don'?t|dont|no need to|without|not asking|just asking|only asking|only want to know|just answer|no payment|nahi chahiye)\b[^.]{0,45}\b(?:draft|payment|pay|convert|conversion|creat\w*|authori[sz]\w*|initiat\w*|sign\w*|action|needed)\b|\bonly (?:a|an) \w*\s*question\b|\b(?:asking|answer) (?:about|generally|for)? ?[^.]{0,30}\bonly\b|(?:不要|无需|不用|别)[^。]{0,8}(?:创建|付款|草稿|签名|执行)|只回答|只想知道|仅询问", re.I)
+_FAQ = (("payees", re.compile(r"\bregistered payees|\bpayee list|\bwhich payees|\ball the payees|\bhow many (?:registered )?payees|\bwho (?:can|do) (?:i|you) pay\b|\bfixed payees|收款人有哪些|固定收款人|登记.{0,4}收款人", re.I)),
+        ("sign", re.compile(r"\bwhere (?:do|can|should) i sign\b|\bhow (?:do|can|should) i sign\b|\bwhat happens (?:after|when) i sign\b|\bsign (?:kahan|kaise)\b|在哪.{0,3}签名|怎么签名|签名后", re.I)),
+        ("what", re.compile(r"\bwhat(?:'s| is) oasis\b|\boasis (?:kya|what)\b|oasis是什么", re.I)))
 _NUMBER = re.compile(r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)(?![\w])")
 
 
@@ -382,6 +411,11 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
                 kind = OBLIGATIONS
             a = _amount(raw)
             return ChatIntent(kind, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.8, lang)
+    for topic, rx in _FAQ:
+        if rx.search(norm):
+            return ChatIntent(FAQ, {"topic": topic}, 0.85, lang)
+    if _NOPAY.search(norm):
+        return ChatIntent(NOPAY, {}, 0.7, lang)
     if _GREETING.match(norm) or _SMALLTALK.search(norm):
         return ChatIntent(GREETING, {}, 1.0, lang)
     if _HELP.search(norm):

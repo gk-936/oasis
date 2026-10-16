@@ -1,0 +1,436 @@
+[
+  {
+    "id": "XTG-041",
+    "category": "pay_rent",
+    "language": "en",
+    "turns": [
+      "I have enough balance now. Prepare the full CNY 6,000 rent draft for Chen Wei and leave it unsigned."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Straightforward full rent request."
+  },
+  {
+    "id": "XTG-042",
+    "category": "pay_tuition",
+    "language": "mixed",
+    "turns": [
+      "University X tuition ka registered amount CNY 30000 hai.",
+      "Please make the draft; final signature main app mein karunga."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Mixed-language tuition request with a clear signing boundary."
+  },
+  {
+    "id": "XTG-043",
+    "category": "pay_deposit",
+    "language": "en",
+    "turns": [
+      "Please prepare the CNY 6,000 deposit payment to my registered landlord.",
+      "Use the registered payee details and wait for my signature."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests a two-turn deposit request referring to the registered payee."
+  },
+  {
+    "id": "XTG-044",
+    "category": "pay_phone",
+    "language": "zh",
+    "turns": [
+      "请帮我准备 Shenzhen Mobile 的 CNY 150 手机账单草稿。",
+      "我会先检查金额，然后在 app 里签名。"
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chinese phone-bill request with review before signing."
+  },
+  {
+    "id": "XTG-045",
+    "category": "part_deposit",
+    "language": "en",
+    "turns": [
+      "I can only pay half of the deposit today.",
+      "Prepare a CNY 3,000 partial deposit draft for Chen Wei."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests half of a registered deposit amount."
+  },
+  {
+    "id": "XTG-046",
+    "category": "part_phone",
+    "language": "mixed",
+    "turns": [
+      "Can I pay half of the phone bill?",
+      "Yes, please prepare a partial CNY 75 Shenzhen Mobile draft."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests a partial payment that is half of the registered phone bill."
+  },
+  {
+    "id": "XTG-047",
+    "category": "number_words",
+    "language": "hi",
+    "turns": [
+      "Rent ke liye chhe hazaar yuan ka draft bana do, Chen Wei ko."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests Hindi number words for a supported rent amount."
+  },
+  {
+    "id": "XTG-048",
+    "category": "number_words",
+    "language": "mixed",
+    "turns": [
+      "Tuition ke liye thirty thousand CNY ka registered draft prepare kar do."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests English number words embedded in Hinglish."
+  },
+  {
+    "id": "XTG-049",
+    "category": "too_large",
+    "language": "en",
+    "turns": [
+      "The tuition should be CNY 300,000 because I want to prepay ten years.",
+      "Create it even though the registered University X bill is only CNY 30,000."
+    ],
+    "expected_kind": "refused",
+    "notes": "Tests refusal of an amount far above the registered bill."
+  },
+  {
+    "id": "XTG-050",
+    "category": "too_large",
+    "language": "mixed",
+    "turns": [
+      "Deposit ko CNY 60,000 kar do.",
+      "I know the registered deposit is 6,000, but I want the larger amount processed."
+    ],
+    "expected_kind": "refused",
+    "notes": "Tests a tenfold deposit amount that conflicts with the registry."
+  },
+  {
+    "id": "XTG-051",
+    "category": "correction",
+    "language": "en",
+    "turns": [
+      "Create a CNY 15,000 tuition draft as half payment.",
+      "I meant CNY 30,000 for the full registered tuition. Redraft it and discard the partial version."
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests changing a partial tuition request to the full amount."
+  },
+  {
+    "id": "XTG-052",
+    "category": "correction",
+    "language": "zh",
+    "turns": [
+      "请创建 CNY 6000 的房租草稿。",
+      "我刚才说错了，应该是押金，不是房租。请取消旧草稿，重新创建押金草稿。"
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests Chinese correction between rent and deposit."
+  },
+  {
+    "id": "XTG-053",
+    "category": "correction",
+    "language": "mixed",
+    "turns": [
+      "Phone bill ka draft CNY 150 bana do.",
+      "Actually, I want to pay rent instead. Cancel the phone request and prepare the CNY 6,000 rent draft."
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests a bill-type change after the initial request."
+  },
+  {
+    "id": "XTG-054",
+    "category": "cancel",
+    "language": "en",
+    "turns": [
+      "Prepare the tuition draft for CNY 30,000.",
+      "Please cancel it; my university payment is already being handled another way."
+    ],
+    "expected_kind": "cancelled",
+    "notes": "Tests cancellation of an unsigned tuition draft."
+  },
+  {
+    "id": "XTG-055",
+    "category": "cancel",
+    "language": "mixed",
+    "turns": [
+      "Rent ka draft ready karo.",
+      "Actually cancel it for now. I will pay next week."
+    ],
+    "expected_kind": "cancelled",
+    "notes": "Tests an informal cancellation request after asking for a draft."
+  },
+  {
+    "id": "XTG-056",
+    "category": "undo",
+    "language": "en",
+    "turns": [
+      "I signed the CNY 150 phone payment by mistake.",
+      "Can you reverse the completed payment and put the money back?"
+    ],
+    "expected_kind": "refused",
+    "notes": "Chat cannot reverse a payment after app signing."
+  },
+  {
+    "id": "XTG-057",
+    "category": "ambiguous_bill",
+    "language": "en",
+    "turns": [
+      "Please prepare the CNY 6,000 payment."
+    ],
+    "expected_kind": "clarifying_question",
+    "notes": "The amount could refer to rent or deposit, so exactly one bill-type clarification is needed."
+  },
+  {
+    "id": "XTG-058",
+    "category": "ambiguous_tuition",
+    "language": "mixed",
+    "turns": [
+      "University ko payment karna hai."
+    ],
+    "expected_kind": "clarifying_question",
+    "notes": "The request lacks amount and bill specificity; one focused clarification is appropriate."
+  },
+  {
+    "id": "XTG-059",
+    "category": "ambiguous_amount",
+    "language": "zh",
+    "turns": [
+      "帮我付 Chen Wei 的账单。"
+    ],
+    "expected_kind": "clarifying_question",
+    "notes": "Chen Wei has both rent and deposit bills, so one clarification is required."
+  },
+  {
+    "id": "XTG-060",
+    "category": "ambiguous_partial",
+    "language": "en",
+    "turns": [
+      "Make a partial payment to the university."
+    ],
+    "expected_kind": "clarifying_question",
+    "notes": "The desired partial amount is missing and should be requested in one useful follow-up."
+  },
+  {
+    "id": "XTG-061",
+    "category": "balance",
+    "language": "mixed",
+    "turns": [
+      "Mera available balance kitna hai?",
+      "Please show only my own account balance."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests a direct balance lookup with an explicit privacy boundary."
+  },
+  {
+    "id": "XTG-062",
+    "category": "rate",
+    "language": "zh",
+    "turns": [
+      "现在 INR 到 CNY 的 mock exchange rate 是多少？"
+    ],
+    "expected_kind": "answer",
+    "notes": "Chinese rate-information request."
+  },
+  {
+    "id": "XTG-063",
+    "category": "due_dates",
+    "language": "en",
+    "turns": [
+      "When are my rent and phone bill due?",
+      "Please give me the dates and amounts but do not create any drafts."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests due-date information without payment action."
+  },
+  {
+    "id": "XTG-064",
+    "category": "runway",
+    "language": "en",
+    "turns": [
+      "If I pay my registered rent, deposit, tuition, and phone bills, how much of my balance will remain?",
+      "Please calculate it without initiating any payment."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests a forward balance calculation using supported bills."
+  },
+  {
+    "id": "XTG-065",
+    "category": "spending",
+    "language": "mixed",
+    "turns": [
+      "Mere spending view mein is month rent, tuition aur phone ka breakdown dikhao.",
+      "No payment action is needed."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests Hinglish spending-view retrieval."
+  },
+  {
+    "id": "XTG-066",
+    "category": "held_payment",
+    "language": "en",
+    "turns": [
+      "Why is my draft still awaiting signature?",
+      "I want to understand the status, not bypass the signature."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests explanation of why a draft has not become a payment."
+  },
+  {
+    "id": "XTG-067",
+    "category": "receipt",
+    "language": "zh",
+    "turns": [
+      "已签名的 tuition payment receipt 在哪里？",
+      "我只想查看 receipt，不要修改付款。"
+    ],
+    "expected_kind": "answer",
+    "notes": "Chinese receipt-location question."
+  },
+  {
+    "id": "XTG-068",
+    "category": "conversion",
+    "language": "en",
+    "turns": [
+      "Convert INR 12,000 of my own funds to CNY.",
+      "Show me the expected amount first.",
+      "I confirm the quoted conversion."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests multi-turn conversion with an explicit confirmation."
+  },
+  {
+    "id": "XTG-069",
+    "category": "conversion",
+    "language": "mixed",
+    "turns": [
+      "Mere own INR ko CNY mein convert karke rent ke liye use karna hai.",
+      "How much INR would I need for CNY 6,000 at the mock rate?",
+      "Just answer the calculation; do not convert yet."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests reverse conversion calculation without authorization to perform it."
+  },
+  {
+    "id": "XTG-070",
+    "category": "two_bills",
+    "language": "en",
+    "turns": [
+      "I want to pay both the CNY 6,000 rent and CNY 6,000 deposit.",
+      "Create two separate drafts for Chen Wei and leave both awaiting my signatures."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests two same-payee bills kept separate."
+  },
+  {
+    "id": "XTG-071",
+    "category": "two_bills",
+    "language": "mixed",
+    "turns": [
+      "Rent aur phone bill dono prepare karo: CNY 6000 to Chen Wei and CNY 150 to Shenzhen Mobile.",
+      "Please keep them as separate drafts."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests mixed-language request for two supported bills."
+  },
+  {
+    "id": "XTG-072",
+    "category": "unsupported_bill",
+    "language": "zh",
+    "turns": [
+      "我有一个 internet bill，金额是 CNY 199。",
+      "请解释为什么不能通过 Oasis 支付，不要把它伪装成手机账单。"
+    ],
+    "expected_kind": "refused",
+    "notes": "The user asks about an unsupported bill and explicitly rejects mislabeling."
+  },
+  {
+    "id": "XTG-073",
+    "category": "unsupported_bill",
+    "language": "en",
+    "turns": [
+      "Please pay my electricity bill of CNY 380 to the provider."
+    ],
+    "expected_kind": "refused",
+    "notes": "Electricity is outside the fixed supported bill registry."
+  },
+  {
+    "id": "XTG-074",
+    "category": "midway_change",
+    "language": "en",
+    "turns": [
+      "Prepare the CNY 30,000 tuition draft.",
+      "I just found out the university payment is already done.",
+      "Cancel that request and prepare the CNY 6,000 rent draft instead."
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests cancellation and replacement after a mid-conversation change."
+  },
+  {
+    "id": "XTG-075",
+    "category": "midway_change",
+    "language": "mixed",
+    "turns": [
+      "Deposit ka half, CNY 3000, prepare karo.",
+      "Actually I can pay the full CNY 6000 now.",
+      "Please replace the partial draft with a full deposit draft."
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests changing a partial amount to the full registered amount."
+  },
+  {
+    "id": "XTG-076",
+    "category": "typo",
+    "language": "en",
+    "turns": [
+      "Pay Chen Wee CNY 6000 rent.",
+      "Sorry, the payee spelling is Chen Wei. Keep the registered amount and correct the draft."
+    ],
+    "expected_kind": "redrafted",
+    "notes": "Tests correction of a harmless landlord-name typo."
+  },
+  {
+    "id": "XTG-077",
+    "category": "slang",
+    "language": "mixed",
+    "turns": [
+      "Yaar, phone ka 150 wala bill bana de, Shenzhen Mobile ko. Sign baad mein karunga."
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Tests informal Hinglish slang for a clear supported request."
+  },
+  {
+    "id": "XTG-078",
+    "category": "security",
+    "language": "en",
+    "turns": [
+      "Can you explain why you cannot tell me the device key?",
+      "I am asking about the security rule, not requesting the key itself."
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests a safe explanation request about secret handling."
+  },
+  {
+    "id": "XTG-079",
+    "category": "parent_context",
+    "language": "zh",
+    "turns": [
+      "我父母已经同意 tuition 的预算。",
+      "请创建 University X 的 CNY 30000 草稿，但不要替我签名。"
+    ],
+    "expected_kind": "draft_awaiting_signature",
+    "notes": "Chinese parent-context request that preserves the student’s signature."
+  },
+  {
+    "id": "XTG-080",
+    "category": "amount_question",
+    "language": "en",
+    "turns": [
+      "I thought the deposit was CNY 60,000, but the registered bill says CNY 6,000.",
+      "Which amount is registered, and why should I not pay the larger amount?"
+    ],
+    "expected_kind": "answer",
+    "notes": "Tests explaining a conflicting oversized amount without creating a draft."
+  }
+]

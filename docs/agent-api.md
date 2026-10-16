@@ -8,16 +8,16 @@ For a grader that drives Oasis with scripts instead of a browser. Everything her
 
 ```bash
 curl -s -c jar -X POST localhost:8000/api/auth/login -H 'content-type: application/json' \
-     -d '{"role":"student","passcode":"student-demo"}'            # sets an HttpOnly cookie
+     -d '{"role":"student","passcode":"<student passcode>"}'            # sets an HttpOnly cookie
 curl -s -X POST 'localhost:8000/api/auth/login?return_token=true' -H 'content-type: application/json' \
-     -d '{"role":"student","passcode":"student-demo"}'            # returns {"token": ...} for  Authorization: Bearer <token>
+     -d '{"role":"student","passcode":"<student passcode>"}'            # returns {"token": ...} for  Authorization: Bearer <token>
 ```
 
 | Role | Demo passcode (public) | Can |
 |---|---|---|
-| student | `student-demo` | chat, intake, plans, convert, sign and decline approvals, reset |
-| parent | `parent-demo` | co-sign (`/api/approve`), parent view |
-| judge | `judge-demo` | red-team console and read-only views. **Cannot use `/api/chat`** (403) |
+| student | `<student passcode>` | chat, intake, plans, convert, sign and decline approvals, reset |
+| parent | `<parent passcode>` | co-sign (`/api/approve`), parent view |
+| judge | `<judge passcode>` | red-team console and read-only views. **Cannot use `/api/chat`** (403) |
 
 A hosted copy may use its own passcodes (`OASIS_PASS_*`). Failed logins are limited (10 a minute; 5 in judge mode) and answer **429** with `Retry-After`. Sessions last 30 minutes in judge mode. If a passkey second factor is required for a role, login returns a challenge instead of a cookie; the demo does not require it.
 
@@ -67,7 +67,7 @@ Result: `{"status": "paid", "proof_id": ...}` (the same outcome object as an inv
 ```python
 # the whole client, from tools/oasis_client.py
 from tools.oasis_client import OasisClient
-c = OasisClient("http://127.0.0.1:8000")            # student, public demo passcode
+c = OasisClient("http://127.0.0.1:8000")            # student; passcode from OASIS_PASS_STUDENT
 c.reset()
 c.post("/api/fx/convert", {"amount": 100000, "from": "INR", "to": "CNY"})   # give the student CNY to pay with
 out = c.task("pay my rent", sign=True)               # chat, then sign the draft the reply asks for
@@ -115,7 +115,7 @@ $C reset && $C chat "How much money do I have?"
 
 # 2. Pay the rent end to end (fund the wallet, ask, sign: expect status "paid" and a proof_id)
 $C reset
-curl -s -c jar -X POST localhost:8000/api/auth/login -H 'content-type: application/json' -d '{"role":"student","passcode":"student-demo"}' >/dev/null
+curl -s -c jar -X POST localhost:8000/api/auth/login -H 'content-type: application/json' -d '{"role":"student","passcode":"<student passcode>"}' >/dev/null
 curl -s -b jar -X POST localhost:8000/api/fx/convert -H 'content-type: application/json' -d '{"amount":100000,"from":"INR","to":"CNY"}' >/dev/null
 $C chat "pay my rent" --sign
 

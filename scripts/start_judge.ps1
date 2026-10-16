@@ -1,7 +1,7 @@
 <#
 Start Oasis for a judge: offline, mock rates, a fresh sandbox database, the already-built UI. No API key, no Node, no network.
 Usage: scripts\start_judge.ps1 [-Port 8000] [-BindHost 127.0.0.1] [-RandomPasscodes] [-DataDir DIR]
-Contains no secrets. With the default (public) demo passcodes the sandbox is open to anyone who can reach the port,
+Contains no secrets and no built-in passcode (fresh random ones are printed at each start). Anyone who has them can log in,
 so keep the host at 127.0.0.1 unless you mean to share it.
 #>
 param([int]$Port = 8000, [string]$BindHost = "127.0.0.1", [switch]$RandomPasscodes, [string]$DataDir = "")
@@ -22,20 +22,16 @@ $env:OASIS_TRUST_KEY = Join-Path $DataDir "keys\trust_key.json"
 $env:OASIS_SESSION_SECRET_FILE = Join-Path $DataDir "keys\session_secret.json"
 $env:OASIS_ATTEMPTS_FILE = Join-Path $DataDir "redteam_attempts.jsonl"
 $env:OASIS_JUDGE_MODE = "1"; $env:OASIS_FRESH_ON_LOGIN = "1"; $env:PYTHONPATH = $Root
-if ($RandomPasscodes) {
-    $env:OASIS_PASS_STUDENT = & $Py -c "import secrets;print(secrets.token_urlsafe(9))"
-    $env:OASIS_PASS_PARENT = & $Py -c "import secrets;print(secrets.token_urlsafe(9))"
-    $env:OASIS_PASS_JUDGE = & $Py -c "import secrets;print(secrets.token_urlsafe(9))"
-    Remove-Item Env:OASIS_ALLOW_DEMO_PASSCODES -ErrorAction SilentlyContinue
-} else {
-    $env:OASIS_PASS_STUDENT = "student-demo"; $env:OASIS_PASS_PARENT = "parent-demo"; $env:OASIS_PASS_JUDGE = "judge-demo"
-    $env:OASIS_ALLOW_DEMO_PASSCODES = "1"
-}
+# There are no built-in passcodes. Use the ones already set in the environment, otherwise make fresh random ones for this run.
+function New-Passcode { & $Py -c "import secrets,string;a=string.ascii_letters+string.digits;print(''.join(secrets.choice(a) for _ in range(16)))" }
+if (-not $env:OASIS_PASS_STUDENT) { $env:OASIS_PASS_STUDENT = New-Passcode }
+if (-not $env:OASIS_PASS_PARENT)  { $env:OASIS_PASS_PARENT  = New-Passcode }
+if (-not $env:OASIS_PASS_JUDGE)   { $env:OASIS_PASS_JUDGE   = New-Passcode }
 Write-Host "Oasis judge sandbox (offline, MOCK rates, fresh database in $DataDir)"
 Write-Host "  URL:         http://${BindHost}:$Port"
 Write-Host "  Judge login: role judge, passcode $($env:OASIS_PASS_JUDGE)"
 Write-Host "  Also:        student $($env:OASIS_PASS_STUDENT), parent $($env:OASIS_PASS_PARENT)"
-Write-Host "  Judge mode:  API docs off, tighter rate limits, at most 20 isolated red-team sandboxes. Ctrl+C stops."
+Write-Host "  Judge mode:  API docs off, tighter rate limits, one private sandbox per login. Ctrl+C stops."
 $ErrorActionPreference = "Continue"
 Set-Location $Root
 & $Py -m uvicorn oasis.api.main:app --host $BindHost --port $Port

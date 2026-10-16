@@ -88,7 +88,6 @@ export default {
   "login.submit": "Log in as {role}",
   "login.signingin": "Signing in…",
   "login.wrong": "That passcode is not right for this role. Check the role and try again.",
-  "login.demo": "Demo build: the passcodes are `student-demo`, `parent-demo` and `judge-demo` (public; set `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` in `.env` for anything real).",
   "login.devicekey": "Students and parents get an Ed25519 **device key** on first login. Its private half is created and kept in this browser (wrapped with your passcode) and never sent to the server; every approval is a signature over the exact payment.",
   "role.student.desc": "Arjun: pays, plans, approves his own payments",
   "role.parent.desc": "Lakshmi: co-approves large family transfers",

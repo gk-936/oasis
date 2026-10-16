@@ -102,7 +102,7 @@ def test_entrypoint_syntax_and_policy():
         if exe:
             r = subprocess.run([exe, "-n", str(ep)], capture_output=True, text=True)
             assert r.returncode == 0, r.stderr
-    assert "OASIS_ALLOW_DEMO_PASSCODES" in text and "OASIS_REQUIRE_CUSTOM_PASSCODES" in text and 'exec "$@"' in text
+    assert "OASIS_ALLOW_DEMO_PASSCODES" not in text and "OASIS_REQUIRE_CUSTOM_PASSCODES" in text and 'exec "$@"' in text
     assert not re.search(r"gsk_[A-Za-z0-9]{10,}", text)
 
 
@@ -119,11 +119,12 @@ def test_env_docker_example_has_no_real_secrets_and_documents_every_variable():
     text = _read(".env.docker.example")
     assert not re.search(r"gsk_[A-Za-z0-9]+", text) and not re.search(r"\bsk-[A-Za-z0-9]{10,}", text)
     for var in ("OASIS_PASS_STUDENT", "OASIS_PASS_PARENT", "OASIS_PASS_JUDGE", "OASIS_KEY_PASSPHRASE", "OASIS_JUDGE_MODE",
-                "OASIS_ALLOW_DEMO_PASSCODES", "AWS_SECRET_ACCESS_KEY", "OASIS_LLM", "OASIS_COOKIE_SECURE", "OASIS_ALLOWED_ORIGINS"):
+                "AWS_SECRET_ACCESS_KEY", "OASIS_LLM", "OASIS_COOKIE_SECURE", "OASIS_ALLOWED_ORIGINS"):
         assert re.search(rf"^{var}=", text, re.M), var
     for var in ("OASIS_PASS_STUDENT", "OASIS_PASS_PARENT", "OASIS_PASS_JUDGE", "OASIS_KEY_PASSPHRASE", "AWS_SECRET_ACCESS_KEY"):
         assert re.search(rf"^{var}=\s*$", text, re.M), f"{var} must ship empty"
     assert re.search(r"^OASIS_LLM=offline\s*$", text, re.M)
+    assert "OASIS_ALLOW_DEMO_PASSCODES" not in text           # there is no demo-passcode switch any more
     assert "NOT recommended" in text
 
 
