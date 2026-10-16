@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 12:46",
+  "run": "2026-10-16 13:44",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -248,13 +248,11 @@
    "id": "T3-024",
    "category": "information",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-025",
@@ -1022,13 +1020,11 @@
    "id": "T3-098",
    "category": "information",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "T3-099",

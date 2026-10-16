@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 12:45",
+  "run": "2026-10-16 13:46",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -88,12 +88,10 @@
    "id": "TC-009",
    "category": "too_large",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -124,11 +122,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-013",
@@ -288,25 +286,21 @@
    "id": "TC-028",
    "category": "conversion",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "done",
+   "dead_end": false
   },
   {
    "id": "TC-029",
    "category": "conversion",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 3,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-030",
@@ -510,13 +504,11 @@
    "id": "TC-049",
    "category": "too_large",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TC-050",
@@ -704,13 +696,11 @@
    "id": "TC-068",
    "category": "conversion",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 3,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-069",
@@ -793,8 +783,8 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "rejected",
+   "dead_end": false
   },
   {
    "id": "TC-077",
@@ -812,13 +802,11 @@
    "id": "TC-078",
    "category": "security",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-079",
@@ -926,13 +914,11 @@
    "id": "TC-089",
    "category": "too_large",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TC-090",
@@ -960,11 +946,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 3,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-093",
@@ -1036,11 +1022,11 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status unknown"
+    "expected clarifying_question, last status held"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "TC-100",
@@ -1108,37 +1094,31 @@
    "id": "TC-106",
    "category": "held_payment",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-107",
    "category": "receipt",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-108",
    "category": "conversion",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 3,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-109",
@@ -1354,11 +1334,11 @@
    "kind": "redrafted",
    "ok": false,
    "failures": [
-    "expected redrafted, last status unknown"
+    "expected redrafted, last status info"
    ],
    "turns": 3,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-130",
@@ -1438,13 +1418,11 @@
    "id": "TC-137",
    "category": "due_dates",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-138",
@@ -1562,13 +1540,11 @@
    "id": "TC-149",
    "category": "security",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TC-150",
@@ -2803,7 +2779,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "unknown"
+    "held"
    ]
   },
   {

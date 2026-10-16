@@ -304,7 +304,7 @@ def _type_from_words(message: str) -> str | None:
 
 
 _PHONE = re.compile(r"phone|mobile|\bsim\b|telecom|话费|手机", re.I)       # the registered carrier (Shenzhen Mobile) is the one bill of this kind
-_UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
+_UTILITY = re.compile(r"electric|\bwater\b|\bgas\b|internet|broadband|wi-?fi|phone|mobile|utilit|gym|membership|subscription|airline|flight|ticket|\bvisa\b|hospital|medical|clinic|insurance|credit card|\bfriend|external (?:bank|account)|电费|水费|燃气|煤气|网费|宽带|话费|水电", re.I)
 
 
 _MULTI_KINDS = (("rent", re.compile(r"\brent\b|房租|租金", re.I)), ("tuition", re.compile(r"\btuition\b|学费", re.I)),
@@ -330,7 +330,7 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
         allo = _open_obligations(w)
         listing = ("；" if lang == "zh" else "; ").join(_obl_line(w, o, lang) for o in allo) or ("无" if lang == "zh" else "none")
         t = (f"登记册里没有这类账单的收款方，我不会付给未登记的账户。目前可付：{listing}。" if lang == "zh" else
-             f"There is no registered payee for that kind of bill, and I only pay accounts in the registry. Open bills: {listing}.")
+             f"There is no registered payee for that, and I only pay accounts in the registry. Open bills: {listing}.")
         return _result(it.kind, t, secrets, status="rejected")
     # Someone who is not in the registry (F12): explain, and offer the registered payee for the matching bill. Never auto-substitute.
     if unreg:
@@ -842,13 +842,23 @@ def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None) -> d
     return res
 
 
+# "I confirm the conversion" / "looks right, go ahead" while a conversion quote is waiting: same as a plain "yes".
+_AFFIRM = re.compile(r"\bi confirm\b|\bconfirm(?:ed)? (?:the |that |this )?(?:conversion|quote)|\blooks? right\b|\bgo ahead\b|\bproceed\b|确认(?:兑换|换汇)", re.I)
+_AFFIRM_NO = re.compile(r"\b(?:don'?t|do not|not|never|cancel|wait|before|until|unless)\b|不要|别|取消", re.I)
+
+
+def _affirms(message: str) -> bool:
+    """A short standalone confirmation only: pasted or long text that happens to contain 'go ahead' never confirms anything."""
+    return len(message.strip()) <= 100 and bool(_AFFIRM.search(message)) and not _AFFIRM_NO.search(message)
+
+
 def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) -> dict:
     lang = it.lang
     # an answer to the question asked last turn
     if d["awaiting"] == "confirm_convert":
         ctx = d["ctx"]
         d["awaiting"], d["ctx"] = None, {}
-        if it.kind == nlu.CONFIRM:
+        if it.kind == nlu.CONFIRM or (it.kind not in nlu.REFUSALS and _affirms(message)):
             try:
                 rec = currency_mod.convert(S.world, ctx["amount"], ctx["src"], ctx["dst"])
             except FxError as e:
@@ -944,6 +954,10 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
                  "I can't reset or show a login passcode; ask whoever runs this sandbox. I can help with bills, balances and rates.")
             return _result(k, t, secrets)
         return _result(k, _HELP_ZH if lang == "zh" else _HELP_EN, secrets)
+    if _affirms(message):                  # "I confirm" with no quote waiting: say so, never guess
+        t = ("现在没有等待确认的兑换。先说“convert INR 10000 to CNY”，我会先报价，再由您确认。" if lang == "zh" else
+             "No conversion is waiting for confirmation. Ask for a quote first (for example 'convert INR 10,000 to CNY') and I'll ask you to confirm it.")
+        return _result(nlu.CONFIRM, t, secrets, status="info")
     pre = "我没有理解这条消息。您想做什么？" if lang == "zh" else "I didn't understand that. What would you like to do? "
     return _result(nlu.UNKNOWN, pre + (_HELP_ZH if lang == "zh" else _HELP_EN), secrets, status="unknown")
 

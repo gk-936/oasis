@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-16: `1357 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-16: `1391 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -47,6 +47,7 @@ Full suite on 2026-10-16: `1357 passed, 2 skipped` (offline, about 2 minutes) (t
 | 31 | No passcode is built in or visible in the repository, and in judge mode every login runs in its own private sandbox: one judge cannot read or change another judge's state | `oasis/api/auth.py` (`passcodes_from_env`: unset gives a random 16-character alphanumeric passcode per process; judge mode and `OASIS_REQUIRE_CUSTOM_PASSCODES=1` refuse to start on generated ones; the `sandbox` claim is inside the signed token), `oasis/api/main.py` (`SandboxRouter`, `guard`, `login`), `docker/entrypoint.sh`, `scripts/start_judge.*` | `tests/test_judge_pack.py::test_each_judge_login_has_its_own_sandbox`; `::test_one_browser_keeps_its_sandbox_across_logins`; `::test_sandbox_claim_cannot_be_forged_from_the_cookie`; `::test_judge_mode_refuses_to_start_without_explicit_passcodes`; `::test_unset_passcodes_are_random_alphanumeric_and_never_a_fixed_string`; `tests/test_security.py::test_strict_mode_refuses_generated_passcodes`; `tests/test_container_config.py` | A second browser sees none of the first one's drafts and its reset leaves the first untouched; swapping the sandbox cookie after login changes nothing; no fixed default passcode exists | Passed 2026-10-16 | All judges of one role still share that role's passcode (no per-person accounts). Sandboxes are in memory, at most `OASIS_MAX_SANDBOXES` (default 40, least recently used dropped) and lost on restart. Requests are still handled one at a time. Login throttling and token revocation are shared across sandboxes. Tested with the in-process client, not with several real browsers | automated test |
 | 32 | Tampered, replayed and forged signed payments are refused by the executor, and a judge can run them live (Break it tab) | `oasis/trust/breakit_exec.py`, `oasis/trust/executor.py`, `oasis/trust/intents.py`, `/api/breakit/executor` | `tests/test_breakit.py::test_breakit_executor_attacks` | amount/payee tamper, edited intent, replay, expiry, unregistered key, relabelled role, unsigned and unsigned-by-human are all refused with extra money moved 0; the honest control executes | passes | Harness `decide` only checks the student device signature, not the full policy; same team wrote attacks and defences | automated test |
 | 33 | Every role-guarded endpoint refuses every other role (403) and anonymous callers (401); the only unguarded state-changing endpoints are login and five read-only proof verifiers | `oasis/api/main.py` (`require`) | `tests/test_role_matrix.py` | 83 endpoints x non-allowed roles all refused; unguarded POST list equals the allow-list | passes | Empty bodies and literal path parameters: proves the guard runs first, not per-endpoint business rules | automated test |
+| 34 | Chat refuses polite approve/sign-for-me, limit-override and registry-edit requests, declines payments to anything outside the registry, and a conversion is confirmed only by a short standalone message | `oasis/agent/nlu.py` (`_BYPASS`), `oasis/agent/chat.py` (`_UTILITY`, `_affirms`) | `tests/test_router_gaps.py` | refusals create no draft and move no money; pasted text containing "go ahead" does not confirm a conversion | passes | Keyword router, offline; tuned against the outside sets so they are no longer blind | automated test |
 
 ## Gaps (no automated test, or only indirect)
 
@@ -59,7 +60,7 @@ Full suite on 2026-10-16: `1357 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1357 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1391 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)

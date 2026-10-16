@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 12:45",
+  "run": "2026-10-16 13:46",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -68,12 +68,10 @@
    "id": "TG-007",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -100,37 +98,31 @@
    "id": "TG-010",
    "category": "pay_rent",
    "kind": "draft_awaiting_signature",
-   "ok": false,
-   "failures": [
-    "expected draft_awaiting_signature, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "held",
+   "dead_end": false
   },
   {
    "id": "TG-011",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
    "id": "TG-012",
    "category": "other",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TG-013",
@@ -156,13 +148,11 @@
    "id": "TG-015",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-016",
@@ -208,13 +198,11 @@
    "id": "TG-020",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-021",
@@ -264,13 +252,11 @@
    "id": "TG-025",
    "category": "other",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_info",
+   "dead_end": false
   },
   {
    "id": "TG-026",
@@ -286,13 +272,11 @@
    "id": "TG-027",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-028",
@@ -556,12 +540,10 @@
    "id": "TG-053",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
@@ -622,13 +604,11 @@
    "id": "TG-059",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-060",
@@ -664,12 +644,10 @@
    "id": "TG-063",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
@@ -820,12 +798,10 @@
    "id": "TG-078",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -912,24 +888,20 @@
    "id": "TG-087",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
    "id": "TG-088",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
@@ -950,11 +922,11 @@
    "kind": "draft_awaiting_signature",
    "ok": false,
    "failures": [
-    "expected draft_awaiting_signature, last status unknown"
+    "expected draft_awaiting_signature, last status needs_info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "needs_info",
+   "dead_end": false
   },
   {
    "id": "TG-091",
@@ -1000,12 +972,10 @@
    "id": "TG-095",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "refused",
    "dead_end": false
   },
   {
@@ -1122,24 +1092,20 @@
    "id": "TG-107",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-108",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
@@ -1206,13 +1172,11 @@
    "id": "TG-115",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "refused",
+   "dead_end": false
   },
   {
    "id": "TG-116",
@@ -1328,12 +1292,10 @@
    "id": "TG-127",
    "category": "other",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status needs_info"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "needs_info",
+   "last": "rejected",
    "dead_end": false
   },
   {
@@ -1410,13 +1372,11 @@
    "id": "TG-135",
    "category": "information",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status unknown"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true
+   "last": "info",
+   "dead_end": false
   },
   {
    "id": "TG-136",
@@ -1607,7 +1567,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "info"
    ]
@@ -1958,7 +1918,7 @@
    "outcomes": [
     "refused",
     "info",
-    "info"
+    "held"
    ]
   },
   {
@@ -2116,7 +2076,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2158,7 +2118,7 @@
    "outcomes": [
     "info",
     "held",
-    "needs_info"
+    "refused"
    ]
   },
   {
@@ -2518,7 +2478,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "held",
     "unknown",
     "rejected"
    ]
@@ -3164,7 +3124,7 @@
    "outcomes": [
     "held",
     "unknown",
-    "unknown"
+    "refused"
    ]
   },
   {
@@ -3689,7 +3649,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -3811,7 +3771,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4042,7 +4002,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "held"
    ]
   },
   {

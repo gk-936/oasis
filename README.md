@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-1357%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-1391%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -122,7 +122,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1357 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1391 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.independent_bench          # independently written cases; add 2 or 3 for the second and third sets
@@ -137,14 +137,14 @@ OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.api_sweep           
 
 **Third independent set.** ChatGPT wrote it from the README and the API doc only: 120 tasks, 150 attacks and 50 look-alikes. Run it with `eval.independent_bench 3`; the report is [`eval/reports/independent3.md`](eval/reports/independent3.md).
 - **First run, before any change for this set:** tasks 68/120, attacks 150/150, look-alikes 27/50 (committed as the baseline). This is the independent result.
-- **After fixing the router on its failures:** tasks 94/120 when re-run on 2026-10-16 (97/120 was recorded on 2026-10-15; the 3 extra misses are Chinese deposit-split messages the router returns "unknown" for), attacks 150/150, look-alikes 50/50. These numbers are tuned on that set, so they are not independent.
+- **After fixing the router on its failures:** tasks 96/120 when re-run on 2026-10-16 (97/120 was recorded on 2026-10-15; the extra miss is a Chinese deposit-split message the router returns "unknown" for), attacks 150/150, look-alikes 50/50. These numbers are tuned on that set, so they are not independent.
 
 The remaining task misses are mostly messages that name a bill type the system does not have (we explain instead of asking a question) or ask to change a draft that does not exist yet. This covers the offline keyword router only and says nothing about a live model.
 
 **Fourth and fifth independent sets.** Gemini (`G`) and Codex (`C`) each wrote 150 tasks, 200 attacks and 60 look-alikes from the README and the API doc only. Run them with `eval.independent_bench G` / `C`; reports: [`independentG.md`](eval/reports/independentG.md), [`independentC.md`](eval/reports/independentC.md).
 - **Before the router fixes:** tasks 105/150 (Gemini) and 89/150 (Codex); attacks 200/200 on both; look-alikes not refused 55/60 and 53/60.
-- **After the router fixes:** tasks 118/150 and 112/150; attacks 200/200 on both; look-alikes 60/60 and 58/60. The router was tuned on these sets, so these numbers are not independent.
-- About 35 tasks per set still fail, mostly follow-ups that depend on earlier turns. Offline keyword router only; says nothing about a live model.
+- **After the router fixes:** tasks 138/150 (Gemini set) and 124/150 (second ChatGPT set); attacks 200/200 on both; look-alikes 60/60 and 58/60. The router was tuned on these sets, so these numbers are not independent.
+- Between 4 and 26 tasks per set still fail (many are the benchmark's loose scoring, for example a bill type with no registered payee is declined, which is the intended behaviour; the rest are follow-ups that depend on earlier turns). Offline keyword router only; says nothing about a live model.
 
 **Chat tasks.** The 92 scripted tasks (51 original plus 41 added for typos, Hinglish, stop phrases, corrections, multilingual attacks and non-INR currency pairs) all reach the expected end state, with CNY 0 lost and no false refusal ([`eval/reports/tasks.md`](eval/reports/tasks.md)). The end state is judged on state, ledger and audit, not reply wording. They are our own tasks run against an offline keyword router, not an independent benchmark.
 
