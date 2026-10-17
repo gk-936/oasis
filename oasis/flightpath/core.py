@@ -97,6 +97,7 @@ class Journey:
     credited_cny: float | None = None
     refund_confirmed: bool = False
     history: list[dict] = field(default_factory=list)
+    purpose: str | None = None      # what the transfer is for (tuition, rent ...), so advice can name the deadline; optional
 
 
 class TransitionError(ValueError):
@@ -174,6 +175,75 @@ def advise(j: Journey, f: Finding) -> Advice:
             return Advice("plan_alternative", "Rejected and refunded: plan a new payment on another route.", resend_allowed=True)
         return Advice("request_docs", "Rejected, but the refund is not confirmed. Fix the cause and wait for the refund before any new payment.")
     return Advice("wait", f.detail)
+
+
+@dataclass
+class Option:
+    action: str            # contact_provider | wait | extension | top_up | new_route | wait_for_refund | no_resend
+    label: str
+    effect: str            # what it does to the deadline, from the arithmetic below
+    needs_approval: bool = False
+    resend: bool = False   # always False: nothing here sends a second payment on its own
+
+
+def _plural(n: int) -> str:
+    return f"{n} day" + ("" if abs(n) == 1 else "s")
+
+
+def consequences(j: Journey, f: Finding, today_day: int) -> dict:
+    """What a finding means for the deadline, and the safe next steps side by side. Pure arithmetic on facts we hold (dates, route
+    days, the reported shortfall); it never sends, reverses or approves anything. Anything we cannot establish is listed as uncertain."""
+    r = _route(j)
+    bill = j.purpose or "payment"
+    days_left = None if j.due_day is None else j.due_day - today_day
+    decide_in = None if days_left is None else days_left - r.days        # days until a replacement could no longer arrive in time
+    opts: list[Option] = []
+    unknown: list[str] = []
+    if f.code == "delayed":
+        unknown.append("the provider has not confirmed whether the money reached the recipient")
+        opts.append(Option("contact_provider", "Ask the provider for the transfer status today",
+                           "Free, and it cannot create a second payment."))
+        if decide_in is None:
+            opts.append(Option("wait", "Wait for the provider's answer", "No deadline is recorded for this transfer."))
+        elif decide_in >= 0:
+            opts.append(Option("wait", "Wait for the provider's answer",
+                               f"Safe for up to {_plural(decide_in)}; after that a replacement could not arrive by the deadline."))
+        else:
+            opts.append(Option("extension", "Ask the recipient for more time",
+                               f"A replacement on {r.name} needs {_plural(r.days)} but only {_plural(max(days_left, 0))} remain."))
+        opts.append(Option("no_resend", "Do not send again yet",
+                           "If the first transfer arrives as well, the same bill would be paid twice. A replacement is only considered "
+                           "once the first is confirmed lost and refunded."))
+    elif f.code == "shortfall":
+        fits = days_left is None or days_left >= r.days
+        opts.append(Option("contact_provider", "Ask the provider for the deduction breakdown", "Free; shows where the money went."))
+        opts.append(Option("top_up", f"Top up the missing CNY {f.shortfall_cny:,.2f} as a new payment",
+                           ("It needs your approval and takes " + _plural(r.days) + (", so it would arrive in time." if fits else
+                            f", but only {_plural(max(days_left or 0, 0))} remain; ask for more time as well.")), needs_approval=True))
+    elif f.code == "rejected":
+        if j.refund_confirmed:
+            fastest = min(x.days for x in ROUTES)
+            fits = days_left is None or days_left >= fastest
+            opts.append(Option("new_route", "Plan a new payment on another route",
+                               "It goes through verification and approval again; " + ("the fastest route still fits the deadline." if fits
+                               else "even the fastest route would miss the deadline, so ask for more time."), needs_approval=True))
+        else:
+            unknown.append("the refund of the rejected transfer is not confirmed")
+            opts.append(Option("wait_for_refund", "Wait for the refund before any new payment",
+                               "Sending again now could pay twice if the refund and a new payment both land."))
+    risk = "none"
+    if days_left is not None and f.code != "ok":
+        risk = "missed" if days_left < 0 else ("tight" if days_left < r.days + GRACE_DAYS else "ok")
+    parts = [f.detail]
+    if days_left is not None and f.code != "ok":
+        parts.append(f"The {bill} is due in {_plural(days_left)}." if days_left >= 0 else f"The {bill} deadline passed {_plural(-days_left)} ago.")
+    parts += [f"{o.label}: {o.effect}" for o in opts]
+    if unknown:
+        parts.append("Not established: " + "; ".join(unknown) + ".")
+    if f.code != "ok":
+        parts.append("Nothing was sent again; this advice moves no money.")
+    return {"facts": {"days_left": days_left, "route": r.name, "route_days": r.days, "shortfall_cny": f.shortfall_cny},
+            "deadline_risk": risk, "options": [o.__dict__ for o in opts], "uncertainty": unknown, "text": " ".join(parts)}
 
 
 def audit_event(audit, j: Journey, f: Finding, a: Advice) -> None:

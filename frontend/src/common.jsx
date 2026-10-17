@@ -52,6 +52,8 @@ export function Card({ card, mismatch }) {
     <div className={`card inner why ${card.action}`}>
       <strong>{card.title}</strong>
       <p>{card.text}</p>
+      {card.uncertainty?.length > 0 && <p className="muted small"><strong>{t("card.unknown")}</strong> {card.uncertainty.join("; ")}.</p>}
+      {card.next_step && <p className="muted small"><strong>{t("card.next")}</strong> {card.next_step}</p>}
       {mismatch?.length > 0 && mismatch.map((m, i) => (
         <p key={i} className="mismatch"><span className="mm-l">{t("plain.got")}</span> <code className="mm bad">{m.got}</code> <span className="mm-l">{t("plain.signed")}</span> <code className="mm ok">{m.signed}</code></p>))}
       <small className="muted">{t("card.rule")} <code>{card.rule}</code></small>

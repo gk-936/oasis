@@ -521,6 +521,23 @@
       ],
       "title": "Due In Days"
      },
+     "purpose": {
+      "anyOf": [
+       {
+        "enum": [
+         "tuition",
+         "rent",
+         "deposit",
+         "living"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purpose"
+     },
      "required_cny": {
       "exclusiveMinimum": 0.0,
       "maximum": 10000000.0,

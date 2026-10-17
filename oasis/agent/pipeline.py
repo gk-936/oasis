@@ -12,7 +12,7 @@ from typing import Protocol
 from .. import config
 from ..mock.ledger import InsufficientFunds
 from .duplicates import doc_hash, find_duplicate, invoice_ref
-from . import nl_extract
+from . import i18n, nl_extract
 from .llm import diverges_from_genuine
 from .request_types import LABELS, classify_request, needs_out_of_band
 from ..passport.models import Level, Obligation, Recipient
@@ -133,7 +133,9 @@ class OasisAgent:
                 else "Waiting for approval", "text": self.w.llm.explain("why_stopped", ctx),
                 "rule": rule, "action": action, "payee": payee, "amount": amount, "reasons": reasons}
         self.w.cards.append(card)
-        self.w.audit.append("why_card", card)
+        self.w.audit.append("why_card", card)          # the audit entry is a copy: the guidance below is for display and never changes its hash
+        card["uncertainty"] = i18n.card_uncertainty(rule, reasons)
+        card["next_step"] = i18n.card_next_step(action, nxt)
         return card
 
     def _recovery(self, ob: Obligation | None) -> dict | None:

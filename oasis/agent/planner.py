@@ -364,7 +364,50 @@ def make_planner(llm):
 
 
 # ---------------------------------------------------------------------------------------------- plan record
-def explain_plan(validation: dict, steps: list[dict]) -> list[str]:
+def tradeoffs(world, validation: dict) -> list[str]:
+    """The route the plan chose set against the alternatives, in the validator's own terms: how much more or less CNY each would deliver for
+    the same INR, and whether it would still arrive before the first payment it funds. Arithmetic only (mock rates, not a forecast)."""
+    sched = validation.get("schedule", [])
+    convs = [s for s in sched if s["action"] == "convert"]
+    pays = [s for s in sched if s["action"] == "pay"]
+    if not convs:
+        return []
+    mid = world.rates.mid(world.day_index)
+    chosen_ids = {c["route_id"] for c in convs}
+    chosen = next((r for r in ROUTES if r.id in chosen_ids), None)
+    if chosen is None:
+        return []
+    send = sum(c["send_inr"] for c in convs)
+    base = delivered_amount(send, chosen, mid)
+    window = None
+    if pays:
+        window = (min(date.fromisoformat(p["date"]) for p in pays) - min(date.fromisoformat(c["date"]) for c in convs)).days
+    parts = []
+    for r in sorted(ROUTES, key=lambda r: (r.days, r.name)):
+        if r.id in chosen_ids:
+            continue
+        diff = delivered_amount(send, r, mid) - base
+        fit = "" if window is None else (" and still arrives in time" if r.days <= window else " but would arrive after the payment it funds")
+        parts.append(f"{r.name} ({r.days} day{'s' if r.days != 1 else ''}) would deliver CNY {abs(diff):,.0f} {'more' if diff >= 0 else 'less'}{fit}")
+    if not parts:
+        return []
+    return [f"Trade-offs for the same INR {send:,.0f} against the chosen {chosen.name} ({chosen.days} day{'s' if chosen.days != 1 else ''}): "
+            + "; ".join(parts) + "."]
+
+
+def missing_info(world) -> list[str]:
+    """Questions the planner should ask instead of guessing. Empty when the plan has what it needs."""
+    p = world.passport
+    open_obs = [o for o in p.obligations if o.status in ("pending", "planned", "partially_paid") and o.remaining > 0.005]
+    q = []
+    if not open_obs:
+        q.append("There is no open bill to plan for. Which payment should I plan (for example 'tuition of CNY 30,000 by 15 November')?")
+    elif p.balance("INR") <= 0 and p.balance("CNY") + 0.005 < sum(o.remaining for o in open_obs if o.currency == "CNY") and not p.expected_income:
+        q.append("Your balances do not cover these bills and no expected transfer is recorded. Is a parent or another source sending money, and when?")
+    return q
+
+
+def explain_plan(validation: dict, steps: list[dict], world=None) -> list[str]:
     """'Why this plan', derived from the validator's own numbers, not from model prose."""
     m, why = validation.get("metrics", {}), []
     convs = [s for s in validation.get("schedule", []) if s["action"] == "convert"]
@@ -384,6 +427,9 @@ def explain_plan(validation: dict, steps: list[dict]) -> list[str]:
         why.append(f"TCS of INR {m['tcs_inr']:,.0f} would be collected; it is an advance tax credit, not a fee.")
     if any(w["code"] == "approval_expected" for w in validation.get("warnings", [])):
         why.append("Payments above the Tier-1 limit wait for the student's approval and pass verification, signed intent, policy and the executor.")
+    if world is not None:
+        why.extend(tradeoffs(world, validation))
+        why.extend(f"Question: {q}" for q in missing_info(world))
     why.append(f"Rates are today's quote ({m.get('rate_basis', 'mock')}); Oasis does not predict exchange rates.")
     return why
 
@@ -395,7 +441,7 @@ def build_record(world, res: PlanResult, goal: str = "") -> dict:
            "planner": res.planner, "model": res.model, "valid": res.valid, "iterations": res.iterations,
            "fell_back": res.fell_back, "fallback_reason": res.fallback_reason, "tokens": res.tokens,
            "model_calls": res.model_calls, "steps": res.steps, "rationale": res.rationale,
-           "why": explain_plan(res.validation, res.steps) if res.validation else [],
+           "why": explain_plan(res.validation, res.steps, world) if res.validation else [],
            "validation": res.validation, "trace": res.trace, "executed": []}
     world.plans.append(rec)
     world.audit.append("plan_proposed", {"plan_id": pid, "planner": res.planner, "valid": res.valid, "iterations": res.iterations,

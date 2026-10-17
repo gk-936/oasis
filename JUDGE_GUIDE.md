@@ -101,6 +101,12 @@ PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  
 
 (PowerShell: `$env:PYTHONPATH="."` first.) Tests are hermetic: outbound network is blocked, nothing touches your data folder.
 
+## See the AI upgrades (2 minutes, offline)
+
+1. **FlightPath:** log in as the student, open the FlightPath tab, enter a number of days in the "due in" box, compare routes, start a journey, then press the delay event. The card shows "What it means for the deadline": days left, how long waiting is safe, and why no second payment is offered.
+2. **Break it:** paste an altered invoice. The card now ends with "Not established" and "Next step" lines beside the reasons.
+3. **Chat:** type "give me an estimate before I pay rent"; or say "pay my tuition" and then "is this safe?" or "make it 50000" (the bill is CNY 30,000). Each is answered without creating a payment or is refused with a reason.
+
 ## What is real and what is mock
 
 | Real code, runs on your machine | MOCK (simulated, labelled in the UI) |

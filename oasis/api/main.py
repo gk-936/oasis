@@ -16,6 +16,7 @@ generated and kept in the approver's browser); the role of the SESSION decides w
 Unauthenticated -> 401, wrong role -> 403.
 """
 from __future__ import annotations
+from typing import Literal
 import asyncio
 from contextlib import asynccontextmanager
 import hashlib
@@ -1832,6 +1833,7 @@ class JourneyIn(BaseModel):
     required_cny: float = Field(gt=0, le=10_000_000)
     send_inr: float = Field(gt=0)
     due_in_days: int | None = None
+    purpose: Literal["tuition", "rent", "deposit", "living"] | None = None
 
 
 class SimulateIn(BaseModel):
@@ -1857,12 +1859,16 @@ def _journey(jid: str) -> fpath.Journey:
     return j
 
 
-def _verdict(j: fpath.Journey) -> dict:
+def _verdict(j: fpath.Journey, lang: str = "en") -> dict:
     f = fpath.reconcile(j, S.world.day_index)
     a = fpath.advise(j, f)
     fpath.audit_event(S.world.audit, j, f, a)
+    c = fpath.consequences(j, f, S.world.day_index)
+    # In live mode the model may rewrite the wording; it is accepted only if every number is unchanged, else the template stands.
+    c["text"] = S.world.llm.explain("flightpath", {"text": c["text"], "facts": c["facts"], "options": c["options"]}, lang)
     return {"journey": jsonable_encoder(fpath.journey_to_dict(j)), "finding": jsonable_encoder(f.__dict__),
-            "advice": jsonable_encoder(a.__dict__), "label": "MOCK rail events; advisory only, moves no money"}
+            "advice": jsonable_encoder(a.__dict__), "consequence": jsonable_encoder(c),
+            "label": "MOCK rail events; advisory only, moves no money"}
 
 
 @app.post("/api/flightpath/precheck")
@@ -1884,7 +1890,7 @@ def flightpath_create(body: JourneyIn, p: Principal = Depends(STUDENT)):
     _route(body.route_id)
     jid = f"jny_{len(S.journeys) + 1:04d}"
     due_day = S.world.day_index + body.due_in_days if body.due_in_days is not None else None
-    S.journeys[jid] = fpath.Journey(jid, body.route_id, body.send_inr, body.required_cny, due_day)
+    S.journeys[jid] = fpath.Journey(jid, body.route_id, body.send_inr, body.required_cny, due_day, purpose=body.purpose)
     S.world.audit.append("flightpath_journey", {"journey": jid, "route": body.route_id, "required_cny": body.required_cny})
     S.save()
     return _verdict(S.journeys[jid])
@@ -1911,9 +1917,9 @@ def flightpath_refund(jid: str, body: RefundIn, p: Principal = Depends(STUDENT))
 
 
 @app.get("/api/flightpath/journeys/{jid}/advice")
-def flightpath_advice(jid: str, p: Principal = Depends(STUDENT_JUDGE)):
+def flightpath_advice(jid: str, p: Principal = Depends(STUDENT_JUDGE), ui: str = UI):
     """Reconcile and advise. Advisory only: a new payment must go through the normal request, policy and approval path."""
-    return _verdict(_journey(jid))
+    return _verdict(_journey(jid), ui)
 
 
 @app.get("/api/flightpath/benchmark")

@@ -30,6 +30,7 @@ function Journey({ v, act }) {
       <dl className="jdl">
         <dt>{t("fp.finding")}</dt><dd>{v.finding.detail}</dd>
         <dt>{t("fp.advice")}</dt><dd>{v.advice.reason} {v.advice.resend_allowed ? t("fp.resend.yes") : t("fp.resend.no")}</dd>
+        {v.consequence && v.consequence.options.length > 0 && <><dt>{t("fp.consequence")}</dt><dd>{v.consequence.text}</dd></>}
       </dl>
       {!done && <>
       <p className="muted small">{t("fp.sim.hint")}</p>

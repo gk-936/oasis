@@ -34,6 +34,9 @@ def localize_card(card: dict | None, lang: str) -> dict | None:
     out["text"] = i18n.why_stopped({"payee": card.get("payee", "?"), "amount": card.get("amount", 0), "action": action,
                                     "rule": card.get("rule", "?"), "reasons": card.get("reasons", [])}, ZH)
     out["reasons"] = tr_list(card.get("reasons", []), ZH)
+    if card.get("uncertainty") is not None:
+        out["uncertainty"] = i18n.card_uncertainty_zh(card["uncertainty"])
+        out["next_step"] = i18n.card_next_step(action, card.get("next_step") if card.get("next_step") not in (i18n.NEXT_STEP["held"][0], i18n.NEXT_STEP["frozen"][0]) else None, ZH)
     return out
 
 

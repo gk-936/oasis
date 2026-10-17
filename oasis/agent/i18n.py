@@ -182,6 +182,60 @@ def why_stopped(ctx: dict, lang: str = "en") -> str:
     return ""
 
 
+# ---- why-card: what the evidence cannot establish, and the next step. Deterministic; shown beside the reasons, never part of the audited card.
+UNCERTAINTY = {
+    "unverified": ("whether this account really belongs to the payee has not been verified yet",
+                   "尚未核实该账户是否真的属于收款方"),
+    "registry_conflict": ("whether the document was altered or the payee changed banks; only the payee can confirm that through a channel you already know",
+                          "无法确定文件是否被篡改，或收款方是否更换了银行；只有收款方本人通过您已知的渠道才能确认"),
+    "score_estimate": ("the risk score is an estimate from warning signs, not proof of fraud",
+                       "风险评分只是根据预警信号的估计，不是欺诈的证明"),
+    "duplicate": ("whether the payee already received the first payment", "无法确定收款方是否已收到第一笔付款"),
+    "amount_changed": ("whether the amount was changed on purpose (for example an instalment or a late fee)",
+                       "无法确定金额变化是否有意为之（例如分期或滞纳金）"),
+    "details_changed": ("whether the payee really changed banks", "无法确定收款方是否真的更换了银行"),
+    "name_match": ("a name match on a public list can be a coincidence", "公开名单上的姓名匹配可能只是巧合"),
+    "corridor": ("whether the limit or purpose rule applies to your situation; confirm with your bank",
+                 "无法确定该额度或用途规则是否适用于您的情况；请向银行确认"),
+    "currency": ("whether the payee accepts payment in CNY", "无法确定收款方是否接受人民币付款"),
+    "low_confidence": ("some fields could not be read reliably from the document", "文件中的部分字段无法可靠读取"),
+    "sender": ("who really sent the request cannot be established from the message itself", "仅凭消息本身无法确定请求的真实发送者"),
+}
+_RULE_UNC = (("R05", "unverified"), ("R03", "registry_conflict"), ("R04", "score_estimate"), ("R08", "score_estimate"), ("R17", "duplicate"),
+             ("R06", "corridor"), ("R15", "currency"), ("R16", "sender"), ("extract_low_confidence", "low_confidence"))
+_REASON_UNC = (("differs from the expected obligation", "amount_changed"), ("bank details differ", "details_changed"),
+               ("account on the request contradicts", "registry_conflict"), ("sanctions", "name_match"), ("OFAC", "name_match"))
+NEXT_STEP = {
+    "held": ("Check the details and sign if they are right. Nothing moves until you do.", "请核对详情，确认无误后再签名。签名之前不会转出任何款项。"),
+    "frozen": ("Verify the payee through a channel you already know. Nothing moves until the registry confirms.",
+               "请通过您已知的渠道向收款方核实。登记册确认之前不会转出任何款项。"),
+}
+
+
+def card_uncertainty(rule: str, reasons: list[str]) -> list[str]:
+    """English statements of what the evidence cannot establish, from the rule that fired and the wording of the reasons (at most 3)."""
+    codes: list[str] = []
+    for prefix, code in _RULE_UNC:
+        if (rule or "").startswith(prefix) and code not in codes:
+            codes.append(code)
+    for needle, code in _REASON_UNC:
+        if any(needle in str(r) for r in reasons) and code not in codes:
+            codes.append(code)
+    return [UNCERTAINTY[c][0] for c in codes[:3]]
+
+
+def card_uncertainty_zh(items: list[str]) -> list[str]:
+    zh = {en: z for en, z in UNCERTAINTY.values()}
+    return [zh.get(x, x) for x in items]
+
+
+def card_next_step(action: str, nxt: str | None, lang: str = "en") -> str:
+    if nxt:
+        return nxt
+    en, zh = NEXT_STEP.get("frozen" if action in ("frozen", "freeze") else "held")
+    return zh if lang == "zh" else en
+
+
 _NUM = re.compile(r"\d[\d,]*")
 
 
@@ -190,3 +244,18 @@ def numbers_preserved(source: str, rewritten: str) -> bool:
     want = {m.group().replace(",", "") for m in _NUM.finditer(source)}
     have = {m.group().replace(",", "") for m in _NUM.finditer(rewritten)}
     return want <= have
+
+
+def no_new_numbers(source: str, rewritten: str) -> bool:
+    """...and it may not add a number the template did not have (a model must not invent a figure, a date or a count)."""
+    want = {m.group().replace(",", "") for m in _NUM.finditer(source)}
+    have = {m.group().replace(",", "") for m in _NUM.finditer(rewritten)}
+    return have <= want
+
+
+# Markdown, bullet or numbered lists, rules, and a chatty preface ("Here's a rewrite ...") do not belong in a message shown to a student.
+_NOT_PLAIN = re.compile(r"\*\*|^\s*(?:\d+[.)]|[-*\u2022])\s|^#{1,6}\s|^-{3,}\s*$|^\s*(?:here(?:'|\u2019)s|here is|sure[,!. ]|certainly)", re.I | re.M)
+
+
+def plain_rewrite(rewritten: str) -> bool:
+    return not _NOT_PLAIN.search(rewritten or "")

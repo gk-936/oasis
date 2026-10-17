@@ -43,13 +43,13 @@ Score tasks on these fields, not on wording:
 
 | Field | Meaning |
 |---|---|
-| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `unknown` |
+| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `estimate`, `later`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `unknown` |
 | `status` | `held` (draft waiting), `paid`, `refused` (chat refused it, see `refusal`), `rejected`, `needs_verification`, `frozen` (the pipeline stopped it), `needs_info` (a question was asked), `needs_confirmation`, `cancelled`, `done`, `info`, `unknown` |
 | `needs` | what is still required: `student_signature`, `parent_signature`, or `info:<slot>` (`info:amount`, `info:obligation`, `info:payee`, `info:confirm`) |
 | `pending_id`, `draft_hash` | the draft to sign |
 | `money_moved` | CNY moved by this turn. A draft, a question and a refusal all report `0` |
 | `proof_id` | the proof pack, once a payment completed |
-| `refusal` | for `status: "refused"`: `secrets`, `injection`, `bypass`, `role`, `social`; or `transfer` for a refused raw transfer |
+| `refusal` | for `status: "refused"`: `secrets`, `injection`, `bypass`, `registry` (adding or removing payees, or editing records), `role`, `social`; or `transfer` for a refused raw transfer |
 
 Multi-turn dialogue is kept per login session: ask "pay Chen Wei" and the reply is a question (`needs: ["info:obligation"]`); the next message answers it. "Change that to 2600" voids the old draft (a new draft hash, the old signature no longer works); "cancel" declines it. State is cleared by `POST /api/reset`.
 

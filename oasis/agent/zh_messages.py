@@ -64,6 +64,17 @@ def _fix(name: str, value: str) -> str:
         return "".join(tr(x, ZH) for x in re.split(r"(?<=\.)\s+(?=[A-Z])", value.strip()))
     if name == "basis" and value:                          # e.g. the rate basis nested inside a plan sentence
         return tr(value, ZH)
+    if name == "titems" and value:                         # the alternatives in a plan trade-off sentence, separated by "; "
+        out = []
+        for item in value.split("; "):
+            m = _TRADE_ITEM.fullmatch(item.strip())
+            if not m:
+                out.append(item)
+                continue
+            more = "多" if m.group("dir") == "more" else "少"
+            fit = {" and still arrives in time": "，且仍能按时到账", " but would arrive after the payment it funds": "，但会晚于其所支撑的付款到账"}.get(m.group("fit") or "", "")
+            out.append(f"{route_zh(m.group('name'))}（{m.group('d')} 天）可{more}到账 ¥{m.group('n')}{fit}")
+        return "；".join(out)
     table = _FILTERS.get(name)
     if table is None or value is None:
         return value
@@ -73,6 +84,8 @@ def _fix(name: str, value: str) -> str:
 
 
 N = r"[\d,]+(?:\.\d+)?"      # an already formatted number, copied verbatim
+_TRADE_ITEM = re.compile(r"(?P<name>.+) \((?P<d>\d+) days?\) would deliver CNY (?P<n>[\d,]+(?:\.\d+)?) (?P<dir>more|less)"
+                         r"(?P<fit> and still arrives in time| but would arrive after the payment it funds)?")
 # (code, english regex (full match), zh template with the same {placeholders}); first match wins.
 RULES: list[tuple[str, str, str]] = [
     # ---- policy engine (trust/policy.py): reasons by rule id
@@ -183,6 +196,12 @@ RULES: list[tuple[str, str, str]] = [
      "兑换被分到两个日历年内，使每一年都不超出 SAFE（国家外汇管理局）便利化额度。"),
     ("plan_why", r"The student's own INR is not enough, so part is proposed as a parent remittance\. It needs the parent's consent and counts against "
      r"the parent's LRS and TCS\.", "学生本人的卢比不足，因此部分金额建议由家长汇出。这需要家长同意，并计入家长的 LRS 额度和 TCS。"),
+    ("plan_why", rf"Trade-offs for the same INR (?P<inr>{N}) against the chosen (?P<chosen>.+?) \((?P<cd>\d+) days?\): (?P<titems>.+)\.",
+     "同样的 ₹{inr}，与所选的{chosen}（{cd} 天）相比：{titems}。"),
+    ("plan_why", r"Question: There is no open bill to plan for\. Which payment should I plan \(for example 'tuition of CNY 30,000 by 15 November'\)\?",
+     "问题：目前没有待付账单可规划。您想规划哪一笔付款（例如“11 月 15 日前缴学费 ¥30,000”）？"),
+    ("plan_why", r"Question: Your balances do not cover these bills and no expected transfer is recorded\. Is a parent or another source sending money, and when\?",
+     "问题：您的余额不足以支付这些账单，且没有记录预期到账的转款。是否有家长或其他来源会汇款，什么时候到账？"),
     ("plan_why", rf"TCS of INR (?P<tcs>{N}) would be collected; it is an advance tax credit, not a fee\.", "将代扣 TCS ₹{tcs}；这是预缴的税收抵免，不是手续费。"),
     ("plan_why", r"Payments above the Tier-1 limit wait for the student's approval and pass verification, signed intent, policy and the executor\.",
      "超过 1 级额度的付款会等待学生批准，并依次通过验证、签名意图、策略和执行器。"),

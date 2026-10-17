@@ -26,7 +26,7 @@ approved that specific run in the current conversation.** Approval for one run d
 ## 2. Commands (offline)
 
 ```bash
-# tests (no network; expect "1458 passed, 2 skipped" — update the README if the count changes)
+# tests (no network; expect "1594 passed, 2 skipped" — update the README if the count changes)
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # server
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000

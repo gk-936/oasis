@@ -12,6 +12,8 @@ import pytest
 os.environ["OASIS_DB"] = ":memory:"          # never touch the real SQLite file
 os.environ["OASIS_LLM"] = "offline"
 os.environ["OASIS_EXTRACT"] = "deterministic"
+for _flag in ("OASIS_LLM_RISK", "OASIS_CHAT_LLM", "OASIS_ML_RISK"):        # optional AI switches a developer .env may turn on: tests pin them off
+    os.environ[_flag] = "0"
 os.environ["OASIS_ANCHOR"] = "local"           # never reach for a FISCO chain (WSL) from a test
 os.environ["OASIS_PASS_STUDENT"] = "student-demo"      # a developer .env must not change the test passcodes
 os.environ["OASIS_PASS_PARENT"] = "parent-demo"

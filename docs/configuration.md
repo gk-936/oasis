@@ -66,3 +66,12 @@ Free-text purposes ("Tuition fee for Fall 2026 semester", "房租", "deposit (2 
 ## Interface language
 
 No environment variable is needed. English is the default; the UI language is chosen in the browser (`?lang=zh` or the picker) and saved per student in the Passport. The API honours `?lang=`, the `X-Oasis-Lang` header and `Accept-Language` (`en`, `zh`). See technical documentation section 17.
+
+## AI-contribution evaluation
+
+```bash
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution                       # offline checks, free
+PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution --live --cap 150000                      # LIVE: spends Bedrock tokens, needs the owner's approval per run
+```
+
+`--cap` is a hard token limit and is required with `--live`. Cached answers cost nothing on a rerun. The live part prints "NOT RUN" and exits with code 2 if the model cannot be reached. Measure real input and output tokens with a metering wrapper if you want a cost figure; the committed report records one metered history. Set `OASIS_BEDROCK_DAILY_TOKENS` as a second guard.
