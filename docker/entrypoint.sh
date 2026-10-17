@@ -30,7 +30,7 @@ if [ "${OASIS_HOSTED:-1}" = "1" ]; then
   [ -n "${OASIS_KEY_PASSPHRASE:-}" ] || warn "OASIS_KEY_PASSPHRASE is not set: key files in $DATA/keys are plaintext, protected only by file permissions."
   if [ "${OASIS_LLM:-offline}" != "offline" ]; then
     warn "OASIS_LLM=${OASIS_LLM}: live-LLM mode sends user text to the model provider. NOT recommended for a public judge instance."
-    [ "${OASIS_LLM}" != "bedrock" ] || [ -n "${AWS_ACCESS_KEY_ID:-}${AWS_PROFILE:-}${AWS_ROLE_ARN:-}${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI:-}" ] || fail "OASIS_LLM=bedrock needs AWS credentials (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY, AWS_PROFILE or a role), or set OASIS_LLM=offline"
+    [ "${OASIS_LLM}" != "bedrock" ] || [ -n "${AWS_BEARER_TOKEN_BEDROCK:-}${AWS_ACCESS_KEY_ID:-}${AWS_PROFILE:-}${AWS_ROLE_ARN:-}${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI:-}" ] || fail "OASIS_LLM=bedrock needs AWS credentials (AWS_BEARER_TOKEN_BEDROCK, AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY, AWS_PROFILE or a role), or set OASIS_LLM=offline"
   fi
 fi
 
