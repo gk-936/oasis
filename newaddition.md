@@ -269,3 +269,12 @@ Reviewed every AI path for failure behaviour: chat labeller (any error returns t
 ### 14.9 Docs now say the hosted copy runs live (2026-10-18)
 
 README (Hosting), JUDGE_GUIDE (new "The hosted copy runs the live model" section, hosting-options line), `docs/deployment-docker.md` (table row, checklist line, new section 6 with the exact settings) and `docs/bedrock-setup.md` updated: live Nova Pro on the authors' key, 400,000-token daily cap shared by all judges, one retry, 45 s per call, text and images go to Bedrock on the authors' account, offline fallback when the cap is spent or the model is unreachable. README also states the deployment honestly: Azure VM behind a Cloudflare quick tunnel, URL may change, not load-tested. `docker/entrypoint.sh` still warns "NOT recommended for a public judge instance" (accurate for others; the authors accept the cost and cap). No numbers, URLs, passcodes or keys added.
+
+### 14.10 Stable HTTPS address on the Azure DNS name (2026-10-18, owner's request; Name.com offer failed)
+
+- Owner set the DNS label on the VM's public IP and opened inbound TCP 80 and 443. New address: `https://oasis.koreacentral.cloudapp.azure.com` (Korea Central; fixed name, no domain purchase).
+- VM changes: `OASIS_DOMAIN` and `OASIS_ALLOWED_ORIGINS` set (`.env.docker`, previous copy `~/.env.docker.before_domain`); `~/oasis/.env` holds only `OASIS_DOMAIN` because Compose reads variables for the compose file from `.env`, not from `env_file` (the first start used `localhost` with Caddy's internal CA for exactly that reason); started the repo's `tls` profile (Caddy). A real Let's Encrypt certificate was issued.
+- Checks on the new name: health 200 with a verified certificate, UI 200, `/docs` 404, state without login 401, HTTP to HTTPS redirect 308, HSTS, CSP, X-Frame-Options and no-referrer headers present, login from a foreign Origin 403, student login 200, chat (runway) and an injection (refused as bypass) with money moved 0.
+- The Cloudflare quick tunnel service `oasis-tunnel` is disabled; the old `trycloudflare.com` link is dead. Use only the new address in the submission and tell no one the old one.
+- Open for the owner: restrict SSH (port 22) to the owner's IP (80 and 443 are now meant to be open); test from a Chinese network; renewal is automatic (Caddy, port 80 must stay open).
+- Docs updated: README Hosting line, `docs/deployment-docker.md` (heading and a notes section). The repo's Caddy profile is now run end to end once, on this VM; not load-tested.

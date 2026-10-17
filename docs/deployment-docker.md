@@ -71,7 +71,7 @@ Terminate TLS at a proxy and keep the container on a private network or loopback
 2. **Secure cookie.** Uvicorn turns `X-Forwarded-Proto: https` into an https request scheme for trusted proxies, and the login handler then adds `Secure`. `OASIS_COOKIE_SECURE=1` forces it. Plain `http://localhost` is unchanged (no `Secure`, or the browser would drop the cookie).
 3. **Origin/CSRF check.** State-changing requests must carry an `Origin` equal to the request `Host`. Proxies that keep the `Host` header (Caddy, Fly, Render, most platform edges) need nothing. If yours rewrites it, either set `FORWARDED_ALLOW_IPS` (the entrypoint then also turns on `OASIS_TRUST_FORWARDED_HOST`, which accepts `X-Forwarded-Host` as the public host; note this switch is global, not limited to requests from the proxy's address) or list the public origin in `OASIS_ALLOWED_ORIGINS`. Cross-origin pages cannot forge `X-Forwarded-Host` from a browser (a custom header forces a CORS preflight that is refused), so honouring it is not a CSRF hole; it is honoured only when `OASIS_TRUST_FORWARDED_HOST=1`.
 
-### Compose with Caddy (profile `tls`, untested end to end)
+### Compose with Caddy (profile `tls`; run end to end on an Azure VM on 2026-10-18)
 
 ```bash
 # .env.docker:  OASIS_DOMAIN=oasis.example.com   (DNS A/AAAA record -> this host; ports 80 and 443 open)
@@ -163,3 +163,10 @@ The submitted copy runs the live model on the authors' key. To do the same, set 
 - Typed text and uploaded images go to Bedrock on your account. Say so to judges (the judge guide does).
 - Put an AWS budget alert on the account, use a key scoped to Bedrock invoke, and revoke the key after judging.
 - The entrypoint accepts a Bedrock API key (fixed 2026-10-18; before that it only accepted access-key pairs, profiles or roles).
+
+### Notes from the first real run of the `tls` profile (2026-10-18, Azure VM, Korea Central)
+
+- A free fixed name comes from the VM's public IP: set a **DNS name label** (Public IP, Configuration) and the host is `<label>.<region>.cloudapp.azure.com`; allow inbound TCP 80 and 443 in the network security group. Let's Encrypt issued the certificate for that name in a few seconds (Caddy answered the challenge on 443).
+- `OASIS_DOMAIN` must be set where **Compose** can read it (a project `.env` file next to `docker-compose.yml`, or the shell). Putting it only in `.env.docker` is not enough: that file feeds the container, not the compose file, and Caddy then serves `localhost` with its own internal certificate.
+- Put the same `https://<name>` in `OASIS_ALLOWED_ORIGINS` in `.env.docker`. Checked on the live name: health 200, `/docs` 404, state without login 401, HTTP redirects to HTTPS (308), HSTS, CSP and frame headers present, a login from a foreign Origin 403, student login and chat 200 with money moved 0.
+- The app's port stays bound to `127.0.0.1`; only Caddy listens on 80 and 443.
