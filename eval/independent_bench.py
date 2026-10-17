@@ -31,6 +31,11 @@ if LIVE:
     os.environ.update(OASIS_BENCH_LIVE="1", OASIS_LLM="bedrock", OASIS_EXTRACT="llm", OASIS_LLM_RISK="1", OASIS_CHAT_LLM="1",
                       OASIS_BEDROCK_MAX_RETRIES="1", OASIS_BEDROCK_TOTAL_TOKENS=str(START_TOTAL + CAP),
                       OASIS_BEDROCK_DAILY_TOKENS=str(START_TOTAL + CAP))
+    # config was imported above (to find the usage ledger) BEFORE these variables were set, so it still holds the old values: set the
+    # limits on the module itself. Without this the cap did nothing (found on 2026-10-18 when a run went past its cap).
+    _c.BEDROCK_TOTAL_TOKEN_BUDGET = START_TOTAL + CAP
+    _c.BEDROCK_DAILY_TOKEN_BUDGET = START_TOTAL + CAP
+    _c.BEDROCK_MAX_RETRIES = 1
 else:
     os.environ["OASIS_LLM"] = "offline"
     os.environ["OASIS_EXTRACT"] = "deterministic"
