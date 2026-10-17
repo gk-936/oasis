@@ -446,7 +446,7 @@ def test_live_report_has_no_misleading_served_line():
     assert "served" not in live["meta"]
     md = (runner.REPORTS / "benchmark_live.md").read_text(encoding="utf-8")
     assert "served:" not in md and "Which model served the extractions" in md
-    assert runner.NOT_RECORDED in md or "qwen/qwen3.8-27b" in md
+    assert runner.NOT_RECORDED in md or "qwen/qwen3.8-27b" in md or "us.amazon.nova-pro-v1:0" in md
 
 
 def test_pre_fix_checkpoint_results_still_load():

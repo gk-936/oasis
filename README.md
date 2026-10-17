@@ -170,10 +170,10 @@ The executor reaches the payment layer through a three-call `PaymentRail` interf
 
 We would rather you hear these from us. This is the short list; the full numbered list of 25 is in [docs/full-overview.md](docs/full-overview.md#known-limitations).
 
-1. **Authentication is demo-grade, on purpose.** Roles use shared passcodes (public in judge mode), with no per-person accounts or MFA, and it protects only simulated money. An optional passkey second factor exists, tested with software and virtual authenticators only.
+1. **Authentication is demo-grade, on purpose.** Roles use per-role passcodes (student, parent, judge): the judge has its own separate passcode. None is built in or in the repository. Someone running Oasis locally gets fresh random passcodes printed in their own terminal at each start, and a hosted copy uses passcodes the operator sets and sends to judges with the submission, so they are not public. There are no per-person accounts and no MFA, and it protects only simulated money. An optional passkey second factor exists, tested with software and virtual authenticators only.
 2. **Mock world.** Fees, rails, registry and balances are simulated, and nothing touches a bank. Route prices for the extra corridors are public-range estimates, not quotes. There is no real WeIdentity or bank API.
 3. **Benchmarks are partly by construction.**
-   - The same team wrote both the attacks and the defences, and the humans in the loop are simulated.
+   - The humans in the loop are simulated. Further test sets were written by other AI assistants from the pitch and API doc only, without seeing the code.
    - The "hidden" and "blind" sets are AI-written and partly burned by fixes. None is a human red team or an independent audit.
    - The chat tasks are also the team's own, and the chat router is keyword-based: it asks for help on a paraphrase it does not know.
    - No user research with real students has been done.
@@ -182,8 +182,8 @@ We would rather you hear these from us. This is the short list; the full numbere
 6. **Credentials are sandbox credentials.** The Trust Pass, Evidence Passport and ZK proofs are not credit scores or bank statements, and the ZK construction is not independently audited.
 7. **Translations are machine-drafted** (Chinese, Tamil, Hindi); English is the default.
 8. **Simulations are models.** FlightPath's deduction model, the netting cohorts and the Twin's parameters are our own assumptions, not validated on real transfers.
-9. **Single process.** One worker serialises requests; rate limits and tool tokens are in memory; key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.
-10. **Optional extras are lightly tested.** FISCO BCOS runs as a 4-node local chain, PQ-TLS was tested with an OpenSSL client only, and Telegram and mailbox intake only against fake servers.
+9. **Single process.** Rate limits and tool tokens are in memory; key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.
+10. **Optional extras are lightly tested.** FISCO BCOS runs as a 4-node local chain, PQ-TLS was tested with an OpenSSL client and in Chrome 155, and Telegram and mailbox intake only against fake servers.
 
 ## 📚 Documentation
 

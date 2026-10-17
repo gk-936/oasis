@@ -26,6 +26,7 @@ export OASIS_SESSION_SECRET_FILE="$DATA_DIR/keys/session_secret.json" OASIS_ATTE
 export OASIS_JUDGE_MODE=1 OASIS_FRESH_ON_LOGIN=1 PYTHONPATH="$ROOT"
 rnd() { "$PY" -c "import secrets,string;a=string.ascii_letters+string.digits;print(''.join(secrets.choice(a) for _ in range(16)))"; }
 # There are no built-in passcodes. Use the ones already set in the environment, otherwise make fresh random ones for this run.
+export OASIS_KEY_PASSPHRASE="${OASIS_KEY_PASSPHRASE:-$(rnd)}" OASIS_REQUIRE_KEY_PASSPHRASE=1   # key files in the throwaway sandbox are written wrapped, never plaintext
 export OASIS_PASS_STUDENT="${OASIS_PASS_STUDENT:-$(rnd)}" OASIS_PASS_PARENT="${OASIS_PASS_PARENT:-$(rnd)}" OASIS_PASS_JUDGE="${OASIS_PASS_JUDGE:-$(rnd)}"
 echo "Oasis judge sandbox (offline, MOCK rates, fresh database in $DATA_DIR)"
 echo "  URL:         http://$HOST:$PORT"

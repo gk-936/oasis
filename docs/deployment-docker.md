@@ -109,7 +109,7 @@ General rules whichever you pick: 1 replica, 1 worker, the platform's `PORT` is 
 - [ ] Rate limits are per client IP. Behind NAT (a university or event network) many judges share one IP and one failed-login budget; the 5 failed logins per minute and 10 red-team attempts per minute are then shared.
 - [ ] Update the base image and rebuild regularly (`docker compose build --pull`).
 
-**Honest limits, unchanged by Docker.** Authentication is demo-grade (shared role passcodes, no per-person accounts, no MFA, approver device keys trusted on first use); it is a single process holding state in memory; the data is simulated (MOCK rates, simulated local anchor) and no real money moves; the post-quantum TLS claim is tested with OpenSSL only. A Docker deployment does not turn this into a production payments system. See [security-self-assessment.md](security-self-assessment.md).
+**Honest limits, unchanged by Docker.** Authentication is demo-grade (per-role passcodes with a separate judge passcode, none built in; no per-person accounts, no MFA, approver device keys trusted on first use); it is a single process holding state in memory; the data is simulated (MOCK rates, simulated local anchor) and no real money moves; the post-quantum TLS claim is tested with OpenSSL only. A Docker deployment does not turn this into a production payments system. See [security-self-assessment.md](security-self-assessment.md).
 
 ## 6. How judges use it
 

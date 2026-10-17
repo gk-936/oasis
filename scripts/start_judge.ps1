@@ -24,6 +24,8 @@ $env:OASIS_ATTEMPTS_FILE = Join-Path $DataDir "redteam_attempts.jsonl"
 $env:OASIS_JUDGE_MODE = "1"; $env:OASIS_FRESH_ON_LOGIN = "1"; $env:PYTHONPATH = $Root
 # There are no built-in passcodes. Use the ones already set in the environment, otherwise make fresh random ones for this run.
 function New-Passcode { & $Py -c "import secrets,string;a=string.ascii_letters+string.digits;print(''.join(secrets.choice(a) for _ in range(16)))" }
+if (-not $env:OASIS_KEY_PASSPHRASE) { $env:OASIS_KEY_PASSPHRASE = New-Passcode }   # key files in the throwaway sandbox are written wrapped, never plaintext
+$env:OASIS_REQUIRE_KEY_PASSPHRASE = "1"
 if (-not $env:OASIS_PASS_STUDENT) { $env:OASIS_PASS_STUDENT = New-Passcode }
 if (-not $env:OASIS_PASS_PARENT)  { $env:OASIS_PASS_PARENT  = New-Passcode }
 if (-not $env:OASIS_PASS_JUDGE)   { $env:OASIS_PASS_JUDGE   = New-Passcode }

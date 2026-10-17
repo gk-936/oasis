@@ -24,4 +24,4 @@ view of the same signed credential.
 - The Oasis terms use an inline `@vocab` placeholder (`https://oasis.example/vocab#`), not a published context; the JSON-LD is not validated against a schema. `proof` has one extra non-standard property (`canonicalization`).
 - Only the Ed25519 half of the hybrid signature is in the VC proof; the post-quantum ML-DSA-65 signature lives in the embedded native credential. There is no DID revocation, rotation or `did:web`.
 - No holder-bound Verifiable Presentation is produced. Trust in the issuer is by pinned fingerprint (`key_pinned`), as with the native pass: a `did:key` is self-certifying but says nothing about who controls it.
-- Sandbox credential, not a credit score (see README, limitation 19).
+- Sandbox credential, not a credit score (see README, limitation 6).
