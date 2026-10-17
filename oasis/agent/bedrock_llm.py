@@ -122,5 +122,6 @@ class BedrockClient:
             import boto3
             from botocore.config import Config
             runtime = boto3.client("bedrock-runtime", region_name=region or config.BEDROCK_REGION,
-                                   config=Config(retries={"max_attempts": 1}, read_timeout=120))   # our own backoff
+                                   config=Config(retries={"max_attempts": 1}, read_timeout=config.BEDROCK_TIMEOUT,
+                                                  connect_timeout=config.BEDROCK_CONNECT_TIMEOUT))   # our own backoff
         self.chat = NS(completions=_Completions(runtime))

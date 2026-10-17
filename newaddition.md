@@ -238,3 +238,11 @@ Reviewed every AI path for failure behaviour: chat labeller (any error returns t
 - Final `eval.ai_contribution --live` re-run with the reverted labeller prompt answered from the cache (0 tokens): chat 7 correct, 1 wrong, 0 unlabelled; 0 of 4 traps labelled as a payment. This is the report now in `eval/reports/ai_contribution.md` (the earlier overwrite in 14.3 is repaired).
 - Spend this round: about USD 0.042; running total of the approved USD 2: about USD 0.109. Saved for reference: `/d/tmp/bak/chat_llm_heldout_r2_prompt.md` (outside the repo).
 - Kept: risk-prompt calibration and the genuine-invoice check. Reverted: labeller prompt wording.
+
+### 14.5 Hardening of the live paths (2026-10-18; offline work, no live call)
+
+- Audit of all 9 LLM uses: recovery drafts are validated (`validate_draft`) with a template fallback; vision rejects oversize and runaway output; explain and FlightPath rewrites are guarded; chat labeller, risk scorer, extraction and planner already fall back on any error. Gaps found and fixed:
+  - **Timeouts:** the Bedrock client waited up to 120 s per call, and the server has one worker, so one hung call would freeze every judge. Now `OASIS_BEDROCK_TIMEOUT` (45 s) and `OASIS_BEDROCK_CONNECT_TIMEOUT` (8 s) in `oasis/config.py` and `bedrock_llm.py`; `docs/configuration.md` recommends `OASIS_BEDROCK_MAX_RETRIES=1` for a hosted live demo.
+  - **Dead code:** a duplicate unreachable `bedrock` branch in `make_llm` removed.
+  - **Proof of graceful degradation:** `tests/test_live_degrades.py` (4): with the token budget spent, a genuine invoice still ends held for signature as offline (money lost 0, risk failure recorded), the chat labeller returns None, explanations and recovery fall back to the template, and the client really carries the short limits.
+- Suite: **1598 passed, 2 skipped**; count updated in five docs. Uncommitted.

@@ -1155,7 +1155,4 @@ def make_llm(provider: str | None = None, susceptible: bool = True, **kw) -> LLM
     provider = provider or config.LLM_PROVIDER
     if provider == "bedrock":           # Amazon Nova Pro on Amazon Bedrock; AWS credentials come from the standard chain
         return LiveLLM(susceptible=susceptible, **kw)
-    if provider == "bedrock":           # Amazon Nova Pro on Amazon Bedrock; AWS credentials come from the standard chain
-        from .bedrock_llm import BedrockLLM
-        return BedrockLLM(susceptible=susceptible, **kw)
     return OfflineLLM(susceptible=susceptible)

@@ -44,6 +44,9 @@ FALLBACK_MODEL = os.getenv("OASIS_BEDROCK_FALLBACK_MODEL", AGENT_MODEL)      # d
 BEDROCK_RPM = float(os.getenv("OASIS_BEDROCK_RPM", "120"))
 BEDROCK_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_BEDROCK_DAILY_TOKENS", "2000000"))
 BEDROCK_MAX_RETRIES = int(os.getenv("OASIS_BEDROCK_MAX_RETRIES", "4"))
+# per-call network limits: one hung model call must not hold the single worker (every judge waits) for minutes
+BEDROCK_TIMEOUT = float(os.getenv("OASIS_BEDROCK_TIMEOUT", "45"))
+BEDROCK_CONNECT_TIMEOUT = float(os.getenv("OASIS_BEDROCK_CONNECT_TIMEOUT", "8"))
 
 # Persistence for the API session: a SQLite file, or ":memory:" / "" for in-memory only.
 DB_PATH = os.getenv("OASIS_DB") or str(DATA_DIR / "oasis.db")
