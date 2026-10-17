@@ -253,3 +253,8 @@ Reviewed every AI path for failure behaviour: chat labeller (any error returns t
 - CRLF endings removed from `docker-compose.yml`, `.dockerignore`, `docker/*` and `scripts/*.sh` on the VM; the Dockerfile still reports mixed CR/LF but the build succeeded.
 - `docker compose up -d --build`: container healthy, uid 10001, new `OASIS_BEDROCK_TIMEOUT` code present. Checks (passcodes read on the VM, never printed): local and public health 200, UI 200, `/docs` 404, state without login 401, student and judge login 200, wrong passcode 401. Memory 380 of 836 MB used, disk 20%.
 - Still offline on the VM (`OASIS_LLM=offline`): live mode not enabled. Tunnel URL unchanged (`prix-act-falling-nicole.trycloudflare.com`).
+
+### 14.7 Live mode on the VM: prepared, waiting for the owner's key (2026-10-18)
+
+- The owner provides the Bedrock key themselves, so it never passes through the assistant or the chat. `~/enable_live.sh` on the VM (mode 700, syntax-checked, not yet run) asks for the key with hidden input, backs up `.env.docker` to `~/.env.docker.before_live`, sets `OASIS_LLM=bedrock`, `OASIS_EXTRACT=llm`, `OASIS_LLM_RISK=1`, `OASIS_CHAT_LLM=1`, `OASIS_BEDROCK_DAILY_TOKENS=400000`, `OASIS_BEDROCK_MAX_RETRIES=1`, `AWS_REGION=us-east-1`, removes the empty AWS key lines, appends `AWS_BEARER_TOKEN_BEDROCK` (file mode 600), restarts the container and makes a one-word model check (about 20 tokens). The VM stays offline until the owner runs it.
+- Still to do after it works: update README, JUDGE_GUIDE and `docs/deployment-docker.md`, which say the hosted copy is offline, to say it runs the live model on the authors' key with a daily cap and an offline fallback; rotate the key after judging.
