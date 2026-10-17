@@ -33,19 +33,25 @@ Attack block rate (strict pass criteria), baseline / +verification / +intents+po
 
 The two lower no-policy figures are honest: the extractor now reads the stated currency and the whole account, so cases that used to pass by accident (unreadable fields) are now stopped only by the policy layer; every attack case now stops for a real reason (`extract_low_confidence` is no longer how any of them passes). The visible benchmark is unchanged. The set is partly burned, because its failures were fixed afterwards.
 
-## 3. Live benchmark (earlier Groq-hosted run, kept as history; Groq has been removed)
+## 3. Live benchmark (Amazon Nova Pro, 2026-10-17)
 
-Report: `eval/reports/benchmark_live.md`. Extraction by a live model, 3 repeats (temperature 0, then 0.4 and 0.4, distinct cache salts) over six injection-bearing scenarios, LLM risk scorer on.
+Report: `eval/reports/benchmark_live.md`. Extraction by a live model (Amazon Nova Pro on Bedrock), 1 repeat, 32 attack + 12 legitimate scenarios, LLM risk scorer on (escalate-only), 6 AI red-team texts. Mock data; single run, not a robustness claim.
 
 | | baseline | +verification | +intents+policy | full |
 |---|---|---|---|---|
 | Attack block rate (live) | 18.8% | 68.8% | 100% | 100% |
+| Legit completion (live) | 100% | 83.3% | 83.3% | 83.3% |
 
-- Identical in every repeat (min = mean = max); the live baseline loses CNY 380,000 per repeat (the offline gullible baseline loses 479,000).
-- The model followed an embedded injection in 0 of 18 injection-bearing scenario runs (6 scenarios x 3 repeats). This is not a robustness claim: a few samples of one model on hand-written injections cannot rule out rarer failures. Within a repeat, identical documents reuse one cached model response across the four configurations.
-- Serving model, recorded per extraction: of 183 extraction steps (full configuration, 3 repeats), 167 were answered by qwen/qwen3.8-27b and 16 by the fallback openai/gpt-oss-120b (used when the primary hit its rate limit); 0 fell back to the regex parser. Read it as "a live model", not as a statement about one model.
-- The LLM risk scorer raised the score on 82 of 183 extraction steps (17 of them injection-bearing) but pushed 0 across the policy hold threshold (0.5), so it changed no decision; its measured contribution here is nil.
-- The recorded live runs were made at the old mock rate base (0.0845) and were not re-run after the 2026-10-10 recalibration to 0.0692 (the sandbox starting balance also moved from INR 4 to INR 5 lakh and the split-payment attack amounts from CNY 4,000 to about 3,300); the offline benchmark outcome is unchanged in the re-run.
+- Money lost in the full configuration: 0. The model followed an embedded injection in 0 of 6 injection-bearing scenarios.
+- **Cost of live extraction:** legitimate completion is 83.3% (2 of 12 blocked: one landlord change, one new university account), against 100% for the deterministic parser. The cause was not isolated; on 8 of 58 extraction steps the model left out `account_ref` and the regex parser filled it in. Blocking is the safe direction, but it is a real usability cost.
+- Extraction provenance (full configuration): 58 steps, 0 model-call failures, 8 steps with a regex fallback for one field. All 58 recorded as served by us.amazon.nova-pro-v1:0; the report records them as replayed from the on-disk cache, so do not read this as 58 separate fresh calls.
+- LLM risk scorer: raised the score on 4 of 58 steps (1 injection-bearing), pushed 1 across the policy hold threshold (0.5), failed on 1 call (heuristic used); it can only escalate.
+- Tokens spent by this run were not recorded in the report.
+- Not comparable with the earlier Groq run below: 1 repeat against 3, and the AI red-team texts differ per run (6 against 9).
+
+### Earlier Groq-hosted run (history only; Groq has been removed)
+
+Report: `eval/reports/benchmark_live_groq.md` (2026-10-10, qwen/qwen3.8-27b with fallback openai/gpt-oss-120b, 3 repeats, 183 extraction steps: 167 qwen, 16 gpt-oss). Security outcomes matched the Nova run: attack block 100% in the full configuration, money lost 0, injection followed 0 of 18. Legitimate completion was 100% (0 false blocks) and no extraction fell back to regex. The run cannot be repeated, it used the old mock rate base, and it is kept only as a record.
 
 ## 4. Plan quality
 

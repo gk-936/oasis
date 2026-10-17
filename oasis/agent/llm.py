@@ -1117,6 +1117,9 @@ class VisionExtractor:
             raise VisionUnavailable(f"Could not read the image ({e}). Please paste the text or confirm the fields.") from e
         if not out.strip():
             raise VisionUnavailable("The image could not be read. Please paste the text or confirm the fields.")
+        # A blurry image once made the model emit a runaway value (thousands of repeated digits): treat it as unreadable.
+        if any(len(ln) > 200 for ln in out.splitlines()) or re.search(r"(?P<c>.)(?P=c){39}", out):
+            raise VisionUnavailable("The image could not be read reliably. Please paste the text or confirm the fields.")
         return out
 
 

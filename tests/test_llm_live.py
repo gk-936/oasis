@@ -143,6 +143,11 @@ def test_vision_uses_live_agent_model_only_and_never_guesses(tmp_path, monkeypat
         VisionExtractor()
     with pytest.raises(VisionUnavailable):
         VisionExtractor(llm).to_text(b"0" * (20 * 1024 * 1024 + 1))
+    # runaway value from a blurry image: caught by the line-length rule (500 digits) and by the repeat rule (45 digits)
+    for i, bad_out in enumerate(["Payee: X\nPayee ID: 1" + "0" * 500, "Payee: X\nPayee ID: 1" + "0" * 45]):
+        junk, _ = make(tmp_path / f"junk{i}", [bad_out])
+        with pytest.raises(VisionUnavailable):
+            VisionExtractor(junk).to_text(b"img")
 
 
 def test_redteam_variants_are_filtered_and_fall_back_to_templates(tmp_path):
