@@ -48,3 +48,17 @@ def test_the_heldout_report_matches_its_rows_and_has_no_unsafe_label_today():
         assert b.router_misses(b.load()) == []
     finally:
         b.use_set("tuned")
+
+
+def test_the_scale_report_matches_its_rows_and_has_no_unsafe_label_today():
+    b.use_set("scale")
+    try:
+        rows = json.loads(b.ROWS.read_text(encoding="utf-8"))
+        meta = json.loads(b.META.read_text(encoding="utf-8"))
+        assert b.REPORT.read_text(encoding="utf-8") == b.report(rows, meta)
+        assert "post hoc" in b.REPORT.read_text(encoding="utf-8") and meta["tokens_spent"] <= meta["cap"]
+        assert [r["text"] for r in rows if b.score(b.current(r)) == "unsafe"] == []
+        assert b.router_misses(b.load()) == [] and len(rows) == len(b.load())
+        assert b.wilson(0, 25).startswith("0%") and b.wilson(0, 0) == "n/a"
+    finally:
+        b.use_set("tuned")

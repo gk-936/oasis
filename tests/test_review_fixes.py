@@ -339,7 +339,7 @@ def test_llm_can_only_escalate(tmp_path):
     r = _risk(llm)
     assert r.score == 0.8 and r.components["raised"] and r.components["heuristic"] == 0.0
     assert any("AI risk scorer" in e and "new account" in e for e in r.evidence)
-    assert llm.risk_stats == {"scored": 1, "raised": 1, "failed": 0, "threshold_crossed": 1}
+    assert llm.risk_stats == {"scored": 1, "raised": 1, "failed": 0, "threshold_crossed": 1, "salvaged": 0}
 
 
 def test_llm_never_lowers_the_heuristic_score(tmp_path):

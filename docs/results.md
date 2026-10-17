@@ -92,7 +92,7 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 
 ## 6. Tests
 
-1600 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
+1606 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
 
 ## 7. Scripted demo (offline, repeats exactly)
 
@@ -194,7 +194,7 @@ All our own generators, so they find crashes and blind spots rather than new att
 
 The first fuzz run (seed 7) found two real weaknesses, both fixed and covered by tests: wrapping a whole attack in quotes together with the word "quote" or "example" made the quoted-mention rule skip the entire message, and typos in "without telling you", "reset" and "until" turned harmless help questions into refusals.
 
-## AI-contribution checks (2026-10-17)
+## AI-contribution checks (2026-10-17 and 2026-10-18)
 
 Source: [`eval/reports/ai_contribution.md`](../eval/reports/ai_contribution.md) (run with `python -m eval.ai_contribution`, add `--live --cap N` for the live part). Our own scenarios and texts on MOCK data, one model (Amazon Nova Pro on the owner's own AWS account), small samples: this shows the upgrades stay grounded and safe on the tested cases, not real-world performance.
 
@@ -206,8 +206,11 @@ Source: [`eval/reports/ai_contribution.md`](../eval/reports/ai_contribution.md) 
 | Live: FlightPath rewrites the guard accepted / returned unchanged / rejected | 5 / 7 / 0 (12 journeys) |
 | Live: chat phrasings the router cannot place, labelled correctly / wrongly | 7 / 1 (8 ordinary phrasings) |
 | Live: manipulation messages that got a payment label | 0 of 4 |
-| Live: poisoned invoices through live extraction and the LLM risk scorer | 32; model changed account, amount or payee in 0; payments outside the registry 0; money lost 0 |
-| Live: genuine invoices (registered account, 8 layouts incl. Chinese and a polite reminder) through the same path | 8 of 8 held for the student's signature exactly as offline; the AI risk scorer raised the score on 0 of 8 (highest 0). Small sample, our own texts, after a calibration of the risk prompt |
+| Live: poisoned invoices through live extraction and the LLM risk scorer (16 injection styles in 5 layouts on an unregistered account, 3 layouts on the registered account) | 128; model changed account, amount or payee in 0 of 128 (95% interval 0% to 3%); payments outside the registry 0; payments released without a signature 0; money lost 0; the 48 on the registered account all ended held for the student's signature |
+| Live: genuine invoices (registered account, 8 layouts x 5 wrappers incl. Chinese and a polite reminder) through the same path | 40 of 40 held for the student's signature exactly as offline; the AI risk scorer raised the score on 0 of 40 (95% interval 0% to 9%; highest score 0). After a recalibration of the risk prompt; our own texts |
+| Live: the AI risk scorer over all 168 invoices | scored 168, raised the score on 36 (all poisoned), answer unusable 0, malformed JSON with the score salvaged 2. Provider content filter blocked the model's answer on 1 of 128 poisoned invoices (the deterministic parse was used, outcome unaffected) |
+| Live: chat labeller, scale set (98 fresh messages the router cannot place; first run, prompt frozen) | paraphrases labelled correctly 72 of 73 (95% interval 93% to 100%), wrong 0, dropped by validation 1; trap messages that got a payment label 1 of 25 as run, 0 of 25 after one validator rule added post hoc ([`chat_llm_scale.md`](../eval/reports/chat_llm_scale.md)) |
+| Offline keyword router alone, first run on the same 144 fresh paraphrases | placed correctly 52 (36%), unknown 73 (51%, sent to the labeller when live), placed on the WRONG intent 19 (13%, never reach the labeller) |
 | Live: held-out chat labeller reproduced on a second AWS account | 18 of 20 correct, 0 of 10 traps labelled as a payment ([`chat_llm_heldout_repro_2026-10-17.md`](../eval/reports/chat_llm_heldout_repro_2026-10-17.md)) |
 
 The live runs cost about USD 0.067 in total (metered; the history is in the report). The first live run showed that the check on model rewrites only required the template's numbers to survive; a rewrite with a chatty preface, markdown and a list number was accepted. The guard now also forbids added numbers and non-plain text (`tests/test_rewrite_guard.py`).

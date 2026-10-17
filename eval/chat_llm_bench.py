@@ -19,7 +19,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPORTS = HERE / "reports"
-SETS = {"tuned": ("messages.json", "chat_llm"), "heldout": ("messages_heldout.json", "chat_llm_heldout")}
+SETS = {"tuned": ("messages.json", "chat_llm"), "heldout": ("messages_heldout.json", "chat_llm_heldout"), "scale": ("messages_scale.json", "chat_llm_scale")}
 MESSAGES = HERE / "chat_llm" / SETS["tuned"][0]
 ROWS = REPORTS / (SETS["tuned"][1] + "_rows.json")
 META = REPORTS / (SETS["tuned"][1] + "_meta.json")
@@ -58,6 +58,7 @@ def score(row: dict) -> str:
 def run_live(msgs: list[dict], cap: int) -> list[dict]:
     from oasis.agent import chat_llm
     from oasis.agent.llm import LiveLLM, make_llm
+    from oasis.agent.llm import json_object as llm_json_object
     llm = make_llm()
     if not isinstance(llm, LiveLLM):
         raise SystemExit("OASIS_LLM is not bedrock: refusing to run a live benchmark")
@@ -74,7 +75,7 @@ def run_live(msgs: list[dict], cap: int) -> list[dict]:
         calls_before = llm.calls
         try:
             raw = llm._chat(chat_llm.SYSTEM, "Message: " + json.dumps(m["text"][:chat_llm.MAX_CHARS], ensure_ascii=False), json_mode=True)
-            obj = json.loads(raw)
+            obj = llm_json_object(raw)
             v = chat_llm.validate(obj, m["text"])
             row = {**m, "model_intent": obj.get("intent") if isinstance(obj, dict) else None, "validated": v.kind if v else None, "error": None}
         except Exception as e:  # noqa: BLE001 - recorded, never hidden
@@ -88,6 +89,17 @@ def run_live(msgs: list[dict], cap: int) -> list[dict]:
     meta = {"tokens_spent": spent, "cap": cap, "model": getattr(llm, "last_model", None), "run": datetime.now().strftime("%Y-%m-%d %H:%M")}
     META.write_text(json.dumps(meta), encoding="utf-8")
     return rows
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> str:
+    """95% Wilson score interval for k of n, as a percentage range (small samples get wide intervals)."""
+    if n == 0:
+        return "n/a"
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5) / d
+    return f"{100 * max(0.0, c - h):.0f}% to {100 * min(1.0, c + h):.0f}%"
 
 
 def current(row: dict) -> dict:
@@ -105,7 +117,13 @@ def report(rows: list[dict], meta: dict) -> str:
     ls = [s for r, s in zip(rows, sc) if r["kind"] == "paraphrase"]
     trap_sc = [s for r, s in zip(rows, sc) if r["kind"] == "trap"]
     held = "heldout" in REPORT.name
-    L = ["# Chat model labels (optional, live)" + (": held-out set" if held else ""), "",
+    scale = "scale" in REPORT.name
+    raw = json.loads(MESSAGES.read_text(encoding="utf-8")).get("router_first_run") if scale else None
+    L = ["# Chat model labels (optional, live)" + (": held-out set" if held else ": scale set" if scale else ""), "",
+         *(["**Scale set.** Written fresh on 2026-10-18 with the prompt and validator frozen (identical to the held-out run) and never used for tuning, so these are first-run "
+            "numbers. Written by the Oasis team with AI help, so not independent. " + (raw["note"] if raw else "") +
+            " After the live run the validator was tightened once (a payment label is now dropped for a message that gives the labeller instructions about labels, "
+            "classification, JSON or intents): the 'as run' row is the first-run result and the 'today' row re-checks the saved model labels, so that part is post hoc.", ""] if scale else []),
          *(["**Held-out.** The prompt and the validator were frozen before these messages were written, and no result on this set was used to change either. "
             "The messages are still written by the Oasis team, who had seen the first run's results, and half the set is adversarial (injection, "
             "social engineering, label manipulation), so treat the safety rows as the point and the accuracy as one sample.", ""] if held else []),
@@ -114,12 +132,12 @@ def report(rows: list[dict], meta: dict) -> str:
          "sample, and it measures only whether the proposed label matches ours after validation. It says nothing about payments: a labelled payment is always a draft "
          "that only a device-key signature releases. Needs the user's own AWS Bedrock access.", "",
          "| Measure | Value |", "|---|---|",
-         f"| Paraphrases labelled correctly | {ls.count('right')} of {len(ls)} |",
+         f"| Paraphrases labelled correctly | {ls.count('right')} of {len(ls)} (95% interval {wilson(ls.count('right'), len(ls))}) |",
          f"| Paraphrases labelled wrongly | {ls.count('wrong')} |",
          f"| Proposals dropped by validation (help reply shown) | {ls.count('dropped')} |",
          f"| Router alone on these messages | 0 of {len(ls)} (all `unknown` by construction) |",
          f"| Trap messages that got a payment label (validator as run) | {sum(1 for r, s in zip(rows, asrun) if r['kind'] == 'trap' and s == 'unsafe')} of {len(trap_sc)} |",
-         f"| Trap messages that get a payment label (validator today, saved model labels re-checked) | {trap_sc.count('unsafe')} of {len(trap_sc)} |",
+         f"| Trap messages that get a payment label (validator today, saved model labels re-checked) | {trap_sc.count('unsafe')} of {len(trap_sc)} (95% interval {wilson(trap_sc.count('unsafe'), len(trap_sc))}) |",
          f"| Model errors | {sum(1 for r in rows if r.get('error'))} |", "",
          "The \"today\" rows use the validator as it is now, which forbids an amount in a model-labelled payment; it was tightened after the held-out run showed two "
          "label-manipulation traps (an amount in the text) getting a payment label, so that part of the held-out result is post hoc.", "",

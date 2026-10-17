@@ -36,6 +36,30 @@ def has_exponent(s: str) -> bool:
     return bool(EXPONENT_RE.match(s))
 
 
+_OBJ_RE = re.compile(r"\{.*\}", re.S)
+_SCORE_RE = re.compile(r'"score"\s*:\s*(-?\d+(?:\.\d+)?)')
+
+
+def json_object(text: str):
+    """Parse a model's JSON answer: as is, else the first {...} block (the model added a preface or a ``` fence). Never repairs content:
+    anything that is still not valid JSON raises, and the caller uses its deterministic result."""
+    t = (text or "").strip()
+    try:
+        return json.loads(t)
+    except ValueError:
+        m = _OBJ_RE.search(t)
+        if not m:
+            raise
+        return json.loads(m.group(0))
+
+
+def salvage_score(text: str) -> float | None:
+    """The risk scorer's number from an answer that is not valid JSON (Nova Pro once put key: value pairs inside the evidence list).
+    Only the score is taken, clamped to 0..1; the scorer can only raise a risk, so a salvaged number can never make a payment easier."""
+    m = _SCORE_RE.search(text or "")
+    return min(1.0, max(0.0, float(m.group(1)))) if m else None
+
+
 AMOUNT_RE = re.compile(rf"(?:Amount(?:\s+due)?|Total|金额)\s*[:：]?\s*({_CUR_ALT})?\s*(\d[\d,，.]*)\s*({_CUR_CODES}|元)?", re.I)
 FIELD_RES = {
     "payee_name": re.compile(r"(?:Payee|Pay to|Payable to|Beneficiary|Recipient|收款人|收款方)\s*[:：]\s*(.+)", re.I),
@@ -735,7 +759,7 @@ class LiveLLM(OfflineLLM):
             raise ValueError(f"unknown extract mode {self.extract_mode!r}")
         # Optional LLM risk scorer, live mode only: its score is combined as max(heuristic, llm), so it can only escalate.
         self.llm_risk = bool(config.LLM_RISK if llm_risk is None else llm_risk) and self.extract_mode == "llm"
-        self.risk_stats = {"scored": 0, "raised": 0, "failed": 0, "threshold_crossed": 0}
+        self.risk_stats = {"scored": 0, "raised": 0, "failed": 0, "threshold_crossed": 0, "salvaged": 0}
         self.explain_stats = {"accepted": 0, "unchanged": 0, "rejected": 0, "failed": 0}      # model rewrites of template explanations
         self.last_risk: dict | None = None
         self.last_recorded: str | None = None
@@ -995,7 +1019,7 @@ class LiveLLM(OfflineLLM):
         translation, flag = "", False
         self.last_model, hits_before = None, self.cache_hits
         try:
-            j = json.loads(self._chat(self.EXTRACT_SYSTEM, text, json_mode=True))
+            j = json_object(self._chat(self.EXTRACT_SYSTEM, text, json_mode=True))
             if not isinstance(j, dict):
                 raise ValueError("model output is not a JSON object")
             mf = self._model_fields(j)
@@ -1056,7 +1080,15 @@ class LiveLLM(OfflineLLM):
                        "expected_amount_cny": expected_amount,
                        "registry": {k: c.get(k) for k in ("registry_known", "registry_account", "amount_inr",
                                                            "approval_threshold_inr")}}
-            j = json.loads(self._chat(self.RISK_SYSTEM, json.dumps(payload, ensure_ascii=False, default=str), json_mode=True))
+            answer = self._chat(self.RISK_SYSTEM, json.dumps(payload, ensure_ascii=False, default=str), json_mode=True)
+            try:
+                j = json_object(answer)
+            except ValueError:                      # malformed JSON: keep the model's escalation if it gave a number (escalate-only), say so
+                salvaged = salvage_score(answer)
+                if salvaged is None:
+                    raise
+                j = {"score": salvaged, "evidence": ["the model's answer was not valid JSON; only its score was used"]}
+                comp["salvaged"] = True
             raw = j.get("score") if isinstance(j, dict) else None
             if isinstance(raw, bool) or not isinstance(raw, (int, float)):
                 raise ValueError("risk score is not a number")
@@ -1074,6 +1106,7 @@ class LiveLLM(OfflineLLM):
         st["scored"] += 1
         st["raised"] += comp["raised"]
         st["failed"] += comp["failed"]
+        st["salvaged"] += int(bool(comp.get("salvaged")))
         st["threshold_crossed"] += int(comp["final"] >= RISK_HOLD > h.score)
         self.last_risk = comp
         return RiskAssessment(comp["final"], evidence, comp)

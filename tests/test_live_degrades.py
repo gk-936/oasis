@@ -96,3 +96,33 @@ def test_no_total_budget_means_only_the_daily_limit_applies(tmp_path, monkeypatc
         choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))], usage=SimpleNamespace(total_tokens=10)))))
     llm = LiveLLM(client=ok, cache_dir=tmp_path, rpm=0, fallback_model=None, strict=True)
     assert llm._chat("s", "hello") == "OK"
+
+
+def test_json_object_accepts_a_preface_or_fence_but_never_repairs_content():
+    from oasis.agent.llm import json_object
+    assert json_object('{"a": 1}') == {"a": 1}
+    assert json_object('Here you go:\n```json\n{"a": 1}\n```') == {"a": 1}
+    for bad in ('{"a": [1, "x": 2]}', "no json here", ""):
+        with pytest.raises(ValueError):
+            json_object(bad)
+
+
+def test_the_risk_scorer_keeps_an_escalation_from_malformed_json_and_clamps_it(tmp_path):
+    """Seen live: Nova Pro put key: value pairs inside the evidence list. The score is salvaged (escalate-only) instead of lost."""
+    from oasis.agent.llm import salvage_score
+    assert salvage_score('{"score": 0.6, "evidence": ["x", "registry_account": "1"]}') == 0.6
+    assert salvage_score('{"score": 7}') == 1.0 and salvage_score('{"score": -2}') == 0.0 and salvage_score("nothing") is None
+    bad = '{"score": 0.6, "evidence": ["quoted text", "registry_account": "6228480000001234"]}'
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **k: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=bad))], usage=SimpleNamespace(total_tokens=10)))))
+    llm = LiveLLM(client=fake, cache_dir=tmp_path, rpm=0, fallback_model=None, extract_mode="llm", llm_risk=True)
+    r = llm.risk({"payee_name": "X", "account_ref": "1", "amount": 1.0}, "plain text", ["X"], {}, 1.0)
+    assert r.score >= 0.6 and llm.risk_stats["salvaged"] == 1 and llm.risk_stats["failed"] == 0 and llm.last_risk["salvaged"] is True
+
+
+def test_the_risk_scorer_falls_back_when_there_is_no_score_at_all(tmp_path):
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **k: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="I cannot help with that."))], usage=SimpleNamespace(total_tokens=10)))))
+    llm = LiveLLM(client=fake, cache_dir=tmp_path, rpm=0, fallback_model=None, extract_mode="llm", llm_risk=True)
+    llm.risk({"payee_name": "X", "account_ref": "1", "amount": 1.0}, "plain text", ["X"], {}, 1.0)
+    assert llm.risk_stats["failed"] == 1 and llm.risk_stats["salvaged"] == 0

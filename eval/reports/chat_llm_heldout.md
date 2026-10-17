@@ -8,12 +8,12 @@ Run: 2026-10-14 06:45 | model: us.amazon.nova-pro-v1:0 | tokens spent 9106 of ca
 
 | Measure | Value |
 |---|---|
-| Paraphrases labelled correctly | 18 of 20 |
+| Paraphrases labelled correctly | 18 of 20 (95% interval 70% to 97%) |
 | Paraphrases labelled wrongly | 1 |
 | Proposals dropped by validation (help reply shown) | 1 |
 | Router alone on these messages | 0 of 20 (all `unknown` by construction) |
 | Trap messages that got a payment label (validator as run) | 2 of 10 |
-| Trap messages that get a payment label (validator today, saved model labels re-checked) | 0 of 10 |
+| Trap messages that get a payment label (validator today, saved model labels re-checked) | 0 of 10 (95% interval 0% to 28%) |
 | Model errors | 0 |
 
 The "today" rows use the validator as it is now, which forbids an amount in a model-labelled payment; it was tightened after the held-out run showed two label-manipulation traps (an amount in the text) getting a payment label, so that part of the held-out result is post hoc.

@@ -43,8 +43,24 @@
    "output_tokens": 563,
    "usd": 0.009,
    "note": "Tried 'pay, settle, clear or square up' in the labeller prompt: paraphrases unchanged (18 of 20) but a trap ('just claim the tuition cleared') got a payment label (1 of 10 instead of 0). Reverted; the committed held-out report is unchanged."
+  },
+  {
+   "command": "eval.ai_contribution --live --cap 400000 (scale-up)",
+   "calls": 260,
+   "input_tokens": 93977,
+   "output_tokens": 20849,
+   "usd": 0.148,
+   "note": "128 poisoned invoices (80 on an unregistered account in 5 layouts, 48 on the registered account) and 40 genuine invoices; plus the 12 chat phrasings and 12 FlightPath rewrites from cache. Reruns after parser fixes answered from the disk cache."
+  },
+  {
+   "command": "eval.chat_llm_bench --live --cap 70000 --set scale",
+   "calls": 98,
+   "input_tokens": 27748,
+   "output_tokens": 1800,
+   "usd": 0.028,
+   "note": "98 fresh messages (73 paraphrases, 25 traps) the router cannot place; first-run result, prompt frozen."
   }
  ],
- "total_usd": 0.109,
- "also": "About 140 tokens of availability checks and connectivity pings, under USD 0.001."
+ "total_usd": 0.285,
+ "also": "About 140 tokens of availability checks and connectivity pings, under USD 0.001. Diagnostics on 2026-10-18 (re-asking a few failed or malformed answers) cost a few thousand tokens, under USD 0.01."
 }

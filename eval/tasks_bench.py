@@ -13,9 +13,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-os.environ["OASIS_LLM"] = "offline"                # never a live model from this script, whatever .env says
+if os.environ.get("OASIS_BENCH_LIVE") != "1":      # only eval.independent_bench --live sets this (and passes its own token cap)
+    os.environ["OASIS_LLM"] = "offline"            # never a live model from this script, whatever .env says
+    os.environ["OASIS_EXTRACT"] = "deterministic"
 os.environ["OASIS_DB"] = ":memory:"
-os.environ["OASIS_EXTRACT"] = "deterministic"
 os.environ["OASIS_ANCHOR"] = "local"
 os.environ["OASIS_PASS_STUDENT"], os.environ["OASIS_PASS_PARENT"], os.environ["OASIS_PASS_JUDGE"] = "student-demo", "parent-demo", "judge-demo"
 
