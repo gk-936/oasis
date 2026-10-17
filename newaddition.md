@@ -246,3 +246,10 @@ Reviewed every AI path for failure behaviour: chat labeller (any error returns t
   - **Dead code:** a duplicate unreachable `bedrock` branch in `make_llm` removed.
   - **Proof of graceful degradation:** `tests/test_live_degrades.py` (4): with the token budget spent, a genuine invoice still ends held for signature as offline (money lost 0, risk failure recorded), the chat labeller returns None, explanations and recovery fall back to the template, and the client really carries the short limits.
 - Suite: **1598 passed, 2 skipped**; count updated in five docs. Uncommitted.
+
+### 14.6 Redeploy to the Azure VM (2026-10-18, owner's request, no push)
+
+- Deployed commit `bbf0f2a` (local, not pushed) as `git archive HEAD` (549 files; only `.env.example` and `.env.docker.example` templates, no `.env`, `data/`, keys, `.venv`, `node_modules`) copied to `~/oasis` on the VM. The previous source was saved on the VM as `~/oasis_prev_src.tgz` (excludes `.env.docker` and `data`). `.env.docker` and the data volume were not touched.
+- CRLF endings removed from `docker-compose.yml`, `.dockerignore`, `docker/*` and `scripts/*.sh` on the VM; the Dockerfile still reports mixed CR/LF but the build succeeded.
+- `docker compose up -d --build`: container healthy, uid 10001, new `OASIS_BEDROCK_TIMEOUT` code present. Checks (passcodes read on the VM, never printed): local and public health 200, UI 200, `/docs` 404, state without login 401, student and judge login 200, wrong passcode 401. Memory 380 of 836 MB used, disk 20%.
+- Still offline on the VM (`OASIS_LLM=offline`): live mode not enabled. Tunnel URL unchanged (`prix-act-falling-nicole.trycloudflare.com`).
