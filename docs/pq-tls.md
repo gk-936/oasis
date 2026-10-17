@@ -2,7 +2,7 @@
 
 Status: tested with an OpenSSL client (2026-10-10)
 
-Caddy v2.11.7 (Apache-2.0, go1.26.8; Go >= 1.24 supports X25519MLKEM768) terminates TLS 1.3 in front of uvicorn, configured to offer only `x25519mlkem768`. An OpenSSL 3.5.9 client reported `Negotiated TLS1.3 group: X25519MLKEM768`, and a classical-only X25519 client was refused. Not tested in browsers; the certificate is classical. Evidence, copied verbatim from `eval/reports/pqtls.md` (filtered `openssl s_client` output):
+Caddy v2.11.7 (Apache-2.0, go1.26.8; Go >= 1.24 supports X25519MLKEM768) terminates TLS 1.3 in front of uvicorn, configured to offer only `x25519mlkem768`. An OpenSSL 3.5.9 client reported `Negotiated TLS1.3 group: X25519MLKEM768`, and a classical-only X25519 client was refused. Also tested in a real browser (Chrome 155, 2026-10-17, Go reference server; see `eval/reports/pqtls.md`); the certificate is classical. Evidence, copied verbatim from `eval/reports/pqtls.md` (filtered `openssl s_client` output):
 
 ```
 === groups=X25519MLKEM768

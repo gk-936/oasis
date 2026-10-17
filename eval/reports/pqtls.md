@@ -58,3 +58,14 @@ Output (filtered):
 
 Caveats: this shows the Go TLS stack and the pinned-curve policy negotiate the hybrid group and refuse a classical-only client; it is not
 a run of the Caddy proxy in front of Oasis. Certificate is classical and self-signed; OpenSSL client only; the app itself still serves plain HTTP.
+
+## Browser test on 2026-10-17 (Chrome 155, Go reference server)
+
+Server: the same `tools/caddy/pq-selfcheck` Go server as the 2026-10-16 re-run (TLS 1.3 only, `CurvePreferences = [X25519MLKEM768]`), listening on 127.0.0.1:8444 with a throwaway self-signed certificate; a local OpenSSL 3.5.5 client again negotiated X25519MLKEM768 against it first.
+Client: Google Chrome 155.0.8059.80 (Windows), default settings, no flags. Opened `https://127.0.0.1:8444`, clicked through the certificate warning, read the connection section of the page-info panel:
+
+    Connection - secure connection settings
+    The connection to this site is encrypted and authenticated using TLS 1.3, X25519MLKEM768, and AES_128_GCM.
+    Certificate - missing (net::ERR_CERT_AUTHORITY_INVALID)   [expected: self-signed, not trusted]
+
+Caveats: Chrome on one machine. This is the Go reference server, not the Caddy proxy in front of Oasis. The certificate is classical and self-signed. Hybrid key exchange only.
