@@ -32,28 +32,32 @@ Planner: `deterministic`; run 2026-10-10.
 
 ## Live (Bedrock native tool calling), after the planner prompt change
 
-Planner: `bedrock-tools`; model `us.amazon.nova-pro-v1:0`, fallback `us.amazon.nova-pro-v1:0`; run 2026-10-13; 3 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 3 of 3.
+Planner: `bedrock-tools`; model `us.amazon.nova-pro-v1:0`, fallback `# default: same model (no silent downgrade)`; run 2026-10-18; 7 repeat(s) at temperature 0.3 with a repeat-specific cache salt (`planrep<N>`), so every repeat is a distinct sample; per-plan token cap 22,000. Repeats completed in full: 7 of 7.
 
 | Repeat | Plans run | Valid without fallback | Final plan valid | Mean proposals to valid | Tokens |
 |---|---|---|---|---|---|
 | 1 | 8 of 8 | 8 | 100% | 1.0 | 47,718 |
 | 2 | 8 of 8 | 8 | 100% | 1.0 | 47,753 |
 | 3 | 8 of 8 | 8 | 100% | 1.25 | 54,608 |
+| 4 | 8 of 8 | 8 | 100% | 1.25 | 57,766 |
+| 5 | 8 of 8 | 8 | 100% | 1.38 | 57,947 |
+| 6 | 8 of 8 | 8 | 100% | 1.0 | 48,441 |
+| 7 | 8 of 8 | 8 | 100% | 1.25 | 54,081 |
 
 Valid without fallback across completed repeats (min / mean / max): 8 / 8.0 / 8 of 8 scenarios.
 
-Pooled over every plan run: 24 of 24 valid without fallback (100%); tokens 150,079.
+Pooled over every plan run: 56 of 56 valid without fallback (100%); tokens 368,314.
 
 | Scenario | Valid without fallback | Proposals to valid (per repeat; fb = fell back) | Tokens (per repeat) | First validator errors (per repeat) |
 |---|---|---|---|---|
-| Arrival shortfall (the demo student) | 3 of 3 | 1, 1, 1 | 6,244, 6,458, 6,219 | -; -; - |
-| Tight runway | 3 of 3 | 1, 1, 1 | 6,120, 6,133, 6,515 | -; -; - |
-| SAFE-quota tuition | 3 of 3 | 1, 1, 1 | 5,957, 5,930, 6,059 | -; -; - |
-| Late scholarship | 3 of 3 | 1, 1, 1 | 6,052, 6,022, 6,080 | -; -; - |
-| Parent remitter crossing TCS | 3 of 3 | 1, 1, 1 | 4,717, 4,619, 4,630 | -; -; - |
-| Rate target to protect | 3 of 3 | 1, 1, 1 | 6,286, 6,276, 6,247 | -; -; - |
-| Five obligations | 3 of 3 | 1, 1, 1 | 6,366, 6,408, 6,410 | -; -; - |
-| Urgent deposit | 3 of 3 | 1, 1, 3 | 5,976, 5,907, 12,448 | -; -; route_too_slow |
+| Arrival shortfall (the demo student) | 7 of 7 | 1, 1, 1, 1, 1, 1, 1 | 6,244, 6,458, 6,219, 6,123, 6,250, 6,132, 6,128 | -; -; -; -; -; -; - |
+| Tight runway | 7 of 7 | 1, 1, 1, 1, 1, 1, 1 | 6,120, 6,133, 6,515, 6,274, 6,016, 6,574, 6,051 | -; -; -; -; -; -; - |
+| SAFE-quota tuition | 7 of 7 | 1, 1, 1, 2, 1, 1, 1 | 5,957, 5,930, 6,059, 9,092, 5,993, 5,990, 5,955 | -; -; -; safe_quota_exceeded; -; -; - |
+| Late scholarship | 7 of 7 | 1, 1, 1, 1, 2, 1, 1 | 6,052, 6,022, 6,080, 6,087, 9,099, 6,089, 6,181 | -; -; -; -; insufficient_inr; -; - |
+| Parent remitter crossing TCS | 7 of 7 | 1, 1, 1, 1, 1, 1, 1 | 4,717, 4,619, 4,630, 4,717, 4,724, 4,642, 4,643 | -; -; -; -; -; -; - |
+| Rate target to protect | 7 of 7 | 1, 1, 1, 1, 1, 1, 1 | 6,286, 6,276, 6,247, 6,325, 6,865, 6,636, 6,316 | -; -; -; -; -; -; - |
+| Five obligations | 7 of 7 | 1, 1, 1, 1, 1, 1, 1 | 6,366, 6,408, 6,410, 6,406, 6,521, 6,426, 6,482 | -; -; -; -; -; -; - |
+| Urgent deposit | 7 of 7 | 1, 1, 3, 2, 3, 1, 3 | 5,976, 5,907, 12,448, 12,742, 12,479, 5,952, 12,325 | -; -; route_too_slow; route_too_slow; route_too_slow; -; route_too_slow |
 
 - Invocation 2026-10-11 (repeats 1 and 2; 4 comma-separated keys, daily budget 180,000 tokens per key): new tokens 300,606 (cap 300,000); Groq daily ledger before 0, after 300,606. Live calls 89, cache hits 9, model fallbacks 15 (the last figure counts calls served by the fallback model).
 - Invocation 2026-10-11 (repeat 3 only, `--repeats 3 --repeat-index 3 --token-cap 200000`): new tokens 162,737 (cap 200,000); Groq daily ledger before 300,606, after 463,343. Live calls 50, cache hits 4, model fallbacks 11.
@@ -66,7 +70,11 @@ Pooled over every plan run: 24 of 24 valid without fallback (100%); tokens 150,0
 - Invocation 2026-10-13: new tokens 46,125 (cap 120,000); daily ledger before 494,559, after 540,684. Live calls 21, cache hits 4, model fallbacks 0.
 - Invocation 2026-10-13: new tokens 116,620 (cap 150,000); daily ledger before 540,684, after 657,304. Live calls 50, cache hits 27, model fallbacks 0.
 - Invocation 2026-10-13: new tokens 150,079 (cap 150,000); daily ledger before 657,304, after 807,383. Live calls 71, cache hits 3, model fallbacks 0.
-- Per-key tokens this invocation (1 key(s), by sha256 fingerprint): aws: 150,079; key rotations 0.
+- Invocation 2026-10-18: new tokens 57,766 (cap 70,000); daily ledger before 517,548, after 575,314. Live calls 26, cache hits 1, model fallbacks 0.
+- Invocation 2026-10-18: new tokens 57,947 (cap 70,000); daily ledger before 575,314, after 633,261. Live calls 26, cache hits 1, model fallbacks 0.
+- Invocation 2026-10-18: new tokens 48,441 (cap 70,000); daily ledger before 633,261, after 681,702. Live calls 23, cache hits 1, model fallbacks 0.
+- Invocation 2026-10-18: new tokens 54,081 (cap 70,000); daily ledger before 681,702, after 735,783. Live calls 25, cache hits 1, model fallbacks 0.
+- Per-key tokens this invocation (1 key(s), by sha256 fingerprint): aws: 54,081; key rotations 0.
 
 ## Live, before planner prompt change (2026-10-10, 1 run)
 

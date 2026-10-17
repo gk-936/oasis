@@ -1144,32 +1144,36 @@
   ]
  },
  "live": {
-  "date": "2026-10-13",
+  "date": "2026-10-18",
   "planner": "bedrock-tools",
   "model": "us.amazon.nova-pro-v1:0",
-  "fallback_model": "us.amazon.nova-pro-v1:0",
-  "repeats": 3,
+  "fallback_model": "# default: same model (no silent downgrade)",
+  "repeats": 7,
   "temperature": 0.3,
   "per_plan_cap": 22000,
   "complete_repeats": [
    0,
    1,
-   2
+   2,
+   3,
+   4,
+   5,
+   6
   ],
   "summary": {
-   "scenarios_run": 24,
+   "scenarios_run": 56,
    "valid_plan_rate": 1.0,
-   "valid_without_fallback": 24,
+   "valid_without_fallback": 56,
    "fallbacks": 0,
-   "mean_iterations_to_valid": 1.08,
+   "mean_iterations_to_valid": 1.16,
    "max_iterations_to_valid": 3,
-   "deadlines_met": 60,
-   "deadlines_total": 60,
-   "fees_cny": 15086.6,
-   "bank_fees_cny": 88306.58,
+   "deadlines_met": 140,
+   "deadlines_total": 140,
+   "fees_cny": 35150.51,
+   "bank_fees_cny": 206158.71,
    "fee_reduction_vs_bank_pct": 82.9,
-   "tokens": 150079,
-   "model_calls": 74
+   "tokens": 368314,
+   "model_calls": 178
   },
   "per_repeat": [
    {
@@ -1216,6 +1220,66 @@
     "fee_reduction_vs_bank_pct": 83.0,
     "tokens": 54608,
     "model_calls": 26
+   },
+   {
+    "scenarios_run": 8,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 8,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.25,
+    "max_iterations_to_valid": 2,
+    "deadlines_met": 20,
+    "deadlines_total": 20,
+    "fees_cny": 5007.24,
+    "bank_fees_cny": 29378.73,
+    "fee_reduction_vs_bank_pct": 83.0,
+    "tokens": 57766,
+    "model_calls": 27
+   },
+   {
+    "scenarios_run": 8,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 8,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.38,
+    "max_iterations_to_valid": 3,
+    "deadlines_met": 20,
+    "deadlines_total": 20,
+    "fees_cny": 5024.72,
+    "bank_fees_cny": 29547.38,
+    "fee_reduction_vs_bank_pct": 83.0,
+    "tokens": 57947,
+    "model_calls": 27
+   },
+   {
+    "scenarios_run": 8,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 8,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.0,
+    "max_iterations_to_valid": 1,
+    "deadlines_met": 20,
+    "deadlines_total": 20,
+    "fees_cny": 5007.23,
+    "bank_fees_cny": 29378.68,
+    "fee_reduction_vs_bank_pct": 83.0,
+    "tokens": 48441,
+    "model_calls": 24
+   },
+   {
+    "scenarios_run": 8,
+    "valid_plan_rate": 1.0,
+    "valid_without_fallback": 8,
+    "fallbacks": 0,
+    "mean_iterations_to_valid": 1.25,
+    "max_iterations_to_valid": 3,
+    "deadlines_met": 20,
+    "deadlines_total": 20,
+    "fees_cny": 5024.72,
+    "bank_fees_cny": 29547.34,
+    "fee_reduction_vs_bank_pct": 83.0,
+    "tokens": 54081,
+    "model_calls": 26
    }
   ],
   "spread": {
@@ -1231,13 +1295,13 @@
    },
    "tokens": {
     "min": 47718,
-    "mean": 50026.33,
-    "max": 54608
+    "mean": 52616.29,
+    "max": 57947
    },
    "mean_iterations_to_valid": {
     "min": 1.0,
-    "mean": 1.08,
-    "max": 1.25
+    "mean": 1.16,
+    "max": 1.38
    }
   },
   "results": [
@@ -2872,6 +2936,2198 @@
     "rep": 2,
     "run_date": "2026-10-13",
     "per_plan_cap": 12369
+   },
+   {
+    "scenario": "shortfall",
+    "title": "Arrival shortfall (the demo student)",
+    "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6123,
+    "model_calls": 3,
+    "seconds": 7.56,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 500000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 105542,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Propose plan to fund and pay all obligations due.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6274,
+    "model_calls": 3,
+    "seconds": 7.04,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 604742,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Convert INR to CNY to cover all obligations and pay each obligation on its due date.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "safe_quota_tuition",
+    "title": "SAFE-quota tuition",
+    "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 2,
+    "iterations_to_valid": 2,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 5753320.0,
+    "delivered_cny": 400002.08,
+    "fees_cny": 2523.2,
+    "bank_fees_cny": 16316.19,
+    "saved_vs_bank_cny": 13792.99,
+    "tcs_inr": 95066.4,
+    "warnings": [
+     "safe_quota_near",
+     "tcs"
+    ],
+    "first_errors": [
+     "safe_quota_exceeded"
+    ],
+    "model_proposals": 2,
+    "error_counts": {
+     "safe_quota_exceeded": 1
+    },
+    "proposals": 2,
+    "tokens": 9092,
+    "model_calls": 4,
+    "seconds": 8.59,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 4400000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-01",
+      "action": "convert",
+      "send_inr": 1353320,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-20",
+      "amount_cny": 400000,
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "Adjusted plan to comply with SAFE quota by splitting the conversion into two steps.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "late_scholarship",
+    "title": "Late scholarship",
+    "tests": "Do not count on the missing stipend; fund the gap another way.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 519267.0,
+    "delivered_cny": 36001.03,
+    "fees_cny": 328.97,
+    "bank_fees_cny": 1778.23,
+    "saved_vs_bank_cny": 1449.27,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "late_income_ignored",
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6087,
+    "model_calls": 3,
+    "seconds": 7.33,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 366000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 153267,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Pay rent and tuition with one conversion split between student and parent.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "parent_tcs",
+    "title": "Parent remitter crossing TCS",
+    "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 432992.0,
+    "delivered_cny": 30001.06,
+    "fees_cny": 292.79,
+    "bank_fees_cny": 1538.6,
+    "saved_vs_bank_cny": 1245.81,
+    "tcs_inr": 6659.84,
+    "warnings": [
+     "low_runway",
+     "parent_remitter",
+     "route_not_cheapest",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 4717,
+    "model_calls": 3,
+    "seconds": 5.45,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 50000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 382992,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Cover tuition fee by converting INR to CNY and paying the obligation on time.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "rate_target",
+    "title": "Rate target to protect",
+    "tests": "Keep the INR the rate target needs unconverted.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6325,
+    "model_calls": 3,
+    "seconds": 7.66,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 349285,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 256257,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-25",
+      "amount_cny": 6000,
+      "payee_id": "payee_landlord_chen",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "payee_id": "payee_landlord_chen",
+      "action": "pay",
+      "obligation_id": "obl_rent_1"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "payee_id": "payee_univ_x",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1"
+     }
+    ],
+    "rationale": "Propose plan to pay all obligations with two conversion steps and three payment steps.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "multiple_obligations",
+    "title": "Five obligations",
+    "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 5,
+    "obligations": 5,
+    "conversions": 1,
+    "send_inr": 748535.0,
+    "delivered_cny": 52001.06,
+    "fees_cny": 369.44,
+    "bank_fees_cny": 2247.08,
+    "saved_vs_bank_cny": 1877.63,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6406,
+    "model_calls": 3,
+    "seconds": 6.97,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 748535,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-20",
+      "action": "pay",
+      "obligation_id": "obl_hostel_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 4000.0
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     },
+     {
+      "date": "2026-12-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_2",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     }
+    ],
+    "rationale": "Propose plan to pay all obligations due using one conversion and multiple payments.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "urgent_deadline",
+    "title": "Urgent deposit",
+    "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 2,
+    "iterations_to_valid": 2,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 1,
+    "send_inr": 521046.0,
+    "delivered_cny": 36001.04,
+    "fees_cny": 453.42,
+    "bank_fees_cny": 1615.21,
+    "saved_vs_bank_cny": 1161.79,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [
+     "route_too_slow"
+    ],
+    "model_proposals": 2,
+    "error_counts": {
+     "route_too_slow": 1
+    },
+    "proposals": 2,
+    "tokens": 12742,
+    "model_calls": 5,
+    "seconds": 14.14,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 521046,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-14",
+      "amount_cny": 6000,
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "Convert INR to CNY using a faster route to meet the CNY shortfall and pay the deposit and tuition on time.",
+    "rep": 3,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "shortfall",
+    "title": "Arrival shortfall (the demo student)",
+    "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6250,
+    "model_calls": 3,
+    "seconds": 7.61,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 500000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 105542,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-25",
+      "amount_cny": 6000,
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "action": "pay"
+     }
+    ],
+    "rationale": "Pay all obligations due by converting INR to CNY and making the payments on time.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6016,
+    "model_calls": 3,
+    "seconds": 6.57,
+    "steps": [
+     {
+      "action": "convert",
+      "date": "2026-10-12",
+      "send_inr": 604742,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "action": "pay",
+      "date": "2026-10-25",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-01",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "action": "pay",
+      "date": "2026-11-15",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Propose plan to fund and pay all obligations due.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "safe_quota_tuition",
+    "title": "SAFE-quota tuition",
+    "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 5753305.0,
+    "delivered_cny": 400001.04,
+    "fees_cny": 2523.19,
+    "bank_fees_cny": 16316.14,
+    "saved_vs_bank_cny": 13792.95,
+    "tcs_inr": 95066.1,
+    "warnings": [
+     "safe_quota_near",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 5993,
+    "model_calls": 3,
+    "seconds": 6.61,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 4400000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2027-01-01",
+      "send_inr": 1353305,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2027-01-20",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 400000,
+      "action": "pay"
+     }
+    ],
+    "rationale": "Cover tuition fee by converting INR to CNY in two parts due to SAFE quota.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "late_scholarship",
+    "title": "Late scholarship",
+    "tests": "Do not count on the missing stipend; fund the gap another way.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 2,
+    "iterations_to_valid": 2,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 519282.0,
+    "delivered_cny": 36002.08,
+    "fees_cny": 328.97,
+    "bank_fees_cny": 1778.27,
+    "saved_vs_bank_cny": 1449.31,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "late_income_ignored",
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [
+     "insufficient_inr"
+    ],
+    "model_proposals": 2,
+    "error_counts": {
+     "insufficient_inr": 1
+    },
+    "proposals": 2,
+    "tokens": 9099,
+    "model_calls": 4,
+    "seconds": 9.04,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 366000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 153282,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "Adjust plan to reduce student's conversion amount and add parent-remitted conversion to cover shortfall.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "parent_tcs",
+    "title": "Parent remitter crossing TCS",
+    "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 432992.0,
+    "delivered_cny": 30001.06,
+    "fees_cny": 292.79,
+    "bank_fees_cny": 1538.6,
+    "saved_vs_bank_cny": 1245.81,
+    "tcs_inr": 6659.84,
+    "warnings": [
+     "low_runway",
+     "parent_remitter",
+     "route_not_cheapest",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 4724,
+    "model_calls": 3,
+    "seconds": 5.42,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 50000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 382992,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Convert INR to CNY to cover the tuition fee due on 2026-11-15.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "rate_target",
+    "title": "Rate target to protect",
+    "tests": "Keep the INR the rate target needs unconverted.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6865,
+    "model_calls": 3,
+    "seconds": 10.33,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 349285,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 256257,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Convert INR to CNY on 2026-10-12 and pay all obligations on time.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "multiple_obligations",
+    "title": "Five obligations",
+    "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 5,
+    "obligations": 5,
+    "conversions": 1,
+    "send_inr": 748535.0,
+    "delivered_cny": 52001.06,
+    "fees_cny": 369.44,
+    "bank_fees_cny": 2247.08,
+    "saved_vs_bank_cny": 1877.63,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6521,
+    "model_calls": 3,
+    "seconds": 7.1,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 748535,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-20",
+      "action": "pay",
+      "obligation_id": "obl_hostel_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 4000.0
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     },
+     {
+      "date": "2026-12-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_2",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     }
+    ],
+    "rationale": "Convert INR to CNY on 2026-10-12 to cover all obligations due.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "urgent_deadline",
+    "title": "Urgent deposit",
+    "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 3,
+    "iterations_to_valid": 3,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 521296.0,
+    "delivered_cny": 36001.04,
+    "fees_cny": 470.91,
+    "bank_fees_cny": 1783.87,
+    "saved_vs_bank_cny": 1312.96,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "small_conversion"
+    ],
+    "first_errors": [
+     "route_too_slow"
+    ],
+    "model_proposals": 3,
+    "error_counts": {
+     "route_too_slow": 1,
+     "insufficient_cny": 1
+    },
+    "proposals": 3,
+    "tokens": 12479,
+    "model_calls": 5,
+    "seconds": 12.79,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 518467,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 2829,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-14",
+      "amount_cny": 6000,
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "Adding an additional conversion to cover the shortfall for the tuition payment.",
+    "rep": 4,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "shortfall",
+    "title": "Arrival shortfall (the demo student)",
+    "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6132,
+    "model_calls": 3,
+    "seconds": 7.3,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 500000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 105542,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-25",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000,
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-01",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000,
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-15",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000,
+      "action": "pay"
+     }
+    ],
+    "rationale": "Propose plan to fund and pay all obligations due.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6574,
+    "model_calls": 3,
+    "seconds": 8.61,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 604742,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Convert INR to CNY to pay all obligations on time.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "safe_quota_tuition",
+    "title": "SAFE-quota tuition",
+    "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 5753305.0,
+    "delivered_cny": 400001.04,
+    "fees_cny": 2523.19,
+    "bank_fees_cny": 16316.14,
+    "saved_vs_bank_cny": 13792.95,
+    "tcs_inr": 95066.1,
+    "warnings": [
+     "safe_quota_near",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 5990,
+    "model_calls": 3,
+    "seconds": 6.05,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 4400000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-01",
+      "action": "convert",
+      "send_inr": 1353305,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-20",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 400000.0
+     }
+    ],
+    "rationale": "Cover tuition fee with conversion split to fit SAFE quota.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "late_scholarship",
+    "title": "Late scholarship",
+    "tests": "Do not count on the missing stipend; fund the gap another way.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 519267.0,
+    "delivered_cny": 36001.03,
+    "fees_cny": 328.97,
+    "bank_fees_cny": 1778.23,
+    "saved_vs_bank_cny": 1449.27,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "late_income_ignored",
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6089,
+    "model_calls": 3,
+    "seconds": 7.72,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 366000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 153267,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "payee_id": "payee_landlord_chen",
+      "action": "pay",
+      "obligation_id": "obl_rent_1"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "payee_id": "payee_univ_x",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1"
+     }
+    ],
+    "rationale": "Cover CNY shortfall with split conversion and pay rent and tuition on time.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "parent_tcs",
+    "title": "Parent remitter crossing TCS",
+    "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 432992.0,
+    "delivered_cny": 30001.06,
+    "fees_cny": 292.79,
+    "bank_fees_cny": 1538.6,
+    "saved_vs_bank_cny": 1245.81,
+    "tcs_inr": 6659.84,
+    "warnings": [
+     "low_runway",
+     "parent_remitter",
+     "route_not_cheapest",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 4642,
+    "model_calls": 3,
+    "seconds": 4.9,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 50000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 382992,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Cover tuition fee by converting INR to CNY and paying the obligation on time.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "rate_target",
+    "title": "Rate target to protect",
+    "tests": "Keep the INR the rate target needs unconverted.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6636,
+    "model_calls": 3,
+    "seconds": 8.15,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 349285,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 256257,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Cover all dues by converting INR to CNY and paying each obligation on its due date.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "multiple_obligations",
+    "title": "Five obligations",
+    "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 5,
+    "obligations": 5,
+    "conversions": 1,
+    "send_inr": 748535.0,
+    "delivered_cny": 52001.06,
+    "fees_cny": 369.44,
+    "bank_fees_cny": 2247.08,
+    "saved_vs_bank_cny": 1877.63,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6426,
+    "model_calls": 3,
+    "seconds": 6.87,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 748535,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-20",
+      "action": "pay",
+      "obligation_id": "obl_hostel_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 4000
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     },
+     {
+      "date": "2026-12-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_2",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     }
+    ],
+    "rationale": "Convert INR to CNY and pay all obligations on or before their due dates.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "urgent_deadline",
+    "title": "Urgent deposit",
+    "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 1,
+    "send_inr": 521046.0,
+    "delivered_cny": 36001.04,
+    "fees_cny": 453.42,
+    "bank_fees_cny": 1615.21,
+    "saved_vs_bank_cny": 1161.79,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 5952,
+    "model_calls": 3,
+    "seconds": 6.6,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 521046,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-14",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Convert INR to CNY to cover both obligations and pay them on their due dates.",
+    "rep": 5,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "shortfall",
+    "title": "Arrival shortfall (the demo student)",
+    "tests": "Notice the INR shortfall and propose a parent-remitted conversion instead of leaving tuition unfunded.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6128,
+    "model_calls": 3,
+    "seconds": 6.96,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 500000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 105542,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-25",
+      "amount_cny": 6000,
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "action": "pay"
+     }
+    ],
+    "rationale": "Propose plan to convert INR to CNY and pay all obligations.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "tight_runway",
+    "title": "Tight runway",
+    "tests": "Pick the cheapest on-time route; a costly route (or a split) would leave tuition short.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 1,
+    "send_inr": 604742.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 309.16,
+    "bank_fees_cny": 1847.68,
+    "saved_vs_bank_cny": 1538.52,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "low_runway"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6051,
+    "model_calls": 3,
+    "seconds": 6.84,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 604742,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     }
+    ],
+    "rationale": "Convert INR to CNY to fund all obligations.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "safe_quota_tuition",
+    "title": "SAFE-quota tuition",
+    "tests": "Convert at most the SAFE quota in 2026 and the rest from 1 January, in time for the due date.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 5753305.0,
+    "delivered_cny": 400001.04,
+    "fees_cny": 2523.19,
+    "bank_fees_cny": 16316.14,
+    "saved_vs_bank_cny": 13792.95,
+    "tcs_inr": 95066.1,
+    "warnings": [
+     "safe_quota_near",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 5955,
+    "model_calls": 3,
+    "seconds": 6.02,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 4400000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-01",
+      "action": "convert",
+      "send_inr": 1353305,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2027-01-20",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 400000
+     }
+    ],
+    "rationale": "Cover tuition by converting INR to CNY in two parts due to SAFE quota.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "late_scholarship",
+    "title": "Late scholarship",
+    "tests": "Do not count on the missing stipend; fund the gap another way.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 519267.0,
+    "delivered_cny": 36001.03,
+    "fees_cny": 328.97,
+    "bank_fees_cny": 1778.23,
+    "saved_vs_bank_cny": 1449.27,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "late_income_ignored",
+     "low_runway",
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6181,
+    "model_calls": 3,
+    "seconds": 7.46,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 366000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 153267,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "payee_id": "payee_landlord_chen",
+      "action": "pay",
+      "obligation_id": "obl_rent_1"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "payee_id": "payee_univ_x",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1"
+     }
+    ],
+    "rationale": "Convert INR to CNY using route_inr_cny_3 on 2026-10-12, split between student and parent to keep student's INR above rate-target reserve. Pay rent and tuition on their due dates.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "parent_tcs",
+    "title": "Parent remitter crossing TCS",
+    "tests": "Use the parent as remitter and surface the TCS that crossing INR 10 lakh would trigger.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 1,
+    "obligations": 1,
+    "conversions": 2,
+    "send_inr": 432992.0,
+    "delivered_cny": 30001.06,
+    "fees_cny": 292.79,
+    "bank_fees_cny": 1538.6,
+    "saved_vs_bank_cny": 1245.81,
+    "tcs_inr": 6659.84,
+    "warnings": [
+     "low_runway",
+     "parent_remitter",
+     "route_not_cheapest",
+     "tcs"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 4643,
+    "model_calls": 3,
+    "seconds": 5.3,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 50000,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 382992,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent"
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000
+     }
+    ],
+    "rationale": "Cover tuition fee by converting INR to CNY and paying on due date.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "rate_target",
+    "title": "Rate target to protect",
+    "tests": "Keep the INR the rate target needs unconverted.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 3,
+    "obligations": 3,
+    "conversions": 2,
+    "send_inr": 605542.0,
+    "delivered_cny": 42001.01,
+    "fees_cny": 365.13,
+    "bank_fees_cny": 2017.87,
+    "saved_vs_bank_cny": 1652.74,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "parent_remitter"
+    ],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6316,
+    "model_calls": 3,
+    "seconds": 7.29,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "send_inr": 349285,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-12",
+      "send_inr": 256257,
+      "route_id": "route_inr_cny_3",
+      "remitter": "parent",
+      "action": "convert"
+     },
+     {
+      "date": "2026-10-25",
+      "amount_cny": 6000,
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-01",
+      "amount_cny": 6000,
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "action": "pay"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "action": "pay"
+     }
+    ],
+    "rationale": "Split conversion to keep rate-target reserve; pay all obligations on time.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "multiple_obligations",
+    "title": "Five obligations",
+    "tests": "Batch conversions so fixed fees are paid as few times as possible.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 1,
+    "iterations_to_valid": 1,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 5,
+    "obligations": 5,
+    "conversions": 1,
+    "send_inr": 748535.0,
+    "delivered_cny": 52001.06,
+    "fees_cny": 369.44,
+    "bank_fees_cny": 2247.08,
+    "saved_vs_bank_cny": 1877.63,
+    "tcs_inr": 0.0,
+    "warnings": [],
+    "first_errors": [],
+    "model_proposals": 1,
+    "error_counts": {},
+    "proposals": 1,
+    "tokens": 6482,
+    "model_calls": 3,
+    "seconds": 7.72,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 748535,
+      "route_id": "route_inr_cny_3",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-20",
+      "action": "pay",
+      "obligation_id": "obl_hostel_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 4000.0
+     },
+     {
+      "date": "2026-10-25",
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_1",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     },
+     {
+      "date": "2026-11-15",
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x",
+      "amount_cny": 30000.0
+     },
+     {
+      "date": "2026-12-01",
+      "action": "pay",
+      "obligation_id": "obl_rent_2",
+      "payee_id": "payee_landlord_chen",
+      "amount_cny": 6000.0
+     }
+    ],
+    "rationale": "Convert INR to CNY to cover CNY shortfall and pay all obligations on time.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
+   },
+   {
+    "scenario": "urgent_deadline",
+    "title": "Urgent deposit",
+    "tests": "A 3-day route cannot fund a payment due in 2 days: pick a faster route for that part.",
+    "planner": "bedrock-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "iterations": 3,
+    "iterations_to_valid": 3,
+    "model_valid_without_fallback": true,
+    "deadlines_met": 2,
+    "obligations": 2,
+    "conversions": 2,
+    "send_inr": 521296.0,
+    "delivered_cny": 36001.04,
+    "fees_cny": 470.91,
+    "bank_fees_cny": 1783.87,
+    "saved_vs_bank_cny": 1312.96,
+    "tcs_inr": 0.0,
+    "warnings": [
+     "small_conversion"
+    ],
+    "first_errors": [
+     "route_too_slow"
+    ],
+    "model_proposals": 3,
+    "error_counts": {
+     "route_too_slow": 1,
+     "insufficient_cny": 1
+    },
+    "proposals": 3,
+    "tokens": 12325,
+    "model_calls": 5,
+    "seconds": 12.08,
+    "steps": [
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 518467,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-12",
+      "action": "convert",
+      "send_inr": 2829,
+      "route_id": "route_inr_cny_2",
+      "remitter": "student"
+     },
+     {
+      "date": "2026-10-14",
+      "amount_cny": 6000,
+      "action": "pay",
+      "obligation_id": "obl_deposit_1",
+      "payee_id": "payee_landlord_chen"
+     },
+     {
+      "date": "2026-11-15",
+      "amount_cny": 30000,
+      "action": "pay",
+      "obligation_id": "obl_tuition_1",
+      "payee_id": "payee_univ_x"
+     }
+    ],
+    "rationale": "Pay the deposit and tuition on time using a faster route for conversion and adding an additional conversion to cover the shortfall.",
+    "rep": 6,
+    "run_date": "2026-10-18",
+    "per_plan_cap": 22000
    }
   ],
   "notes": [
@@ -2886,7 +5142,11 @@
    "Invocation 2026-10-13: new tokens 46,125 (cap 120,000); daily ledger before 494,559, after 540,684. Live calls 21, cache hits 4, model fallbacks 0.",
    "Invocation 2026-10-13: new tokens 116,620 (cap 150,000); daily ledger before 540,684, after 657,304. Live calls 50, cache hits 27, model fallbacks 0.",
    "Invocation 2026-10-13: new tokens 150,079 (cap 150,000); daily ledger before 657,304, after 807,383. Live calls 71, cache hits 3, model fallbacks 0.",
-   "Per-key tokens this invocation (1 key(s), by sha256 fingerprint): aws: 150,079; key rotations 0."
+   "Invocation 2026-10-18: new tokens 57,766 (cap 70,000); daily ledger before 517,548, after 575,314. Live calls 26, cache hits 1, model fallbacks 0.",
+   "Invocation 2026-10-18: new tokens 57,947 (cap 70,000); daily ledger before 575,314, after 633,261. Live calls 26, cache hits 1, model fallbacks 0.",
+   "Invocation 2026-10-18: new tokens 48,441 (cap 70,000); daily ledger before 633,261, after 681,702. Live calls 23, cache hits 1, model fallbacks 0.",
+   "Invocation 2026-10-18: new tokens 54,081 (cap 70,000); daily ledger before 681,702, after 735,783. Live calls 25, cache hits 1, model fallbacks 0.",
+   "Per-key tokens this invocation (1 key(s), by sha256 fingerprint): aws: 54,081; key rotations 0."
   ]
  },
  "experiment": {

@@ -2,7 +2,7 @@
 
 Run: 2026-10-18 02:48. Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs.
 
-**Live run** (us.amazon.nova-pro-v1:0, hosted-demo settings: model extraction, escalate-only risk scorer, chat labeller). Tokens spent 61,802 of cap 120,000. The cap was not reached, so every item had the model available. The router was tuned on these sets, so this shows what the live model adds on top of the tuned router, not a fresh first-run score.
+**Live run** (us.amazon.nova-pro-v1:0, hosted-demo settings: model extraction, escalate-only risk scorer, chat labeller). New tokens spent in this run 61,802 of cap 120,000 (answers already on disk from an earlier run cost nothing and are not counted). The cap was not reached, so every item had the model available. The router was tuned on these sets, so this shows what the live model adds on top of the tuned router, not a fresh first-run score.
 
 | Set | Passed |
 |---|---|

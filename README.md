@@ -108,7 +108,7 @@ flowchart LR
 
 The live model is Amazon Nova Pro on Bedrock when enabled; the default is a deterministic offline parser. **No API key is shipped, so live features need your own AWS Bedrock access, and you pay AWS for it.** See [docs/bedrock-setup.md](docs/bedrock-setup.md).
 
-Live, model-only planning with planner v3 (the default) was valid without fallback in 24 of 24 plans (v2: 16 of 24; one model, 3 repeats, small sample). The final plan is always re-checked by the validator.
+Live, model-only planning with planner v3 (the default) was valid without fallback in 24 of 24 plans (v2: 16 of 24; one model, 3 repeats, small sample). The final plan is always re-checked by the validator. On 2026-10-18 four more v3 repeats of the same eight scenarios (live, Nova Pro, same settings) brought the total to 7 repeats: 56 of 56 plans valid without fallback (95% interval 94% to 100%); same scenarios and the same model, so still one model on our own scenarios.
 
 With `OASIS_CHAT_LLM=1` and your own Bedrock access, a model may propose a label for a chat message the keyword router could not place. The label is validated and can never approve or sign.
 - On a held-out live run it labelled 18 of 20 unusual phrasings correctly (1 wrong, 1 left to the help reply).
@@ -180,7 +180,7 @@ We would rather you hear these from us. This is the short list; the full numbere
    - The "hidden" and "blind" sets are AI-written and partly burned by fixes. None is a human red team or an independent audit.
    - The chat tasks are also the team's own, and the chat router is keyword-based: it asks for help on a paraphrase it does not know.
    - No user research with real students has been done.
-4. **Live results are small samples.** One model, 3 repeats of hand-written scenarios, 18 injection runs (0 followed). Not a robustness claim.
+4. **Live results are small samples.** One model (Nova Pro); 24 planner plans, 128 poisoned invoices (0 field changes), 40 genuine invoices (0 false escalations), 98 fresh chat messages and three outside-written sets run once live (identical to the offline scores, so the live labeller adds nothing there). Intervals are wide. Not a robustness claim.
 5. **Regulatory figures are researched, not confirmed by a bank or counsel.** Several come from secondary sources. For example, the India TCS education rate of 2% above INR 10 lakh, per the Finance Act 2026, was read in search snippets because the primary pages were unreadable. Not legal advice, not compliance.
 6. **Credentials are sandbox credentials.** The Trust Pass, Evidence Passport and ZK proofs are not credit scores or bank statements, and the ZK construction is not independently audited.
 7. **Translations are machine-drafted** (Chinese, Tamil, Hindi); English is the default.

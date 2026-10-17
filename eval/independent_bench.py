@@ -175,7 +175,7 @@ def markdown(rep: dict) -> str:
     m = rep["meta"]
     L = ["# Independent set results" + (" (LIVE model)" if m.get("live") else ""), "", f"Run: {m['run']}. {m['caveat']}", ""]
     if m.get("live"):
-        L += [f"**Live run** ({m['model']}, hosted-demo settings: model extraction, escalate-only risk scorer, chat labeller). Tokens spent {m['tokens_spent']:,} of cap {m['cap']:,}. "
+        L += [f"**Live run** ({m['model']}, hosted-demo settings: model extraction, escalate-only risk scorer, chat labeller). New tokens spent in this run {m['tokens_spent']:,} of cap {m['cap']:,} (answers already on disk from an earlier run cost nothing and are not counted). "
               + ("**NOT RELIABLE: the cap was reached, so later items ran on the deterministic path.** " if m["cap_reached"] else "The cap was not reached, so every item had the model available. ")
               + "The router was tuned on these sets, so this shows what the live model adds on top of the tuned router, not a fresh first-run score.", ""]
     L += ["| Set | Passed |", "|---|---|"]
