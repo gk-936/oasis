@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-1598%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-1600%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -122,7 +122,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1598 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1600 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution               # AI-contribution checks (add --live --cap N for the paid part; see docs/results.md)
@@ -163,7 +163,7 @@ All benchmark numbers come from files in `eval/reports/`; the commands that rege
 
 For a public instance run by someone else, keep `OASIS_LLM=offline` and `OASIS_JUDGE_MODE=1`, and put TLS in front. Each judge login gets its own sandbox, and nothing real is at stake.
 
-The **hosted copy we submit runs the live model** (Amazon Nova Pro on Amazon Bedrock) **on the authors' own AWS key**, with a daily cap of 400,000 tokens shared by all judges (`OASIS_BEDROCK_DAILY_TOKENS`), one retry and a 45-second limit per model call. Typed text and uploaded images are sent to Bedrock on the authors' account. If the cap is used up or the model cannot be reached, every AI feature falls back to its deterministic result and the app keeps working offline (`tests/test_live_degrades.py`). The model only proposes; the registry, policy, signed intent and executor still decide, so a fooled model cannot move money. The local judge scripts stay offline unless you pass `--live` with your own key.
+The **hosted copy we submit runs the live model** (Amazon Nova Pro on Amazon Bedrock) **on the authors' own AWS key**, with a **total budget of 3,000,000 tokens for the whole judging period** shared by all judges (`OASIS_BEDROCK_TOTAL_TOKENS`, not per day), one retry and a 45-second limit per model call. Typed text and uploaded images are sent to Bedrock on the authors' account. Once the budget is used up, or if the model cannot be reached, every AI feature falls back to its deterministic result and the app keeps working offline (`tests/test_live_degrades.py`). The model only proposes; the registry, policy, signed intent and executor still decide, so a fooled model cannot move money. The local judge scripts stay offline unless you pass `--live` with your own key.
 
 The image was built and run with Docker 29.1.2 on 2026-10-13: the health check passes, the UI and API are served, a server without explicitly set passcodes is refused, API docs are off, and it runs non-root on a read-only filesystem. The submitted copy runs on an Azure virtual machine (2 vCPU, under 1 GB of memory) behind the compose `tls` profile (Caddy with a Let's Encrypt certificate) on a fixed Azure DNS name, so the address does not change on a restart. It was checked on 2026-10-18 (certificate issued, HTTP redirects to HTTPS, security headers, login and chat). It has not been load-tested or tried from inside China.
 

@@ -59,3 +59,40 @@ def test_bedrock_client_uses_short_per_call_limits(monkeypatch):
     BedrockClient()
     c = seen["config"]
     assert c.read_timeout == config.BEDROCK_TIMEOUT <= 60 and c.connect_timeout == config.BEDROCK_CONNECT_TIMEOUT <= 10
+
+
+def test_a_total_budget_stops_the_model_for_good_across_days_and_restarts(tmp_path, monkeypatch):
+    import json
+    calls = []
+
+    class Counting:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+
+        def _create(self, **kw):
+            calls.append(1)
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))], usage=SimpleNamespace(total_tokens=400))
+
+    monkeypatch.setattr(config, "BEDROCK_TOTAL_TOKEN_BUDGET", 1000)
+    cache = tmp_path / "c"
+    cache.mkdir()
+    (cache / "usage.json").write_text(json.dumps({"2026-10-01": {"tokens": 300, "requests": 1}, "2026-10-02": {"tokens": 300, "requests": 1}}))
+    mk = lambda: LiveLLM(client=Counting(), cache_dir=cache, rpm=0, fallback_model=None, strict=True)        # noqa: E731
+    llm = mk()
+    assert llm._chat("s", "first") == "OK"                          # 600 counted over earlier days + 400 = 1000
+    with pytest.raises(QuotaExhausted, match="total token budget"):
+        llm._chat("s", "second")                                    # a different message: not cached, budget spent
+    assert llm._chat("s", "first") == "OK"                          # a cached answer costs nothing and still works
+    with pytest.raises(QuotaExhausted):
+        mk()._chat("s", "third")                                    # a restart reads the same file: still spent
+    assert len(calls) == 1
+
+
+def test_no_total_budget_means_only_the_daily_limit_applies(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setattr(config, "BEDROCK_TOTAL_TOKEN_BUDGET", 0)
+    (tmp_path / "usage.json").write_text(json.dumps({"2020-01-01": {"tokens": 5_000_000, "requests": 9}}))     # heavy use on an earlier day
+    ok = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **k: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))], usage=SimpleNamespace(total_tokens=10)))))
+    llm = LiveLLM(client=ok, cache_dir=tmp_path, rpm=0, fallback_model=None, strict=True)
+    assert llm._chat("s", "hello") == "OK"

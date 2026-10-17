@@ -24,7 +24,7 @@ The script sets `OASIS_LLM=offline` (a deterministic parser, no network, no key)
 
 ## The hosted copy runs the live model
 
-The **hosted copy we submit runs the live model** (Amazon Nova Pro on Amazon Bedrock) **on the authors' own AWS key**, with a daily cap of 400,000 tokens shared by all judges (`OASIS_BEDROCK_DAILY_TOKENS`), one retry and a 45-second limit per model call. Typed text and uploaded images are sent to Bedrock on the authors' account. If the cap is used up or the model cannot be reached, every AI feature falls back to its deterministic result and the app keeps working offline (`tests/test_live_degrades.py`). The model only proposes; the registry, policy, signed intent and executor still decide, so a fooled model cannot move money. Everything in the paths below also works on the offline scripts.
+The **hosted copy we submit runs the live model** (Amazon Nova Pro on Amazon Bedrock) **on the authors' own AWS key**, with a **total budget of 3,000,000 tokens for the whole judging period** shared by all judges (`OASIS_BEDROCK_TOTAL_TOKENS`, not per day), one retry and a 45-second limit per model call. Typed text and uploaded images are sent to Bedrock on the authors' account. Once the budget is used up, or if the model cannot be reached, every AI feature falls back to its deterministic result and the app keeps working offline (`tests/test_live_degrades.py`). The model only proposes; the registry, policy, signed intent and executor still decide, so a fooled model cannot move money. Everything in the paths below also works on the offline scripts.
 
 ## Optional: see the live AI parts with your own key
 

@@ -642,6 +642,14 @@ class UsageLedger:
     def day(self) -> dict:
         return self.data.setdefault(self.today(), {"tokens": 0, "requests": 0})
 
+    def total(self) -> int:
+        """Tokens counted over every day in the file (re-read, so another instance's calls are included)."""
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = self.data
+        return sum(int(d.get("tokens", 0)) for d in data.values() if isinstance(d, dict))
+
     def key_day(self, fp: str) -> dict:
         return self.day().setdefault("keys", {}).setdefault(fp, {"tokens": 0, "requests": 0})
 
@@ -768,6 +776,8 @@ class LiveLLM(OfflineLLM):
         return _redact(msg)
 
     def _key_budget_ok(self, i: int) -> bool:
+        if config.BEDROCK_TOTAL_TOKEN_BUDGET and self.usage.total() >= config.BEDROCK_TOTAL_TOKEN_BUDGET:
+            return False                     # lifetime budget spent: no key may be used again
         kd = self.usage.key_day(self.fingerprints[i])
         return kd["tokens"] < config.BEDROCK_DAILY_TOKEN_BUDGET
 
@@ -789,6 +799,8 @@ class LiveLLM(OfflineLLM):
             raise RuntimeError("AWS authentication failed earlier in this process")
         if not any(i not in self._bad_keys and self._key_budget_ok(i) for i in range(len(self.clients))):
             d = self.usage.day()
+            if config.BEDROCK_TOTAL_TOKEN_BUDGET and self.usage.total() >= config.BEDROCK_TOTAL_TOKEN_BUDGET:
+                raise QuotaExhausted(f"total token budget of {config.BEDROCK_TOTAL_TOKEN_BUDGET:,} tokens is spent; the AI features now use their deterministic results")
             raise QuotaExhausted(f"daily token budget used on all {len(self.clients)} key(s) "
                                  f"({d['tokens']} tokens, {d['requests']} requests in total)")
 

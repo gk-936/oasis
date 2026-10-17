@@ -43,6 +43,9 @@ FALLBACK_MODEL = os.getenv("OASIS_BEDROCK_FALLBACK_MODEL", AGENT_MODEL)      # d
 # Client-side guard rails: calls per minute, and a daily token cap as a spend guard (about $1 at $0.10 in / $0.50 out per 1M).
 BEDROCK_RPM = float(os.getenv("OASIS_BEDROCK_RPM", "120"))
 BEDROCK_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_BEDROCK_DAILY_TOKENS", "2000000"))
+# lifetime budget (0 = none): once the ledger in the data volume has counted this many tokens over ALL days, the model is never called again
+# and every AI feature uses its deterministic result. A call that starts just under the limit can overshoot it by that one call.
+BEDROCK_TOTAL_TOKEN_BUDGET = int(os.getenv("OASIS_BEDROCK_TOTAL_TOKENS", "0"))
 BEDROCK_MAX_RETRIES = int(os.getenv("OASIS_BEDROCK_MAX_RETRIES", "4"))
 # per-call network limits: one hung model call must not hold the single worker (every judge waits) for minutes
 BEDROCK_TIMEOUT = float(os.getenv("OASIS_BEDROCK_TIMEOUT", "45"))

@@ -156,7 +156,7 @@ The submitted copy runs the live model on the authors' key. To do the same, set 
 | `OASIS_LLM` | `bedrock` | Amazon Nova Pro on Bedrock |
 | `AWS_BEARER_TOKEN_BEDROCK` (or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`) and `AWS_REGION` | your key, `us-east-1` | credentials stay on the host |
 | `OASIS_EXTRACT`, `OASIS_LLM_RISK`, `OASIS_CHAT_LLM` | `llm`, `1`, `1` | model extraction, escalate-only risk scorer, chat labeller |
-| `OASIS_BEDROCK_DAILY_TOKENS` | `400000` | daily spend cap shared by every judge (about USD 1 at most); the usage counter lives in the data volume |
+| `OASIS_BEDROCK_TOTAL_TOKENS` and `OASIS_BEDROCK_DAILY_TOKENS` | `3000000` and `3000000` | lifetime budget shared by every judge (not per day; about USD 3 at most at Nova Pro prices if every token were input, less in practice); the counter lives in the data volume and survives restarts. Keep the daily value at or above the total, or the lower one wins |
 | `OASIS_BEDROCK_MAX_RETRIES` / `OASIS_BEDROCK_TIMEOUT` | `1` / `45` | the server has one worker, so a hung call must not hold every user for minutes |
 
 - When the daily cap is used up or the model is unreachable, each AI feature returns its deterministic result and nothing raises (`tests/test_live_degrades.py`).
