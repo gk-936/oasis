@@ -6,14 +6,18 @@ Oasis runs offline by default. These steps turn on the live model (`OASIS_LLM=be
 
 1. **AWS account and region.** Sign in to the AWS console and pick a region that offers Amazon Nova Pro (for example `us-east-1`).
 2. **Enable the model.** Bedrock console > Model access (or Model catalog) > request access to Amazon Nova Pro. Wait until the status says Access granted.
-3. **Copy the exact model id.** Bedrock console > Model catalog (or Inference profiles) > Amazon Nova Pro. Use the id or inference-profile id it shows, for example `us.amazon.nova-pro-v1:0`. The default in this repo is a guess.
+3. **Copy the exact model id.** Bedrock console > Model catalog (or Inference profiles) > Amazon Nova Pro. Use the id or inference-profile id it shows, for example `us.amazon.nova-pro-v1:0`. The repo default `us.amazon.nova-pro-v1:0` worked in our runs on a US-region account; your account may need a different id or inference profile.
 4. **Give credentials a minimal IAM policy.** Create an IAM user (or SSO role) with only:
    ```json
    {"Version": "2012-10-17", "Statement": [{"Effect": "Allow",
      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"], "Resource": "*"}]}
    ```
    Converse calls need `bedrock:InvokeModel`. With an inference profile, also allow the underlying foundation-model ARNs (Resource `*` covers it while testing).
-5. **Put credentials on this machine** (never in the repo):
+5. **Put credentials on this machine** (never in the repo). Either a Bedrock API key, which boto3 reads from `AWS_BEARER_TOKEN_BEDROCK`, or an IAM access key:
+   ```
+   $env:AWS_BEARER_TOKEN_BEDROCK="..."; $env:AWS_REGION="us-east-1"      # Bedrock API key (needs a recent boto3)
+   ```
+   or:
    ```
    pip install -r requirements.txt            # installs boto3
    aws configure                              # access key, secret, region (needs the AWS CLI), or:

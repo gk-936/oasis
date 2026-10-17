@@ -22,6 +22,20 @@ bash scripts/start_judge.sh        # macOS, Linux, Git Bash
 
 The script sets `OASIS_LLM=offline` (a deterministic parser, no network, no key), `OASIS_RATES=mock` (repeatable numbers; the hosted Docker image uses real ECB rates instead, fetched by the server), creates a **fresh sandbox database** under `data/judge_sandbox/` (deleted and recreated at every start), serves the existing UI and prints the URL (default http://127.0.0.1:8000; options `-Port` / `--port`, `-DataDir` / `--data-dir`) and the logins. It contains no secrets.
 
+## Optional: see the live AI parts with your own key
+
+Everything above works offline with no key, and chat never needs a model. If you want to see the model-driven parts (reading an invoice image, model extraction, the payment planner, the escalate-only risk scorer), you can run the same sandbox against Amazon Nova Pro on Amazon Bedrock with **your own** AWS credentials:
+
+```
+# PowerShell
+$env:AWS_BEARER_TOKEN_BEDROCK="<your Bedrock API key>"; $env:AWS_REGION="us-east-1"
+scripts\start_judge.ps1 -Live
+# macOS, Linux, Git Bash
+AWS_BEARER_TOKEN_BEDROCK="<your Bedrock API key>" AWS_REGION=us-east-1 bash scripts/start_judge.sh --live
+```
+
+(IAM keys work too: set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` instead.) The authors do not provide a key, Oasis never stores yours, and you pay AWS for the tokens. A daily cap of 200,000 tokens is on by default (`OASIS_BEDROCK_DAILY_TOKENS` changes it). In live mode, typed text and uploaded images are sent to Bedrock on your account. The model only proposes: the same deterministic policy, signed-intent and executor checks decide, so the attacks in the tasks below are stopped the same way. Model access for Amazon Nova Pro must be enabled in your account first ([docs/bedrock-setup.md](docs/bedrock-setup.md)). Recorded live results, with their limits, are in `eval/reports/benchmark_live.md` and the Execution Evidence PDF.
+
 ## Log in
 
 Open the URL. The login screen offers three roles. The passcodes are **not in this repository**: the organisers send them to you separately (they are random, one per role). Every judge login gets its own private sandbox, so nothing you do affects another judge:
