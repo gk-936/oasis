@@ -161,9 +161,11 @@ All benchmark numbers come from files in `eval/reports/`; the commands that rege
 
 `docker compose up -d --build` runs one single-worker container with the offline model and live ECB rates, as non-root on a read-only filesystem ([docs/deployment-docker.md](docs/deployment-docker.md)).
 
-For a public judge instance, keep `OASIS_LLM=offline` and `OASIS_JUDGE_MODE=1`, and put TLS in front. Each judge login gets its own sandbox, and nothing real is at stake.
+For a public instance run by someone else, keep `OASIS_LLM=offline` and `OASIS_JUDGE_MODE=1`, and put TLS in front. Each judge login gets its own sandbox, and nothing real is at stake.
 
-The image was built and run with Docker 29.1.2 on 2026-10-13: the health check passes, the UI and API are served, a server without explicitly set passcodes is refused, API docs are off, and it runs non-root on a read-only filesystem. It has not been deployed to a public host or load-tested, and the Caddy TLS profile is untested.
+The **hosted copy we submit runs the live model** (Amazon Nova Pro on Amazon Bedrock) **on the authors' own AWS key**, with a daily cap of 400,000 tokens shared by all judges (`OASIS_BEDROCK_DAILY_TOKENS`), one retry and a 45-second limit per model call. Typed text and uploaded images are sent to Bedrock on the authors' account. If the cap is used up or the model cannot be reached, every AI feature falls back to its deterministic result and the app keeps working offline (`tests/test_live_degrades.py`). The model only proposes; the registry, policy, signed intent and executor still decide, so a fooled model cannot move money. The local judge scripts stay offline unless you pass `--live` with your own key.
+
+The image was built and run with Docker 29.1.2 on 2026-10-13: the health check passes, the UI and API are served, a server without explicitly set passcodes is refused, API docs are off, and it runs non-root on a read-only filesystem. The submitted copy runs on an Azure virtual machine (2 vCPU, under 1 GB of memory) behind a Cloudflare quick tunnel, so its address can change if the tunnel restarts. It has not been load-tested, and the Caddy TLS profile is untested.
 
 The executor reaches the payment layer through a three-call `PaymentRail` interface, so a licensed partner's API could replace the mock ledger. What else that would take is in [docs/path-to-production.md](docs/path-to-production.md). Today nothing real can be paid.
 

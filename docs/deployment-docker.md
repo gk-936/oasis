@@ -53,7 +53,7 @@ Set secrets at run time, never in the image. The full annotated list is `.env.do
 | `OASIS_PASS_STUDENT` / `_PARENT` / `_JUDGE` | none (required) | refused if unset, default or under 8 chars |
 | `OASIS_KEY_PASSPHRASE` | unset (warning) | wraps the key files; needed at every start |
 | `OASIS_JUDGE_MODE` | `1` | `0` for personal use (`/docs` on, looser limits) |
-| `OASIS_LLM` / AWS credentials | `offline` / unset | live mode sends text to Amazon Bedrock; not for a public instance |
+| `OASIS_LLM` / AWS credentials | `offline` / unset | live mode sends text to Amazon Bedrock on your account. The authors' hosted demo sets `bedrock` with an API key (`AWS_BEARER_TOKEN_BEDROCK`, `AWS_ACCESS_KEY_ID` or a role all pass the entrypoint check), see section 6 |
 | `OASIS_RATES` / `OASIS_ANCHOR` | `live` / `local` | `live` fetches real ECB rates server-side (cached; MOCK fallback if unreachable); set `mock` for repeatable demo numbers |
 | `OASIS_HOSTED` | `1` | `0` skips the entrypoint's hosted-mode checks (the app's own checks still apply) |
 | `PORT` | `8000` | injected by many hosts |
@@ -100,7 +100,7 @@ General rules whichever you pick: 1 replica, 1 worker, the platform's `PORT` is 
 
 - [ ] Custom random passcodes (8+ chars, different per role); none is built in.
 - [ ] `OASIS_KEY_PASSPHRASE` set **before first start** (a plaintext key file is not rewrapped by adding it later; for a fresh sandbox, wipe the volume first).
-- [ ] Keep `OASIS_LLM=offline`. Live mode sends strangers' input to Bedrock on your AWS account and bill.
+- [ ] Default: keep `OASIS_LLM=offline`. Live mode sends strangers' input to Bedrock on your AWS account and bill. Only turn it on with the limits in section 6.
 - [ ] HTTPS only; cookie is `Secure`; HTTP redirects to HTTPS (Caddy does this).
 - [ ] `OASIS_JUDGE_MODE=1`, so `/docs`, `/redoc` and `/openapi.json` return 404 and limits are tighter.
 - [ ] `FORWARDED_ALLOW_IPS` is the proxy only, never `*` on an exposed port. Container port not published to the internet directly.
@@ -146,3 +146,20 @@ Docker Desktop keeps its images, containers and volumes in a virtual disk image 
 Verified without Docker (2026-10-12): `tests/test_container_config.py` (Dockerfile non-root user, healthcheck, `EXPOSE 8000`, `PORT`, one worker, no `.env`/`data` copied, `.dockerignore`, compose volume and hardening, no real secrets, `bash -n` on the entrypoint, `.env.docker.example` clean, plus the cookie/Origin switches); `dockerfile-parse` parsed the Dockerfile; the exact COPY set was assembled in a temporary tree, the image's environment and the exact entrypoint and `CMD` ran from a clean Python 3.10 virtualenv (pip cache on D:). Result: refuses default, short and partly-default passcodes with a clear message; the app itself also refuses defaults in judge mode; with custom passcodes it served `/api/health`, the UI index and its three assets, hid `/docs`, accepted a red-team attempt, took a student intake to held, a signed approval to paid, the audit chain verified, `/api/benchmark` and the scripted demo worked (so the copied `eval/` files suffice); after a restart the trust fingerprint was identical and the registered approver key persisted; the database contained no plaintext payee and the three key files were passphrase-wrapped; the code directory was not written to; no `.env`, key or database file existed in the copied tree; `X-Forwarded-Proto: https` produced a `Secure` cookie and a trusted `X-Forwarded-Host` passed the Origin check while an untrusted or foreign origin got 403.
 
 **Not verified (Docker not run):** `docker build` itself (the Linux wheels for the pinned requirements and the apt-free slim base), the image size, the `HEALTHCHECK` and read-only root filesystem under a real container runtime, volume ownership on first run, the compose file's `healthcheck`/`depends_on` interplay, the `tls` profile (Caddy, certificate issuance, and the Go version for X25519MLKEM768), uvicorn's CIDR handling in `--forwarded-allow-ips` on the pinned uvicorn, and every hosting-provider note above.
+
+## 6. Running the hosted demo with the live model (the authors' choice)
+
+The submitted copy runs the live model on the authors' key. To do the same, set these in `.env.docker` (never in the image, never in git; file mode 600) and restart:
+
+| Variable | Value | Why |
+|---|---|---|
+| `OASIS_LLM` | `bedrock` | Amazon Nova Pro on Bedrock |
+| `AWS_BEARER_TOKEN_BEDROCK` (or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`) and `AWS_REGION` | your key, `us-east-1` | credentials stay on the host |
+| `OASIS_EXTRACT`, `OASIS_LLM_RISK`, `OASIS_CHAT_LLM` | `llm`, `1`, `1` | model extraction, escalate-only risk scorer, chat labeller |
+| `OASIS_BEDROCK_DAILY_TOKENS` | `400000` | daily spend cap shared by every judge (about USD 1 at most); the usage counter lives in the data volume |
+| `OASIS_BEDROCK_MAX_RETRIES` / `OASIS_BEDROCK_TIMEOUT` | `1` / `45` | the server has one worker, so a hung call must not hold every user for minutes |
+
+- When the daily cap is used up or the model is unreachable, each AI feature returns its deterministic result and nothing raises (`tests/test_live_degrades.py`).
+- Typed text and uploaded images go to Bedrock on your account. Say so to judges (the judge guide does).
+- Put an AWS budget alert on the account, use a key scoped to Bedrock invoke, and revoke the key after judging.
+- The entrypoint accepts a Bedrock API key (fixed 2026-10-18; before that it only accepted access-key pairs, profiles or roles).

@@ -31,4 +31,4 @@ Oasis runs offline by default. These steps turn on the live model (`OASIS_LLM=be
    ```
    Errors name the cause: `AccessDeniedException` (model access or IAM), `ResourceNotFoundException` / "model identifier is invalid" (wrong id or region), `NoCredentialsError` (step 5).
 7. **Cap the spend.** `OASIS_BEDROCK_DAILY_TOKENS` (default 2,000,000, about $1 at $0.10 in / $0.50 out per 1M tokens) stops the app after that many tokens a day. Also add an AWS Budgets alert (Billing > Budgets) at your test budget.
-8. **Run the app live:** `OASIS_LLM=bedrock OASIS_EXTRACT=llm uvicorn oasis.api.main:app`. Keep `OASIS_LLM=offline` for tests and any public instance: live mode sends typed text to Bedrock on your account.
+8. **Run the app live:** `OASIS_LLM=bedrock OASIS_EXTRACT=llm uvicorn oasis.api.main:app`. Keep `OASIS_LLM=offline` for tests and for any public instance you do not want to pay for: live mode sends typed text to Bedrock on your account. The authors' hosted demo runs live with a daily token cap and an offline fallback (see docs/deployment-docker.md section 6).
