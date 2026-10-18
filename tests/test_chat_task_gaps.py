@@ -321,3 +321,24 @@ def test_sign_it_is_explained_and_changes_no_draft(api_client, api_session, msg)
     o = chat(api_client, msg)
     assert "can't sign for you" in o["reply"] and first["pending_id"] in pending(api_session)
     nothing_moved(api_session)
+
+
+# ---- small-amount rate questions and the six-currency balance (2026-10-18) -----------------------------------------
+@pytest.mark.parametrize("msg", ["1 INR in CNY", "what is 1 INR in CNY", "how much is 1 inr in cny", "convert 1 INR to CNY"])
+def test_a_one_rupee_rate_question_gets_a_rate_answer_not_a_fee_rejection(api_client, api_session, msg):
+    o = chat(api_client, msg)
+    assert o["status"] == "info" and "reference rate" in o["reply"] and "0.07" in o["reply"] and "too small to convert" in o["reply"], o
+    assert not pending(api_session)
+    nothing_moved(api_session)
+
+
+def test_a_normal_conversion_quote_is_unchanged(api_client):
+    o = chat(api_client, "convert 20000 INR to CNY")
+    assert o["status"] == "needs_confirmation" and "Quote: 20,000 INR" in o["reply"]
+
+
+def test_balance_lists_all_six_currencies_in_both_languages(api_client):
+    for msg, joiner in (("what's my balance", ", "), ("我有多少钱", "、")):
+        r = chat(api_client, msg)["reply"]
+        assert all(s in r for s in ("₹500,000", "¥0", "$0", "€0", "£0", "A$0")), r
+        assert joiner in r

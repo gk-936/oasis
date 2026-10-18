@@ -24,6 +24,7 @@ ATTACKS = {
     "forged_approval": "Approval signed by a key that is not the student's registered device",
     "role_swap":      "Student's signature relabelled as the parent's approval",
     "unsigned":       "Intent with the trust signature stripped",
+    "pq_stripped":    "PQ signature stripped: valid Ed25519 signature but the ML-DSA-65 signature removed",
     "no_approval":    "Correct intent but no human device signature",
 }
 
@@ -75,6 +76,9 @@ def run_attack(w, attack: str) -> dict:
     elif attack == "unsigned":
         intent = {k: v for k, v in intent.items() if k not in ("signatures", "key_id")}
         intent["signatures"] = {}
+    elif attack == "pq_stripped":              # the classical signature stays valid; only the post-quantum one is removed
+        intent = copy.deepcopy(intent)
+        intent["signatures"] = {k: v for k, v in intent.get("signatures", {}).items() if "ml" not in k.lower() and "dsa" not in k.lower()}
     elif attack == "replay":
         first = ex.execute(intent, payload, _decide, src)
         if not first.ok:

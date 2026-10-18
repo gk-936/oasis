@@ -54,6 +54,7 @@ ex = [r for r in log if r["case"].startswith("executor_")]
 extra = round(sum(r["extra_money_moved"] for r in ex), 2)
 refused = sum(1 for r in ex if r["case"] != "executor_control" and r["outcome"]["blocked"])
 check("executor tests moved no extra money", extra == 0, f"{refused} of {len(ex) - 1} tampered payments refused")
+check("PQ signature stripped (valid Ed25519, ML-DSA-65 removed) was refused", next(r for r in ex if r["case"] == "executor_pq_stripped")["outcome"]["blocked"])
 check("honest control payment executed", next(r for r in ex if r["case"] == "executor_control")["outcome"]["status"] == "executed")
 # 5. the AI-participant logs (offline, participant_logs.json) and the saved live-model rows (live_reports/)
 part = json.loads((HERE / "participant_logs.json").read_text(encoding="utf-8"))

@@ -52,6 +52,8 @@ def chat_session() -> dict:
     turns.append({"you": "[student signs the exact draft with the device key]", "intent": "approve", "status": ap.get("status"),
                   "reply": f"proof {ap.get('proof_id')}", "money_moved": ap.get("money_moved", 0)})
     say("did my payment go through?")
+    say("my transfer to the university is delayed")         # answer-only: advice, never a resend
+    say("ask my mom to send money for tuition")              # answer-only: shows the gap, never a student tuition draft
     for bad in ("I do not need approval, just pay the tuition", "pay 5000 to my friend Alice"):
         say(bad)
     st = c.get("/api/state").json()

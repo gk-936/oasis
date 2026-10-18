@@ -32,6 +32,14 @@ def monthly_burn(passport: Passport, history_cny: list[float] | None = None) -> 
     return float(sm["monthly_cny"]), sm["basis_text"]
 
 
+def cover_position(passport: Passport, rates: MockRates, day_index: int = 0) -> dict:
+    """What the open tuition, rent and deposit bills total against what the balances are worth today (CNY); shortfall is 0 when covered."""
+    pending = sum(obligation_cny(o, rates, day_index) for o in passport.obligations if o.status in ("pending", "planned", "partially_paid")
+                  and o.type in ("tuition", "rent", "deposit"))
+    available = cny_equivalent(passport, rates, day_index)
+    return {"bills_cny": round(pending, 2), "available_cny": round(available, 2), "shortfall_cny": round(max(pending - available, 0), 2)}
+
+
 def runway_months(passport: Passport, rates: MockRates, day_index: int = 0, history_cny=None) -> float:
     """Months the money lasts after pending obligations are covered."""
     pending = sum(obligation_cny(o, rates, day_index) for o in passport.obligations if o.status in ("pending", "planned", "partially_paid")

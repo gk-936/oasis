@@ -16,10 +16,13 @@ from collections import OrderedDict
 from ..mock.fx import CURRENCIES, FxError, mid as fx_mid, quote as fx_quote, table_for
 from ..mock.rates import ROUTES
 from ..passport import currency as currency_mod
-from ..planning import spending
-from ..planning.forecast import monthly_burn, runway_months, triggers
+from ..flightpath import core as fpath
+from ..planning import fxplan, spending
+from ..planning import validator as plan_validator
+from ..planning.forecast import cover_position, monthly_burn, runway_months, triggers
 from ..planning.routes import quote_routes, rank
 from ..proof import credit_growth as cg
+from ..trust import corridor
 from ..market import provenance
 from . import localize as loc
 from . import chat_llm, nl_extract, nlu
@@ -490,7 +493,7 @@ def _pay_obligation(S, run_intake, it: ChatIntent, message: str, lang: str, d: d
 
 
 _INFO_KINDS = (nlu.BALANCE, nlu.OBLIGATIONS, nlu.RATE, nlu.ROUTES, nlu.RUNWAY, nlu.STATUS, nlu.PLAN, nlu.PROOF, nlu.CREDIT,
-               nlu.EXPLAIN, nlu.HELP, nlu.SPENDING)
+               nlu.EXPLAIN, nlu.HELP, nlu.SPENDING, *nlu.TOPIC_KINDS)
 
 
 def _continue(S, run_intake, it: ChatIntent, message: str, lang: str, d: dict, secrets=None) -> dict | None:
@@ -776,12 +779,11 @@ def _undo(S, lang: str, d: dict, secrets=None) -> dict:
 
 # ------------------------------------------------------------------ read-only answers (F1, F7)
 def _balance(S, lang: str, secrets=None) -> dict:
+    """All six wallet currencies, zero balances included, so the student sees what the wallet can hold."""
     pp = S.world.passport
-    parts = []
-    for b in pp.balances:
-        sym = {"INR": "₹", "CNY": "¥"}.get(b.currency)
-        parts.append(f"{sym}{b.amount:,.0f}" if sym else f"{b.currency} {b.amount:,.0f}")
-    t = ("您有 " + " 和 ".join(parts) + "。（演示数据，MOCK）") if lang == "zh" else ("You have " + " and ".join(parts) + ". (MOCK sandbox balances)")
+    sym = {"INR": "₹", "CNY": "¥", "USD": "$", "EUR": "€", "GBP": "£", "AUD": "A$"}
+    parts = [f"{sym[c]}{pp.balance(c):,.0f}" for c in CURRENCIES]
+    t = ("您有 " + "、".join(parts) + "。（演示数据，MOCK）") if lang == "zh" else ("You have " + ", ".join(parts[:-1]) + " and " + parts[-1] + ". (MOCK sandbox balances)")
     return _result("balance", t, secrets)
 
 
@@ -883,14 +885,22 @@ def _runway(S, lang: str, secrets=None, message: str = "") -> dict:
     pp = w.passport
     m = runway_months(pp, w.rates, w.day_index)
     burn, _ = monthly_burn(pp)
+    pos = cover_position(pp, w.rates, w.day_index)
     alerts = triggers(pp, w.rates, w.today, w.day_index)
+    if pos["shortfall_cny"]:
+        alerts = [x for x in alerts if x.kind != "low_runway"]        # the shortfall sentence already says it; "0.0 months" adds nothing
     if lang == "zh":
-        t = (f"付清应付款项后，您的资金可维持约 {m:.1f} 个月（按每月约 ¥{burn:,.0f} 的开销）。" +
-             ("目前有提醒：" + " ".join(a.message for a in alerts) if alerts else "目前没有提醒。") + "这是估算，不是保证。")
+        lead = (f"您的待付账单共 ¥{pos['bills_cny']:,.0f}，账户余额按今日汇率约合 ¥{pos['available_cny']:,.0f}，缺口约 ¥{pos['shortfall_cny']:,.0f}。我可以帮您制定计划。"
+                if pos["shortfall_cny"] else f"付清应付款项后，您的资金可维持约 {m:.1f} 个月（按每月约 ¥{burn:,.0f} 的开销）。")
+        t = (lead + ("目前有提醒：" + " ".join(a.message for a in alerts) if alerts else "目前没有提醒。") + "这是估算，不是保证。")
     else:
-        short = " You may run short; I can build a plan." if m < pp.rules.runway_alert_months else ""
-        t = (f"After your open bills, your money lasts about {m:.1f} month(s) at roughly CNY {burn:,.0f} a month." + short +
-             (" Alerts: " + " ".join(a.message for a in alerts) if alerts else " No alerts.") + " This is an estimate, not a guarantee.")
+        if pos["shortfall_cny"]:
+            lead = (f"Your open bills total CNY {pos['bills_cny']:,.0f} and your balances are worth about CNY {pos['available_cny']:,.0f} at today's MOCK rate, "
+                    f"so you are about CNY {pos['shortfall_cny']:,.0f} short. I can build a plan.")
+        else:
+            short = " You may run short; I can build a plan." if m < pp.rules.runway_alert_months else ""
+            lead = f"After your open bills, your money lasts about {m:.1f} months at roughly CNY {burn:,.0f} a month." + short
+        t = (lead + (" Alerts: " + " ".join(a.message for a in alerts) if alerts else " No alerts.") + " This is an estimate, not a guarantee.")
     typ = nl_extract.purpose_in_text(message)
     need = sum(o.remaining for o in _open_obligations(w, typ)) if typ else 0
     if need:                                  # "do I have enough to cover tuition?": compare the CNY balance with that bill
@@ -933,6 +943,16 @@ def _convert(S, it: ChatIntent, lang: str, d: dict, secrets=None, message: str =
     try:
         q = fx_quote(float(amt), src, dst, table_for(w.rates, w.day_index))
     except FxError as e:
+        if "fixed fee" in str(e):           # "1 INR in CNY": a small amount is a rate question, so answer it, and say why no conversion is quoted
+            try:
+                r = fx_mid(src, dst, table_for(w.rates, w.day_index))
+            except FxError:
+                return _result("convert", str(e), secrets, status="rejected")
+            ind = float(amt) * r
+            t = (f"按参考汇率，{float(amt):,.4g} {src} 约合 {ind:,.4f} {dst}（MOCK，不含费用，不是报价）。金额太小，无法兑换：{e}。" if lang == "zh" else
+                 f"At the reference rate, {float(amt):,.4g} {src} is about {ind:,.4f} {dst} (MOCK mid-market, no fees, not a quote). "
+                 f"That is too small to convert: {e}.")
+            return _result("convert", t, secrets, status="info")
         return _result("convert", str(e), secrets, status="rejected")
     cny_equiv = q.received if dst == "CNY" else q.amount
     lim = w.passport.rules.tier1_auto_convert_cny
@@ -1128,6 +1148,112 @@ _HELP_ZH = ("我可以：付账单（“交房租”“交学费”）、显示�
             "设定汇率目标（“convert 2000 when the rate reaches 0.0700”）、检查粘贴的发票（或上传的截图、.eml 邮件）、取消或修改草稿，以及解释付款为何被拦截。付款最终一定需要您的签名。")
 
 
+# ------------------------------------------------------------------ sub-topic questions: answer-only, never a draft or a move of money
+_ISSUE_KIND = (("rejected", re.compile(r"reject|declin|bounc|return|came back|拒|退回|失败", re.I)),
+               ("short", re.compile(r"less|short|smaller|only part|少", re.I)),
+               ("delayed", re.compile(r"delay|not arrived|n'?t arrived|never arrived|not reach|n'?t reach|not credited|n'?t come|missing|没到|未到账|延迟", re.I)))
+
+
+def _transfer_issue(S, it: ChatIntent, lang: str, secrets=None) -> dict:
+    """A late, short or rejected transfer. Advice only: nothing is resent, and a resend is never offered."""
+    w = S.world
+    wording = it.slots.get("wording") or ""
+    if S.journeys:
+        j = list(S.journeys.values())[-1]
+        f = fpath.reconcile(j, w.day_index)
+        a = fpath.advise(j, f)
+        fpath.audit_event(w.audit, j, f, a)
+        c = fpath.consequences(j, f, w.day_index)
+        text = w.llm.explain("flightpath", {"text": c["text"], "facts": c["facts"], "options": c["options"]}, lang)    # the same rewrite guard as the FlightPath tab
+        t = (f"您最近一笔汇款（{j.id}）的情况：{text} 我没有重新发送任何款项。详情见“FlightPath”标签。" if lang == "zh" else
+             f"About your latest transfer ({j.id}): {text} I have not sent anything again. See the FlightPath tab for the full picture.")
+        return _result(nlu.TRANSFER_ISSUE, t, secrets, status="info", resend_offered=False, journey=j.id)
+    kind = next((k for k, rx in _ISSUE_KIND if rx.search(wording)), "tracking")
+    if lang == "zh":
+        head = {"delayed": "汇款迟迟未到：", "short": "到账金额少于汇出金额：", "rejected": "汇款被退回或被拒：", "tracking": "追踪汇款："}[kind]
+        body = {"delayed": "先向汇款服务商查询状态，不要重复汇款，否则同一笔账单可能被付两次。",
+                "short": "先向汇款服务商索取扣费明细；补差额要作为一笔新的付款，经您签名后才会发出。",
+                "rejected": "请等退款确认之后再考虑新的付款，退款与新付款同时到账会造成重复支付。",
+                "tracking": "我可以按 FlightPath 的汇款进度帮您判断是否延迟、少收或被拒。"}[kind]
+        t = f"{head}{body} 我没有重新发送任何款项，也不会替您重发。请在“FlightPath”标签里添加这笔汇款查看进度（演示数据，MOCK）。"
+    else:
+        head = {"delayed": "A transfer that is late:", "short": "A transfer that arrived short:", "rejected": "A transfer that was rejected:", "tracking": "Tracking a transfer:"}[kind]
+        body = {"delayed": "ask the provider for its status first, and do not send it again, because the same bill could be paid twice.",
+                "short": "ask the provider for the deduction breakdown; a top-up is a new payment that only goes out after you sign it.",
+                "rejected": "wait for the refund to be confirmed before any new payment; a refund and a new payment landing together would pay twice.",
+                "tracking": "add the transfer in the FlightPath tab and I can tell whether it is late, short or rejected."}[kind]
+        t = f"{head} {body} I have not resent anything and will not resend it for you. Open the FlightPath tab to follow it (MOCK rails)."
+    return _result(nlu.TRANSFER_ISSUE, t, secrets, status="info", resend_offered=False)
+
+
+def _fx_bill(S, it: ChatIntent, message: str, lang: str, secrets=None) -> dict:
+    w = S.world
+    if fxplan.has_foreign(w):
+        t = ("您有外币账单。请打开“计划 → 外币计划”：每一笔美元或欧元付款都必须由您本人签名（规则 R18/R19），我不会自动付款。" if lang == "zh" else
+             "You have a foreign-currency bill. Open Plan, then FX plan: every USD or EUR payment needs your own signature (rules R18 and R19), and I never pay one on my own.")
+        return _result(nlu.FX_BILL, t, secrets, status="info")
+    a = nlu._amount(message, bare=True)
+    cur = next((c for c in _mentioned(message) if c in ("USD", "EUR", "GBP", "AUD")), None)        # "200 dollars" reads as a bare number, so the currency comes from the words
+    ind = ""
+    if a and cur:
+        try:
+            ind = (f" 按参考汇率，{a[0]:,.0f} {cur} 约合 ₹{a[0] * fx_mid(cur, 'INR', table_for(w.rates, w.day_index)):,.0f}（MOCK，不含费用）。" if lang == "zh" else
+                   f" At the reference rate, {a[0]:,.0f} {cur} is about ₹{a[0] * fx_mid(cur, 'INR', table_for(w.rates, w.day_index)):,.0f} (MOCK, before fees).")
+        except FxError:
+            ind = ""
+    t = (("外币账单（美元或欧元）要先登记为账单，再在“计划 → 外币计划”里安排；每一笔外币付款都需要您的签名。" + ind) if lang == "zh" else
+         ("A bill in USD or EUR is added as a bill first and then planned under Plan, then FX plan. Every foreign-currency payment needs your signature." + ind))
+    return _result(nlu.FX_BILL, t, secrets, status="info")
+
+
+def _parent_request(S, it: ChatIntent, message: str, lang: str, secrets=None) -> dict:
+    """Asking a parent for money: show the gap and the safe way. The assistant cannot pay or approve for the parent."""
+    w = S.world
+    typ = nl_extract.purpose_in_text(message)
+    bills = _open_obligations(w, typ) or _open_obligations(w)
+    need = sum(o.remaining for o in bills)
+    bal = w.passport.balance("CNY")
+    gap = max(need - bal, 0.0)
+    label = (_OBL_ZH.get(typ, typ) if lang == "zh" else typ) if typ and _open_obligations(w, typ) else None
+    if lang == "zh":
+        t = (f"您{('的' + label) if label else '的待付账单'}共 {money(need, lang)}，您的人民币余额 {money(bal, lang)}，缺口 {money(gap, lang)}。"
+             "我无法替您的父母付款或批准。可以说“制定学期计划”：计划会包含一笔需要父母同意的汇款，由父母在自己的会话里签名，并计入父母的 LRS/TCS 额度。")
+    else:
+        t = (f"Your open {label or 'bills'} {'totals' if label else 'total'} {money(need, lang)} and your CNY balance is {money(bal, lang)}, a gap of {money(gap, lang)}. "
+             "I can't pay or approve anything for your parent. Say 'plan my semester': the plan includes a parent remittance that your parent consents to "
+             "and signs in their own session, and it counts against their LRS and TCS.")
+    return _result(nlu.PARENT_REQUEST, t, secrets, status="info")
+
+
+def _quota(S, lang: str, secrets=None) -> dict:
+    w = S.world
+    lim = plan_validator.lrs_limit_inr()
+    used = {r: w.passport.remitted_inr_fy.get(r, 0.0) for r in plan_validator.REMITTERS}
+    tcs = corridor.load_rules()["rules"]["tcs_threshold_inr"]["value"]
+    if lang == "zh":
+        rows = "；".join(f"{'学生' if r == 'student' else '父母'}已用 ₹{u:,.0f}，剩余 ₹{max(lim - u, 0):,.0f}" for r, u in used.items())
+        t = (f"LRS 年度额度约为每位汇款人 ₹{lim:,.0f}（学生和父母各自计算）：{rows}。每位汇款人每财年超过 ₹{tcs:,.0f} 的部分可能被代扣 TCS。"
+             "数字来自带来源的汇款规则（MOCK），不是法律意见，请向授权银行确认。")
+    else:
+        rows = "; ".join(f"{r} used ₹{u:,.0f}, ₹{max(lim - u, 0):,.0f} left" for r, u in used.items())
+        t = (f"The LRS annual limit is about ₹{lim:,.0f} per remitter (a parent and the student have separate limits): {rows}. "
+             f"TCS may apply above ₹{tcs:,.0f} per remitter per financial year. These figures come from the sourced corridor rules (MOCK data); "
+             "they are not legal advice, so confirm with your authorised dealer bank.")
+    return _result(nlu.QUOTA, t, secrets, status="info")
+
+
+def _share_record(S, lang: str, secrets=None) -> dict:
+    n = S.world.passport.reputation.get("verified_on_time_payments", 0)
+    if lang == "zh":
+        t = (f"您目前有 {n} 笔经核验的按时付款。要分享记录，请打开“护照 → Oasis 信任通行证”：选择要披露的阈值声明（例如“至少 N 笔按时付款”）、接收方和有效期，"
+             "再出示二维码。信任通行证只基于已核验的付款，这不是信用评分（数据为 MOCK）。")
+    else:
+        t = (f"You have {n} verified on-time payment(s). To share your record, open Passport, then Oasis Trust Pass: pick the threshold claims to disclose "
+             "(for example 'at least N on-time payments'), the audience and an expiry, then show the QR code. The Trust Pass is built only from verified "
+             "payments and is not a credit score (MOCK data).")
+    return _result(nlu.SHARE_RECORD, t, secrets, status="info")
+
+
 # ------------------------------------------------------------------ entry point
 def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None) -> dict:
     """One chat turn. `S` is the server session; `run_intake(Request) -> outcome dict` is the pipeline entry used by invoices.
@@ -1253,6 +1379,16 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
         return _status(S, lang, d, secrets)
     if k == nlu.SPENDING:
         return _spending(S, lang, secrets)
+    if k == nlu.TRANSFER_ISSUE:
+        return _transfer_issue(S, it, lang, secrets)
+    if k == nlu.FX_BILL:
+        return _fx_bill(S, it, message, lang, secrets)
+    if k == nlu.PARENT_REQUEST:
+        return _parent_request(S, it, message, lang, secrets)
+    if k == nlu.QUOTA:
+        return _quota(S, lang, secrets)
+    if k == nlu.SHARE_RECORD:
+        return _share_record(S, lang, secrets)
     if k == nlu.EXPLAIN:
         return _explain(S, lang, secrets)
     if k == nlu.PROOF:

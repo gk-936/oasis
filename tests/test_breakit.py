@@ -40,3 +40,16 @@ def test_breakit_executor_all_is_one_request_against_the_limit(api_client, as_ro
     by = {x["attack"]: x for x in r["results"]}
     assert len(by) >= 8 and not by["control"]["blocked"]
     assert all(v["blocked"] and v["extra_money_moved"] == 0 for k, v in by.items() if k != "control")
+
+
+def test_a_payment_with_the_post_quantum_signature_stripped_is_refused():
+    """Hybrid signing: a valid Ed25519 signature alone is not enough. Removing ML-DSA-65 freezes the payment and moves nothing."""
+    from oasis.agent.llm import OfflineLLM
+    from oasis.trust.breakit_exec import _signed_intent, run_attack
+    from oasis.world import Features, World
+    w = World(Features.full(), OfflineLLM())
+    intent, _, _ = _signed_intent(w)
+    assert set(intent["signatures"]) == {"ed25519", "ml-dsa-65"}
+    r = run_attack(World(Features.full(), OfflineLLM()), "pq_stripped")
+    assert r["blocked"] and r["status"] == "frozen" and r["extra_money_moved"] == 0 and r["money_lost"] == 0, r
+    assert r["reasons"] == ["signature invalid"]

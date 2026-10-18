@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite on 2026-10-18: `1607 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite on 2026-10-18: `1766 passed, 2 skipped` (offline, about 2 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -58,6 +58,8 @@ Full suite on 2026-10-18: `1607 passed, 2 skipped` (offline, about 2 minutes) (t
 | 42 | The model has a lifetime token budget: once the usage ledger in the data volume has counted `OASIS_BEDROCK_TOTAL_TOKENS` tokens over all days (and across restarts) it is never called again and every AI feature uses its deterministic result; a cached answer still works | `oasis/agent/llm.py` (`UsageLedger.total`, `_key_budget_ok`, `_check_budget`), `oasis/config.py` | `tests/test_live_degrades.py` (total budget across days and restarts, no budget means only the daily limit, every feature falls back with the budget spent) | a hosted demo cannot spend more than the owner's budget (a call that starts just under the limit can overshoot by that one call) and keeps working offline afterwards |
 | 43 | Model JSON is parsed tolerantly (a preface or ``` fence is fine, content is never repaired); if the risk scorer's answer is malformed but contains a score, only that number is kept (it can only raise a risk); the provider's own content-filter notice is reported separately from model output | `oasis/agent/llm.py` (`json_object`, `salvage_score`, `risk`), `eval/ai_contribution.py` | `tests/test_live_degrades.py` (malformed-JSON and salvage tests, 3 of the file's 9) | found live: Nova Pro put key: value pairs inside the evidence list (2 of 168 answers) and Bedrock blocked its own answer for one injection text (1 of 128); without the salvage the escalation was lost |
 | 44 | A payment label from the chat labeller is dropped when the message gives instructions about labels, classification, JSON or intents | `oasis/agent/chat_llm.py` (`_META`, `validate`) | `tests/test_chat_llm.py` (2 new and 1 changed of the file's 17) | found by the 98-message scale set: 1 of 25 trap messages got a payment label before this rule, 0 of 25 after (post hoc; the report shows both) |
+| 45 | A payment whose post-quantum signature is stripped (valid Ed25519, ML-DSA-65 removed) is refused and moves nothing | `oasis/trust/executor.py`, `oasis/trust/crypto.py` (hybrid verify), `oasis/trust/breakit_exec.py` (`pq_stripped`) | `tests/test_breakit.py::test_a_payment_with_the_post_quantum_signature_stripped_is_refused`; `::test_breakit_executor_attacks` | our own attack on the sandbox executor; the Execution Evidence lists it as the tenth executor test |
+| 46 | The five new chat intents (transfer_issue, fx_bill, parent_request, quota, share_record) are answer-only: no draft, signature, conversion or payment, and "ask my mom to send money for tuition" no longer becomes a student tuition draft; security refusals still run first | `oasis/agent/nlu.py` (`_topic_intent`, after the refusal step), `oasis/agent/chat.py` (handlers), `oasis/agent/chat_llm.py` (`ALLOWED`) | `tests/test_chat_new_intents.py` (the 10 table messages, 4 attacks, pitfalls and the labeller list) | the labeller prompt now describes the five labels; it was not re-run live (needs the owner's approval) |
 
 ## Gaps (no automated test, or only indirect)
 
@@ -70,7 +72,7 @@ Full suite on 2026-10-18: `1607 passed, 2 skipped` (offline, about 2 minutes) (t
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1607 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 1766 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)
@@ -104,3 +106,5 @@ Full suite on 2026-10-18: `1607 passed, 2 skipped` (offline, about 2 minutes) (t
 | Claim | Code | Test | Limits |
 |---|---|---|---|
 | Bank-change pretexts (BEC), hidden instructions aimed at AI agents (comments, JSON-LD, meta, 1px or white text, zero-width), parallel approvals of one draft, overspend, look-alike payee names, repeated unsigned approvals and a stolen session cookie after logout each move no money outside the registry and never pay twice | `oasis/trust/*`, `oasis/mock/ledger.py`, `oasis/api/auth.py` | `tests/test_recent_attacks.py` (41, including the payee-id-only swap from the gaps list); sources in [recent-attacks.md](recent-attacks.md) | Our own replays of public attack classes, offline, MOCK money; sources are mostly secondary summaries; SIM swap and Confirmation of Payee not tested |
+| A split family transfer (3 x CNY 3,300 against a CNY 3,498 co-approval threshold) pays only the first part; the 2nd and 3rd are held (R06) and create no ledger transfer, balance change or conversion | `oasis/trust/policy.py` (R06), `oasis/corridors/core.py` | `tests/test_execution_evidence.py::test_split_payments_first_part_passes_and_held_parts_move_nothing`; case P6 in [execution-evidence.md](execution-evidence.md) | Splitting is visible only from the second part, so the first below-threshold part always executes (one amount, to the student's own registry account); verdict is PARTLY HELD by design |
+| A live model call that fails (credit exhausted, access denied, throttled, server error, model gone, network down, timeout) degrades to the deterministic result: a genuine invoice still ends held for signature, the chat labeller returns nothing, explanations use the template, and no money moves | `oasis/agent/llm.py` (`LiveLLM`, `classify_error`), `oasis/agent/bedrock_llm.py` | `tests/test_live_provider_errors.py` (14); budget-spent paths in `tests/test_live_degrades.py` | Fake runtime: the error shapes are simulated, not captured from AWS; a real outage may differ in detail |

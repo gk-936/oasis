@@ -28,9 +28,9 @@
     "needs": [
      "student_signature"
     ],
-    "reply": "Draft ready: pay CNY 6,000 to Chen Wei (registered account ****0001) for rent. Route: Education payment specialist, about 3 day(s). If it arrives short, FlightPath flags it and proposes a top-up. It moves only after you sign this exact draft (#03b6f7bf03) with your device key. Tap Sign and approve.",
+    "reply": "Draft ready: pay CNY 6,000 to Chen Wei (registered account ****0001) for rent. Route: Education payment specialist, about 3 day(s). If it arrives short, FlightPath flags it and proposes a top-up. It moves only after you sign this exact draft (#1619b0a90c) with your device key. Tap Sign and approve.",
     "money_moved": 0.0,
-    "draft_hash": "03b6f7bf032d1bf033c117ec2ff4616b476b4cef79634439287cfa5026163c35",
+    "draft_hash": "1619b0a90ccf2e9e46dbafd13dbae57760ad753d6ec580e5430d65943541d433",
     "refusal": null
    },
    {
@@ -56,6 +56,26 @@
     "status": "info",
     "needs": [],
     "reply": "Status: 1 bill(s) paid. Latest proof pack: int_0001.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   },
+   {
+    "you": "my transfer to the university is delayed",
+    "intent": "transfer_issue",
+    "status": "info",
+    "needs": [],
+    "reply": "A transfer that is late: ask the provider for its status first, and do not send it again, because the same bill could be paid twice. I have not resent anything and will not resend it for you. Open the FlightPath tab to follow it (MOCK rails).",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   },
+   {
+    "you": "ask my mom to send money for tuition",
+    "intent": "parent_request",
+    "status": "info",
+    "needs": [],
+    "reply": "Your open tuition totals CNY 30,000 and your CNY balance is CNY 944.44, a gap of CNY 29,055.56. I can't pay or approve anything for your parent. Say 'plan my semester': the plan includes a parent remittance that your parent consents to and signs in their own session, and it counts against their LRS and TCS.",
     "money_moved": 0.0,
     "draft_hash": null,
     "refusal": null

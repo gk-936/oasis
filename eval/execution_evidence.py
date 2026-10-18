@@ -19,7 +19,7 @@ os.environ["OASIS_LLM"] = "offline"      # this module never calls a live model
 from oasis.agent.llm import OfflineLLM
 from oasis.agent.pipeline import OasisAgent, Request
 from oasis.demo import play
-from oasis.planning.forecast import monthly_burn, runway_months, triggers
+from oasis.planning.forecast import cover_position, monthly_burn, runway_months, triggers
 from oasis.planning.routes import best_route, quote_routes, rank
 from oasis.proof import credit_growth as cg
 from oasis.proof import trust_pass as tp
@@ -177,6 +177,7 @@ def runway_log() -> dict:
             "pending_obligations": [{"id": o.id, "type": o.type, "amount_cny": o.amount, "due": o.due}
                                     for o in p.obligations if o.status == "pending"],
             "monthly_burn_cny": burn, "burn_basis": basis, "runway_months": runway_months(p, w.rates, w.day_index),
+            "cover": cover_position(p, w.rates, w.day_index),
             "triggers": [t.__dict__ for t in triggers(p, w.rates, w.today, w.day_index)],
             "label": "MOCK balances and rates"}
 
@@ -315,7 +316,7 @@ def to_markdown(o: dict, nlines: int) -> str:
     md += [f"| {r['route']} | {r['typical_bank']} | {r['delivered_cny']:,.2f} | {r['days']} |" for r in c["routes"]]
     md += ["", f"Saved by the best route ({c['best']}) vs the bank ({c['bank']}): CNY {c['saved_cny']:,.2f} ({c['saved_pct']}%). {c['label']}.", ""]
     r = o["runway"]
-    md += ["## Runway and shortfall (MOCK)", "", f"Balances {r['balances']}; monthly burn CNY {r['monthly_burn_cny']:,.0f} ({r['burn_basis']}); runway {r['runway_months']} months.", ""]
+    md += ["## Runway and shortfall (MOCK)", "", f"Balances {r['balances']}; monthly burn CNY {r['monthly_burn_cny']:,.0f} ({r['burn_basis']}); bills CNY {r['cover']['bills_cny']:,.2f}, balances worth CNY {r['cover']['available_cny']:,.2f}, shortfall CNY {r['cover']['shortfall_cny']:,.2f}.", ""]
     md += [f"- {t['kind']}: {t['message']}" for t in r["triggers"]] or ["- no triggers"]
     t = o["trust"]
     md += ["", "## Verified record (Trust Pass inputs, MOCK)", "", f"Payments: {t['payments']}", "", f"Claims: {t['claims']}", "", f"{t['label']}.", ""]

@@ -130,14 +130,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(f'''<section class="s"><h2>{KEYNOTES}</h2>
 <p>Please read these points before using the system.</p>
 <ol>
-<li><b>Chinese text is machine-translated.</b> The Chinese (and Tamil and Hindi) wording was drafted by machine and has not been reviewed by a native speaker. If you find an error, kindly excuse us.</li>
-<li><b>The money is MOCK.</b> All balances, rates, fees, routes and payee accounts are simulated and given for demonstration only. No real money moves.</li>
-<li><b>Six corridors exist; the demo is tested on one.</b> Oasis supports six money corridors (INR to CNY, CNY to USD, INR to USD, EUR to USD, INR to EUR, CNY to EUR). The whole application was tested only on the {k("INR to CNY")} corridor for this demo; the other five run on the same engine but were checked at the engine level only.</li>
-<li><b>Hosted copy and login passcodes (demo roles).</b> Address: <code>https://oasis.koreacentral.cloudapp.azure.com</code>
-<table style="width:auto;margin:6pt 0"><tr><th>Role</th><th>Passcode</th></tr>
-<tr><td>Student</td><td><code>yMRCh1gPL9kHE8qb</code></td></tr>
-<tr><td>Parent</td><td><code>qJvesiNMZWRecRxC</code></td></tr>
-<tr><td>Judge</td><td><code>LZiSiUcoqfBYL10Q</code></td></tr></table></li>
+<li><b>Hosted copy and login passcodes (demo roles).</b> Address: <code>https://oasis.koreacentral.cloudapp.azure.com</code>. Passcodes are sent to judges separately by the organisers.</li>
 <li><b>The API key has a credit limit.</b> The key supplied with the project has a limited credit budget. When it is reached, the AI features fall back to the deterministic offline path, so every function keeps working.</li>
 </ol></section>''')
 
@@ -151,26 +144,48 @@ def build(pages: dict[str, int]) -> str:
     h.append(sec(1, f"""
 <p>Oasis is an AI payment assistant for international students and the families who support them. It is submitted to the track <b>AI as a Financial Participant</b>, sub-track <b>Cross-border &amp; Student Finance Assistant</b>. This document describes how it is built: the architecture, the algorithms that make decisions, and the security design that limits what the AI can do.</p>
 <h3>1.1 The pain points we are solving</h3>
-<p>The failures below are described by public sources. The project team has not interviewed students; the evidence is public warnings and surveys. These sources describe the problems; they do not show how often they affect students in China or any other destination.</p>
-{tbl(["Problem", "Public evidence", "How Oasis responds"], [
-    ["An impostor landlord asks for rent to be sent to a new account", "Shanghai municipal government, anti-fraud guidance for international students (2024)", "Money goes only to the registry account; a changed account restarts the verification ramp"],
+<p>The failures below come from public sources and from a small set of informal, survey-style conversations we held with 10 people (a convenience sample, not a statistical survey; see "What people told us" below).</p>
+{tbl(["Problem", "Evidence", "How Oasis responds"], [
+    ["An impostor landlord asks for rent to be sent to a new account", "Shanghai municipal government, anti-fraud guidance for international students (2024). Informal conversations: 2 of the 6 students met a fake landlord while looking for a home and were not scammed, because the landlord refused a live viewing and offered only pictures, and when someone was sent to check in person the house did not exist", "Money goes only to the registry account; a changed account restarts the verification ramp"],
     ["A tuition invoice is altered to show a different bank account", "KU Leuven invoice-fraud warning; UK university notices", "The account on the document is never trusted; a contradiction by the registry is rejected"],
     ["An AI agent is steered by hidden text, or a tool rewrites payment details", "Published reports on prompt injection and tool poisoning", "Escalate-only AI, canaries, and an executor that enforces the signed intent exactly"],
     ["A large transfer is split to avoid the parent's approval", "Recognised structuring pattern", "Split-payment detection and sequence anomaly flags hold the payment"],
-    ["Sending money through a bank is expensive", "World Bank, Remittance Prices Worldwide: bank routes are the costliest provider type", "Route planner ranks routes on the amount the recipient receives and reports savings"],
+    ["Sending money through a bank is expensive", "World Bank, Remittance Prices Worldwide: bank routes are the costliest provider type. Informal conversations: 3 of the 4 parents could not send money because of the exchange-rate steps, some not understanding them, and 3 interning students found the difference between rates high when spending", "Route planner ranks routes on the amount the recipient receives and reports savings"],
     ["Cost-of-living worry; newcomers invisible to lenders", "QS International Student Survey 2023; Statistics Canada 2023", "Forecast and runway triggers; a verified payment record (Trust Pass), not a credit score"]], ["30%", "34%", "36%"])}
+<p><b>What people told us.</b> We held informal conversations with 10 people we know: 6 international students and interns abroad (Vietnam, Japan, Germany, Spain and Tanzania) and 4 parents. Two of the students met a fake landlord while looking for a home and were not scammed: the landlord refused a live viewing, offered only pictures, and when someone was sent to check in person the house did not exist. One student had trouble opening a bank account abroad, which delayed rent and other payments. Three of the four parents could not send money because the exchange-rate steps were involved, and some did not understand them. Three interning students found the difference between exchange rates high when spending. These are individual accounts, not measured frequencies.</p>
 <h3>1.2 The answer</h3>
 <p>A student abroad pays tuition, rent and living costs across borders, often in a second currency, to payees they cannot easily check, under deadlines. Scams (altered tuition invoices, impostor landlords, look-alike payees), hidden fees and late or short transfers cost real money. An AI assistant could help, but only if it can be given a role in the payment process without being able to move money wrongly.</p>
 <p>Oasis answers with one principle: {k("the AI proposes, deterministic code decides.")} The AI reads documents, plans payments, labels chat requests and explains risk. It never approves a payment, signs, holds a credential, changes who is trusted, or writes to the audit log. Every payment passes the same verification, policy, signing and enforcement path whether a person or the AI started it.</p>
+<p class="small"><b>Supporting design choice.</b> Payments and credit records are signed with both Ed25519 and post-quantum ML-DSA-65 (NIST FIPS 204), and both must verify, so a student's payment history stays checkable for the years a landlord, lender or visa office may need it.</p>
 <h3>1.3 What the system covers</h3>
 {tbl(["Track need", "Oasis feature"], [
     ["Tuition payments", "Verified-payee tuition flow; altered-invoice defence; invoice intake from text, email and image; duplicate-payment guard"],
     ["Remittances", "Route planner (cheapest on-time route against a typical bank route); FlightPath recovery for delayed, rejected or short-credited transfers; peer netting simulation"],
     ["Multi-currency management", "Six-currency view and 60-day coverage; FX plan for USD and EUR bills; corridor rules (SAFE quota, LRS, TCS); agentic payment plan with a validator"],
-    ["Credit building", "Verified payment record and Oasis Trust Pass, with zero-knowledge threshold proofs and a credit-growth plan. A record, not a credit score"],
+    ["Credit building", "Verified payment record and Oasis Trust Pass, with zero-knowledge threshold proofs and a credit-growth plan. A record, not a credit score; records are hybrid post-quantum signed so they remain verifiable long-term"],
     ["Long-lived trust", "Post-quantum hybrid signatures (Ed25519 + ML-DSA-65, both required) on every payment intent and proof, and a hybrid post-quantum TLS key exchange (Section 3.13)"]], ["28%", "72%"])}
-<h3>1.4 Reading guide and honesty</h3>
-<p>Section 2 describes the architecture, Section 3 the algorithms, Section 4 the security design. Sections 5 and 6 summarise the evidence and its limits. The appendices hold reference material. All money, rates, fees, rails and the payee registry are simulated and labelled {k("MOCK")}. Nothing here is presented as licensed, audited, real-money or a credit score. Every figure comes from a report in the repository and keeps its caveat.</p>"""))
+<h3>1.4 Main features</h3>
+<p>The main features, named as in the application's tabs.</p>
+{tbl(["Feature", "What it does"], [
+    ["Chat", "Talk to Oasis in English or Chinese: ask about bills, rates and runway, estimate a payment, or ask for a draft. A payment always ends as a draft the student signs."],
+    ["Passport", "The student's profile: balances in six currencies, bills, payees and payment history. Plans and checks start from it."],
+    ["Plan", "The AI proposes which routes fund which bills in time; the validator checks every amount, deadline and limit, and a plan never skips approval."],
+    ["FlightPath", "Follows a sent transfer, says what a delay or short credit means for the bill's deadline, and never resends blindly."],
+    ["Twin", "Simulates the rest of the semester and shows the chance of missing each deadline, with mitigations."],
+    ["Netting", "Simulation that matches opposite INR and CNY flows at the mid rate to show possible savings. Simulation only."],
+    ["Parent", "The parent co-signs larger transfers; the request is shown in English, Tamil, Hindi or Chinese (machine-drafted)."],
+    ["Demo", "Two scripted, repeatable runs: a student's semester and an attack story. Each replays to the same audit-chain head."],
+    ["Break it", "Judges paste any fraud attempt and watch it run through the real pipeline, or tamper with, replay or forge a signed payment and hand it to the real executor."],
+    ["Red team", "Judge-only console for attacking the system. Each judge login gets its own sandbox and attempt log."],
+    ["Proof", "Opens a proof pack for a payment and verifies it independently, with a &ldquo;try tampering&rdquo; check."],
+    ["Trust Pass", "A credential built from verified payments that the student can share in part, with zero-knowledge threshold proofs. Not a credit score."],
+    ["Credit growth", "A read-only milestone plan and what-if view over the payment record; it never suggests extra payments."],
+    ["Evidence Passport", "One signed, QR-verifiable bundle that shows a payment reached a registry-verified payee."],
+    ["Invoice intake", "Paste text, upload an email or a photo; hidden text is kept as evidence and the account on the document is never trusted."],
+    ["Why-cards", "A plain explanation of each hold or refusal, with what is not established and the next step."],
+    ["Corridors and FX", "Six corridors with rules for LRS, TCS and the SAFE quota, and foreign-currency plans for USD and EUR bills."],
+    ["Numbers", "The committed benchmark results, with their caveats."],
+    ["Post-quantum signing", "Every payment intent is signed with two algorithms, one of them post-quantum, and both must verify.", "3.13"]], ["20%", "80%"])}"""))
 
     # ------------------------------------------------------------------ 2
     h.append(sec(2, f"""
@@ -206,8 +221,8 @@ def build(pages: dict[str, int]) -> str:
 <ul>
 <li><b>Backend:</b> Python 3.10+, FastAPI, Pydantic v2, SQLite from the standard library. <b>Frontend:</b> React 18 and Vite; the built <code>frontend/dist</code> is committed and served by the API, so Node is needed only to rebuild.</li>
 <li><b>Model:</b> an offline deterministic model is the default and the floor for every function. The only live provider is {k("Amazon Nova Pro on Amazon Bedrock")}, through one adapter with a response cache, client-side rate limit, backoff, an on-disk token budget and a deterministic fallback.</li>
-<li><b>Hosting:</b> Docker image (non-root, read-only filesystem, refuses to start without explicitly set passcodes). The submitted copy runs on an Azure virtual machine behind Caddy with a Let's Encrypt certificate. The live key is capped by a lifetime token budget; when it is exhausted or unreachable the system falls back to the deterministic path. It has not been load-tested.</li>
-<li><b>Post-quantum:</b> signatures are hybrid Ed25519 + ML-DSA-65. TLS with hybrid X25519MLKEM768 was tested with Caddy and an OpenSSL 3.5 client (a classical-only client was refused); the certificate itself is classical.</li></ul>
+<li><b>Hosting:</b> Docker image (non-root, read-only filesystem, refuses to start without explicitly set passcodes). The submitted copy runs on an Azure virtual machine behind Caddy with a Let's Encrypt certificate. The live key is capped by a lifetime token budget; when it is exhausted or unreachable the system falls back to the deterministic path.</li>
+<li><b>Post-quantum:</b> signatures are hybrid Ed25519 + ML-DSA-65. TLS with hybrid X25519MLKEM768 was tested with Caddy and an OpenSSL 3.5 client (a classical-only client was refused).</li></ul>
 <h3>2.5 Real and simulated</h3>
 {tbl(["Real (code that runs as designed)", "Simulated (labelled MOCK)"], [
     ["Six-step pipeline, policy engine, hybrid signed intents, intent-enforcing executor, verification ramp, canaries, corridor rules engine, hash-chained audit log, proof packs and verifier, plan validator, benchmark harness, Bedrock adapter", "Payment rails and balances, route spreads and fees, the payee registry, wallet spending, the clock, simulated humans in benchmarks, anchoring by default (a local hash-linked chain). Mid-market rates are real ECB reference rates when live rates are on, otherwise a snapshot"]], ["50%", "50%"])}"""))
@@ -251,7 +266,7 @@ def build(pages: dict[str, int]) -> str:
 <h3>3.5 Route planning and corridor engine</h3>
 <p>The amount delivered to the recipient is:</p>
 <div class="formula">delivered = (send &minus; fixed_fee) &times; mid &times; (1 &minus; spread) &times; (1 &minus; pct_fee)</div>
-<p>Routes that miss the due date are excluded; the rest are ranked by delivered amount, then speed, then reliability, and savings are reported against a typical bank route. The amount to send is found by binary search on the same formula. Oasis has {k("six corridors")} (INR to CNY, CNY to USD, INR to USD, EUR to USD, INR to EUR, CNY to EUR) on one generic engine, but the whole application was tested only on {k("INR to CNY")} for this demo. The corridor engine reads rules from YAML data with source, retrieval date and status: LRS (USD 250,000 per remitter per financial year), TCS by purpose, the SAFE quota (USD 50,000 per person per calendar year, counted cumulatively), and split-payment detection (two or more payments to one payee within 72 hours, each just under a threshold). Unconfirmed values are shown as such.</p>
+<p>Routes that miss the due date are excluded; the rest are ranked by delivered amount, then speed, then reliability, and savings are reported against a typical bank route. The amount to send is found by binary search on the same formula. Oasis has {k("six corridors")} (INR to CNY, CNY to USD, INR to USD, EUR to USD, INR to EUR, CNY to EUR) on one generic engine. The corridor engine reads rules from YAML data with source, retrieval date and status: LRS (USD 250,000 per remitter per financial year), TCS by purpose, the SAFE quota (USD 50,000 per person per calendar year, counted cumulatively), and split-payment detection (two or more payments to one payee within 72 hours, each just under a threshold). Unconfirmed values are shown as such.</p>
 <h3>3.6 Agentic planner with a deterministic validator</h3>
 <p>The planner is a tool-using agent whose only outputs are proposals. Its tools are read-only (<code>read_passport</code>, <code>list_obligations</code>, <code>get_rates</code>, <code>get_routes</code>, <code>check_corridor</code>, <code>forecast_runway</code>, plus calculators for route choice and SAFE splits) and <code>propose_plan</code>. A plan is a list of convert and pay steps. <code>validate_plan</code> simulates it chronologically and returns concrete errors: wrong payee or amount, late payment, unfunded or duplicated obligation, INR going negative, CNY not yet arrived when spent, SAFE or LRS exceeded. Errors go back to the model as tool results; at most four proposals are allowed. If the model cannot produce a valid plan, hits its token cap, or the API fails, the deterministic plan is used and the fallback is recorded. {k("Trade-offs and questions:")} the plan's explanation sets the chosen route against alternatives for the same INR and asks a clarifying question instead of guessing when there is no open bill or no source of funds. Accepting a plan re-validates it; every payment step then enters the normal pipeline, so a plan never bypasses approval.</p>
 <h3>3.7 FX plan and peer netting</h3>
@@ -261,9 +276,9 @@ def build(pages: dict[str, int]) -> str:
 <h3>3.9 Explanations: why-card and rewrite guard</h3>
 <p>Every hold or refusal produces a why-card with the reason, what the evidence cannot establish, and the next step. These are added after the audit entry is written, so the audit chain is unaffected. In live mode a model may reword a deterministic explanation, but the {k("rewrite guard")} accepts it only if every number is kept, none is added, and the text is plain (no preface, markdown or list); otherwise the deterministic text is used.</p>
 <h3>3.10 Chat router and guarded labeller</h3>
-<p>The chat router is deterministic: it normalises and decodes the text, decides security refusals first (bypass requests, registry edits, overpayment), then classifies intent and extracts amounts with deterministic parsers. A message it cannot place may optionally (off by default) be sent to the model, truncated and with no state, to propose a label only. The label is accepted only if it is in a closed list and passes a schema check; a payment label additionally needs the text itself to speak of paying a whole open bill with no amount in the text. A model-labelled payment still becomes a held draft built from the registry that only a device-key signature releases. The router is a keyword system and is weak on wording it has not seen (Section 6).</p>
+<p>The chat router is deterministic: it normalises and decodes the text, decides security refusals first (bypass requests, registry edits, overpayment), then classifies intent and extracts amounts with deterministic parsers. A message it cannot place may optionally (off by default) be sent to the model, truncated and with no state, to propose a label only. The label is accepted only if it is in a closed list and passes a schema check; a payment label additionally needs the text itself to speak of paying a whole open bill with no amount in the text. A model-labelled payment still becomes a held draft built from the registry that only a device-key signature releases. Five further topics are answer-only intents with their own keyword rules, checked after the security refusals: <b>transfer_issue</b> (a late, short or rejected transfer: FlightPath advice, never a resend), <b>fx_bill</b> (a USD or EUR bill: points to the FX plan, where every foreign payment needs the student's signature), <b>parent_request</b> (the gap between open bills and the CNY balance, and the plan whose parent remittance the parent signs), <b>quota</b> (LRS used and left per remitter, and TCS) and <b>share_record</b> (how to issue the Trust Pass; not a credit score). None creates a draft, signs, converts or moves money, and the labeller may propose the same five labels.</p>
 <h3>3.11 Proofs, Trust Pass and credit growth</h3>
-<p>A proof pack holds the intent, its hash, verification state, costs, policy decision, audit entry and public keys, hybrid-signed. Because the keys in a pack prove nothing alone, verification reports success only when the key fingerprint matches one pinned out of band, and optionally when the anchor exists on an intact chain. The payment-reliability record lists only payments that completed the full pipeline with a verifying proof pack. The Trust Pass is built from it in the SD-JWT style: each entry gets a random salt and the credential signs only digests, so the holder discloses chosen entries or threshold claims ("at least N") and the verifier learns nothing else. Thresholds can be proved with Pedersen commitments and range proofs without revealing counts. It is a record of payment behaviour, {k("not a credit score")}, and no bureau accepts it. The credit-growth plan is read-only guidance over that record.</p>
+<p>A proof pack holds the intent, its hash, verification state, costs, policy decision, audit entry and public keys, hybrid-signed. Because the keys in a pack prove nothing alone, verification reports success only when the key fingerprint matches one pinned out of band, and optionally when the anchor exists on an intact chain. The payment-reliability record lists only payments that completed the full pipeline with a verifying proof pack. The Trust Pass is built from it in the SD-JWT style: each entry gets a random salt and the credential signs only digests, so the holder discloses chosen entries or threshold claims ("at least N") and the verifier learns nothing else. Thresholds can be proved with Pedersen commitments and range proofs without revealing counts. It is a record of payment behaviour, {k("not a credit score")},. The credit-growth plan is read-only guidance over that record.</p>
 <h3>3.12 Hash-chained audit log</h3>
 <p>Each entry stores:</p>
 <div class="formula">hash = SHA-256( canonical{{ i, ts, kind, data, prev }} )</div>
@@ -277,7 +292,7 @@ def build(pages: dict[str, int]) -> str:
 <tr><td>Transport</td><td>TLS 1.3 with the hybrid key exchange X25519MLKEM768, provided by the proxy in front of the application. A classical-only client was refused in the test.</td></tr>
 <tr><td>Crypto agility</td><td>The signer takes a list of algorithms, so a scheme can be added or retired without changing the executor or the proof format. An optional SM2/SM3 signer (Chinese national standard) was added this way.</td></tr>
 </table>
-<p>The measurements, the evidence and the limits of this design are in the Security Self-Assessment, Section 7.</p>"""))
+<p>The measurements, the evidence and the limits of this design are in the Security Self-Assessment (Section 7 and the Known-Risk List).</p>"""))
 
     # ------------------------------------------------------------------ 4
     h.append(sec(4, f"""
@@ -304,34 +319,34 @@ def build(pages: dict[str, int]) -> str:
     ["Image cannot be read reliably", "Low-confidence hold; nothing is paid from a guessed field"],
     ["Live token budget exhausted", "Fallback to the offline path for the rest of the run"],
     ["Any executor check fails", "The payment is frozen, and the failure is audited"]], ["42%", "58%"])}
-<div class="note"><p>Model calls are not part of the Oasis audit chain. Live results are saved report rows, not a provider-side log.</p></div>"""))
+"""))
 
     # ------------------------------------------------------------------ 5
     h.append(sec(5, f"""
-<p>Offline results are deterministic. Live results use one model (Amazon Nova Pro), small samples and our own MOCK scenarios. Attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; large stress tests are white-box. No external human audit has been done. Reports are in <code>eval/reports/</code>.</p>
-{tbl(["Evidence", "Result", "Caveat"], [
-    ["Test suite", "1607 passed, 2 skipped (live FISCO and live PQ-TLS)", "Offline; no network"],
-    ["Visible benchmark: 32 attacks, 12 genuine changes, four layer configurations", "Attack block rate 6.2% baseline, 68.8% with verification, 100% with intents and policy; money lost CNY 479,000 baseline, 0 with the full system; genuine completion 100%", "Written by the team; simulated approvers follow the Passport"],
-    ["Hidden blind set: 40 cases", "100% blocked and 100% genuine completed after fixes", "Partly burned: failures were fixed afterwards. The first run is kept"],
-    ["Live extraction, Nova Pro", "Model followed an injection in 0 of 6 cases; full system money lost 0; genuine completion 83.3% (a usability cost)", "One run"],
-    ["Live poisoned invoices", "0 of 128 changed account, amount or payee; 40 of 40 genuine invoices held for signature exactly as offline; 0 payments released without a signature", "Our texts; one model"],
-    ["Live planner (deterministic validator)", "56 of 56 plans valid without fallback; 140 of 140 deadlines met in the pooled run", "Same model and scenarios; larger sample, not new evidence"],
-    ["Outside-written sets through the live path", "550 attacks and 170 look-alikes, 0 breaches", "Written by outside AI systems that were later used to fix failures, so not out of sample"],
-    ["Offline planner; executor tamper tests", "8 of 8 plans valid, fees about 83% below a typical bank route; 9 of 9 tampered payments refused", "MOCK rates; our attacks"],
-    ["Audit chain and replay", "Demo reproduces identical chain heads; an edited entry is detected at the first broken link", "Simulated clock and keys"]], ["26%", "46%", "28%"])}"""))
+<p>Offline results are deterministic and reproducible; live results are from Amazon Nova Pro. Reports are in <code>eval/reports/</code>. Caveats are in Section 6.</p>
+{tbl(["Evidence", "Result"], [
+    ["Test suite", "1766 passed, 2 skipped (live FISCO and live PQ-TLS)"],
+    ["Visible benchmark: 32 attacks, 12 genuine changes, four layer configurations", "Attack block rate 6.2% baseline, 68.8% with verification, 100% with intents and policy; money lost CNY 479,000 baseline, 0 with the full system; genuine completion 100%"],
+    ["Hidden blind set: 40 cases", "100% blocked and 100% genuine completed after fixes"],
+    ["Live extraction, Nova Pro", "Model followed an injection in 0 of 6 cases; full system money lost 0; genuine completion 83.3% (a usability cost)"],
+    ["Live poisoned invoices", "0 of 128 changed account, amount or payee; 40 of 40 genuine invoices held for signature exactly as offline; 0 payments released without a signature"],
+    ["Live planner (deterministic validator)", "56 of 56 plans valid without fallback; 140 of 140 deadlines met in the pooled run"],
+    ["Outside-written sets through the live path", "550 attacks and 170 look-alikes, 0 breaches"],
+    ["Offline planner; executor tamper tests", "8 of 8 plans valid, fees about 83% below a typical bank route; 10 of 10 tampered payments refused"],
+    ["Audit chain and replay", "Demo reproduces identical chain heads; an edited entry is detected at the first broken link"]], ["34%", "66%"])}"""))
 
     # ------------------------------------------------------------------ 6
     h.append(sec(6, f"""
 {tbl(["Limitation", "Effect and mitigation"], [
     ["Everything financial is simulated", "Rails, rates, fees and the registry are MOCK. Savings are not what a real student would save. A production path needs licensing, real rails, external audit and key management"],
     ["One corridor tested", "Six corridors are implemented; the whole application was tested only on INR to CNY for this demo. The other five were checked at the engine level"],
-    ["Tests are largely self-written", "Outside AI sets were used to fix failures; scores are not out of sample; no external human audit"],
-    ["Live evidence is small", "One model, one provider, small samples. The chat-label validator rule that removed the one trap label was added after the run and is post hoc"],
+    ["Tests are largely self-written", "The attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; the first-run row of each report is the only out-of-sample number. Stress tests are white-box. The hidden blind set is partly burned. No external human audit"],
+    ["Live evidence is small", "One model, one provider, small samples on MOCK data. The chat-label validator rule that removed the one trap label was added after the run and is post hoc. Model calls are not part of the Oasis audit chain: live results are saved report rows, not a provider-side log"],
     ["The keyword router is weak on unseen wording", "On 144 fresh paraphrases it placed 52 correctly, 19 on the wrong intent and 73 as unknown (first run). Security held (no money moved); task completion is what suffers"],
     ["Risk scorers are weaker out of sample", "They only escalate; the deterministic controls carry the guarantee"],
     ["Image reading is unreliable on hard images", "2 of 6 test images failed; limited by the registry-only rule and the student confirming fields"],
-    ["Public deployment", "Capped live key; not load-tested; credentials are demo-grade shared passcodes plus optional passkeys; not independently audited"],
-    ["Languages and research", "Chinese, Tamil and Hindi text is machine-drafted. No student, parent or university has been interviewed"],
+    ["Public deployment", "The TLS certificate is classical (only the key exchange is post-quantum); capped live key; not load-tested; credentials are demo-grade shared passcodes plus optional passkeys; not independently audited"],
+    ["Languages and research", "Chinese, Tamil and Hindi text is machine-drafted. We held informal conversations with 10 people we know: 6 international students and interns abroad (Vietnam, Japan, Germany, Spain and Tanzania) and 4 parents: a small convenience sample, not a survey; no finance office was interviewed"],
     ["Credit building", "The record is not a credit score and no lender or regulator accepts it"]], ["32%", "68%"])}"""))
 
     # ------------------------------------------------------------------ appendices
@@ -372,7 +387,7 @@ def build(pages: dict[str, int]) -> str:
 <ul>
 <li>Offline mode, fixed seeds, seeded demo keys and nonces, and a simulated clock make the scripted demo repeat exactly; replays reach identical audit-chain heads.</li>
 <li>Benchmarks run offline: <code>eval.runner --llm offline</code>, <code>eval.flightpath_bench</code>, <code>eval.netting_bench</code>, <code>eval.tasks_bench</code>. Live runs are checkpointed, token-capped and saved as report rows.</li>
-<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 1607 passed, 2 skipped.</li>
+<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 1766 passed, 2 skipped.</li>
 <li>The execution evidence folder contains a standard-library verifier that recomputes the audit chains and the headline figures from the logs.</li></ul>"""))
 
     h.append(app(4, """

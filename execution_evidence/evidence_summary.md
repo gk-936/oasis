@@ -2,14 +2,14 @@
 
 Every case runs twice on a fresh sandbox: UNPROTECTED (all protections off) and PROTECTED (full Oasis). No network, no model call, no real money. Regenerate: `OASIS_LLM=offline PYTHONPATH=. python -m eval.execution_evidence`.
 
-Operation log: `operation_log.jsonl` (30 lines). Check it with `python verify_evidence.py`.
+Operation log: `operation_log.jsonl` (31 lines). Check it with `python verify_evidence.py`.
 
 ## Headline
 
 - Scam and attack cases: 6. Mitigated: UNPROTECTED 0, PROTECTED 6.
 - Money lost to attacker accounts: UNPROTECTED CNY 126,000.00, PROTECTED CNY 0.00.
 - Genuine payments completed: UNPROTECTED 2 of 2, PROTECTED 2 of 2.
-- Executor attacks on a signed payment: 9 of 9 refused; honest control paid: True; extra money moved: CNY 0.00.
+- Executor attacks on a signed payment: 10 of 10 refused; honest control paid: True; extra money moved: CNY 0.00.
 - Cost: INR 100,000 delivers CNY 6,898.84 on the best route vs CNY 6,550.68 by a typical bank (MOCK).
 - Replay: every case reproduces the same audit-chain head: True. Secrets found in the evidence: none.
 
@@ -39,6 +39,7 @@ Operation log: `operation_log.jsonl` (30 lines). Check it with `python verify_ev
 | forged_approval: Approval signed by a key that is not the student's registered device | frozen | True | 0.0 | approval by 'student' has no valid signature over this payment |
 | role_swap: Student's signature relabelled as the parent's approval | frozen | True | 0.0 | approval by 'parent' has no valid signature over this payment |
 | unsigned: Intent with the trust signature stripped | frozen | True | 0.0 | signature invalid |
+| pq_stripped: PQ signature stripped: valid Ed25519 signature but the ML-DSA-65 signature removed | frozen | True | 0.0 | signature invalid |
 | no_approval: Correct intent but no human device signature | held | True | 0.0 | needs the student's device signature |
 
 ## Cost receipt (MOCK)
@@ -56,7 +57,7 @@ Saved by the best route (Education payment specialist) vs the bank (Typical bank
 
 ## Runway and shortfall (MOCK)
 
-Balances {'INR': 500000.0, 'CNY': 0.0}; monthly burn CNY 4,000 (student budget + labelled reference costs (cold start)); runway 0.0 months.
+Balances {'INR': 500000.0, 'CNY': 0.0}; monthly burn CNY 4,000 (student budget + labelled reference costs (cold start)); bills CNY 42,000.00, balances worth CNY 34,982.00, shortfall CNY 7,018.00.
 
 - rate_move: INR→CNY mid-market moved up 1.10% over 7 days.
 - low_runway: Only 0.0 months of money left after obligations.

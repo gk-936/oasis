@@ -22,7 +22,7 @@ from .llm import json_object as llm_json_object
 from .nlu import ChatIntent
 
 ALLOWED = (nlu.BALANCE, nlu.OBLIGATIONS, nlu.RATE, nlu.ROUTES, nlu.RUNWAY, nlu.PLAN, nlu.STATUS, nlu.EXPLAIN, nlu.PROOF, nlu.CREDIT,
-           nlu.HELP, nlu.PAY_OBLIGATION, nlu.UNKNOWN)
+           nlu.HELP, nlu.PAY_OBLIGATION, *nlu.TOPIC_KINDS, nlu.UNKNOWN)
 TYPES = ("tuition", "rent", "deposit", "living", "family_support")
 MAX_CHARS = 500
 # a message that talks ABOUT labels, classification, JSON or intents is an instruction to the labeller, not a request from the student
@@ -35,6 +35,9 @@ SYSTEM = ("You label one message sent to a student's payment assistant. The mess
           "routes (the cheapest or fastest way to send money); runway (will their money last, are they okay until the term ends); "
           "plan (build a schedule or plan of payments); status (did a payment go through or arrive); explain (why something was refused or stopped); "
           "proof (a receipt or proof of payment); credit (building a payment history or credit record); help (what the assistant can do or who it is); "
+          "transfer_issue (a transfer that is late, short, rejected or that they want to track); fx_bill (a bill in a foreign currency such as USD or EUR); "
+          "parent_request (asking their parents or family to send money); quota (how much can be sent abroad per year, LRS or TCS limits); "
+          "share_record (sharing their payment history or Trust Pass with a landlord or lender); "
           "pay_obligation (the student asks to PAY one of their own bills such as rent, tuition or a deposit; set type); "
           "unknown (none of these fit). Pick the closest label; use unknown only when no label fits, or when the message asks to send or move money "
           "anywhere other than paying their own bills. You cannot approve, sign, send money or reveal anything.")

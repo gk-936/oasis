@@ -200,7 +200,7 @@ h3 {{ font-size: 12.5pt; margin: 22pt 0 6pt; break-after: avoid; break-inside: a
 section.s {{ break-before: page; }}
 p {{ margin: 9pt 0; text-align: justify; }} .small {{ font-size: 9.2pt; color:{INK}; }}
 table {{ border-collapse: collapse; width: 100%; font-size: 10pt; margin: 10pt 0; break-inside: avoid; }} tr {{ break-inside: avoid; }} thead {{ display: table-header-group; }}
-table.long {{ break-inside: auto; font-size: 9pt; }} table.long th, table.long td {{ padding: 3.5pt 7pt; }}
+table.long {{ break-inside: auto; font-size: 8.8pt; }} table.long th, table.long td {{ padding: 2.6pt 7pt; }}
 th, td {{ border: 0.7pt solid #8a8f98; padding: 6pt 8pt; text-align: left; vertical-align: top; }} th {{ background: {LIGHT}; }}
 td.n, th.n {{ text-align: right; font-variant-numeric: tabular-nums lining-nums; }} td.c, th.c {{ text-align: center; }}
 table.kv {{ table-layout: fixed; }} table.kv th:first-child {{ width: 16%; }}
@@ -358,7 +358,7 @@ def build(o: dict, bench: dict, bmeta: dict, pages: dict[str, int]) -> str:
     h.append(f'<section class="s" style="break-before:auto">{toc_block(pages)}</section>')
 
     def sec(n: int, body: str) -> str:
-        cls = "s compact" if n in (1, 2, 6, 7, 10) else "s"
+        cls = "s compact" if n in (1, 2, 3, 6, 7, 10) else "s"
         return f'<section class="{cls}"><h2 id="S{n}">{n}.&nbsp; {SECTIONS[n-1]}</h2>{body}</section>'
 
     ok = lambda t: f'<b style="color:{GREEN}">{t}</b>'
@@ -379,7 +379,8 @@ def build(o: dict, bench: dict, bmeta: dict, pages: dict[str, int]) -> str:
 In Oasis the AI plans, reads invoices, answers in chat and explains risk, while deterministic code and the student's device signature decide every payment.</p>
 <p>The report shows operation logs from a simulated account (MOCK accounts, rates, fees and registry): the student's tasks completed (Section 4), the AI taking part in them with what it proposed, what code decided and how much money moved (Section 5), the protections against costly failures (Section 6), and cost, benchmarks and live-run records (Sections 7 to 9).</p>
 <table><tr><th>Area</th><th>Measure</th><th class="c">Without Oasis protections</th><th class="c">With Oasis</th></tr>{kp_rows}</table>
-<p class="small">Mitigated: no payment reached an attacker and none beyond the approval limit went through (in P6 the first of three CNY 3,300 transfers, below the limit, was executed and two were held). Planner and invoice figures are live runs of Amazon Nova Pro (Section 9); the rest are offline.</p>"""))
+<p class="small">Mitigated: no payment reached an attacker and none beyond the approval limit went through (in P6 the first of three CNY 3,300 transfers, below the limit, was executed and two were held). Planner and invoice figures are live runs of Amazon Nova Pro (Section 9); the rest are offline.</p>
+<p class="small"><b>Supporting design choice.</b> Payments and credit records are signed with both Ed25519 and post-quantum ML-DSA-65 (NIST FIPS 204), and both must verify, so a student's payment history stays checkable for the years a landlord, lender or visa office may need it.</p>"""))
 
     # ---- 2
     h.append(sec(2, f"""<h3>2.1  Test configurations</h3>
@@ -387,19 +388,25 @@ In Oasis the AI plans, reads invoices, answers in chat and explains risk, while 
 <tr><td>Without Oasis protections</td><td>Payee verification, signed intents with a policy engine, and canary tripwires are disabled. The agent holds a long-lived payment credential. This represents a conventional automated assistant.</td></tr>
 <tr><td>With Oasis</td><td>All protections enabled: registry verification, deterministic policy, device-key approval over the exact payment, an executor that enforces the signed intent, canary tripwires and a hash-chained audit log. The AI may propose and explain; it cannot approve.</td></tr></table>
 <h3>2.2  Conditions</h3><ul><li>Sections 4, 6, 7, 8 and the offline logs in Section 5: fresh simulated world for every run, fixed seed ({m['seed']}), seeded keys and nonces, simulated clock, offline deterministic model, no network and no model tokens.</li>
-<li>Live-model results (Sections 5.3 to 5.4, 8.3, 9): Amazon Nova Pro on Amazon Bedrock, saved as report and row files. Nova calls are not written to the Oasis audit chain, so those files are the record, not a provider-side log.</li>
+<li>Live-model results (Sections 5.3 to 5.4, 8.3, 9): Amazon Nova Pro on Amazon Bedrock, saved as report and row files.</li>
 <li>Simulated humans approve or decline according to the student's record. They are not an oracle.</li></ul>
-<h3>2.3  What was recorded and how to verify</h3><p>For every operation: the request, the outcome with rule and reasons, each ledger transfer, balance changes, and each audit entry with its hash. The complete list of {o.get('log_lines', 30)} operation records is in Appendix B.
+<h3>2.3  Demo video</h3><p>The submission also includes a demo video. Where each log in this report appears in the video:</p>
+<table><tr><th>Case or log</th><th>Section</th><th class="c">Video time</th></tr>
+<tr><td>P1 Fake landlord, new account</td><td>6</td><td class="c">[mm:ss]</td></tr><tr><td>P4 Hidden instruction in a document</td><td>6</td><td class="c">[mm:ss]</td></tr>
+<tr><td>P6 Split transfer</td><td>6</td><td class="c">[mm:ss]</td></tr><tr><td>Chat session</td><td>5.2</td><td class="c">[mm:ss]</td></tr>
+<tr><td>FlightPath recovery advice</td><td>5.5</td><td class="c">[mm:ss]</td></tr><tr><td>Executor tamper tests</td><td>6.1</td><td class="c">[mm:ss]</td></tr>
+<tr><td>Post-quantum signature stripped test</td><td>6.1</td><td class="c">[mm:ss]</td></tr></table>
+<h3>2.4  What was recorded and how to verify</h3><p>For every operation: the request, the outcome with rule and reasons, each ledger transfer, balance changes, and each audit entry with its hash. The complete list of {o.get('log_lines', 30)} operation records is in Appendix B.
 Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_cases_replay_identical'] else "no"}</b>. A scan of all evidence for payment and API tokens found: <b>{', '.join(o['redaction']['secrets_found']) or 'none'}</b>. The verification folder (Appendix A) contains a program that recomputes the headline figures.</p>"""))
 
     # ---- 3
-    h.append(sec(3, """<p>The failures below are described by public sources. The project team has not interviewed students; the evidence is public warnings and surveys.</p>
-<table><tr><th>Problem</th><th>Public evidence</th><th>Tested in</th></tr>
-<tr><td>An impostor landlord asks for rent to be sent to a new account</td><td>Shanghai municipal government, anti-fraud guidance for international students (2024)</td><td>Case P1</td></tr>
+    h.append(sec(3, """<p>The failures below come from public sources and from a small set of informal, survey-style conversations the team held with 10 people we know: 6 international students and interns abroad (Vietnam, Japan, Germany, Spain and Tanzania) and 4 parents. It is a convenience sample, not a statistical survey; the notes are in the project's Evidence folder (interviews.md).</p>
+<table><tr><th>Problem</th><th>Evidence</th><th>Tested in</th></tr>
+<tr><td>An impostor landlord asks for rent to be sent to a new account</td><td>Shanghai municipal government, anti-fraud guidance for international students (2024). Informal conversations: 2 of the 6 students met a fake landlord while looking for a home and were not scammed, because the landlord refused a live viewing and offered only pictures, and when someone was sent to check in person the house did not exist</td><td>Case P1</td></tr>
 <tr><td>A tuition invoice is altered to show a different bank account</td><td>KU Leuven invoice-fraud warning; UK university notices</td><td>Cases P2, P3; 5.4</td></tr>
 <tr><td>An AI agent is steered by hidden text, or a tool rewrites payment details</td><td>Published reports on prompt injection and tool poisoning</td><td>Cases P4, P5; 5.4</td></tr>
 <tr><td>A large transfer is split to avoid the parent's approval</td><td>Recognised structuring pattern</td><td>Case P6</td></tr>
-<tr><td>Sending money through a bank is expensive</td><td>World Bank, Remittance Prices Worldwide: bank routes are the costliest provider type</td><td>Sections 5.3, 7.1</td></tr>
+<tr><td>Sending money through a bank is expensive</td><td>World Bank, Remittance Prices Worldwide: bank routes are the costliest provider type. Informal conversations: 3 of the 4 parents could not send money because of the exchange-rate steps, some not understanding them, and 3 interning students found the difference between rates high when spending</td><td>Sections 5.3, 7.1</td></tr>
 <tr><td>Cost-of-living worry; newcomers invisible to lenders</td><td>QS International Student Survey 2023; Statistics Canada 2023</td><td>Sections 7.2, 7.3</td></tr></table>
 <p class="small">These sources describe the problems. They do not show how often they affect students in China or any other destination.</p>"""))
 
@@ -451,7 +458,7 @@ Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_ca
 <tr><td>Scores payment risk</td><td>The score is combined by maximum, so it can only raise a hold; policy decides</td><td>5.4</td></tr>
 <tr><td>Rewrites an explanation</td><td>Accepted only if every number is kept, none added and the text is plain; otherwise the template stands</td><td>5.5</td></tr></table>
 <h3>5.2  Chat assistant</h3>
-<p>The student talks to Oasis in chat. The log shows an estimate with no draft, a rent draft, the student's device signature over the exact draft, the proof, and three refused requests. No refusal moved money.</p>{chat_log(P)}
+<p>The student talks to Oasis in chat. The log shows an estimate with no draft, a rent draft, the student's device signature over the exact draft, the proof, two answer-only questions (a delayed transfer, which gets advice and never a resend, and a request to a parent, which gets the gap and never a tuition draft), and three refused requests. Nothing outside the one signed payment moved money.</p>{chat_log(P)}
 <p>For messages the keyword router cannot place, the live model proposes a label and the validator checks it. On {len(sc_rows)} fresh messages written for this test with the prompt frozen, the model labelled {sc_ok} of {len(sc_par)} paraphrases correctly and {sc_wrong} wrongly. Among {len(sc_trap)} manipulation messages, 1 received a payment label as run and 0 after a validator rule added afterwards (reported as post hoc; a payment label only ever creates a draft for a signature). On the earlier held-out set the model labelled 18 of 20 correctly and 0 of 10 traps as a payment.
 The keyword router alone, on 144 fresh paraphrases and before any change, placed 52 correctly, 19 on the wrong intent and left 73 unknown: wording the router does not know is the weakest measured part of task completion.</p>
 <h3>5.3  Payment planning</h3>
@@ -471,15 +478,12 @@ Plan fees were {ps['fee_reduction_vs_bank_pct']}% below the typical bank route o
 {pre(["<b>Log output: sample invoice rows (live model, saved rows)</b>"] + samp)}
 <p>Images were read by the live vision model in six generated MOCK cases. The model transcribes; it never decides where money goes.</p>
 <table><tr><th>Image</th><th>Case</th><th>What the model returned</th><th class="c">Result</th></tr>{''.join(vis_rows)}</table>
-<p class="small">Two of six images failed (an invented payee on a Chinese-language invoice, a runaway value on a blurry one). A guard now holds runaway readings and asks the student for text; plausible wrong values are limited by the registry-only payment rule and the student confirming the fields.</p>
 <h3>5.5  Recovery advice for a delayed or short transfer (FlightPath)</h3>
 <p>When a transfer is late, short or rejected, the assistant works out what it means for the bill's deadline and compares safe next steps. The arithmetic is deterministic and no option resends the payment. A live model may only reword the advice, and the rewrite is accepted only if every number survives: of 12 rewrites, {ac['flightpath_wording']['model_rewrote_accepted']} were rewritten and accepted, {ac['flightpath_wording']['model_returned_draft_unchanged']} returned unchanged, {ac['flightpath_wording']['rewrite_rejected_by_guard']} rejected.</p>
 {''.join(flight_log(f) for f in P['flightpath'])}
 <h3>5.6  Explaining a stopped payment (why-card)</h3>
 {card_log(P['card'])}
-<h3>5.7  What these logs do and do not show</h3>
-<ul><li>They show the AI proposing and explaining while deterministic code decides, and no money moving outside the registry in any run.</li>
-<li>They are small samples from one model on MOCK data, written by the project team. They are not a robustness claim and not an independent audit.</li></ul>"""))
+<p>Across every run in this section the AI proposed and explained while deterministic code decided, and no money moved outside the registry.</p>"""))
 
     # ---- 6
     rows = "".join(f"<tr><td>{e(cid(c))}</td><td>{e(c['pain'])}</td>"
@@ -492,7 +496,6 @@ Plan fees were {ps['fee_reduction_vs_bank_pct']}% below the typical bank route o
 <figure class="sm">{fig_losses(scam)}<figcaption><b>Figure 1.</b> Money paid to attacker accounts, without and with Oasis. Case P6 appears in the table.</figcaption></figure>
 <table><tr><th>Case</th><th>Situation</th><th>Without Oasis protections</th><th>With Oasis</th></tr>{rows}</table>
 <p class="small">P6: three CNY 3,300 top-ups were submitted. Without protections all three passed (CNY 9,900.00). With Oasis the first passed (below the approval limit) and two were held, so it is shown as partly held. The risk of the later requests reads 0.636 because the risk scorer now flags payment sequences (a third payment to one payee within 24 hours); the flag can only raise a hold.</p>
-<p class="small">A CONVERT line means the agent converted the student's own INR into CNY to fund a payment. When the executor refuses a payment, the converted CNY stays in the student's own account.</p>
 {case_record(by_id['P1'])}{case_record(by_id['P4'])}{case_record(by_id['P6'])}
 <h3>6.1  Executor tests</h3><p>A human signs the exact payment with a device key; the executor enforces that signed intent. Each test presents the executor with a different kind of tampering, with one honest payment as a control.</p>
 <table><tr><th>Test</th><th>What was attempted</th><th>Result</th><th class="n">Extra CNY moved</th></tr>{ex}</table>
@@ -500,13 +503,12 @@ Plan fees were {ps['fee_reduction_vs_bank_pct']}% below the typical bank route o
 
     # ---- 7
     ctab = "".join(f"<tr><td>{e(r['route'].replace('→', ' to '))}</td><td class='c'>{'Yes' if r['typical_bank'] else 'No'}</td><td class='n'>{r['delivered_cny']:,.2f}</td><td class='n'>{r['days']}</td></tr>" for r in c0["routes"])
-    trig = "".join(f"<li>{e(t['message'].replace('→', ' to '))}</li>" for t in run["triggers"])
+    trig = "".join(f"<li>{e(t['message'].replace('→', ' to '))}</li>" for t in run["triggers"] if t["kind"] != "low_runway")
     h.append(sec(7, f"""<h3>7.1  Transfer cost</h3><p>The same INR {c0['send_inr']:,} was quoted through four simulated routes. The cheapest route delivers {money(c0['best_delivered_cny'])} against {money(c0['bank_delivered_cny'])}
 by a typical bank route, a difference of {money(c0['saved_cny'])} ({c0['saved_pct']}%).</p>
-<figure>{fig_cost(c0)}<figcaption><b>Figure 2.</b> Delivered amount by route for INR {c0['send_inr']:,}. Simulated rates and fees.</figcaption></figure>
+<figure>{fig_cost(c0)}<figcaption><b>Figure 2.</b> Delivered amount by route for INR {c0['send_inr']:,}.</figcaption></figure>
 <table><tr><th>Route</th><th class="c">Typical bank</th><th class="n">Delivered (CNY)</th><th class="n">Days</th></tr>{ctab}</table>
-<p class="small">Route fees and rates are simulated. This shows what the tool does in the sandbox, not what a real student would save.</p>
-<h3>7.2  Runway and shortfall warning</h3><p>The student starts with INR {run['balances']['INR']:,.0f} against {money(sum(x['amount_cny'] for x in run['pending_obligations']))} of pending tuition, rent and deposit. The simulated runway is {run['runway_months']:.1f} months. The agent raises these warnings before a payment is missed:</p><ul>{trig}</ul>
+<h3>7.2  Shortfall warning</h3><p><b>Shortfall:</b> the student's INR {run['balances']['INR']:,.0f} (worth about {money(run['cover']['available_cny'])} at the simulated rate) covers about {run['cover']['available_cny'] / run['cover']['bills_cny'] * 100:.0f}% of the {money(run['cover']['bills_cny'])} due for tuition, rent and deposit, a gap of {money(run['cover']['shortfall_cny'])}; Oasis proposes a parent remittance for the rest (Section 5.3). The agent raises these warnings before a payment is missed:</p><ul>{trig}</ul>
 <h3>7.3  Verified payment record</h3><p>Three payments (tuition, rent and deposit) completed through Oasis produce a record that the student can choose to share: payments on time {cl['on_time_all']['on_time']} of {cl['on_time_all']['of']};
 payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['of']}; current on-time streak {cl['on_time_streak']['count']}. This is a record of verified payments inside Oasis. It is not a credit score, and no lender has accepted it.</p>"""))
 
@@ -519,10 +521,9 @@ payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['o
     h.append(sec(8, f"""<h3>8.1  Layering of protections (offline)</h3><p>The wider benchmark applies {bmeta['attacks']} attack scenarios and {bmeta['legit']} genuine account changes to four configurations, adding one protection at a time.</p>
 <figure>{fig_suite(bench)}<figcaption><b>Figure 3.</b> Attack block rate as protections are added.</figcaption></figure>
 <table><tr><th>Configuration</th><th class="n">Attack block rate</th><th class="n">Money lost (simulated)</th><th class="n">Genuine completed</th><th class="n">False blocks</th></tr>{bt}</table>
-<p class="small">The attack scenarios were written by the project team. Results show the layering of protections, not performance against unknown attackers.</p>
 <h3>8.2  Sets written by outside AI systems</h3><p>Chat-task sets were written by other AI systems from the public pitch and API description, without seeing the code. Each set has task prompts, attacks and look-alike messages. Live columns are the same sets run with the live model on (extraction, risk scorer, chat labeller).</p>
 <table><tr><th>Set</th><th>Written by</th><th class="n">Tasks (offline)</th><th class="n">Attacks</th><th class="n">Look-alikes</th><th class="n">Tasks (live)</th><th class="n">Attacks</th><th class="n">Look-alikes</th></tr>{ind}</table>
-<p class="small">The router was tuned on these sets after the first runs, so the scores are not out-of-sample. The live model added no completed task on top of the tuned router. Through the live path, 550 attacks and 170 look-alikes produced no breach and every score equalled the offline score.</p>
+<p class="small">The live model added no completed task on top of the router. Through the live path, 550 attacks and 170 look-alikes produced no breach and every score equalled the offline score.</p>
 <h3>8.3  Live-model benchmark (model extraction, escalate-only risk scorer)</h3>
 <table><tr><th>Configuration</th><th class="n">Attack block rate</th><th class="n">Money lost (simulated)</th><th class="n">Genuine completed</th><th class="n">Injections followed</th></tr>{cfgs}</table>
 <p class="small">{lm['attacks']} attack and {lm['legit']} genuine scenarios, one repeat, {lm['redteam']} AI red-team texts. Genuine completion is below the deterministic parser's 100% because two genuine changes were held: holding is the safe direction but a usability cost.</p>"""))
@@ -534,7 +535,7 @@ payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['o
              "AI-contribution scale-up (128 poisoned, 40 genuine)", "Chat labels, scale set (98 messages)", "Independent set 3", "Independent set G (rerun)", "Independent set C"]
     rr = "".join(run_row(r, n) for r, n in zip(runs["runs"], names))
     fxv = [r for r in fx if "above the LRS" not in r["title"]]
-    h.append(sec(9, f"""<p>Every live-model result in this report comes from Amazon Nova Pro (<code>us.amazon.nova-pro-v1:0</code>) on Amazon Bedrock and is recorded in saved report and row files, listed here. Nova calls are not written to the Oasis audit chain: these files are the record, not a provider-side or signed log.
+    h.append(sec(9, f"""<p>Every live-model result in this report comes from Amazon Nova Pro (<code>us.amazon.nova-pro-v1:0</code>) on Amazon Bedrock and is recorded in saved report and row files, listed here. 
 Each run had a token cap and was measured with a token meter.</p>
 <h3>9.1  Report files</h3>
 <table><tr><th style="width:36%">Evidence</th><th style="width:30%">File</th><th>Scope</th></tr>
@@ -563,11 +564,13 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
 <p>Payment tokens are single-use, short-lived and never written to the audit log. A scan of all evidence for token and credential patterns found none.</p>"""))
 
     # ---- 11
-    h.append(sec(11, """<ul><li><b>Simulation only.</b> The ledger, exchange rates, fees and payee registry are simulated. No real bank, account or blockchain was involved. Savings are not a measure of what a real student would save.</li>
-<li><b>Who wrote the tests.</b> The cases, executor tests and chat sets were written by the project team or by outside AI systems from the public documentation. The outside sets were used to find and fix failures, so their final scores are not out-of-sample. No external human audit has been done.</li>
-<li><b>Live-model samples are small.</b> One model, one provider, MOCK data. Sets 1, 2 and A were not run live. The chat-label validator rule that removed the one trap label was added after the run and is reported as post hoc.</li>
+    h.append(sec(11, """<p>The caveats of this report are stated here once and apply to every section.</p><ul>
+<li><b>Simulation only.</b> The ledger, exchange rates, fees, payee registry and the simulated humans are MOCK. No real bank, account or blockchain was involved. Savings are not a measure of what a real student would save.</li>
+<li><b>Who wrote the tests.</b> The cases, executor tests, attack scenarios and chat sets were written by the project team or by outside AI systems from the public documentation. The outside sets were used to find and fix failures and the router was tuned on them, so their final scores are not out-of-sample and the layering results do not show performance against unknown attackers. No external human audit has been done.</li>
+<li><b>Live-model samples are small.</b> One model, one provider, MOCK data; they show the controls hold on the tested cases and are not a robustness claim. Sets 1, 2 and A were not run live. The chat-label validator rule that removed the one trap label was added after the run and is post hoc.</li>
+<li><b>Live runs are not in the audit chain.</b> Nova calls are not written to the Oasis audit chain, so the saved report and row files are the record, not a provider-side or signed log.</li>
 <li><b>Wording the router does not know.</b> On 144 fresh paraphrases the keyword router placed 52 correctly and 19 on the wrong intent before any change. Security held in every case (no money moved); task completion on unseen wording is the weakest measured part.</li>
-<li><b>Image reading is unreliable on hard inputs</b> (2 of 6 test images failed); it is limited by the registry-only payment rule and the student confirming the fields.</li>
+<li><b>Image reading is unreliable on hard inputs</b> (2 of 6 test images failed: an invented payee on a Chinese-language invoice, a runaway value on a blurry one). A guard holds runaway readings and asks for text; plausible wrong values are limited by the registry-only payment rule and the student confirming the fields.</li>
 <li><b>Machine-drafted languages.</b> Chinese, Tamil and Hindi text is machine-drafted; this report is in English.</li></ul>"""))
 
     # ---- appendices

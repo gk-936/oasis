@@ -50,7 +50,7 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 
 | Claim | Where to check it |
 |---|---|
-| 6 of 6 scam scenarios mitigated, CNY 0 against CNY 126,000 lost, 2 of 2 genuine payments, 9 of 9 tampered payments refused | `02_Execution_Logs/operation_log.jsonl`, `evidence_results.json`, `verify_evidence.py` |
+| 6 of 6 scam scenarios mitigated, CNY 0 against CNY 126,000 lost, 2 of 2 genuine payments, 10 of 10 tampered payments refused | `02_Execution_Logs/operation_log.jsonl`, `evidence_results.json`, `verify_evidence.py` |
 | Audit chains verify, replay to identical heads, tamper is detected | `02_Execution_Logs/evidence_results.json`, `demo_run_log.json` |
 | Chat session: one payment, three refusals, CNY 0 lost; FlightPath advice never resends; plan trade-offs | `02_Execution_Logs/participant_logs.json` |
 | Layered benchmark: 32 attacks and 12 genuine changes (6.2%, 68.8%, 100%, 100%) | `03_.../benchmark.md`, `benchmark.json` |
@@ -70,8 +70,9 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | Tokens, calls and USD of every metered live run | `04_.../ai_contribution_live_runs.json` |
 | FlightPath, peer netting, corridor rules | `05_.../flightpath.md`, `netting.md`, `corridors.md` |
 | Post-quantum signatures and TLS | `05_.../pqtls.md`, `06_.../pq-tls.md` |
-| Test suite: 1607 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
+| Test suite: 1766 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
 | Each security claim maps to named tests | `06_.../security-evidence-matrix.md` |
+| Informal conversations with 10 people we know: 6 international students (Europe, Southeast Asia) and 4 parents (who, what we asked, limits) | `interviews.md` |
 | Known limits, MOCK labelling | `06_.../security-self-assessment.md`, `real-vs-simulated.md`, `problem-evidence.md` |
 """
 
@@ -87,7 +88,11 @@ def main() -> None:
             n += 1
     shutil.copytree(R / "vision_live", DST / "04_Live_Model_Evidence" / "vision_live")
     shutil.copytree(ROOT / "execution_evidence", DST / "02_Execution_Logs", ignore=shutil.ignore_patterns("*.pdf", "__pycache__"))
+    shutil.copyfile(ROOT / "docs" / "interviews.md", DST / "interviews.md")
     (DST / "README.md").write_text(INDEX, encoding="utf-8")
+    (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run 2026-10-18 (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
+                                                          "1766 passed, 2 skipped in 70.81s (0:01:10)",
+                                                          "The 2 skipped tests are the live FISCO and live PQ-TLS tests.", ""]), encoding="utf-8")
     print(f"wrote {DST.name}/: {n} files in {len(GROUPS)} groups + execution logs + index")
 
 

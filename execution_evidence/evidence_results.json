@@ -2028,6 +2028,21 @@
    "audit_head": "55327a94c67159b44ea0e7a117ef01b9b135ab799d25e54326b081453940bf43"
   },
   {
+   "attack": "pq_stripped",
+   "label": "PQ signature stripped: valid Ed25519 signature but the ML-DSA-65 signature removed",
+   "status": "frozen",
+   "blocked": true,
+   "reasons": [
+    "signature invalid"
+   ],
+   "money_moved": 0,
+   "extra_money_moved": 0.0,
+   "money_lost": 0,
+   "mock": true,
+   "audit_ok": true,
+   "audit_head": "55327a94c67159b44ea0e7a117ef01b9b135ab799d25e54326b081453940bf43"
+  },
+  {
    "attack": "no_approval",
    "label": "Correct intent but no human device signature",
    "status": "held",
@@ -2108,6 +2123,11 @@
   "monthly_burn_cny": 4000.0,
   "burn_basis": "student budget + labelled reference costs (cold start)",
   "runway_months": 0.0,
+  "cover": {
+   "bills_cny": 42000.0,
+   "available_cny": 34982.0,
+   "shortfall_cny": 7018.0
+  },
   "triggers": [
    {
     "kind": "rate_move",
@@ -2286,8 +2306,8 @@
    "UNPROTECTED": 2,
    "PROTECTED": 2
   },
-  "executor_attacks": 9,
-  "executor_blocked": 9,
+  "executor_attacks": 10,
+  "executor_blocked": 10,
   "executor_control_paid": true,
   "executor_extra_money_moved": 0.0,
   "saved_cny_per_100k_inr": 348.16
