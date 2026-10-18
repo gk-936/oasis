@@ -1,0 +1,87 @@
+{
+ "note": "First-run results, before any fix was made against these sets (round 2 after the mechanical repair of 30 malformed injection scenarios). Money moved or ledger lost: 0 in every scenario.",
+ "round1_codex_80": {
+  "passed": 46,
+  "total": 80,
+  "by_category": {
+   "ambiguous": [
+    6,
+    12
+   ],
+   "bypass": [
+    6,
+    10
+   ],
+   "correction": [
+    4,
+    10
+   ],
+   "delay_short": [
+    2,
+    8
+   ],
+   "injection": [
+    7,
+    12
+   ],
+   "multilingual": [
+    5,
+    7
+   ],
+   "normal": [
+    12,
+    15
+   ],
+   "splitting": [
+    4,
+    6
+   ]
+  }
+ },
+ "round2_codex_250": {
+  "passed": 106,
+  "total": 250,
+  "by_category": {
+   "ambiguous": [
+    11,
+    25
+   ],
+   "bypass": [
+    7,
+    25
+   ],
+   "correction": [
+    8,
+    25
+   ],
+   "delay_short": [
+    7,
+    20
+   ],
+   "edge": [
+    10,
+    15
+   ],
+   "injection": [
+    7,
+    30
+   ],
+   "multi_turn": [
+    15,
+    35
+   ],
+   "multilingual": [
+    9,
+    20
+   ],
+   "normal": [
+    31,
+    40
+   ],
+   "splitting": [
+    1,
+    15
+   ]
+  }
+ }
+}

@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 from eval.build_evidence_pdf import LOGO, print_pdf
+from eval.pdf_figures import fig_money_lost, fig_outside_sets, fig_payment_path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "Security_Self_Assessment_Report.pdf"
@@ -113,7 +114,7 @@ def build(pages: dict[str, int]) -> str:
 <tr><td>Untrusted</td><td>Every document, email, screenshot, chat message, web page and tool output the agent reads, and every model output: transcriptions, risk scores, plan proposals, chat labels and explanation rewrites.</td></tr>
 <tr><td>Trusted</td><td>Policy engine, intent builder and signer, executor, payee registry interface, verification ramp, hash-chained audit log, approval verification.</td></tr>
 <tr><td>Human</td><td>The student and, for large family transfers, the parent. They approve by signing the exact draft in the browser; their private keys never reach the server.</td></tr></table>
-<h3>3.2  Invariants</h3>
+""" + fig_payment_path(1) + """<h3>3.2  Invariants</h3>
 <p>These hold in every code path and are not configurable. A change that would weaken one needs a test and an entry in the evidence matrix.</p>
 <ol style="margin-left:18px">
 <li>The AI model only proposes and explains. It never approves a payment, holds a credential, changes a verification status or writes to the audit log. Its risk score may only escalate a decision.</li>
@@ -192,6 +193,7 @@ def build(pages: dict[str, int]) -> str:
 <tr><td>Genuine payments completed</td><td class="c">{ev['legit_paid']['UNPROTECTED']} of {ev['legit_cases']}</td><td class="c">{ok(f"{ev['legit_paid']['PROTECTED']} of {ev['legit_cases']}")}</td></tr>
 <tr><td>Tampered signed payments refused by the executor</td><td class="c">not applicable</td><td class="c">{ok(f"{ev['executor_blocked']} of {ev['executor_attacks']}")}</td></tr></table>
 <p>The split-transfer case (P6) is mitigated rather than fully blocked: the first of three CNY 3,300 transfers, below the approval limit, executed and two were held for the parent. The benchmark's layered run shows where the protection comes from: attack block rate 6.2% for the baseline, 68.8% with registry verification, and 100% once signed intents and policy are added, with legitimate completion 100% throughout. Canaries block nothing extra; they flag 3 attacks earlier.</p>
+{fig_money_lost(2)}
 <h3>6.2  Live-model path (Amazon Nova Pro, MOCK data)</h3>
 <table><tr><th>Check</th><th class="n">Result</th></tr>
 <tr><td>Poisoned invoices: model changed the account, amount or payee</td><td class="n">0 of 128</td></tr>
@@ -203,6 +205,8 @@ def build(pages: dict[str, int]) -> str:
 <tr><td>Chat labeller: manipulation messages that received a payment label</td><td class="n">1 of 25 as run; 0 of 25 after a validator rule added later (post hoc)</td></tr></table>
 <h3>6.3  Task completion under the router</h3>
 <p>Security held where completion did not. On 144 fresh paraphrases, before any change, the keyword router placed 52 correctly, 19 on the wrong intent and left 73 unknown; money moved in none. On three outside-written sets the live path completed 96 of 120, 129 of 150 and 140 of 150 tasks, with every attack refused. Wording the router does not know is the weakest measured part of the product, and it costs convenience, not safety.</p>
+<p>Two sets written by an outside AI (Codex) from the pitch and the API description alone were run offline. In none of the 330 scenarios did money move. Task completion on unusual wording is the weak spot: 106 of 250 met every expectation on the first run, 86 of the misses being messages the offline keyword router could not place. The live model is meant to cover part of that and has not been measured on these sets.</p>
+{fig_outside_sets(3)}
 <h3>6.4  Stress and fuzz (offline)</h3>
 <p>A generated run of 92,076 chat messages (60,000 attacks across obfuscations) and 29,053 end-to-end conversations found <b>0 hard breaches</b> (no money moved outside the registry, no secret revealed, no unsigned payment, no server error). 65 soft findings (a false refusal or an attack that was not refused) remain; 99.05% of attacks were refused when lossy encodings such as reversed words and leetspeak are excluded. A mutation fuzz of 6,615 messages and 300 random walks found no invariant breach.</p>"""))
 

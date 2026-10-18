@@ -40,7 +40,7 @@ body {{ font: 10.8pt/1.6 Cambria, 'Times New Roman', serif; font-variant-numeric
 h2 {{ font-size: 17pt; margin: 0 0 12pt; padding-bottom: 5pt; border-bottom: 0.8pt solid {INK}; break-after: avoid; }}
 h3 {{ font-size: 12pt; margin: 18pt 0 5pt; break-after: avoid; }}
 h4 {{ font-size: 10.8pt; margin: 12pt 0 3pt; break-after: avoid; font-style: italic; }}
-section.s {{ break-before: page; }}
+section.s {{ break-before: page; }} thead {{ break-after: avoid; }} thead + tr {{ break-before: avoid; }} p, li {{ orphans: 3; widows: 3; }}
 p {{ margin: 7pt 0; text-align: justify; }} .small {{ font-size: 8.8pt; color:{MID}; }}
 b.k {{ color:{ACCENT}; }}
 table {{ border-collapse: collapse; width: 100%; font-size: 9.6pt; margin: 9pt 0; }} tr {{ break-inside: avoid; }} thead {{ display: table-header-group; }}
@@ -66,7 +66,7 @@ figure {{ margin: 12pt 0; break-inside: avoid; text-align: center; }} figcaption
 def tbl(head: list[str], rows: list[list[str]], widths: list[str] | None = None) -> str:
     w = widths or [""] * len(head)
     th = "".join(f'<th style="width:{x}">{h}</th>' if x else f"<th>{h}</th>" for h, x in zip(head, w))
-    return f"<table><tr>{th}</tr>" + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows) + "</table>"
+    return f"<table><thead><tr>{th}</tr></thead>" + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows) + "</table>"
 
 
 def note(body: str) -> str:
@@ -135,7 +135,8 @@ def build(pages: dict[str, int]) -> str:
 </ol></section>''')
 
     def sec(n, body):
-        return f'<section class="s"><h2>{n}.&nbsp; {SECTIONS[n - 1]}</h2>{body}</section>'
+        flow = ' style="break-before:auto"' if n in (4, 5, 6) else ""          # a short section 4 tail should not leave a nearly empty page
+        return f'<section class="s"{flow}><h2>{n}.&nbsp; {SECTIONS[n - 1]}</h2>{body}</section>'
 
     def app(n, body):
         return f'<section class="s"><h2>Appendix {chr(64 + n)}.&nbsp; {APPENDICES[n - 1]}</h2>{body}</section>'
@@ -185,7 +186,7 @@ def build(pages: dict[str, int]) -> str:
     ["Why-cards", "A plain explanation of each hold or refusal, with what is not established and the next step."],
     ["Corridors and FX", "Six corridors with rules for LRS, TCS and the SAFE quota, and foreign-currency plans for USD and EUR bills."],
     ["Numbers", "The committed benchmark results, with their caveats."],
-    ["Post-quantum signing", "Every payment intent is signed with two algorithms, one of them post-quantum, and both must verify.", "3.13"]], ["20%", "80%"])}"""))
+    ["Post-quantum signing", "Every payment intent is signed with two algorithms, one of them post-quantum, and both must verify."]], ["20%", "80%"])}"""))
 
     # ------------------------------------------------------------------ 2
     h.append(sec(2, f"""

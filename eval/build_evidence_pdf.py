@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from eval.pdf_figures import fig_outside_sets
 
 OUT = Path(__file__).resolve().parents[1] / "execution_evidence"
 LOGO = Path(__file__).resolve().parents[1] / "docs" / "assets" / "oasis-logo-dark.svg"
@@ -390,13 +391,7 @@ In Oasis the AI plans, reads invoices, answers in chat and explains risk, while 
 <h3>2.2  Conditions</h3><ul><li>Sections 4, 6, 7, 8 and the offline logs in Section 5: fresh simulated world for every run, fixed seed ({m['seed']}), seeded keys and nonces, simulated clock, offline deterministic model, no network and no model tokens.</li>
 <li>Live-model results (Sections 5.3 to 5.4, 8.3, 9): Amazon Nova Pro on Amazon Bedrock, saved as report and row files.</li>
 <li>Simulated humans approve or decline according to the student's record. They are not an oracle.</li></ul>
-<h3>2.3  Demo video</h3><p>The submission also includes a demo video. Where each log in this report appears in the video:</p>
-<table><tr><th>Case or log</th><th>Section</th><th class="c">Video time</th></tr>
-<tr><td>P1 Fake landlord, new account</td><td>6</td><td class="c">[mm:ss]</td></tr><tr><td>P4 Hidden instruction in a document</td><td>6</td><td class="c">[mm:ss]</td></tr>
-<tr><td>P6 Split transfer</td><td>6</td><td class="c">[mm:ss]</td></tr><tr><td>Chat session</td><td>5.2</td><td class="c">[mm:ss]</td></tr>
-<tr><td>FlightPath recovery advice</td><td>5.5</td><td class="c">[mm:ss]</td></tr><tr><td>Executor tamper tests</td><td>6.1</td><td class="c">[mm:ss]</td></tr>
-<tr><td>Post-quantum signature stripped test</td><td>6.1</td><td class="c">[mm:ss]</td></tr></table>
-<h3>2.4  What was recorded and how to verify</h3><p>For every operation: the request, the outcome with rule and reasons, each ledger transfer, balance changes, and each audit entry with its hash. The complete list of {o.get('log_lines', 30)} operation records is in Appendix B.
+<h3>2.3  What was recorded and how to verify</h3><p>For every operation: the request, the outcome with rule and reasons, each ledger transfer, balance changes, and each audit entry with its hash. The complete list of {o.get('log_lines', 30)} operation records is in Appendix B.
 Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_cases_replay_identical'] else "no"}</b>. A scan of all evidence for payment and API tokens found: <b>{', '.join(o['redaction']['secrets_found']) or 'none'}</b>. The verification folder (Appendix A) contains a program that recomputes the headline figures.</p>"""))
 
     # ---- 3
@@ -524,6 +519,8 @@ payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['o
 <h3>8.2  Sets written by outside AI systems</h3><p>Chat-task sets were written by other AI systems from the public pitch and API description, without seeing the code. Each set has task prompts, attacks and look-alike messages. Live columns are the same sets run with the live model on (extraction, risk scorer, chat labeller).</p>
 <table><tr><th>Set</th><th>Written by</th><th class="n">Tasks (offline)</th><th class="n">Attacks</th><th class="n">Look-alikes</th><th class="n">Tasks (live)</th><th class="n">Attacks</th><th class="n">Look-alikes</th></tr>{ind}</table>
 <p class="small">The live model added no completed task on top of the router. Through the live path, 550 attacks and 170 look-alikes produced no breach and every score equalled the offline score.</p>
+<p>Two further sets (separate from set C in the table) were written afterwards by Codex from the pitch and the API description alone and run offline, first run, before any fix: 80 scenarios (46 met every expectation) and 250 scenarios (106 met every expectation, after a mechanical repair of 30 malformed entries). Money moved in none of the 330 scenarios. The misses are mostly unusual wording the offline keyword router cannot place; the live model has not been measured on these sets. Fixes made afterwards were made against these sets, so only the first-run figures are independent.</p>
+{fig_outside_sets(4)}
 <h3>8.3  Live-model benchmark (model extraction, escalate-only risk scorer)</h3>
 <table><tr><th>Configuration</th><th class="n">Attack block rate</th><th class="n">Money lost (simulated)</th><th class="n">Genuine completed</th><th class="n">Injections followed</th></tr>{cfgs}</table>
 <p class="small">{lm['attacks']} attack and {lm['legit']} genuine scenarios, one repeat, {lm['redteam']} AI red-team texts. Genuine completion is below the deterministic parser's 100% because two genuine changes were held: holding is the safe direction but a usability cost.</p>"""))
