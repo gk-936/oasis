@@ -16,11 +16,12 @@ Rules in force: no paid model call without the owner's approval for that run (`C
 | Local token meter (outside the repo) | Done |
 | Sequence anomaly flags in the risk scorer | Done, tests added |
 | Second-pass chat phrasing fixes | Done, tests added |
-| Final full verification (attack benches, independent sets, fuzz, mega stress tests) | **Running** |
-| Check that sequence flags do not hold any legitimate benchmark payment | **Open** |
-| Docs: final test count, evidence-matrix row for sequence flags | **Open** |
-| Commit | **Not requested yet** |
-| Live Bedrock runs (injection on model paths, chat labeller on misses, prompt sweep) | **Not run: need owner approval and a cap** |
+| Final full verification (attack benches, independent sets, fuzz, mega stress tests) | Done (sections 12.6, 12.7); offline suite 1606 passed, 2 skipped on 2026-10-18 |
+| Check that sequence flags do not hold any legitimate benchmark payment | Done: only the six split-payment attack rows changed (12.6); 40 of 40 genuine invoices held as offline on the live path (14.11) |
+| Docs: final test count, evidence-matrix row for sequence flags | Done (rows 37 to 44) |
+| Commit | Done locally (latest `6bd31e2` plus ledger edits); **not pushed**, the owner decides |
+| Live Bedrock runs (injection on model paths, chat labeller on misses, prompt sweep) | **Done, see sections 14.1, 14.4, 14.11, 14.12**: 128 poisoned and 40 genuine invoices, 98 fresh chat messages plus the held-out set, 550 attacks and 170 look-alikes from the outside-written sets 3, G and C, 56 planner plans. Not run: sets 1, 2 and A live, and a separate live prompt sweep |
+| Hosting | Azure VM, HTTPS on a fixed DNS name, live model with a 3,000,000-token lifetime budget (14.8, 14.10, 14.11) |
 
 ## 1. Setup and baseline
 
@@ -93,7 +94,7 @@ Found by an old-vs-new router comparison over 43,904 repo messages (`diffrouter.
 - AI hardening rating about 7/10: strong containment and validation; thin live evidence (small samples, one model, own test sets).
 - Capabilities in the brief: scam explanation and planning are covered; anomaly detection covered, with "unexpected payment sequences" now added to the existing scorer.
 
-## 9. Open items and next steps
+## 9. Open items and next steps (written 2026-10-17 evening; later work is in section 14)
 
 1. Wait for the final run; compare attack benches, fuzz and mega reports to the committed ones; restore `eval/reports` (timestamps only).
 2. Re-run the visible, hidden and fresh attack benchmarks on their own and confirm legitimate scenarios are not held by the sequence flags.
@@ -298,3 +299,7 @@ Rules followed: every live run stated its command and cap first, was metered wit
 - **Planner repeats** (`eval.planning --llm bedrock --repeats 7 --repeat-index 4..7 --token-cap 70000`, each repeat with an extra ledger guard of start + 90,000): repeats 4 to 7 all 8 of 8 valid without fallback; pooled over 7 repeats **56 of 56** (95% interval 94% to 100%), 197,110 input and 21,125 output tokens (USD 0.23). `eval/reports/planning.{json,md}` extended in place (backup of the 24-plan version outside the repo).
 - **Spend, whole night:** metered about USD 0.8 (history file total plus the planner), plus an unmetered interrupted run of about USD 0.15 to 0.2: roughly **USD 1.0 of the approved USD 2**. Laptop ledger total about 2.46 million tokens over all days (most of it the earlier Groq-era runs; the VM's own ledger is separate and counts toward its 3,000,000 budget).
 - **Open, for the owner:** the router first-run weakness on unseen wording (36% right, 13% wrong, 51% unknown on 144 fresh paraphrases); sets 1, 2 and A not run live; nothing pushed; the VM runs commit 5814833's app code (the later commits only touch evaluation files and docs).
+
+### 14.13 features.md (2026-10-18, owner's request)
+
+Wrote `features.md`: 119 numbered features with a one-line description each, grouped in ten sections (pipeline, planning and money, FlightPath/Twin/netting, credentials and proof, AI features, chat and intake, evaluation tools, access/security/hosting, interface, developer extras). Built from the code layout, the 102 API routes, the UI tabs and the docs; not committed.
