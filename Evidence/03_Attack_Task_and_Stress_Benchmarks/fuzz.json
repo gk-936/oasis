@@ -1,0 +1,32 @@
+{
+ "meta": {
+  "run": "2026-10-16 11:58",
+  "seed": 7,
+  "variants": 4,
+  "caveat": "Our own generator on our own corpus, offline keyword router, MOCK data. It finds crashes and formatting blind spots, not new attack ideas, and says nothing about a live model."
+ },
+ "mutation": {
+  "messages": 1362,
+  "variants_run": 6615,
+  "by_mutation": {
+   "typo": 604,
+   "upper": 661,
+   "lower": 592,
+   "spacing": 703,
+   "fullwidth": 678,
+   "zero_width": 662,
+   "filler_pre": 670,
+   "filler_post": 702,
+   "quoted": 673,
+   "punct": 670
+  },
+  "hard": [],
+  "soft": []
+ },
+ "walks": {
+  "walks": 300,
+  "steps": 1624,
+  "signed": 65,
+  "findings": []
+ }
+}

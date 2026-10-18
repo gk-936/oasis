@@ -232,7 +232,7 @@ def card_uncertainty_zh(items: list[str]) -> list[str]:
 def card_next_step(action: str, nxt: str | None, lang: str = "en") -> str:
     if nxt:
         return nxt
-    en, zh = NEXT_STEP.get("frozen" if action in ("frozen", "freeze") else "held")
+    en, zh = NEXT_STEP["held" if action == "held" else "frozen"]       # only a held draft can be signed; stopped ones are verified first
     return zh if lang == "zh" else en
 
 

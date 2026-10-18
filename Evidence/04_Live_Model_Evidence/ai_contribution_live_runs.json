@@ -1,0 +1,90 @@
+{
+ "about": "Metered live runs behind ai_contribution.md (token meter: input and output tokens per run; cost at the owner's prices of USD 0.80 per million input and USD 3.50 per million output tokens; Amazon Nova Pro on Bedrock, us-east-1, owner's own AWS account, 2026-10-17).",
+ "runs": [
+  {
+   "run": "1",
+   "command": "eval.ai_contribution --live --cap 150000",
+   "calls": 90,
+   "input_tokens": 28791,
+   "output_tokens": 7624,
+   "usd": 0.05,
+   "note": "First live run. Its FlightPath rewrite guard only required the template's numbers to survive: 9 rewrites were accepted, 2 of them added a list number, and one began with 'Here's a more natural rewrite'. That is why the guard was tightened (numbers may not be added, plain text only)."
+  },
+  {
+   "run": "2",
+   "command": "eval.ai_contribution --live --cap 40000",
+   "calls": 13,
+   "input_tokens": 5097,
+   "output_tokens": 1131,
+   "usd": 0.008,
+   "note": "Re-ran the 12 FlightPath rewrites with the stricter guard and prompt; every other answer came from the disk cache."
+  },
+  {
+   "run": "3",
+   "command": "eval.chat_llm_bench --live --cap 18000 --set heldout",
+   "calls": 30,
+   "input_tokens": 8545,
+   "output_tokens": 559,
+   "usd": 0.009,
+   "note": "Reproduction of the committed held-out chat-labeller run on a second AWS account: 18 of 20 paraphrases correct, 1 wrong, 0 of 10 traps labelled as a payment (saved as chat_llm_heldout_repro_2026-10-17.md)."
+  },
+  {
+   "command": "eval.ai_contribution --live --cap 150000 (round 2)",
+   "calls": 61,
+   "input_tokens": 26778,
+   "output_tokens": 3320,
+   "usd": 0.033,
+   "note": "Added the 8 genuine invoices (8 of 8 held as offline, 0 false escalations, highest AI score 0) after recalibrating the risk prompt; risk and extraction calls were new (the prompt changed), the rest cached."
+  },
+  {
+   "command": "eval.chat_llm_bench --live --cap 18000 --set heldout (round 2, labeller prompt wording tested)",
+   "calls": 30,
+   "input_tokens": 9205,
+   "output_tokens": 563,
+   "usd": 0.009,
+   "note": "Tried 'pay, settle, clear or square up' in the labeller prompt: paraphrases unchanged (18 of 20) but a trap ('just claim the tuition cleared') got a payment label (1 of 10 instead of 0). Reverted; the committed held-out report is unchanged."
+  },
+  {
+   "command": "eval.ai_contribution --live --cap 400000 (scale-up)",
+   "calls": 260,
+   "input_tokens": 93977,
+   "output_tokens": 20849,
+   "usd": 0.148,
+   "note": "128 poisoned invoices (80 on an unregistered account in 5 layouts, 48 on the registered account) and 40 genuine invoices; plus the 12 chat phrasings and 12 FlightPath rewrites from cache. Reruns after parser fixes answered from the disk cache."
+  },
+  {
+   "command": "eval.chat_llm_bench --live --cap 70000 --set scale",
+   "calls": 98,
+   "input_tokens": 27748,
+   "output_tokens": 1800,
+   "usd": 0.028,
+   "note": "98 fresh messages (73 paraphrases, 25 traps) the router cannot place; first-run result, prompt frozen."
+  },
+  {
+   "command": "eval.independent_bench 3 --live --cap 120000",
+   "calls": 188,
+   "input_tokens": 53173,
+   "output_tokens": 8629,
+   "usd": 0.073,
+   "note": "Set 3 (ChatGPT-written): tasks 96/120, attacks 150/150, look-alikes 50/50, identical to offline."
+  },
+  {
+   "command": "eval.independent_bench G --live --cap 200000 (rerun after an aborted first run)",
+   "calls": 46,
+   "input_tokens": 13308,
+   "output_tokens": 2259,
+   "usd": 0.019,
+   "note": "Set G (Gemini-written): tasks 140/150, attacks 200/200, look-alikes 60/60, identical to offline. The first run of this set ignored its cap (harness bug, fixed) and was stopped by hand after about 146,000 tokens, which are NOT metered here (about USD 0.15 to 0.2); its answers were reused from the disk cache."
+  },
+  {
+   "command": "eval.independent_bench C --live --cap 200000",
+   "calls": 457,
+   "input_tokens": 127735,
+   "output_tokens": 21703,
+   "usd": 0.178,
+   "note": "Set C (Codex-written): tasks 129/150, attacks 200/200, look-alikes 58/60, identical to offline."
+  }
+ ],
+ "total_usd": 0.555,
+ "also": "About 140 tokens of availability checks and connectivity pings, under USD 0.001. Diagnostics on 2026-10-18 (re-asking a few failed or malformed answers) cost a few thousand tokens, under USD 0.01."
+}

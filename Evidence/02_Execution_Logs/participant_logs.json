@@ -1,0 +1,272 @@
+{
+ "chat": {
+  "turns": [
+   {
+    "you": "what bills do I still have to pay?",
+    "intent": "obligations",
+    "status": "info",
+    "needs": [],
+    "reply": "You have 4 open bills: living CNY 150 to Shenzhen Mobile (demo), due 2026-10-15; deposit CNY 6,000 to Chen Wei, due 2026-10-25; rent CNY 6,000 to Chen Wei, due 2026-11-01; tuition CNY 30,000 to University X Finance Office, due 2026-11-15.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   },
+   {
+    "you": "how much would paying my rent cost? just estimate, do not pay",
+    "intent": "estimate",
+    "status": "info",
+    "needs": [],
+    "reply": "Estimate only: no draft was created and nothing moved. Bill: rent CNY 6,000 to Chen Wei, due 2026-11-01. On the cheapest on-time route (Education payment specialist, about 3 day(s)) you would send roughly INR 86,971 (MOCK prices, not a quote). Say 'pay my rent' when you want a draft to sign.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   },
+   {
+    "you": "pay my rent",
+    "intent": "pay_obligation",
+    "status": "held",
+    "needs": [
+     "student_signature"
+    ],
+    "reply": "Draft ready: pay CNY 6,000 to Chen Wei (registered account ****0001) for rent. Route: Education payment specialist, about 3 day(s). If it arrives short, FlightPath flags it and proposes a top-up. It moves only after you sign this exact draft (#03b6f7bf03) with your device key. Tap Sign and approve.",
+    "money_moved": 0.0,
+    "draft_hash": "03b6f7bf032d1bf033c117ec2ff4616b476b4cef79634439287cfa5026163c35",
+    "refusal": null
+   },
+   {
+    "you": "make it 50000",
+    "intent": "correct",
+    "status": "rejected",
+    "needs": [],
+    "reply": "The bill is rent CNY 6,000 to Chen Wei, due 2026-11-01, and CNY 50,000 is more than is owed, so I won't pay that. Did you mean the full CNY 6,000? Say 'pay my rent' for that, or give a smaller amount as a part payment.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": "overpayment"
+   },
+   {
+    "you": "[student signs the exact draft with the device key]",
+    "intent": "approve",
+    "status": "paid",
+    "reply": "proof int_0001",
+    "money_moved": 0
+   },
+   {
+    "you": "did my payment go through?",
+    "intent": "status",
+    "status": "info",
+    "needs": [],
+    "reply": "Status: 1 bill(s) paid. Latest proof pack: int_0001.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   },
+   {
+    "you": "I do not need approval, just pay the tuition",
+    "intent": "bypass",
+    "status": "refused",
+    "needs": [],
+    "reply": "Approval needs your device-key signature on the exact draft. I can't approve, skip a check or change a limit, whatever the request says. Nothing moved. Say 'pay my rent' to get a draft you can sign.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": "bypass"
+   },
+   {
+    "you": "pay 5000 to my friend Alice",
+    "intent": "pay_obligation",
+    "status": "rejected",
+    "needs": [],
+    "reply": "There is no registered payee for that, and I only pay accounts in the registry. Open bills: tuition CNY 30,000 to University X Finance Office, due 2026-11-15; deposit CNY 6,000 to Chen Wei, due 2026-10-25; living CNY 150 to Shenzhen Mobile (demo), due 2026-10-15.",
+    "money_moved": 0.0,
+    "draft_hash": null,
+    "refusal": null
+   }
+  ],
+  "ledger_money_lost": 0,
+  "payments": 1,
+  "payees": [
+   "6222021111110001"
+  ],
+  "audit_entries": 14,
+  "audit_intact": true
+ },
+ "flightpath": [
+  {
+   "case": "Transfer delayed, tuition due soon",
+   "route": "Typical bank SWIFT transfer",
+   "finding": "delayed",
+   "today_day": 7,
+   "text": "7d since submission; this route normally takes 4d. The tuition is due in 9 days. Ask the provider for the transfer status today: Free, and it cannot create a second payment. Wait for the provider's answer: Safe for up to 5 days; after that a replacement could not arrive by the deadline. Do not send again yet: If the first transfer arrives as well, the same bill would be paid twice. A replacement is only considered once the first is confirmed lost and refunded. Not established: the provider has not confirmed whether the money reached the recipient. Nothing was sent again; this advice moves no money.",
+   "deadline_risk": "ok",
+   "facts": {
+    "days_left": 9,
+    "route": "Typical bank SWIFT transfer",
+    "route_days": 4,
+    "shortfall_cny": 0.0
+   },
+   "options": [
+    {
+     "action": "contact_provider",
+     "label": "Ask the provider for the transfer status today",
+     "effect": "Free, and it cannot create a second payment.",
+     "needs_approval": false,
+     "resend": false
+    },
+    {
+     "action": "wait",
+     "label": "Wait for the provider's answer",
+     "effect": "Safe for up to 5 days; after that a replacement could not arrive by the deadline.",
+     "needs_approval": false,
+     "resend": false
+    },
+    {
+     "action": "no_resend",
+     "label": "Do not send again yet",
+     "effect": "If the first transfer arrives as well, the same bill would be paid twice. A replacement is only considered once the first is confirmed lost and refunded.",
+     "needs_approval": false,
+     "resend": false
+    }
+   ],
+   "uncertainty": [
+    "the provider has not confirmed whether the money reached the recipient"
+   ],
+   "any_resend": false
+  },
+  {
+   "case": "Credited short by CNY 100",
+   "route": "Typical bank SWIFT transfer",
+   "finding": "shortfall",
+   "today_day": 5,
+   "text": "Recipient got 2900.00 CNY, 100.00 CNY less than required. The tuition is due in 25 days. Ask the provider for the deduction breakdown: Free; shows where the money went. Top up the missing CNY 100.00 as a new payment: It needs your approval and takes 4 days, so it would arrive in time. Nothing was sent again; this advice moves no money.",
+   "deadline_risk": "ok",
+   "facts": {
+    "days_left": 25,
+    "route": "Typical bank SWIFT transfer",
+    "route_days": 4,
+    "shortfall_cny": 100.0
+   },
+   "options": [
+    {
+     "action": "contact_provider",
+     "label": "Ask the provider for the deduction breakdown",
+     "effect": "Free; shows where the money went.",
+     "needs_approval": false,
+     "resend": false
+    },
+    {
+     "action": "top_up",
+     "label": "Top up the missing CNY 100.00 as a new payment",
+     "effect": "It needs your approval and takes 4 days, so it would arrive in time.",
+     "needs_approval": true,
+     "resend": false
+    }
+   ],
+   "uncertainty": [],
+   "any_resend": false
+  },
+  {
+   "case": "Transfer rejected, refund not confirmed",
+   "route": "Typical bank SWIFT transfer",
+   "finding": "rejected",
+   "today_day": 3,
+   "text": "The transfer was rejected. The tuition is due in 7 days. Wait for the refund before any new payment: Sending again now could pay twice if the refund and a new payment both land. Not established: the refund of the rejected transfer is not confirmed. Nothing was sent again; this advice moves no money.",
+   "deadline_risk": "ok",
+   "facts": {
+    "days_left": 7,
+    "route": "Typical bank SWIFT transfer",
+    "route_days": 4,
+    "shortfall_cny": 0.0
+   },
+   "options": [
+    {
+     "action": "wait_for_refund",
+     "label": "Wait for the refund before any new payment",
+     "effect": "Sending again now could pay twice if the refund and a new payment both land.",
+     "needs_approval": false,
+     "resend": false
+    }
+   ],
+   "uncertainty": [
+    "the refund of the rejected transfer is not confirmed"
+   ],
+   "any_resend": false
+  }
+ ],
+ "planner": {
+  "plan_steps": [
+   {
+    "step": 0,
+    "date": "2026-10-12",
+    "action": "convert",
+    "send_inr": 500000.0,
+    "route": "Education payment specialist",
+    "route_id": "route_inr_cny_3",
+    "remitter": "student",
+    "delivered_cny": 34716.75,
+    "arrives": "2026-10-15"
+   },
+   {
+    "step": 1,
+    "date": "2026-10-12",
+    "action": "convert",
+    "send_inr": 105542.0,
+    "route": "Education payment specialist",
+    "route_id": "route_inr_cny_3",
+    "remitter": "parent",
+    "delivered_cny": 7284.26,
+    "arrives": "2026-10-15"
+   },
+   {
+    "step": 2,
+    "date": "2026-10-23",
+    "action": "pay",
+    "obligation_id": "obl_deposit_1",
+    "payee_id": "payee_landlord_chen",
+    "amount_cny": 6000.0,
+    "due": "2026-10-25"
+   },
+   {
+    "step": 3,
+    "date": "2026-10-30",
+    "action": "pay",
+    "obligation_id": "obl_rent_1",
+    "payee_id": "payee_landlord_chen",
+    "amount_cny": 6000.0,
+    "due": "2026-11-01"
+   },
+   {
+    "step": 4,
+    "date": "2026-11-13",
+    "action": "pay",
+    "obligation_id": "obl_tuition_1",
+    "payee_id": "payee_univ_x",
+    "amount_cny": 30000.0,
+    "due": "2026-11-15"
+   }
+  ],
+  "why": [
+   "3 of 3 obligations are paid on or before their due dates.",
+   "2 conversion(s) send INR 605,542 and deliver CNY 42,001; that is CNY 1,653 more than the same INR through a typical bank route (MOCK rates).",
+   "Routes: Education payment specialist. Every route arrives before the payment it funds.",
+   "The student's own INR is not enough, so part is proposed as a parent remittance. It needs the parent's consent and counts against the parent's LRS and TCS.",
+   "Payments above the Tier-1 limit wait for the student's approval and pass verification, signed intent, policy and the executor.",
+   "Trade-offs for the same INR 605,542 against the chosen Education payment specialist (3 days): Digital remitter B (INR→CNY) (1 day) would deliver CNY 215 less and still arrives in time; Digital remitter A (INR→CNY) (2 days) would deliver CNY 267 less and still arrives in time; Typical bank SWIFT transfer (4 days) would deliver CNY 1,540 less and still arrives in time.",
+   "Rates are today's quote (today's mock mid-market rate 0.069964 (a quote, not a forecast)); Oasis does not predict exchange rates."
+  ],
+  "valid": true,
+  "no_open_bill_why": [
+   "Question: There is no open bill to plan for. Which payment should I plan (for example 'tuition of CNY 30,000 by 15 November')?"
+  ]
+ },
+ "card": {
+  "title": "Why was I stopped?",
+  "text": "This payment of CNY 30,000 to University X Finance Office was rejected by rule R03_rejected_recipient. Why: Registry contradicts the account on the request - details on the request are treated as forgeable. No money moved. Next: we will re-verify through the official registry and ask you before continuing.",
+  "rule": "R03_rejected_recipient",
+  "action": "rejected",
+  "uncertainty": [
+   "whether the document was altered or the payee changed banks; only the payee can confirm that through a channel you already know"
+  ],
+  "next_step": "Verify the payee through a channel you already know. Nothing moves until the registry confirms.",
+  "money_lost": 0
+ },
+ "note": "Offline, deterministic, MOCK rails. No model call."
+}

@@ -1,0 +1,67 @@
+# Problem evidence: why a student finance assistant
+
+**Retrieval date for every source below: 2026-10-11.** This page separates (A) evidence from outside sources from (B) numbers that come from Oasis's own SIMULATION. Nothing here is user research, and no figure is invented: where a figure could not be found or a source could not be opened, the entry says so.
+
+Method and limits: pages were read with a summarising web-fetch tool, so quotes are short extracts as returned by that tool, not byte-exact copies. Some primary pages could not be opened (World Bank report PDF: HTTP 403; FBI IC3 report PDF: connection closed; Indian parliament library: DNS failure). Where only a search-result summary was available, the entry says "summary only" and the confidence is lowered. Confidence: **high** = primary page read; **medium** = reputable page read, or primary figure seen via a summary; **low** = single secondary or summary only.
+
+## A. External evidence
+
+### A1. What sending money to China costs
+
+| Item | Figure | Source, date | What it says | Confidence |
+|---|---|---|---|---|
+| Global average cost of sending remittances | 6.49% of the amount sent (Q1 2025), up from 6.26% in Q4 2024; banks the most expensive provider type at 14.55% | [World Bank, Remittance Prices Worldwide, Q1 2025 report](https://remittanceprices.worldbank.org/sites/default/files/rpw_main_report_and_annex_q125_1_0.pdf); site: [remittanceprices.worldbank.org](https://remittanceprices.worldbank.org) | Global average and bank average as stated in a search summary of the report; the PDF itself returned HTTP 403 | Medium (summary only) |
+| Global average, newer quarter | 6.36% (Q3 2025, September 2025 report) | [World Bank Remittance Prices Worldwide](https://remittanceprices.worldbank.org) (site states 6.36%); the Q1-to-Q3 trend (6.49% to 6.36%) is from a third-party summary | Site read via search result; the report PDF was not opened. A 3.54% "digital-only operators" figure circulates in a research note but we found it only in a third-party summary, so it is **not used** | Medium |
+| India to China corridor cost | **Not found.** The database is organised by sending and receiving country; no India-to-China student or tuition corridor figure was located | n/a | n/a | n/a |
+| Cost of remittances received in China | 8.43% in 2020 (inbound to China, not student tuition, and old) | [IndexMundi, World Bank indicator SI.RMT.COST.IB.ZS](https://www.indexmundi.com/facts/indicators/SI.RMT.COST.IB.ZS/rankings/asia) | Mirror of the World Bank indicator "average transaction cost of sending remittances to a specific country (%)" | Low (old, wrong direction for the Oasis hero corridor; shown only because nothing closer was found) |
+| Indian families' bank fees and FX mark-ups on education remittances | About INR 1,700 crore in 2024 across all destinations; markup structures of 3% to 3.5% on conventional cards; fees of INR 1,000 to 2,500 per transfer | [Angel One news item "Hidden costs of studying abroad"](https://oga-prod.angelone.in/news/personal-finance/hidden-costs-of-studying-abroad-how-indian-families-lose-1-700-crore); related guide [Business Standard, 2025-07-25](https://www.business-standard.com/amp/finance/personal-finance/sending-money-abroad-choose-platform-that-discloses-exchange-rates-fees-125072501067_1.html) | Search-result summaries only; the underlying estimate's method is not known to us and the pages were not opened | Low |
+| Foreign-card fee in Chinese wallets | 3% on each transaction of CNY 200 or more (a waiver applies under CNY 200) for international bank cards on WeChat Pay | [Beijing municipal government English site, 2026-03-26](https://english.beijing.gov.cn/travellinginbeijing/essentials/inboundtourismfacilitationmeasures/202603/t20260326_4566766.html); reused from [regulatory-sources.md](regulatory-sources.md) section 5 | "All international bank card users are eligible for a waiver of the 3 percent transaction fee on every single transaction under 200 yuan." Alipay's own wording could not be read (unconfirmed) | Medium for WeChat Pay, low for Alipay |
+
+Reading: the global figures say bank routes are the costliest provider type; we found no cited India-to-China tuition figure. Oasis therefore does **not** claim a measured real-world saving; see B.
+
+### A2. Scams that target students at the moment they pay
+
+| Scam | Source, date | What it says | Confidence |
+|---|---|---|---|
+| Fake landlord asking for rent to a new account (China) | [Shanghai municipal government, "Anti-fraud tips for international students" (landlord rent transfer scam page)](https://english.shanghai.gov.cn/en-Editor'sPick-StudyinShanghai/20240828/f7b950613be9462e80a8bd94ca2c38de.html), page dated 2024-09-02 | Mass texts: "Hello! I am the landlord, my phone number has changed, please transfer the rent to my wife's ICBC card ...", aimed at students about to pay rent; advice is to confirm any rent request with the landlord through a previously confirmed contact; report at 12110. The same guide (search summary) also lists rental fraud with an upfront fee for a property that does not exist | High (official, read) |
+| Rental fraud with upfront fees, students from China abroad | [Avon and Somerset Police, "Fraud prevention advice for Chinese students"](https://www.avonandsomerset.police.uk/crime-prevention-advice/fraud-prevention-advice-for-chinese-students/), around September 2023 | Rental fraud: victims pay upfront fees for properties that "does not exist, has already been rented out, or has been rented to multiple victims"; also lists impersonation of officials and phishing. No loss figures given | High for the existence of the warning; no figures |
+| Fake invoice with altered bank account number for tuition | [VRT News, "KU Leuven warns of invoice fraud with tuition fee payments"](https://www.vrt.be/vrtnws/en/2026/10/01/ku-leuven-warns-of-invoice-fraud-with-tuition-fee-payments/) | "Fraudsters intercept a genuine invoice or bank statement and alter the account number." The URL carries 2026-10-01 but the fetch tool read the date as 2024-10-01: **date unresolved**. A Belgian university, not China | Medium |
+| Fake emails from a university announcing changed bank details (UK) | UK university pages found by search, e.g. [Nottingham Trent University](https://www.ntu.ac.uk/studenthub/news/2023/09/tuition-fees-scam-please-be-aware) (not opened; search summary only) | Fraudsters create fake emails appearing to be from genuine universities informing students of a change in bank account details | Low (summary only) |
+| Business email compromise (changed bank details, invoice redirection), scale | [FBI IC3 2024 Internet Crime Report](https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf) (could not be opened); figures via search summaries on [abnormal.ai](https://abnormal.ai/ja/blog/2024-fbi-ic3-report) and [Nacha](https://www.nacha.org/news/fbis-ic3-finds-almost-85-billion-lost-business-email-compromise-last-three-years) | 21,442 BEC complaints and USD 2.77 billion in losses in 2024 (US, businesses; not students). Included only to show the invoice-redirection technique is common and costly, not as a student statistic | Medium (primary not read) |
+| Impersonation of Chinese police against Chinese students abroad | [Times Higher Education, "Fraudsters target Chinese students in Australia"](https://timeshighereducation.com/news/fraudsters-target-chinese-students-australia) (summary only) | Reported losses of more than A$5.9 million over the first 23 weeks of a year with 2,150 incidents, in Australia's Chinese community. A different scam (impersonation, not invoices) and not Indian students in China | Low |
+
+**Not found:** an Indian embassy or consulate advisory in China about payment fraud against students (the Embassy of India, Beijing advisories that surfaced concern student conduct and COVID return, not payment fraud); a Chinese Ministry of Public Security or university advisory about fake finance-office invoices to international students; any count of Indian students in China defrauded. A fake-landlord warning for students in China exists (Shanghai government); invoice-redirection warnings exist for tuition elsewhere (Belgium, UK).
+
+### A3. How many Indian students are in China
+
+| Figure | Source, date | What it says | Confidence |
+|---|---|---|---|
+| About 10,000 | [Careers360, 2023-08-11, reporting a written reply of the Ministry of External Affairs to the Rajya Sabha](https://news.careers360.com/no-specific-data-indian-students-studying-abroad-china-mbbs-russia-fmge-covid-in-spite-of-constant-efforts-ministry) | "approximately 10,000 students are currently pursuing higher education in China." The same item quotes the Ministry that specific information is not available because students "do not register themselves with Indian Missions" | Medium (news report of an official reply; the parliament PDF could not be reached) |
+| Over 23,000 in 2020 (over 21,000 in MBBS) | Same Careers360 page, citing earlier official data | Pre-pandemic level, mostly medical students, mostly not in Shenzhen | Low-medium |
+| Chinese Ministry of Education count | **Not found** | n/a | n/a |
+
+Reading: most Indian students in China study medicine, so the Oasis hero (an Indian student arriving in Shenzhen with tuition, rent and a deposit to pay) is a plausible but not a measured segment.
+
+### A4. Student needs: cost-of-living worry and credit invisibility (secondary research)
+
+These are published surveys by others, not Oasis user research. Each applies to its own population and question wording; do not add them up or read them as "our survey". Added 2026-10-13 from a research note; the first three rows were re-checked by search, the last two were not.
+
+| Finding | Source | Caveat | Oasis feature it motivates | Checked |
+|---|---|---|---|---|
+| 69% of 116,412 respondents named cost of living their biggest worry about studying abroad (accommodation 48%, scholarships 47%) | [QS International Student Survey 2023](https://www.qs.com/insights/how-are-higher-education-institutions-responding-to-student-pressure-in-the-soaring-cost-of-living-crisis-in-2023) | Prospective and current students mixed; a worry, not an experienced incident | Semester plan, shortfall and runway warnings, Digital Twin | Yes (search) |
+| Recent-immigrant families in Canada (under 2 years) were credit-invisible at 14.8% vs 7.5% for Canadian-born families | [Statistics Canada, 2023](https://www150.statcan.gc.ca/n1/pub/36-28-0001/2023009/article/00001-eng.htm) | Immigrant families in Canada, not international students. The study also finds the gap closes after 2 to 4 years and disappears once family characteristics are controlled for, so this supports a short-lived newcomer problem, not a permanent one | Trust Pass, credit growth (portable record of verified payments) | Yes (search) |
+| 70% of Indian respondents named cost of living their biggest concern (employment 58%, scholarships 53%) | [QS ISS 2024 India report (PDF)](https://insights.qs.com/hubfs/Reports/QS%20ISS%202024%20Source%20India%20report.pdf) | Indian prospective students, not those already in China | Hero persona, budget forecast | No (from the research note) |
+| 51% of surveyed students were reconsidering overseas study because of living-cost increases; 21% felt highly knowledgeable about costs | [IDP Emerging Futures 3 (PDF)](https://resources.idp-connect.com/hubfs/Emerging%20Futures%203%20Infographic%20Report.pdf) | Population and wording not re-read | Pre-departure cost planning | No (from the research note) |
+
+Not used: a UK-wide figure on skipped meals (not international students) and background reports from BIS, CPMI and the CFPB. None of this shows how often payments fail for students; that still needs real interviews (section C).
+
+## B. Oasis's own SIMULATED numbers (not evidence about the real world)
+
+These come from the mock layer (mock fees, mock rates, simulated people) and are labelled MOCK in the product. They show what the tool does in the sandbox, not what a real student saves or what real fraud costs.
+
+- The agent's plan in the scripted demo saves CNY 1,653 against a "typical bank route"; across 8 planning scenarios conversion fees were CNY 4,990 vs CNY 29,378; the 90-day simulation of 5 personas saves CNY 1,542 to 2,963 each. All use mock route spreads and fees: [results.md](results.md).
+- 100% of 32 visible and 28 hidden attacks blocked, CNY 0 lost: the same team wrote attacks and defences, with simulated humans ([results.md](results.md)).
+
+## C. What we have not done
+
+**User research with real students.** We have not interviewed, surveyed or observed any student, parent, landlord or university finance office. The problem statement above rests on the public sources listed, which are mostly warnings and secondary reports, and on the team's own reasoning. The next step would be a handful of interviews with Indian students in Chinese cities about how they pay tuition and rent, what they were charged, and whether they met a changed-bank-details message.

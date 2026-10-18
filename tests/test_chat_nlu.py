@@ -1,4 +1,4 @@
-"""The chat intent router: every phrasing in docs/internal/newfixes.md F1, in English and Chinese. Pure functions, no server."""
+"""The chat intent router: every phrasing in fix F1, in English and Chinese. Pure functions, no server."""
 import pytest
 
 from oasis.agent import nlu

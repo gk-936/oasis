@@ -1,0 +1,20 @@
+{
+  "n": 400,
+  "seed": 11,
+  "label": "SIMULATION (mock rails)",
+  "baseline": {
+    "recipient_short_rate": 0.9,
+    "duplicate_payments": 62,
+    "preventable_issues_flagged": "0/119",
+    "recipient_amount_mae_cny": 4.9
+  },
+  "flightpath": {
+    "recipient_short_rate": 0.0,
+    "duplicate_payments": 0,
+    "preventable_issues_flagged": "119/119",
+    "recipient_amount_mae_cny": 4.43,
+    "false_alarm_rate": 0.0
+  },
+  "slow_but_fine_transfers": 62,
+  "baseline_would_short_credit": 360
+}

@@ -1,4 +1,4 @@
-"""Fixes from the Claude-written set A (docs/internal/newfixes.md F17-F22). The wording here is deliberately NOT the set's wording:
+"""Fixes from the Claude-written set A (fixes F17-F22). The wording here is deliberately NOT the set's wording:
 each test names the cause (a missing verb, a Hinglish word, a mid-draft question...), not the item that exposed it."""
 import pytest
 

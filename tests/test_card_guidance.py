@@ -43,3 +43,8 @@ def test_chinese_card_gets_translated_guidance_and_the_stored_card_is_untouched(
     zh = localize.localize_card(card, "zh")
     assert "尚未核实" in zh["uncertainty"][0] and "签名" in zh["next_step"]
     assert card == before
+
+
+def test_a_rejected_card_never_tells_the_student_to_sign():
+    assert "sign" not in i18n.card_next_step("rejected", None).lower()
+    assert "channel you already know" in i18n.card_next_step("needs_verification", None)

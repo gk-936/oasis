@@ -162,7 +162,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (passcodes: see below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests (1606 passed, 2 skipped, no network):
+# tests (1607 passed, 2 skipped, no network):
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench
@@ -268,7 +268,6 @@ The full numbered list of 25 limitations follows the documentation index.
 | [docs/deployment-docker.md](deployment-docker.md) | Docker, compose, hosting checklist, backup and reset |
 | [docs/pq-tls.md](pq-tls.md) / [docs/fisco-bcos.md](fisco-bcos.md) | post-quantum TLS; FISCO BCOS local-chain anchoring |
 | [JUDGE_GUIDE.md](../JUDGE_GUIDE.md) | 5- and 15-minute paths for a judge, offline, one command |
-| [internal/PROGRESS.md](internal/PROGRESS.md) | build ledger |
 
 ## Known limitations
 

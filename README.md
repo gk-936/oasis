@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-1606%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-1607%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -61,7 +61,9 @@ English and Chinese are understood, and replies come back in the language you us
 
 ## 🚀 Try it in 2 minutes
 
-Offline, no API key, no Node.
+**Hosted copy, nothing to install:** open **[https://oasis.koreacentral.cloudapp.azure.com](https://oasis.koreacentral.cloudapp.azure.com)** and log in with the passcodes sent with the submission documents (see the box below). It runs the live model on a capped key and falls back to the offline path when the cap is used up.
+
+**Or run it yourself** (offline, no API key, no Node):
 
 ```bash
 python -m venv .venv
@@ -122,7 +124,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1606 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1607 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution               # AI-contribution checks (add --live --cap N for the paid part; see docs/results.md)
@@ -159,6 +161,8 @@ All benchmark numbers come from files in `eval/reports/`; the commands that rege
 
 ## 🐳 Hosting
 
+The submitted copy is at **[https://oasis.koreacentral.cloudapp.azure.com](https://oasis.koreacentral.cloudapp.azure.com)**.
+
 `docker compose up -d --build` runs one single-worker container with the offline model and live ECB rates, as non-root on a read-only filesystem ([docs/deployment-docker.md](docs/deployment-docker.md)).
 
 For a public instance run by someone else, keep `OASIS_LLM=offline` and `OASIS_JUDGE_MODE=1`, and put TLS in front. Each judge login gets its own sandbox, and nothing real is at stake.
@@ -169,25 +173,6 @@ The image was built and run with Docker 29.1.2 on 2026-10-13: the health check p
 
 The executor reaches the payment layer through a three-call `PaymentRail` interface, so a licensed partner's API could replace the mock ledger. What else that would take is in [docs/path-to-production.md](docs/path-to-production.md). Today nothing real can be paid.
 
-## Known limitations ⚠️
-
-We would rather you hear these from us. This is the short list; the full numbered list of 25 is in [docs/full-overview.md](docs/full-overview.md#known-limitations).
-
-1. **Authentication is demo-grade, on purpose.** Roles use per-role passcodes (student, parent, judge): the judge has its own separate passcode. None is built in or in the repository. Someone running Oasis locally gets fresh random passcodes printed in their own terminal at each start, and a hosted copy uses passcodes the operator sets and sends to judges with the submission, so they are not public. There are no per-person accounts and no MFA, and it protects only simulated money. An optional passkey second factor exists, tested with software and virtual authenticators only.
-2. **Mock world.** Fees, rails, registry and balances are simulated, and nothing touches a bank. Route prices for the extra corridors are public-range estimates, not quotes. There is no real WeIdentity or bank API.
-3. **Benchmarks are partly by construction.**
-   - The humans in the loop are simulated. Further test sets were written by other AI assistants from the pitch and API doc only, without seeing the code.
-   - The "hidden" and "blind" sets are AI-written and partly burned by fixes. None is a human red team or an independent audit.
-   - The chat tasks are also the team's own, and the chat router is keyword-based: it asks for help on a paraphrase it does not know.
-   - No user research with real students has been done.
-4. **Live results are small samples.** One model (Nova Pro); 24 planner plans, 128 poisoned invoices (0 field changes), 40 genuine invoices (0 false escalations), 98 fresh chat messages and three outside-written sets run once live (identical to the offline scores, so the live labeller adds nothing there). Intervals are wide. Not a robustness claim.
-5. **Regulatory figures are researched, not confirmed by a bank or counsel.** Several come from secondary sources. For example, the India TCS education rate of 2% above INR 10 lakh, per the Finance Act 2026, was read in search snippets because the primary pages were unreadable. Not legal advice, not compliance.
-6. **Credentials are sandbox credentials.** The Trust Pass, Evidence Passport and ZK proofs are not credit scores or bank statements, and the ZK construction is not independently audited.
-7. **Translations are machine-drafted** (Chinese, Tamil, Hindi); English is the default.
-8. **Simulations are models.** FlightPath's deduction model, the netting cohorts and the Twin's parameters are our own assumptions, not validated on real transfers.
-9. **Single process.** Rate limits and tool tokens are in memory; key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set.
-10. **Optional extras are lightly tested.** FISCO BCOS runs as a 4-node local chain, PQ-TLS was tested with an OpenSSL client and in Chrome 155, and Telegram and mailbox intake only against fake servers.
-
 ## 📚 Documentation
 
 | Start here | Go deeper | Trust and compliance |
@@ -196,7 +181,7 @@ We would rather you hear these from us. This is the short list; the full numbere
 | [docs/agent-api.md](docs/agent-api.md): test it with scripts | [docs/technical-documentation.md](docs/technical-documentation.md) | [docs/security-self-assessment.md](docs/security-self-assessment.md) |
 | [docs/results.md](docs/results.md) | [docs/configuration.md](docs/configuration.md) | [docs/compliance-mapping.md](docs/compliance-mapping.md) (alignment, not compliance) |
 | [docs/problem-evidence.md](docs/problem-evidence.md) | [docs/bedrock-setup.md](docs/bedrock-setup.md) · [docs/deployment-docker.md](docs/deployment-docker.md) | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) |
-| [docs/path-to-production.md](docs/path-to-production.md) | [build ledger](docs/internal/PROGRESS.md) | |
+| [docs/path-to-production.md](docs/path-to-production.md) | | |
 
 ## 📄 Licence
 

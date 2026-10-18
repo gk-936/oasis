@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "id": "usd_from_inr",
+      "title": "USD 5,000 tuition, funded from INR",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "INR-USD"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 121.13,
+      "error_codes": [],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "eur_from_inr",
+      "title": "EUR 3,000 tuition, funded from INR",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "INR-EUR"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 116.27,
+      "error_codes": [],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "usd_from_cny",
+      "title": "USD 4,000 tuition, student holds CNY",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "CNY-USD"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 170.55,
+      "error_codes": [],
+      "price_status": [
+        "assumed"
+      ]
+    },
+    {
+      "id": "parent_topup",
+      "title": "USD 8,000 tuition, student INR is short",
+      "valid": true,
+      "iterations": 2,
+      "corridors": [
+        "INR-USD"
+      ],
+      "remitters": [
+        "parent"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 137.53,
+      "error_codes": [],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "already_funded",
+      "title": "USD 2,000, already held in USD",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [],
+      "remitters": [],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 0.0,
+      "error_codes": [],
+      "price_status": []
+    },
+    {
+      "id": "tight_deadline",
+      "title": "USD 5,000 due in 2 days",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "INR-USD"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 121.13,
+      "error_codes": [],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "over_lrs",
+      "title": "USD 300,000 (above the LRS limit)",
+      "valid": false,
+      "iterations": 1,
+      "corridors": [
+        "INR-USD"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 1734.22,
+      "error_codes": [
+        "lrs_exceeded"
+      ],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "usd_from_eur",
+      "title": "USD 4,000 tuition, student holds EUR",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "EUR-USD"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 177.65,
+      "error_codes": [],
+      "price_status": [
+        "sourced"
+      ]
+    },
+    {
+      "id": "eur_from_cny",
+      "title": "EUR 3,000 tuition, student holds CNY",
+      "valid": true,
+      "iterations": 1,
+      "corridors": [
+        "CNY-EUR"
+      ],
+      "remitters": [
+        "student"
+      ],
+      "deadlines_met": "1/1",
+      "saved_vs_bank_usd": 158.04,
+      "error_codes": [],
+      "price_status": [
+        "assumed"
+      ]
+    }
+  ],
+  "valid": 8,
+  "total": 9
+}

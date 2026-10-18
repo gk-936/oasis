@@ -120,11 +120,11 @@ PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  
 | Five more corridors (CNY→USD, INR→USD, EUR→USD, INR→EUR, CNY→EUR) with foreign-currency plans and sandbox payments (Passport tab: "More corridors" and "Pay a bill in USD or EUR") | Route prices are **public-range estimates, not quotes**; the euro-area and applicability rules are secondary-sourced or unconfirmed; the universities are MOCK; live planner evidence is 30 plans on a mock world ([docs/corridor-research.md](docs/corridor-research.md)) |
 | The corridor rules engine: LRS, TCS and SAFE-quota awareness | The figures behind it are **researched, not bank-confirmed**: see the "Corridor rules & sources" card in the Passport tab (student login) and [docs/regulatory-sources.md](docs/regulatory-sources.md) |
 
-Not claimed anywhere: a licence, regulator approval, real settlement, an independent audit, certification, or that the benchmark proves robustness (the same team wrote the attacks and the defences; the 40-case hidden set is partly burned; blind set 2, 40 cases by a second author who never read the code, is a first-run result and is also AI-written). See "Known limitations" in the [README](README.md).
+Not claimed anywhere: a licence, regulator approval, real settlement, an independent audit, certification, or that the benchmark proves robustness (the same team wrote the attacks and the defences; the 40-case hidden set is partly burned; blind set 2, 40 cases by a second author who never read the code, is a first-run result and is also AI-written). See "Known limitations" in [docs/full-overview.md](docs/full-overview.md#known-limitations) and the known-risk list in [docs/security-self-assessment.md](docs/security-self-assessment.md).
 
 ## Where the evidence lives
 
-- [README.md](README.md): pitch, architecture, results table with caveats, Known limitations.
+- [README.md](README.md): pitch, architecture and results table with caveats.
 - [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md): claim to code to test to limits.
 - [docs/security-self-assessment.md](docs/security-self-assessment.md): threat model, permission tiers.
 - [docs/agent-api.md](docs/agent-api.md): test Oasis with scripts (chat fields, signing, errors); `docs/openapi.json` is the static API reference.

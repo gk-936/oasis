@@ -1,0 +1,3 @@
+Offline test suite, run 2026-10-18 (OASIS_DB=:memory: OASIS_LLM=offline, no network):
+1607 passed, 2 skipped in 211.86s (0:03:31)
+The 2 skipped tests are the live FISCO and live PQ-TLS tests.

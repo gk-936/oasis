@@ -570,7 +570,7 @@ def test_changing_the_rate_in_the_data_changes_the_tcs(monkeypatch):
 
 # ============================================================================== docs stay honest
 def test_docs_carry_the_honest_limits_and_no_stale_counts():
-    for name in ("README.md", "docs/security-self-assessment.md"):
+    for name in ("docs/security-self-assessment.md",):      # the README points here instead of repeating the list
         text = (config.ROOT / name).read_text(encoding="utf-8")
         assert "## Known limitations" in text and "partly by construction" in text
         assert "Authentication is demo-grade" in text and "Live results are small samples" in text

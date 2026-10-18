@@ -1081,7 +1081,7 @@
         "label": "new_or_changed",
         "rule": null,
         "reasons": [],
-        "risk_score": 0.545,
+        "risk_score": 0.636,
         "detected": false,
         "canary_hits": 0,
         "intent_id": null,
@@ -1104,7 +1104,7 @@
         {
          "i": 2,
          "kind": "understand",
-         "hash": "3defe939be8944ee8fc8b9a257c082ac1eaf8280760c91e16c60fb910a304d52",
+         "hash": "90fe5714353f92015f1c9f85055a247183fa9d503ace94a49036e3dfa20ea3bc",
          "prev": "0b7eb313a23269ddf303d011af3b56c060c12c8638968f8038d6fc21246dd407",
          "summary": {}
         }
@@ -1138,7 +1138,7 @@
      "coapproval_threshold_cny": 3498.2,
      "audit_entries": 3,
      "audit_ok": true,
-     "audit_head": "3defe939be8944ee8fc8b9a257c082ac1eaf8280760c91e16c60fb910a304d52"
+     "audit_head": "90fe5714353f92015f1c9f85055a247183fa9d503ace94a49036e3dfa20ea3bc"
     },
     "PROTECTED": {
      "case": "P6_split_payments",

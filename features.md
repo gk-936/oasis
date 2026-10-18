@@ -147,6 +147,6 @@ Every feature found in the code, the 102 API routes, the UI and the docs, with o
 114. **OpenAPI export and agent API doc**: `tools/export_openapi.py`, `docs/openapi.json` and `docs/agent-api.md` for scripted testing.
 115. **Scripted client** (`tools/oasis_client.py`): login, key registration and signing in one call.
 116. **Reference-data fetchers** (`tools/fetch_reference.py`, `fetch_extra_sanctions.py`): rebuild the sanctions snapshots.
-117. **Test suite**: about 926 test functions (1606 cases), offline and hermetic.
+117. **Test suite**: about 926 test functions (1607 cases), offline and hermetic.
 118. **Documentation set**: judge guide, technical documentation, security self-assessment, evidence matrix, compliance mapping, results, real-vs-simulated, path to production and more in `docs/`.
-119. **Progress ledger and rulebook**: `newaddition.md` records every change and result; `CLAUDE.md` holds the working rules (no paid model call without approval, security invariants).
+119. **Progress ledger and rulebook**: `CLAUDE.md` holds the working rules (no paid model call without approval, security invariants).

@@ -1,0 +1,870 @@
+[
+  {
+    "scenario": "usd_from_inr",
+    "title": "USD 5,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 5285,
+    "seconds": 7.3,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000,
+    "rep": 0
+  },
+  {
+    "scenario": "eur_from_inr",
+    "title": "EUR 3,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3869,
+    "seconds": 7.0,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 116.27,
+    "corridors": [
+      "INR-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_cny",
+    "title": "USD 4,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3992,
+    "seconds": 5.0,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 170.55,
+    "corridors": [
+      "CNY-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 3,
+    "model_calls": 6,
+    "tokens": 12940,
+    "seconds": 15.5,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 150.52,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "already_funded",
+    "title": "USD 2,000, already held in USD",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 2,
+    "tokens": 1857,
+    "seconds": 2.3,
+    "tools_called": [
+      "fx_facts"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 0.0,
+    "corridors": [],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "tight_deadline",
+    "title": "USD 5,000 due in 2 days",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4108,
+    "seconds": 6.4,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "over_lrs",
+    "title": "USD 300,000 (above the LRS limit)",
+    "planner": "deterministic (fallback)",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": false,
+    "fell_back": true,
+    "fallback_reason": "no valid plan after 3 proposal(s)",
+    "model_valid_without_fallback": false,
+    "model_proposals": 4,
+    "model_calls": 8,
+    "tokens": 19449,
+    "seconds": 19.9,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 1734.22,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [
+      "lrs_exceeded"
+    ],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_eur",
+    "title": "USD 4,000 tuition, student holds EUR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4075,
+    "seconds": 5.2,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 177.65,
+    "corridors": [
+      "EUR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "eur_from_cny",
+    "title": "EUR 3,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3768,
+    "seconds": 5.0,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 158.04,
+    "corridors": [
+      "CNY-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 0,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_inr",
+    "title": "USD 5,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 5465,
+    "seconds": 8.6,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "eur_from_inr",
+    "title": "EUR 3,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3944,
+    "seconds": 5.7,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 116.27,
+    "corridors": [
+      "INR-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_cny",
+    "title": "USD 4,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4082,
+    "seconds": 5.8,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 170.55,
+    "corridors": [
+      "CNY-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "deterministic (fallback)",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": true,
+    "fallback_reason": "no valid plan after 2 proposal(s)",
+    "model_valid_without_fallback": false,
+    "model_proposals": 4,
+    "model_calls": 8,
+    "tokens": 23645,
+    "seconds": 20.6,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 137.53,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "already_funded",
+    "title": "USD 2,000, already held in USD",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 2,
+    "tokens": 1881,
+    "seconds": 2.3,
+    "tools_called": [
+      "fx_facts"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 0.0,
+    "corridors": [],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "tight_deadline",
+    "title": "USD 5,000 due in 2 days",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4286,
+    "seconds": 6.9,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "over_lrs",
+    "title": "USD 300,000 (above the LRS limit)",
+    "planner": "deterministic (fallback)",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": false,
+    "fell_back": true,
+    "fallback_reason": "no valid plan after 4 proposal(s)",
+    "model_valid_without_fallback": false,
+    "model_proposals": 5,
+    "model_calls": 7,
+    "tokens": 16293,
+    "seconds": 15.8,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 1734.22,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [
+      "lrs_exceeded"
+    ],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_eur",
+    "title": "USD 4,000 tuition, student holds EUR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4307,
+    "seconds": 6.5,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 177.65,
+    "corridors": [
+      "EUR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "eur_from_cny",
+    "title": "EUR 3,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4081,
+    "seconds": 6.8,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 158.04,
+    "corridors": [
+      "CNY-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 1,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_inr",
+    "title": "USD 5,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 5213,
+    "seconds": 6.9,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "eur_from_inr",
+    "title": "EUR 3,000 tuition, funded from INR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3790,
+    "seconds": 5.6,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 116.27,
+    "corridors": [
+      "INR-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_cny",
+    "title": "USD 4,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3994,
+    "seconds": 4.5,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 170.55,
+    "corridors": [
+      "CNY-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 3,
+    "model_calls": 6,
+    "tokens": 12605,
+    "seconds": 12.5,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 150.52,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "already_funded",
+    "title": "USD 2,000, already held in USD",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 2,
+    "tokens": 1856,
+    "seconds": 2.6,
+    "tools_called": [
+      "fx_facts"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 0.0,
+    "corridors": [],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "tight_deadline",
+    "title": "USD 5,000 due in 2 days",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4241,
+    "seconds": 5.8,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 121.13,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "over_lrs",
+    "title": "USD 300,000 (above the LRS limit)",
+    "planner": "deterministic (fallback)",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": false,
+    "fell_back": true,
+    "fallback_reason": "the model stopped without a valid plan",
+    "model_valid_without_fallback": false,
+    "model_proposals": 4,
+    "model_calls": 8,
+    "tokens": 19225,
+    "seconds": 18.1,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 1734.22,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [
+      "lrs_exceeded"
+    ],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "usd_from_eur",
+    "title": "USD 4,000 tuition, student holds EUR",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 4212,
+    "seconds": 5.6,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 177.65,
+    "corridors": [
+      "EUR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "eur_from_cny",
+    "title": "EUR 3,000 tuition, student holds CNY",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 1,
+    "model_calls": 3,
+    "tokens": 3902,
+    "seconds": 7.5,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 158.04,
+    "corridors": [
+      "CNY-EUR"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 2,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "deterministic (fallback)",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": true,
+    "fallback_reason": "no valid plan after 3 proposal(s)",
+    "model_valid_without_fallback": false,
+    "model_proposals": 5,
+    "model_calls": 8,
+    "tokens": 21945,
+    "seconds": 20.9,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 137.53,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 3,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 2,
+    "model_calls": 5,
+    "tokens": 11855,
+    "seconds": 15.6,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 150.52,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 4,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  },
+  {
+    "scenario": "parent_topup",
+    "title": "USD 8,000 tuition, student INR is short",
+    "planner": "bedrock-fx-tools",
+    "model": "us.amazon.nova-pro-v1:0",
+    "valid": true,
+    "fell_back": false,
+    "fallback_reason": null,
+    "model_valid_without_fallback": true,
+    "model_proposals": 3,
+    "model_calls": 6,
+    "tokens": 13536,
+    "seconds": 18.2,
+    "tools_called": [
+      "fx_facts",
+      "fx_size_conversion",
+      "fx_size_conversion"
+    ],
+    "deadlines_met": "1/1",
+    "saved_vs_bank_usd": 150.52,
+    "corridors": [
+      "INR-USD"
+    ],
+    "error_codes": [],
+    "model_requested": "us.amazon.nova-pro-v1:0",
+    "rep": 5,
+    "run_date": "2026-10-13",
+    "per_plan_cap": 25000
+  }
+]
