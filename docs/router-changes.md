@@ -1,6 +1,6 @@
 # Offline chat router: current numbers (router frozen after this round)
 
-All figures are offline (no model call). Nothing under `oasis/trust/*` was touched. Nothing is committed. Shipped settings: answer threshold `ACCEPT` 0.17, margin 0.08, confusable-pair rule on, keyword-answer doubt off. `OASIS_ROUTER_ROBUST=0` switches the new layers off.
+All figures are offline (no model call). Nothing under `oasis/trust/*` was touched. Shipped settings: answer threshold `ACCEPT` 0.17, margin 0.08, confusable-pair rule on, keyword-answer doubt off. `OASIS_ROUTER_ROBUST=0` switches the new layers off.
 
 ## Checks
 

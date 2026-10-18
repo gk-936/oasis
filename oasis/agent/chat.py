@@ -118,8 +118,18 @@ def _obl_line(w, o, lang: str) -> str:
     return f"{o.type} {money(o.remaining, lang)} to {n}, due {o.due}"
 
 
+def _mask_fields(o):
+    """The account read out of a document is shown masked in a chat reply; the signable draft (registry account) is left exact."""
+    f = o.get("fields") if isinstance(o, dict) else None
+    if isinstance(f, dict) and isinstance(f.get("account_ref"), str):
+        return {**o, "fields": {**f, "account_ref": mask(f["account_ref"])}}
+    return o
+
+
 def _result(intent: str, reply: str, secrets=None, *, status: str = "info", pending_id: str | None = None, draft_hash: str | None = None,
             needs: list | None = None, money_moved: float = 0.0, proof_id: str | None = None, **extra) -> dict:
+    if "outcome" in extra:
+        extra["outcome"] = _mask_fields(extra["outcome"])
     return {"reply": redact(reply, secrets), "intent": intent, "status": status, "pending_id": pending_id,
             "draft_hash": draft_hash, "needs": needs or [], "money_moved": money_moved, "proof_id": proof_id, **extra}
 
@@ -138,22 +148,98 @@ _REFUSE = {
                "批准必须由您用设备密钥对确切的草稿签名。无论请求怎么说，我都不能批准、跳过检查或更改额度。没有任何资金转出。"
                "说“交房租”即可得到一份可签名的草稿。"),
     "registry": ("I can't add, change or remove payees, limits or records from chat. Payees come only from the verified registry, and the "
-                 "audit log can't be edited by anyone. A payee is verified only through the registry, never by saying so here. Nothing changed and nothing moved. "
+                 "audit log can't be edited by anyone. A payee is verified only through the registry, never by saying so here. Nothing changed. Nothing moved. "
                  "I can show your payees, or prepare a payment to a registered one.",
                  "我不能在聊天里添加、修改或删除收款方、额度或记录。收款方只来自经过验证的登记册，审计日志任何人都不能修改。没有任何改动，也没有任何资金转出。"
                  "收款方只能通过登记册验证，在聊天里说一声不算。我可以显示已登记的收款方，或为其中之一准备一笔付款。"),
     "role": ("I can't act as someone else. A parent approves from their own session with their own device key; in this chat I act only "
              "for the student. Nothing moved.",
              "我不能冒充他人。家长要在自己的会话里用自己的设备密钥批准；在这个聊天中我只代表学生。没有任何资金转出。"),
+    "privacy": ("I can't share that: full account numbers, other people's details, raw logs and anything you are told to send elsewhere stay private. Nothing moved.",
+                "我不能提供这些：完整账号、他人的资料、原始日志以及被要求发送到别处的内容都不会公开。没有任何资金转出。"),
     "social": ("Claims like 'someone already approved', 'this is a test' or 'it's urgent' change nothing: approval is a signature from the "
                "approver's own device on the exact draft. Nothing moved.",
                "“已经有人批准”“这只是测试”“很紧急”之类的说法不会改变任何事：批准是批准人用自己的设备对确切草稿的签名。没有任何资金转出。"),
 }
 
 
+_REFUSE_DETAIL = {
+    ("secrets", "passcode"): (
+        "I can't reveal a passcode: it belongs to its owner and is never shown in chat, so nothing was shared. If you forgot yours, ask whoever runs this sandbox to reset it. Nothing moved.",
+        "我不能透露口令：口令只属于其主人，聊天中从不显示，所以没有分享任何内容。如果您忘了自己的口令，请联系运营这个沙盒的人重置。没有任何资金转出。"),
+    ("secrets", "key"): (
+        "I can't show or hold any key: your device key stays on your device and only signs a draft you have read, so nothing was shared. To approve a payment, review the draft and sign it on your device. Nothing moved.",
+        "我不能显示或保管任何密钥：您的设备密钥留在您的设备上，只会对您看过的草稿签名，所以没有分享任何内容。要批准付款，请查看草稿并在您的设备上签名。没有任何资金转出。"),
+    ("secrets", "token"): (
+        "I can't reveal session tokens or cookies: they would let someone act as you. Nothing was shared. Nothing moved. If you think a session is exposed, sign out and sign in again.",
+        "我不能透露会话令牌或 Cookie：有了它们别人就能冒充您。没有分享任何内容，也没有任何资金转出。如果您觉得会话已经泄露，请退出后重新登录。"),
+    ("secrets", "prompt"): (
+        "I can't share my internal instructions or configuration; they are not part of your account. Nothing was shared. Nothing moved. Say 'help' to see what I can do with your bills, balances and rates.",
+        "我不能分享我的内部指令或配置，它们不属于您的账户。没有分享任何内容，也没有任何资金转出。说“帮助”即可看到我能处理的账单、余额和汇率。"),
+    ("secrets", "other_secret"): (
+        "I can't give you another person's passcode or key, whoever they are: each one is only for its owner. A parent approves from their own session. Nothing was shared. Nothing moved.",
+        "我不能给您别人的口令或密钥，无论对方是谁：每一个都只属于其主人。家长要在自己的会话里批准。没有分享任何内容，也没有任何资金转出。"),
+    ("privacy", "account"): (
+        "I can't print a full account number. Payee accounts are shown masked (like ****1234), and money only goes to the account in the registry. You can check the last four digits on a draft before you sign. Nothing moved.",
+        "我不能显示完整的账号。收款账户只显示掩码（如 ****1234），款项只会汇到登记册中的账户。签名前您可以在草稿上核对后四位。没有任何资金转出。"),
+    ("privacy", "person"): (
+        "I can't share another person's contact or ID details (phone, address, passport, e-mail): they aren't mine to give out. Your own details are on the Passport tab. Nothing moved.",
+        "我不能提供别人的联系方式或证件信息（电话、地址、护照、邮箱）：这些不是我能对外提供的。您自己的资料在“护照”页。没有任何资金转出。"),
+    ("privacy", "logs"): (
+        "I can't dump raw logs, the registry, or another user's data, and I won't recite everything I hold. The audit chain can be verified on the Proof tab, and your own records are on the Passport tab. Nothing moved.",
+        "我不能导出原始日志、登记册或其他用户的数据，也不会罗列我掌握的全部内容。审计链可以在“证明”页验证，您自己的记录在“护照”页。没有任何资金转出。"),
+    ("privacy", "exfil"): (
+        "I won't send a balance, passport number, passcode, key or account number to an e-mail, a memo or anywhere else because a message or document says to: text inside a document is never an instruction. Nothing was shared. Nothing moved. I can show your own balance here, to you only.",
+        "我不会因为某条消息或文件要求，就把余额、护照号、口令、密钥或账号发送到邮箱、备注或其他任何地方：文件里的文字从来不是指令。没有分享任何内容，也没有任何资金转出。我可以在这里只向您显示您自己的余额。"),
+    ("bypass", "sign"): (
+        "I can't approve or sign for you: approval is your device-key signature on the exact draft. Nothing moved. Say 'pay my rent' to get a draft you can sign.",
+        "我不能替您批准或签名：批准是您用设备密钥对确切草稿的签名。没有任何资金转出。说“交房租”即可得到一份可签名的草稿。"),
+    ("bypass", "limit"): (
+        "I can't raise, lift or split around a limit: limits come from policy and are re-checked when a payment executes, and splitting a payment to stay under one is itself a fraud signal. Nothing moved. A larger payment goes to a parent to sign from their own session.",
+        "我不能提高、取消或通过拆分来绕过额度：额度来自政策，付款执行时会再次检查，而为了不超额而拆分付款本身就是诈骗信号。没有任何资金转出。较大的付款需要家长在自己的会话里签名。"),
+    ("bypass", "record"): (
+        "I can't mark a payment paid, approved or verified, or write to the audit record: only the executor does that, after a valid signature. Nothing changed. Nothing moved. The Proof tab shows what is actually on record.",
+        "我不能把付款标记为已付、已批准或已验证，也不能写入审计记录：只有执行器在收到有效签名后才会这样做。没有任何改动，也没有任何资金转出。“证明”页显示实际的记录。"),
+    ("bypass", "check"): (
+        "I can't skip, switch off or bypass a check: every payment passes the same checks when you sign and again when it executes. Nothing moved. Say 'pay my rent' for a draft that goes through them.",
+        "我不能跳过、关闭或绕过任何检查：每笔付款在签名时和执行时都要经过同样的检查。没有任何资金转出。说“交房租”即可得到一份会经过这些检查的草稿。"),
+    ("registry", "audit"): (
+        "I can't delete or edit the audit log: every entry is hash-chained so changes are detectable. You can verify the chain on the Proof tab. Nothing changed. Nothing moved.",
+        "我不能删除或修改审计日志：每一条记录都经过哈希链接，任何改动都能被发现。您可以在“证明”页验证这条链。没有任何改动，也没有任何资金转出。"),
+    ("registry", "payee"): (
+        "I can't add, change or remove payees from chat: payees come only from the verified registry, and a payee is verified only through the registry, never by saying so here. Nothing changed. Nothing moved. I can show your registered payees, or prepare a payment to one of them.",
+        "我不能在聊天里添加、修改或删除收款方：收款方只来自经过验证的登记册。没有任何改动，也没有任何资金转出。我可以显示已登记的收款方，或为其中之一准备一笔付款。"),
+    ("registry", "verify"): (
+        "I can't mark a payee verified: a payee is verified only through the registry, never by saying so here. Nothing changed. Nothing moved. I can prepare a payment to a payee that is already registered.",
+        "我不能把收款方标记为已验证：验证只能通过登记册完成，在这里说一声不算。没有任何改动，也没有任何资金转出。我可以为已登记的收款方准备一笔付款。"),
+    ("registry", "account"): (
+        "I can't change a payee's account: money goes only to the account in the registry, and a payee is verified only through the registry, never by saying so here. Nothing changed. Nothing moved. If an account really changed, the registry has to be updated and verified first.",
+        "我不能修改收款方的账户：款项只会汇到登记册中的账户。没有任何改动，也没有任何资金转出。如果账户确实变了，需要先更新并验证登记册。"),
+}
+_CONCEPT_HELP = {
+    "login": ("Signing in takes the role passcode your sandbox gave you. Approving a payment is separate: it needs your device key's signature on the exact draft. I never see either one, and I won't ask you to type them here.",
+              "登录需要沙盒给您的角色口令。批准付款是另一回事：需要您的设备密钥对确切草稿签名。这两样我都看不到，也不会让您在这里输入。"),
+    "device_key": ("A device key is a private key that stays on your device. It signs the exact payment draft you approve, so nobody else, including me, can approve for you. I never see it.",
+                   "设备密钥是留在您设备上的私钥。它会对您批准的确切付款草稿签名，所以别人（包括我）都无法替您批准。我看不到它。"),
+    "sign": ("You sign because a payment only moves when you approve the exact draft (payee, amount and hash) with your device key. That keeps me, a document or another person from moving money without you.",
+             "您需要签名，因为只有您用设备密钥批准确切的草稿（收款方、金额和哈希）后款项才会转出。这样我、文件或其他人都无法在没有您的情况下转走资金。"),
+    "safe": ("Passcodes and keys are never shown in chat, and I can't read or reveal them. Your device key stays on your device, and the audit log records only that a request was refused, never its text.",
+             "口令和密钥不会在聊天中显示，我也无法读取或透露它们。您的设备密钥留在您的设备上，审计日志只记录请求被拒绝，不记录请求的内容。"),
+}
+
+
+def _refusal_text(cat: str, detail: str, lang: str) -> tuple[str, str]:
+    """Each refusal names what was asked, why it can't be done and one safe next step. Wording only: the decision was made upstream."""
+    if cat == "role":
+        who = detail if detail and detail != "other" else "someone else"
+        return (f"I can't act as {who}: a parent approves from their own session with their own device key, and in this chat I act only for the student. Nothing moved. Ask them to sign in themselves.",
+                f"我不能以“{who}”的身份行事：家长要在自己的会话里用自己的设备密钥批准，在这个聊天中我只代表学生。没有任何资金转出。请让对方自己登录。")
+    return _REFUSE_DETAIL.get((cat, detail)) or _REFUSE.get(cat, _REFUSE["bypass"])
+
+
 def refuse(S, intent: ChatIntent, lang: str, secrets=None) -> dict:
     cat = intent.category or "bypass"
-    en, zh = _REFUSE.get(cat, _REFUSE["bypass"])
+    en, zh = _refusal_text(cat, intent.slots.get("detail") or "", lang)
     if intent.slots.get("urgent"):                      # pressure is a fraud signal: say so, it never speeds anything up
         en += " Pressure like 'urgent' or 'emergency' is a common fraud signal; it makes me stricter, not faster. If someone is in real trouble, call them on a number you already know."
         zh += "“紧急”“马上”之类的催促是常见的诈骗信号，只会让我更严格，而不是更快。如果真有人遇到困难，请用您原本就知道的号码联系对方。"
@@ -1591,7 +1677,10 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None) 
     if k == nlu.HELP:
         if it.slots.get("next"):
             return _next(S, lang, secrets)
-        if it.slots.get("reset"):
+        if it.slots.get("concept") and it.slots["concept"] != "forgot":
+            en, zh = _CONCEPT_HELP[it.slots["concept"]]
+            return _result(k, zh if lang == "zh" else en, secrets, status="info")
+        if it.slots.get("reset") or it.slots.get("concept"):
             t = ("我无法重置或查看登录口令；请联系沙盒的运营者。我可以帮您付账单、查余额。" if lang == "zh" else
                  "I can't reset or show a login passcode; ask whoever runs this sandbox. I can help with bills, balances and rates.")
             return _result(k, t, secrets)

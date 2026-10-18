@@ -53,6 +53,7 @@ def detect_lang(text: str, ui: str = "en") -> str:
 
 # ------------------------------------------------------------------ normalisation
 _SPACED = re.compile(r"(?<![A-Za-z])(?:[A-Za-z][ .\-_]){3,}[A-Za-z](?![A-Za-z])")
+_HEX = re.compile(r"(?:[0-9a-fA-F]{2}){8,}")
 _B64 = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 
@@ -74,6 +75,13 @@ def decoded_views(text: str) -> list[str]:
             continue
         if len(s) >= 6 and all(c.isprintable() or c in "\n\t" for c in s):
             out.append(normalise(s))
+    for m in _HEX.finditer(text or ""):          # the same trick written as hex digits
+        try:
+            s = bytes.fromhex(m.group(0)).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if len(s) >= 6 and all(c.isprintable() or c in "\n\t" for c in s):
+            out.append(normalise(s))
     return out
 
 
@@ -84,6 +92,7 @@ _SECRET_WORDS = (r"pass ?code|password|passwd|\bpin\b|private key|signing key|se
                  r"密码|口令|私钥|密钥|令牌|系统提示|提示词|你的指令|环境变量|(?<!付款)(?<!缴费)(?<!支付)(?<!转账)(?<!汇款)(?<!房租)(?<!学费)(?<!租金)(?<!交易)凭证|पासवर्ड|पासकोड|सीक्रेट")
 _SECRETS_ASK = re.compile(rf"(?:{_SECRET_WORDS})", re.I)
 _SECRETS_VERB = re.compile(r"(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read|find|config(?!uration)|stored|written down|what(?:'s| is| are)|list|export|"
+                           r"confirm|provide|disclose|expose|paste|forward|"
                            r"告诉|显示|打印|泄露|给我|发给|是什么|输出|透露)", re.I)
 _OTHER_USERS = re.compile(r"(?:other|another|all|every) (?:users?|students?|judges?|accounts?|sessions?|customers?)|(?:everyone|everybody|anyone|anybody)'?s? (?:else'?s? )?(?:payments?|accounts?|balances?|data|transactions?|details)|"
                           r"(?:someone|somebody) else'?s? (?:account|data|balance|payments?)|(?:其他|别人|所有)(?:用户|学生|账户|账号)", re.I)
@@ -148,6 +157,99 @@ _URGENCY = re.compile(r"urgent|immediately|right now|asap|right away|emergency|h
                       r"紧急|马上|立刻|立即|尽快|急", re.I)
 
 
+# ------------------------------------------------------------------ privacy (decided before every other check)
+# Four kinds of request to hand over data that is not the student's own to see: a full third-party account number, another person's
+# details, a raw log or dump, and an instruction (often inside pasted text) to send a secret or balance somewhere.
+_SENS = (r"balance|passport|pass ?code|password|\bpin\b|private key|signing key|device key|secret|token|session|account (?:number|no\.?)|credentials?|"
+         r"card (?:number|details)|\botp\b|api[ _-]?key|\bssn\b|aadhaar|statement|system prompt|instructions|余额|护照|口令|密码|密钥|私钥|令牌|账号|凭证")
+_P_VERB = r"(?:print|show|give|tell|reveal|send|share|list|dump|display|read|paste|export|provide|spell|state|read out|what(?:'s| is| are)|告诉|显示|打印|给我|发给我|发我|列出|导出|透露|说出)"
+_PEOPLE = r"(?:parents?|mother|father|mom|mum|dad|guardian|landlord|university|school|students?|teacher|professor|roommate|classmate|friend|payee|recipient|beneficiary|finance office|admin\w*|judge)"
+_PRIV_ACCOUNT = re.compile(
+    r"\bfull(?:y)? (?:bank )?account (?:number|no\b|details)|\b(?:complete|entire|whole|unmasked|unredacted|uncensored) (?:bank )?account\b|"
+    r"\baccount (?:number |no\.? )?(?:in full|unmasked|without (?:the )?mask\w*)|\bwithout (?:the )?(?:mask\w*|asterisks|stars)\b|\bunmask\b|\ball (?:the )?digits\b|"
+    r"\baccount\b[^.?!]{0,40}\bin full\b|\bin full\b[^.?!]{0,30}\baccount\b|\b(?:remove|drop|strip|lift|take off|turn off|disable)\b[^.?!]{0,15}\b(?:mask\w*|asterisks|redaction)\b|"
+    rf"{_P_VERB}\b[^.?!]{{0,30}}\b{_PEOPLE}'?s?\b[^.?!]{{0,15}}\b(?:account|iban|swift|bank details|card)\b[^.?!]{{0,10}}\b(?:number|no\b|details)?|"
+    r"完整(?:的)?.{0,4}(?:账号|账户|卡号)|全部(?:账号|账户|卡号)|(?:不要|别|去掉|取消)(?:打码|遮挡|隐藏|掩码)|(?:账号|账户)(?:的)?(?:全部|完整)", re.I)
+_CONTACT = (r"(?:phone|mobile|cell|telephone|contact)(?: ?(?:number|no\.?|details|info\w*))?|(?:id|passport|aadhaar|ssn|visa|national id)(?: ?(?:number|no\.?|card|copy|details))?|"
+            r"home address|address|e-?mail(?: address)?|wechat|whatsapp|\bdob\b|date of birth|bank details")
+_PRIV_PERSON = re.compile(
+    rf"\b{_PEOPLE}'?s? (?:\w+ ){{0,2}}(?:{_CONTACT})\b|\b(?:{_CONTACT})\b (?:of|for) (?:my |the )?{_PEOPLE}\b|"
+    r"(?:家长|父母|妈妈|爸爸|房东|学校|大学|财务处|老师|室友|同学|收款人|收款方)(?:的)?(?:电话|手机|手机号|身份证|护照|地址|联系方式|邮箱|微信|银行卡)", re.I)
+_PRIV_LOGS = re.compile(
+    rf"{_P_VERB}\b[^.?!]{{0,25}}\b(?:full|entire|complete|whole|raw|unredacted|unmasked|all)\b[^.?!]{{0,20}}\b(?:logs?|audit|ledger|registry|database|db|records|history|trail|table|chats?)\b|"
+    r"\b(?:full|entire|complete|whole|raw|unredacted) (?:\w+ )?(?:logs?|trail|dump)\b|\b(?:dump|export)\b[^.?!]{0,20}\b(?:the |your |all )?(?:database|db|registry|ledger|logs?|memory|sessions?|everything|all data)\b|"
+    r"\b(?:transaction|payment|audit|chat|system|access) (?:logs?|history|records)\b[^.?!]{0,40}\bwith (?:the )?(?:full |complete |all )?(?:account|card)\b|"
+    rf"{_P_VERB}\b[^.?!]{{0,10}}\b(?:the |your |whole |entire |full )?(?:payee )?registry\b|"
+    r"\beverything (?:you|oasis) (?:know|have|store|hold|remember|keep)\b|\ball (?:the |my )?(?:data|information|details) (?:you|oasis) (?:have|store|hold|know|keep)\b|"
+    r"完整(?:的)?(?:审计|交易|系统|操作)?(?:日志|记录|流水)|(?:导出|打印|显示|给我|发给我|列出|转储).{0,6}(?:全部|所有|完整).{0,6}(?:日志|记录|数据|登记册|数据库|账户|流水)|你(?:知道|掌握|保存)的.{0,4}(?:一切|所有)|所有(?:数据|信息)", re.I)
+def _exfil_rx(_SENS: str):
+    return re.compile(
+        rf"\b(?:reply|respond|answer|write back)\b[^.?!]{{0,25}}\b(?:with|including|containing)\b[^.?!]{{0,40}}(?:{_SENS})|"
+        rf"\b(?:send|e-?mail|mail|forward|text|post|transmit|upload|leak|message)\b[^.?!]{{0,60}}(?:{_SENS})[^.?!]{{0,60}}(?:\bto\b|\bat\b|\bvia\b)[^.?!]{{0,25}}(?:@|https?:|\.com|e-?mail|address|url|webhook|external|outside|\bme\b|\bus\b|\d{7,})|"
+        rf"\b(?:send|e-?mail|mail|forward|text|post|transmit|upload|message)\b[^.?!]{{0,40}}\b(?:to|at)\b[^.?!]{{0,40}}(?:@|https?:)[^.?!]{{0,60}}(?:{_SENS})|"
+        rf"\b(?:include|put|add|append|write|insert|type|enter|attach|paste|copy)\b[^.?!]{{0,50}}(?:{_SENS})[^.?!]{{0,30}}\b(?:in|into|inside|on|as|to)\b[^.?!]{{0,15}}\b(?:memo|reference|note|remark|comment|description|narrative|purpose|ledger|subject|body)\b|"
+        rf"\b(?:in|into|inside) (?:the |your |a )?(?:memo|reference|note|remark|comment|description|narrative|purpose)\b[^.?!]{{0,30}}\b(?:include|put|add|append|write|insert|attach|paste)\b[^.?!]{{0,40}}(?:{_SENS})|"
+        r"\bforward\b[^.?!]{0,30}\b(?:this |the |your |our )?(?:conversation|chat|logs?|history|prompt|statement)\b|"
+    r"\b(?:send|e-?mail|mail|forward|upload|post)\b[^.?!]{0,30}\b(?:registry|audit log|logs?|database|ledger|chat history)\b[^.?!]{0,30}(?:@|https?:|\bto\b)|"
+        rf"(?:回复|发送|发给(?!我)|转发|附上|附在|写在|写入|写进|放在|填入).{{0,20}}(?:{_SENS}).{{0,20}}|(?:{_SENS}).{{0,12}}(?:发送到|发给(?!我)|发至|写入备注|写在备注|放在备注|填入备注|回复)|备注.{{0,12}}(?:{_SENS})", re.I)
+
+
+_PRIV_EXFIL = _exfil_rx(_SENS)
+# a vendor invoice may legitimately mention "account number" or a "statement"; only the student's own secrets and balance count there
+_PRIV_EXFIL_DOC = _exfil_rx(_SENS.replace(r"|account (?:number|no\.?)", "").replace("card (?:number|details)|", "").replace("|instructions", "").replace("|statement", "").replace("|账号", ""))
+
+
+def privacy_kind(norm: str, doc: bool = False) -> str | None:
+    """account | person | logs | exfil | None. Asking ABOUT these words is not enough; each pattern needs a reveal/send/include verb or a 'full' qualifier."""
+    if (_PRIV_EXFIL_DOC if doc else _PRIV_EXFIL).search(norm):
+        return "exfil"
+    if doc:
+        return None
+    if _PRIV_ACCOUNT.search(norm):
+        return "account"
+    if _PRIV_PERSON.search(norm) and (re.search(_P_VERB, norm, re.I) or "?" in norm or len(norm) < 40):
+        return "person"
+    if _PRIV_LOGS.search(norm) or _OTHER_USERS.search(norm):
+        return "logs"
+    return None
+
+
+# Asking ABOUT a sensitive concept is help; asking to REVEAL / PRINT / SEND / CHANGE one is not. Needs no reveal verb, no other person's
+# secret and no encoding trick in the same message; every other security check still runs on top.
+_S_NAME = r"(?:pass ?code|password|passwd|\bpin\b|(?:device|private|signing|secret|api|access) key|\bkeys?\b|token|credentials?|login|seed phrase|密码|口令|密钥|私钥|设备密钥|令牌|凭证)"
+_CONCEPT_Q = re.compile(
+    rf"\b(?:do|does|will|would|must|should|can) (?:i|we) (?:need|have to|require|use|set|create|get|find|change|reset|recover|know)\b[^.?!]{{0,30}}{_S_NAME}|"
+    rf"{_S_NAME}\s*(?:\w+\s+)?(?:u|you|i|we) (?:need|require)\b|\bis (?:a |an |the |my |this )?{_S_NAME}s? (?:needed|required|necessary|safe|secure|private|encrypted|stored safely|protected)\b|"
+    rf"\b(?:is|are) (?:my |the )?{_S_NAME}s? (?:safe|secure|protected|private)\b|\bwho (?:can|could|will|would) (?:see|access|read|know)\b[^.?!]{{0,20}}{_S_NAME}|"
+    rf"\bhow (?:does|do|is|are) (?:a |an |the |my )?(?:\w+ )?{_S_NAME}|\bwhat(?:'s| is| are) (?:a|an|the purpose of|the point of) {_S_NAME}|\bwhat (?:does|do) (?:a |an |the |my )?(?:\w+ )?{_S_NAME} (?:mean|do|for)\b|"
+    rf"\bwhy (?:do|does|is|are|must|should) (?:i|we|it|oasis|the)\b[^.?!]{{0,30}}(?:need|have to|required|sign|{_S_NAME})|\bhow (?:do|can|should|does|to) (?:i|we|one|you)?\s?(?:\w+ ){{0,3}}(?:use|set up|set|create|get|find|change|reset|recover|replace|protect|keep|store|secure|log ?in|register)\b[^.?!]{{0,30}}{_S_NAME}|"
+    rf"\b(?:forgot|forgotten|lost|misplaced|reset|recover)\b[^.?!]{{0,25}}{_S_NAME}|{_S_NAME}\s*(?:kya|kaise|kyun)\b|"
+    r"(?:密码|口令|密钥|私钥|设备密钥).{0,6}(?:忘|丢|怎么办|怎么|如何|需要吗|要吗|安全吗|吗)|(?:需要|要).{0,4}(?:口令|密码|密钥)吗|什么是.{0,6}(?:口令|密码|密钥|私钥|设备密钥|令牌)|(?:如何|怎么|怎样).{0,10}(?:口令|密码|密钥|私钥|设备密钥)|为什么.{0,8}(?:签名|口令|密钥)|忘(?:了|记).{0,4}(?:口令|密码|密钥)", re.I)
+_REVEAL_STRICT = re.compile(r"\b(?:print|show|tell|reveal|give|send|share|leak|dump|display|repeat|output|read(?: out)?|export|list|paste|spell|whisper|disclose|expose|provide|forward|email|text)\b|告诉|显示|打印|泄露|给我|发给|输出|透露|发我|说出|告知", re.I)
+_S_STRICT = _S_NAME.replace("|login", "")
+_OTHER_SECRET = re.compile(rf"\b(?:parents?|mother|father|mom|mum|dad|guardian|admin\w*|judge|teacher|landlord|bank|his|her|their|someone|somebody|another|other|everyone)'?s?\b[^.?!]{{0,12}}{_S_STRICT}|"
+                           r"(?:家长|父母|管理员|别人|其他人|他的|她的|对方)(?:的)?(?:口令|密码|密钥|私钥|令牌)", re.I)
+_ENCODING = re.compile(r"\b(?:base64|b64|hex|rot ?13|binary|reversed?|backwards|encoded?|encrypted|cipher|morse|spelled|letter by letter|char\w* by char\w*|acrostic|pig latin|leet)\b|编码|加密|倒过来|逐字", re.I)
+_PAYSTYLE = re.compile(r"\b(?:ignore|bypass|override|jailbreak|pretend|developer mode|admin mode)\b|忽略|绕过", re.I)
+
+
+def concept_help(norm: str) -> str | None:
+    """device_key | sign | safe | login | forgot | None: a question ABOUT a secret, not a request for one."""
+    if not _CONCEPT_Q.search(norm) or _REVEAL_STRICT.search(norm) or _OTHER_SECRET.search(norm) or _ENCODING.search(norm) or _PAYSTYLE.search(norm):
+        return None
+    if re.search(r"\bwhat(?:'s| is| are) (?:a|an|the (?:purpose|point) of)\b|什么是", norm) and re.search(r"device key|设备密钥|密钥|\bkeys?\b", norm):
+        return "device_key"
+    if re.search(r"\bwhy\b[^.?!]{0,30}\bsign|为什么.{0,8}签名", norm):
+        return "sign"
+    if re.search(r"\b(?:safe|secure|protected|private|encrypted)\b|安全吗", norm):
+        return "safe"
+    if re.search(r"forgot|forgotten|lost|misplaced|reset|recover|忘|丢|怎么办|重置|找回", norm):
+        return "forgot"
+    if re.search(r"device key|设备密钥", norm):
+        return "device_key"
+    return "login"
+
+
 _NEGATED = re.compile(r"(?:\bdo not|\bdon'?t|\bnever|\bnot|\bwithout asking to|请勿|不要|别)\s*(?:please\s*)?$", re.I)
 _CONDITIONAL_APPROVE = re.compile(r"(?:until|before|after|when|once|unless|so that|till)\s+i\s+(?:approve|aprove|apporve)", re.I)
 
@@ -204,12 +306,19 @@ _SEC_VOCAB = ("ignore", "instructions", "previous", "passcode", "password", "pri
               "behalf", "parent", "payments", "bedrock", "rules", "funds", "university", "everyone", "mother", "father")
 
 
+_LEET = str.maketrans("013457", "oieast")
+
+
 def snap_security(norm: str) -> str:
     """Typos in an attack ('ignroe', 'passcod', 'apprval') are snapped onto the attack vocabulary so the same patterns apply. Used only as an EXTRA
     view for the security check, so it can only add refusals; routing of ordinary messages never sees it."""
     out = []
     for tok in norm.split(" "):
         w = tok.strip(".,!?;:'\"")
+        if len(w) >= 5 and w.isalnum() and not w.isalpha() and not w.isdigit():       # 'p4sscode', 'pr1nt': digits standing in for letters
+            deleet = w.translate(_LEET)
+            if deleet.isalpha():
+                tok, w = tok.replace(w, deleet), deleet
         if len(w) >= 5 and w.isalpha() and w not in _SEC_VOCAB:
             m = [v for v in difflib.get_close_matches(w, _SEC_VOCAB, 1, 0.8) if v[0] == w[0] or sorted(v) == sorted(w)]
             if m:
@@ -248,14 +357,17 @@ def _drop_negated(norm: str) -> str:
 
 
 def security_category(norm: str) -> str | None:
-    """secrets | injection | bypass | registry | role | social | None, for a normalised message."""
+    """privacy | secrets | injection | bypass | registry | role | social | None, for a normalised message."""
     norm = _drop_negated(norm)
+    if privacy_kind(norm):                  # decided before any other intent
+        return "privacy"
     # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
     asked = re.sub(r"\bwithout (?:sending|giving|telling|sharing|showing|revealing)[^.?!]{0,30}|\bwhere is\b", "", _snap(norm, _EXEMPT_WORDS))
     asked = _HOWTO.sub(" ", asked)
     reset_help = bool(_RESET.search(_snap(norm, ("reset", "password", "passcode", "login")))) and not _SECRETS_VERB.search(asked)
     plain = _HOWTO.sub(" ", norm)           # "tell me the recovery steps" asks for steps, not for a secret
     reset_help = reset_help or bool(_SECURITY_QA.search(norm) and not _SECRETS_VERB.search(plain) and not _REVEAL.search(plain))
+    reset_help = reset_help or bool(concept_help(norm))
     if not reset_help and _SECRETS_ASK.search(norm) and (_SECRETS_VERB.search(norm) or "?" in norm or len(norm) < 40):
         return "secrets"
     if _OTHER_USERS.search(norm):
@@ -273,6 +385,42 @@ def security_category(norm: str) -> str | None:
     if _PAYEE_EDIT.search(norm):
         return "registry"
     return None
+
+
+def refusal_detail(view: str, cat: str) -> str:
+    """Which thing was asked for, so the refusal can name it. Wording only: it never changes the decision."""
+    if cat == "privacy":
+        return privacy_kind(_drop_negated(view)) or "logs"
+    if cat == "secrets":
+        if _OTHER_SECRET.search(view):
+            return "other_secret"
+        for key, rx in (("prompt", r"prompt|instructions|系统提示|提示词|你的指令"), ("token", r"token|session|cookie|令牌"),
+                        ("passcode", r"pass ?code|password|passwd|\bpin\b|密码|口令|पासवर्ड|पासकोड"), ("key", r"key|seed|mnemonic|私钥|密钥|\.env|aws|credential|凭证|secret")):
+            if re.search(rx, view):
+                return key
+        return "key"
+    if cat == "registry":
+        if re.search(r"audit|logs?\b|history|trail|日志|历史|记录", view):
+            return "audit"
+        if re.search(r"verif|trusted|已验证|验证", view):
+            return "verify"
+        if re.search(r"account|details|账号|账户", view):
+            return "account"
+        return "payee"
+    if cat == "role":
+        m = re.search(r"parent|guardian|mother|father|mom|dad|admin\w*|judge|bank|teacher|owner|developer|operator|support|家长|父母|管理员|银行|老师|开发者", view)
+        return m.group(0) if m else "other"
+    if cat == "bypass":
+        if re.search(r"skip|bypass|disable|turn off|waive|without|no need|don.t need|绕过|跳过|无需|不用|关闭", view):
+            return "check"
+        if re.search(r"limit|cap|threshold|chunks?|pieces|split|额度", view):
+            return "limit"
+        if re.search(r"audit|hash|status|paid|released?|mark", view):
+            return "record"
+        if re.search(r"sign|approv|批准|签名|co-?sign", view):
+            return "sign"
+        return "check"
+    return ""
 
 
 # ------------------------------------------------------------------ everyday intents
@@ -528,6 +676,9 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
     norm = normalise(raw)
     if not norm:
         return ChatIntent(HELP, {"empty": True}, 1.0, lang)
+    # 0. an invoice, email or pasted text that tells me to send a secret or balance somewhere is refused before anything reads it as a bill
+    if len(raw) > 30 and privacy_kind(norm, doc=bool(INVOICE_HINT.search(raw))) == "exfil":
+        return ChatIntent(SECRETS, {"urgent": bool(_URGENCY.search(norm)), "detail": "exfil"}, 1.0, lang, "privacy")
     # 1. a labelled invoice (Payee:/Account:/Amount: lines) goes to the pipeline, which is the thing that judges injected text
     short_edit = len(raw) <= 200 and "\n" not in raw and bool(_REGISTRY_EDIT.search(normalise(raw)) or _PAYEE_VERIFY.search(normalise(raw)))
     if INVOICE_HINT.search(raw) and not short_edit:                  # a one-line "add payee Bob, Account: ..." is a chat command, not an invoice
@@ -537,7 +688,11 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
     for view in [strip_mentions(norm), *([strip_mentions(snapped)] if snapped != norm else []), *decoded_views(raw)]:
         cat = security_category(view)
         if cat:
-            return ChatIntent(SECRETS if cat == "secrets" else BYPASS, {"urgent": bool(_URGENCY.search(norm))}, 1.0, lang, cat)
+            return ChatIntent(SECRETS if cat in ("secrets", "privacy") else BYPASS,
+                              {"urgent": bool(_URGENCY.search(norm)), "detail": refusal_detail(view, cat)}, 1.0, lang, cat)
+    ch = concept_help(norm)
+    if ch:
+        return ChatIntent(HELP, {"concept": ch}, 0.9, lang)
     if _RESET.search(_snap(norm, ("reset", "password", "passcode", "login"))):
         return ChatIntent(HELP, {"reset": True}, 0.9, lang)
     raw, norm = fix_typos(strip_filler(raw)), fix_typos(strip_filler(norm))
@@ -570,7 +725,7 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         if topic:
             topic.lang = detect_lang(text, ui)
             return topic
-    if not acct and _QUOTE_Q.search(norm) and _amount(raw) and not re.search(r"per|每", norm):                                       # "how much CNY for INR 100000": a route quote, no draft, no conversion
+    if not acct and _QUOTE_Q.search(norm) and _amount(raw) and not re.search(r"\bper\b|每", norm):                                       # "how much CNY for INR 100000": a route quote, no draft, no conversion
         a = _amount(raw)
         return ChatIntent(ROUTES, {"amount": a[0] if a else None, "currency": "INR", "quote": True}, 0.85, lang)
     if not acct and re.search(r"\b(?:make|build|create|prepare|draw up|give me|help me (?:make|build|create))\b[^.?!]{0,15}\b(?:a |an |my )?(?:payment )?plan\b", norm):

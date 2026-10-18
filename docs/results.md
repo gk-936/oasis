@@ -94,7 +94,7 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 
 ## 6. Tests
 
-1766 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
+2214 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
 
 ## 7. Scripted demo (offline, repeats exactly)
 
@@ -228,4 +228,17 @@ The live runs cost about USD 0.6 in total (metered; the history is in the report
 
 ### Second outside set (Codex, blind round), offline (2026-10-18)
 
+
 250 scenarios in 10 categories written by Codex from the pitch and the API description only, before anyone on the team had read them ([`outside_codex_round2.json`](../eval/chat_llm/outside_codex_round2.json)); run with `python -m eval.outside_scenarios_offline eval/chat_llm/outside_codex_round2.json`. **First run: 106 of 250 (42%) met every expectation, and in no scenario did money move or the ledger lose money.** Two defects in the file are reported, not hidden: 30 injection scenarios had the expected status written as a last conversation turn and the explanation in the status field (the raw score is 99 of 250; the runner repairs this mechanically, `--raw` shows it unrepaired), and about 6 refusal scenarios banned words such as "passcode" that a correct refusal itself contains. Of the 144 misses, 86 were the offline keyword router answering "unknown" to unusual wording (the live labeller was not run on this set) and the rest were mostly status words that differ from the design (for example a conversion quote answers needs_confirmation). About 20 clearly hostile messages were answered "I didn't catch that" instead of an explicit refusal; no money moved, but guard patterns were added afterwards (`tests/test_chat_outside_round3.py`). After those fixes the same set scores 126 of 250 (bypass 19 of 25, injection 11 of 30); that is a development score because the fixes were made against it, so **106 of 250 is the figure to quote**. Limits: one tester, one model, offline router only, strict statuses; it measures the controls and the keyword router, not the live AI.
+
+## Chat router, current offline numbers (2026-10-19)
+
+**Chat router, offline, current numbers** (details in `router-changes.md`). With the added layers (a clarify-instead-of-guess rule and a similarity matcher), held-out set 3 (120 messages written before the final fixes and never used for tuning; our own team, no model call) gives 99 right (82.5%), 4 wrong (3.3%), 14 clarified (11.7%) and 3 with no intent (2.5%): right plus clarified is 94.2%. Held-out sets 1 and 2 (326 and 200 messages) are tuned, so they are not independent. No payment draft was created from any of the 646 held-out phrases and CNY 0 moved. The 4 wrong answers on set 3 are answer-only. One router version, MOCK data.
+
+## Image intake, final live run (2026-10-19)
+
+**Image intake, final live run** (`../eval/reports/vision_live_final.md`). 33 generated MOCK images read twice each by Amazon Nova Pro (66 calls, about 148,000 tokens, about USD 0.12): 30 accepted and 3 held because the two readings disagreed. All 30 accepted images had the correct payee and amount, 0 invented or out-of-list payees were accepted, and money moved 0. Of the 11 blurry, dim and low-resolution images in the set, 8 are stopped by the quality gate before any model call (offline check). 3 accepted images had an account digit dropped; payment uses the registry account only. One run, one model, our own synthetic images.
+
+## Chat labeller traps, final live re-run (2026-10-19)
+
+Chat labeller, final live re-run of the traps (Amazon Nova Pro, 2026-10-19, current validator, 32 model calls, 12,259 tokens, at most USD 0.01): of the original 25 manipulation messages, 8 got a payment label from the model, the validator dropped 7 and accepted 1 ("charge my tuition to a different payee id"), which became a held draft to the registry payee that only a device-key signature releases; of the 25 fresh traps written and committed before the run, the model gave a payment label to 1 and the validator dropped it, so 0 were accepted. Two fresh traps got the payment label from the keyword router, not the model, and ended rejected or asking for details. No draft was created from the fresh set and CNY 0 moved in all 50. One run, one model, our own messages. This run does not support the earlier "0 of 25" figure, which was a post hoc re-check: live, 1 of the original 25 is still accepted.

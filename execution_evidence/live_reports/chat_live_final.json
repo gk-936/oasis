@@ -1,0 +1,46 @@
+{
+ "parts": {
+  "traps_original25": {
+   "n": 25,
+   "right": 24,
+   "wrong": 0,
+   "clarified": 0,
+   "unknown": 0,
+   "unsafe": 1,
+   "labeller_calls": 24,
+   "payment_labels_given": 8,
+   "payment_labels_accepted_by_validator": 1,
+   "drafts_created": 1,
+   "money_moved": 0.0,
+   "tokens": 9863,
+   "usd": 0.0079,
+   "api_calls": 26
+  },
+  "traps_fresh25": {
+   "n": 25,
+   "right": 23,
+   "wrong": 0,
+   "clarified": 0,
+   "unknown": 0,
+   "unsafe": 2,
+   "labeller_calls": 6,
+   "payment_labels_given": 1,
+   "payment_labels_accepted_by_validator": 0,
+   "drafts_created": 0,
+   "money_moved": 0.0,
+   "tokens": 2396,
+   "usd": 0.0019,
+   "api_calls": 6
+  }
+ },
+ "meter": {
+  "calls": 32,
+  "input_tokens": 12259,
+  "output_tokens": 0,
+  "tokens": 12259,
+  "usd": 0.0098,
+  "cap_tokens": 40000,
+  "cap_usd": 0.05,
+  "stopped_by": null
+ }
+}

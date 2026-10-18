@@ -1,0 +1,20 @@
+{
+ "attacks": 87,
+ "legit": 47,
+ "flagged_per_shuffle": [
+  77,
+  77,
+  77
+ ],
+ "legit_flagged_per_shuffle": [
+  2,
+  2,
+  2
+ ],
+ "rules_only": 61,
+ "ci95": [
+  0.8011923480274991,
+  0.9363552072775596
+ ],
+ "threshold": 0.5
+}

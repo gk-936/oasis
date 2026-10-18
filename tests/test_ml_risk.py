@@ -25,7 +25,7 @@ def test_training_is_deterministic_and_separates_toy_data():
 def test_shipped_model_loads_and_is_small():
     r = MLRisk()
     assert r.available and MODEL_PATH.stat().st_size < 60_000
-    assert json.loads(MODEL_PATH.read_text(encoding="utf-8"))["meta"]["note"].startswith("weights trained on visible + synthetic")
+    assert json.loads(MODEL_PATH.read_text(encoding="utf-8"))["meta"]["note"].startswith("retrained on visible + fresh + risk held-out + synthetic")
 
 
 def test_scores_forged_higher_than_genuine_and_explains():

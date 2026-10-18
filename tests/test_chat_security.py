@@ -68,7 +68,7 @@ def test_attack_prompt_moves_no_money_and_leaks_nothing(st, msg):
 @pytest.mark.parametrize("msg", SECRET_ASKS + INJECTIONS[:6] + BYPASSES[:3])
 def test_refusals_name_a_reason_and_are_audited(st, msg):
     j = st.post("/api/chat", json={"message": msg}).json()
-    assert j["status"] == "refused" and j["refusal"] in ("secrets", "injection", "bypass", "role", "social")
+    assert j["status"] == "refused" and j["refusal"] in ("secrets", "privacy", "injection", "bypass", "role", "social")
     assert "Nothing moved" in j["reply"] or "没有任何资金转出" in j["reply"]
     assert "chat_refused" in _audit_kinds(st)
 

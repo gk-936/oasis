@@ -1,0 +1,871 @@
+{
+ "rows": [
+  {
+   "kind": "pass",
+   "image": "9807d6cf77f6e358",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "9807d6cf77f6e358",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "9807d6cf77f6e358",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "b971021a33093461",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "b971021a33093461",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "b971021a33093461",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:24:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "5c3844a3da1f80d3",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:24:27",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "5c3844a3da1f80d3",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:24:27",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "5c3844a3da1f80d3",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:24:27",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "d32a189500430c79",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:24:36",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "d32a189500430c79",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:24:42",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "d32a189500430c79",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:24:42",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "3afb5072c7c6b787",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:24:46",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "3afb5072c7c6b787",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:24:51",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "3afb5072c7c6b787",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:24:51",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "0d53382aeb3da2cc",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:25:03",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "0d53382aeb3da2cc",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:25:08",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "0d53382aeb3da2cc",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:08",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "417c8dbdf2f03721",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): deposit\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:25:10",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "417c8dbdf2f03721",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): deposit\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:25:13",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "417c8dbdf2f03721",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:13",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "25a2b9595fafc359",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:25:16",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "25a2b9595fafc359",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:25:18",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "25a2b9595fafc359",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:18",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "96a2cb37914e55cf",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:25:20",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "96a2cb37914e55cf",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:25:23",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "96a2cb37914e55cf",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:23",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "c522196c257daf1b",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:25:25",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "c522196c257daf1b",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:25:27",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "c522196c257daf1b",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:27",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "a18eb6d716347cc6",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): deposit\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:25:31",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "a18eb6d716347cc6",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): deposit\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:25:34",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "a18eb6d716347cc6",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:34",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "0d15aeadcd21830a",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.50\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:25:40",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "0d15aeadcd21830a",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:25:45",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "0d15aeadcd21830a",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:45",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "9482187c73622961",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:25:52",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "9482187c73622961",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:25:59",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "9482187c73622961",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:25:59",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "a3e568adb11ce714",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:26:03",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "a3e568adb11ce714",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:26:07",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "a3e568adb11ce714",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:07",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e6a95f8546de2edb",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:26:13",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e6a95f8546de2edb",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-10-28",
+   "ts": "2026-10-19T01:26:17",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "e6a95f8546de2edb",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:17",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "c74286abe35a6d67",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:26:20",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "c74286abe35a6d67",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 15750.5\nPurpose (用途): tuition\nDue (到期日): 2026-12-05",
+   "ts": "2026-10-19T01:26:22",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "c74286abe35a6d67",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:22",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "950ced6b58acf206",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:26:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "950ced6b58acf206",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 28800\nPurpose (用途): tuition\nDue (到期日): 2026-11-12",
+   "ts": "2026-10-19T01:26:29",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "950ced6b58acf206",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:29",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "f1b4f9d714902039",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 5800\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:26:31",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "f1b4f9d714902039",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 5800.00\nPurpose (用途): rent\nDue (到期日): 2026-11-03",
+   "ts": "2026-10-19T01:26:33",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "f1b4f9d714902039",
+   "outcome": "held",
+   "hold_kind": "disagreement",
+   "fields": [
+    "account"
+   ],
+   "ts": "2026-10-19T01:26:33",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "88f3d8c10b1dd57d",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:34",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "88f3d8c10b1dd57d",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:36",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "88f3d8c10b1dd57d",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:36",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "1d283b0e6e5a9132",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:38",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "1d283b0e6e5a9132",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:39",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "1d283b0e6e5a9132",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:39",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "1834ca2a494c9d4c",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-10-25",
+   "ts": "2026-10-19T01:26:41",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "1834ca2a494c9d4c",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-10-25",
+   "ts": "2026-10-19T01:26:43",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "1834ca2a494c9d4c",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:43",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "35fdc58d1b5173ef",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 622848000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:44",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "35fdc58d1b5173ef",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 622848000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:46",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "35fdc58d1b5173ef",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:46",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ef757ebfde95cbd2",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:48",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ef757ebfde95cbd2",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:50",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "ef757ebfde95cbd2",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:50",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e1a181dde7be6aea",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:52",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e1a181dde7be6aea",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:54",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "e1a181dde7be6aea",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:26:54",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "3229dbdcea7022cd",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:55",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "3229dbdcea7022cd",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:26:57",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "3229dbdcea7022cd",
+   "outcome": "held",
+   "hold_kind": "disagreement",
+   "fields": [
+    "account"
+   ],
+   "ts": "2026-10-19T01:26:57",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "fde751debbbfdeff",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000009999\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:26:59",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "fde751debbbfdeff",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000009999\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:01",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "fde751debbbfdeff",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:01",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "276704c96014877b",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6666000000000001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:27:03",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "276704c96014877b",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6666000000000001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:27:04",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "276704c96014877b",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:04",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "48de1cd1548a0ac0",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:06",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "48de1cd1548a0ac0",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:08",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "48de1cd1548a0ac0",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:08",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ed51b52fb1a45cd8",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:13",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ed51b52fb1a45cd8",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:15",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "ed51b52fb1a45cd8",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:15",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "7980902c9566fda6",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:17",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "7980902c9566fda6",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:19",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "7980902c9566fda6",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:19",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e929bce4de254482",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:21",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "e929bce4de254482",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:23",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "e929bce4de254482",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:23",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ec02d89724f4f494",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 622202111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:27:24",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "ec02d89724f4f494",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_landlord_chen\nAccount (账号): 6222021111110001\nAmount (金额): 6000\nPurpose (用途): rent\nDue (到期日): 2026-11-01",
+   "ts": "2026-10-19T01:27:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "ec02d89724f4f494",
+   "outcome": "held",
+   "hold_kind": "disagreement",
+   "fields": [
+    "account"
+   ],
+   "ts": "2026-10-19T01:27:26",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "d627e6501800d28e",
+   "pass": 1,
+   "variant": 0,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:29",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "pass",
+   "image": "d627e6501800d28e",
+   "pass": 2,
+   "variant": 1,
+   "raw_reply": "Payee ID (收款方编号): payee_univ_x\nAccount (账号): 6228480000001234\nAmount (金额): 30000\nPurpose (用途): tuition\nDue (到期日): 2026-11-15",
+   "ts": "2026-10-19T01:27:31",
+   "model": "us.amazon.nova-pro-v1:0"
+  },
+  {
+   "kind": "outcome",
+   "image": "d627e6501800d28e",
+   "outcome": "accepted",
+   "borderline": false,
+   "ts": "2026-10-19T01:27:31",
+   "model": "us.amazon.nova-pro-v1:0"
+  }
+ ]
+}

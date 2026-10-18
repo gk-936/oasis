@@ -174,7 +174,7 @@ def build(pages: dict[str, int]) -> str:
     ["FlightPath", "Follows a sent transfer, says what a delay or short credit means for the bill's deadline, and never resends blindly."],
     ["Twin", "Simulates the rest of the semester and shows the chance of missing each deadline, with mitigations."],
     ["Netting", "Simulation that matches opposite INR and CNY flows at the mid rate to show possible savings. Simulation only."],
-    ["Parent", "The parent co-signs larger transfers; the request is shown in English, Tamil, Hindi or Chinese (machine-drafted)."],
+    ["Parent", "The parent co-signs larger transfers; the request is shown in English or Chinese (machine-translated)."],
     ["Demo", "Two scripted, repeatable runs: a student's semester and an attack story. Each replays to the same audit-chain head."],
     ["Break it", "Judges paste any fraud attempt and watch it run through the real pipeline, or tamper with, replay or forge a signed payment and hand it to the real executor."],
     ["Red team", "Judge-only console for attacking the system. Each judge login gets its own sandbox and attempt log."],
@@ -326,7 +326,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(sec(5, f"""
 <p>Offline results are deterministic and reproducible; live results are from Amazon Nova Pro. Reports are in <code>eval/reports/</code>. Caveats are in Section 6.</p>
 {tbl(["Evidence", "Result"], [
-    ["Test suite", "1766 passed, 2 skipped (live FISCO and live PQ-TLS)"],
+    ["Test suite", "2214 passed, 2 skipped (live FISCO and live PQ-TLS)"],
     ["Visible benchmark: 32 attacks, 12 genuine changes, four layer configurations", "Attack block rate 6.2% baseline, 68.8% with verification, 100% with intents and policy; money lost CNY 479,000 baseline, 0 with the full system; genuine completion 100%"],
     ["Hidden blind set: 40 cases", "100% blocked and 100% genuine completed after fixes"],
     ["Live extraction, Nova Pro", "Model followed an injection in 0 of 6 cases; full system money lost 0; genuine completion 83.3% (a usability cost)"],
@@ -340,15 +340,12 @@ def build(pages: dict[str, int]) -> str:
     h.append(sec(6, f"""
 {tbl(["Limitation", "Effect and mitigation"], [
     ["Everything financial is simulated", "Rails, rates, fees and the registry are MOCK. Savings are not what a real student would save. A production path needs licensing, real rails, external audit and key management"],
-    ["One corridor tested", "Six corridors are implemented; the whole application was tested only on INR to CNY for this demo. The other five were checked at the engine level"],
     ["Tests are largely self-written", "The attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; the first-run row of each report is the only out-of-sample number. Stress tests are white-box. The hidden blind set is partly burned. No external human audit"],
     ["Live evidence is small", "One model, one provider, small samples on MOCK data. The chat-label validator rule that removed the one trap label was added after the run and is post hoc. Model calls are not part of the Oasis audit chain: live results are saved report rows, not a provider-side log"],
-    ["The keyword router is weak on unseen wording", "On 144 fresh paraphrases it placed 52 correctly, 19 on the wrong intent and 73 as unknown (first run). Security held (no money moved); task completion is what suffers"],
+    ["Some unusual wording is still missed", "Held-out set 3 (120 messages, never tuned on, offline): 99 right, 4 wrong, 14 clarified, 3 no intent. No money moved"],
     ["Risk scorers are weaker out of sample", "They only escalate; the deterministic controls carry the guarantee"],
-    ["Image reading is unreliable on hard images", "2 of 6 test images failed; limited by the registry-only rule and the student confirming fields"],
-    ["Public deployment", "The TLS certificate is classical (only the key exchange is post-quantum); capped live key; not load-tested; credentials are demo-grade shared passcodes plus optional passkeys; not independently audited"],
-    ["Languages and research", "Chinese, Tamil and Hindi text is machine-drafted. We held informal conversations with 10 people we know: 6 international students and interns abroad (Vietnam, Japan, Germany, Spain and Tanzania) and 4 parents: a small convenience sample, not a survey; no finance office was interviewed"],
-    ["Credit building", "The record is not a credit score and no lender or regulator accepts it"]], ["32%", "68%"])}"""))
+    ["Image reading can drop a digit", "3 of 30 accepted images in the final live run (33 MOCK images, one run) had an account digit dropped. Payment uses the registry account only and the student confirms the fields; blurry, dark and tiny photos are held by a quality gate before any model call"],
+    ["Languages and research", "The Chinese text is machine-translated. We held informal conversations with 10 people we know: 6 international students and interns abroad (Vietnam, Japan, Germany, Spain and Tanzania) and 4 parents: a small convenience sample, not a survey; no finance office was interviewed"]], ["32%", "68%"])}"""))
 
     # ------------------------------------------------------------------ appendices
     h.append(app(1, f"""
@@ -388,7 +385,7 @@ def build(pages: dict[str, int]) -> str:
 <ul>
 <li>Offline mode, fixed seeds, seeded demo keys and nonces, and a simulated clock make the scripted demo repeat exactly; replays reach identical audit-chain heads.</li>
 <li>Benchmarks run offline: <code>eval.runner --llm offline</code>, <code>eval.flightpath_bench</code>, <code>eval.netting_bench</code>, <code>eval.tasks_bench</code>. Live runs are checkpointed, token-capped and saved as report rows.</li>
-<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 1766 passed, 2 skipped.</li>
+<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 2214 passed, 2 skipped.</li>
 <li>The execution evidence folder contains a standard-library verifier that recomputes the audit chains and the headline figures from the logs.</li></ul>"""))
 
     h.append(app(4, """

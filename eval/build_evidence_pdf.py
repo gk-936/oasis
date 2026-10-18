@@ -427,11 +427,11 @@ Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_ca
     sc_ok = sum(1 for r in sc_par if r["validated"] == r["expected"])
     sc_wrong = sum(1 for r in sc_par if r["validated"] not in (None, "unknown", r["expected"]))
     ptab, plog = planner_live(pl)
-    vis_rows = []
-    for fn, what, expect, got, verdict in VISION_ROWS:
-        src = "data:image/png;base64," + base64.b64encode((REPORTS / "vision_live" / fn).read_bytes()).decode()
-        col = GREEN if verdict == "pass" else RED
-        vis_rows.append(f"<tr><td style='width:70px'><img src='{src}' style='width:62px;border:1px solid {LIGHT}' alt='{e(what)}'></td><td>{e(what)}</td><td>{e(got)}</td><td class='c'><b style='color:{col}'>{verdict}</b></td></tr>")
+    vsum = json.loads((REPORTS / "vision_live_final_summary.json").read_text(encoding="utf-8"))["summary"]
+    vcat = ""
+    for k, v in sorted(vsum["by_category"].items()):
+        outcome = ", ".join(f"{n} {o.replace('held:', 'held, ')}" for o, n in v.items())
+        vcat += f"<tr><td>{e(k.replace('_', ' '))}</td><td class='n'>{sum(v.values())}</td><td>{e(outcome)}</td></tr>"
     rows_i = inj["rows"]
     samp = []
     r0 = next(r for r in rows_i if r["layout"] == "unregistered")
@@ -455,7 +455,7 @@ Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_ca
 <h3>5.2  Chat assistant</h3>
 <p>The student talks to Oasis in chat. The log shows an estimate with no draft, a rent draft, the student's device signature over the exact draft, the proof, two answer-only questions (a delayed transfer, which gets advice and never a resend, and a request to a parent, which gets the gap and never a tuition draft), and three refused requests. Nothing outside the one signed payment moved money.</p>{chat_log(P)}
 <p>For messages the keyword router cannot place, the live model proposes a label and the validator checks it. On {len(sc_rows)} fresh messages written for this test with the prompt frozen, the model labelled {sc_ok} of {len(sc_par)} paraphrases correctly and {sc_wrong} wrongly. Among {len(sc_trap)} manipulation messages, 1 received a payment label as run and 0 after a validator rule added afterwards (reported as post hoc; a payment label only ever creates a draft for a signature). On the earlier held-out set the model labelled 18 of 20 correctly and 0 of 10 traps as a payment.
-The keyword router alone, on 144 fresh paraphrases and before any change, placed 52 correctly, 19 on the wrong intent and left 73 unknown: wording the router does not know is the weakest measured part of task completion.</p>
+On held-out set 3 (120 messages written before the final router fixes and never used for tuning; our own team, offline, one run) the router answered 99 correctly (82.5%), 4 wrongly (3.3%), asked a clarifying question for 14 (11.7%) and found no intent for 3 (2.5%); no payment draft and CNY 0 moved on any of the 646 held-out phrases (`docs/router-changes.md`).</p>
 <h3>5.3  Payment planning</h3>
 <p>The planner proposes which routes fund which bills in time. Offline, it compares the chosen route with every alternative and asks a question when it has nothing to plan.</p>{plan_log(P['planner'])}
 <p>With the live model the planner was run over 8 scenarios, {pl['repeats']} repeats each ({ps['scenarios_run']} plans, temperature {pl['temperature']}). Every plan was checked by the validator: {ps['valid_without_fallback']} of {ps['scenarios_run']} valid without fallback, {ps['fallbacks']} fallbacks, {ps['deadlines_met']} of {ps['deadlines_total']} deadlines met, mean {ps['mean_iterations_to_valid']} proposals per valid plan, {ps['tokens']:,} tokens.
@@ -471,8 +471,8 @@ Plan fees were {ps['fee_reduction_vs_bank_pct']}% below the typical bank route o
 <tr><td>Risk scorer over all invoices: scored / raised the score / answer unusable / malformed JSON salvaged</td><td class="n">{rsk['scored']} / {rsk['raised']} / {rsk['failed']} / {rsk['salvaged']}</td></tr>
 <tr><td>Answers blocked by the provider's own content filter (deterministic parse used)</td><td class="n">{inj['provider_blocked']}</td></tr></table>
 {pre(["<b>Log output: sample invoice rows (live model, saved rows)</b>"] + samp)}
-<p>Images were read by the live vision model in six generated MOCK cases. The model transcribes; it never decides where money goes.</p>
-<table><tr><th>Image</th><th>Case</th><th>What the model returned</th><th class="c">Result</th></tr>{''.join(vis_rows)}</table>
+<p>Images are read by the live vision model, which only transcribes; it never decides where money goes. <b>Capped live run.</b> {vsum['images']} generated MOCK images read twice each (one run, our own images): {vsum['accepted']} accepted and {vsum['held']} held because the two readings disagreed; payee and amount correct in all {vsum['accepted']} accepted; {vsum['out_of_list_or_invented_payee_accepted']} invented or out-of-list payees accepted; money moved {vsum['money_moved']}. Of the 11 blurry, dim and low-resolution images in the set, 8 are stopped by the quality gate before any model call (offline check). Rows: <code>vision_live_final_rows.json</code>; recomputed by <code>verify_evidence.py</code>.</p>
+<table><tr><th>Image kind</th><th class="n">Images</th><th>Outcome</th></tr>{vcat}</table>
 <h3>5.5  Recovery advice for a delayed or short transfer (FlightPath)</h3>
 <p>When a transfer is late, short or rejected, the assistant works out what it means for the bill's deadline and compares safe next steps. The arithmetic is deterministic and no option resends the payment. A live model may only reword the advice, and the rewrite is accepted only if every number survives: of 12 rewrites, {ac['flightpath_wording']['model_rewrote_accepted']} were rewritten and accepted, {ac['flightpath_wording']['model_returned_draft_unchanged']} returned unchanged, {ac['flightpath_wording']['rewrite_rejected_by_guard']} rejected.</p>
 {''.join(flight_log(f) for f in P['flightpath'])}
@@ -531,6 +531,8 @@ payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['o
     names = ["AI-contribution run 1", "FlightPath rewrite re-run", "Held-out chat labels, reproduction", "AI-contribution run 2 (genuine invoices)", "Held-out chat labels, prompt trial (reverted)",
              "AI-contribution scale-up (128 poisoned, 40 genuine)", "Chat labels, scale set (98 messages)", "Independent set 3", "Independent set G (rerun)", "Independent set C"]
     rr = "".join(run_row(r, n) for r, n in zip(runs["runs"], names))
+    fvm = json.loads((REPORTS / "vision_live_final_summary.json").read_text(encoding="utf-8"))["meter"]
+    fv_calls, fv_tok = fvm["calls"] + 6, fvm["tokens"] + 12961        # + the 3-image Step 0 trial (6 calls, 12,961 tokens from the usage ledger, same images, same day)
     fxv = [r for r in fx if "above the LRS" not in r["title"]]
     h.append(sec(9, f"""<p>Every live-model result in this report comes from Amazon Nova Pro (<code>us.amazon.nova-pro-v1:0</code>) on Amazon Bedrock and is recorded in saved report and row files, listed here. 
 Each run had a token cap and was measured with a token meter.</p>
@@ -542,10 +544,15 @@ Each run had a token cap and was measured with a token meter.</p>
 <tr><td>Chat labels</td><td><code>chat_llm_scale<wbr>.md</code> and related</td><td>98 fresh messages; 20 + 10 held-out; two runs of 26</td></tr>
 <tr><td>Extraction and risk benchmark</td><td><code>benchmark_live<wbr>.md/.json</code></td><td>{lm['attacks']} attacks, {lm['legit']} genuine</td></tr>
 <tr><td>Outside-written sets, live</td><td><code>independent3_live<wbr>.md</code>, <code>independentG_live<wbr>.md</code>, <code>independentC_live<wbr>.md</code></td><td>Sets 3, G and C</td></tr>
-<tr><td>Image intake</td><td><code>vision_live.md</code></td><td>6 generated MOCK images</td></tr></table>
-<h3>9.2  Metered runs</h3>
+<tr><td>Image intake</td><td><code>vision_live_final.md</code>, <code>vision_live_final_rows.json</code></td><td>33 generated MOCK images, 66 model calls (a 6-image trial, <code>vision_live.md</code>, came first)</td></tr></table>
+<div style="break-inside: avoid"><h3>9.2  Metered runs</h3>
 <table class="long"><tr><th>Run</th><th class="n">Calls</th><th class="n">Input tokens</th><th class="n">Output tokens</th><th class="n">USD</th></tr>{rr}
-<tr><td><b>Total</b></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"><b>{runs['total_usd']:.3f}</b></td></tr></table>
+<tr><td><b>Total</b></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"><b>{runs['total_usd']:.3f}</b></td></tr></table></div>
+<h3>9.3  Capped live runs</h3>
+<table><tr><th>Part</th><th class="n">Calls</th><th class="n">Tokens</th><th class="n">USD (upper bound)</th></tr>
+<tr><td>Image intake, 33 MOCK images, two passes each (includes the 3-image trial)</td><td class="n">{fv_calls}</td><td class="n">{fv_tok:,}</td><td class="n">{fv_tok * 0.8e-6:.3f}</td></tr>
+<tr><td>Chat labeller traps, 50 messages (25 original, 25 fresh)</td><td class="n">32</td><td class="n">12,259</td><td class="n">{12259 * 0.8e-6:.3f}</td></tr></table>
+<p class="small">The provider did not report an input and output split for these calls, so every token is priced at the input rate; the true cost is slightly higher because output tokens cost more, but outputs were short (about 50 tokens a call). Limits for these runs were 400,000 tokens and USD 0.48.</p>
 <p class="small">Prices: USD 0.80 per million input tokens and USD 3.50 per million output tokens. The planner runs ({ps['tokens']:,} tokens, {ps['model_calls']} model calls) and the earlier foreign-currency, benchmark, vision and chat runs are recorded in their own reports. One run of set G ignored its token cap because of a harness bug (fixed); it was stopped by hand after about 146,000 tokens that are not metered here.</p>"""))
 
     # ---- 10
@@ -566,8 +573,8 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
 <li><b>Who wrote the tests.</b> The cases, executor tests, attack scenarios and chat sets were written by the project team or by outside AI systems from the public documentation. The outside sets were used to find and fix failures and the router was tuned on them, so their final scores are not out-of-sample and the layering results do not show performance against unknown attackers. No external human audit has been done.</li>
 <li><b>Live-model samples are small.</b> One model, one provider, MOCK data; they show the controls hold on the tested cases and are not a robustness claim. Sets 1, 2 and A were not run live. The chat-label validator rule that removed the one trap label was added after the run and is post hoc.</li>
 <li><b>Live runs are not in the audit chain.</b> Nova calls are not written to the Oasis audit chain, so the saved report and row files are the record, not a provider-side or signed log.</li>
-<li><b>Wording the router does not know.</b> On 144 fresh paraphrases the keyword router placed 52 correctly and 19 on the wrong intent before any change. Security held in every case (no money moved); task completion on unseen wording is the weakest measured part.</li>
-<li><b>Image reading is unreliable on hard inputs</b> (2 of 6 test images failed: an invented payee on a Chinese-language invoice, a runaway value on a blurry one). A guard holds runaway readings and asks for text; plausible wrong values are limited by the registry-only payment rule and the student confirming the fields.</li>
+<li><b>Wording the router does not know.</b> On held-out set 3 (120 messages written before the final router fixes and never used for tuning; our own team, offline, one run) the router answered 99 correctly (82.5%), 4 wrongly (3.3%), asked a clarifying question for 14 (11.7%) and found no intent for 3 (2.5%); no payment draft and CNY 0 moved on any of the 646 held-out phrases. Security held in every case; unusual wording can still get a clarifying question or a wrong answer-only reply.</li>
+<li><b>Image reading can drop a digit</b> (3 of 30 accepted images in the final live run had an account digit dropped). Payment uses the registry account only and the student confirms the fields; the earlier failures (an invented payee, a runaway value) came before the quality gate and runaway guard.</li>
 <li><b>Machine-drafted languages.</b> Chinese, Tamil and Hindi text is machine-drafted; this report is in English.</li></ul>"""))
 
     # ---- appendices

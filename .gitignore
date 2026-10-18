@@ -65,3 +65,6 @@ data/telegram_pairing.json
 
 # scripted-client device keys (tools/oasis_client.py)
 .oasis_device_key*
+
+# sealed evaluation set: keep out of git
+eval/sealed/

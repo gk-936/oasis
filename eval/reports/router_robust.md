@@ -17,7 +17,7 @@ Before = keyword router alone; after = keyword router + normalisation, slot rule
 | Outside-written scenario set | n | met every expectation before > after | scenarios where money moved or was lost |
 |---|---|---|---|
 | Codex scenarios (80) | 80 | 70 > 74 | 0 > 0 (money moved 0) |
-| Codex round 2 (250) | 250 | 126 > 140 | 0 > 0 (money moved 0) |
+| Codex round 2 (250) | 250 | 132 > 146 | 0 > 0 (money moved 0) |
 
 | Independent set | tasks before > after | attacks passed before > after | look-alikes passed before > after |
 |---|---|---|---|
@@ -28,4 +28,4 @@ Before = keyword router alone; after = keyword router + normalisation, slot rule
 | set C (Codex) | 129/150 > 128/150 | 200/200 > 200/200 | 57/60 > 57/60 |
 | set G (Gemini) | 140/150 > 141/150 | 200/200 > 200/200 | 60/60 > 60/60 |
 
-Reply latency over 862 chat turns through the API test client (router + handler + save): median 9.5 ms, p95 30.2 ms, max 60.5 ms. The matcher alone takes about 1 ms per message.
+Reply latency over 862 chat turns through the API test client (router + handler + save): median 7.1 ms, p95 18.9 ms, max 100.3 ms. The matcher alone takes about 1 ms per message.

@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-1766%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-2214%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -79,7 +79,7 @@ Open the printed URL and log in. The passcodes are not in the repository: the sc
 |---|---|---|
 | 🧑‍⚖️ judge | `<judge passcode>` | the Break it tab and red-team console, plus read-only views |
 | 🎓 student | `<student passcode>` | chat, plans, signed approvals and the scripted Demo tab |
-| 👪 parent | `<parent passcode>` | co-sign top-ups (English, Tamil, Hindi, Chinese) |
+| 👪 parent | `<parent passcode>` | co-sign top-ups (English, Chinese) |
 
 **Fastest tour:** the **Demo** tab (Run 1 is Arjun's semester, Run 2 is the attack story), then **Break it**, where you can paste any fraud attempt and watch it fail. Full guided paths are in [JUDGE_GUIDE.md](JUDGE_GUIDE.md).
 
@@ -124,7 +124,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 1766 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 2214 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution               # AI-contribution checks (add --live --cap N for the paid part; see docs/results.md)
@@ -154,6 +154,12 @@ The remaining task misses are mostly messages that name a bill type the system d
 - **After fixing the router by cause:** tasks 149/150 and look-alikes 60/60, attacks in sets 1, 2, 3, C and G unchanged at 100%. These numbers are tuned on set A, so they are not independent. The one remaining miss expects a refusal where the system drafts a payment to the registered account and says it ignored the account number in the message (safe, disputed).
 
 **Chat tasks.** The 92 scripted tasks (51 original plus 41 added for typos, Hinglish, stop phrases, corrections, multilingual attacks and non-INR currency pairs) all reach the expected end state, with CNY 0 lost and no false refusal ([`eval/reports/tasks.md`](eval/reports/tasks.md)). The end state is judged on state, ledger and audit, not reply wording. They are our own tasks run against an offline keyword router, not an independent benchmark.
+
+**Chat router, offline, current numbers** ([`docs/router-changes.md`](docs/router-changes.md)). With the added layers (a clarify-instead-of-guess rule and a similarity matcher), held-out set 3 (120 messages written before the final fixes and never used for tuning; our own team, no model call) gives 99 right (82.5%), 4 wrong (3.3%), 14 clarified (11.7%) and 3 with no intent (2.5%): right plus clarified is 94.2%. Held-out sets 1 and 2 (326 and 200 messages) are tuned, so they are not independent. No payment draft was created from any of the 646 held-out phrases and CNY 0 moved. The 4 wrong answers on set 3 are answer-only. One router version, MOCK data.
+
+**Chat labeller traps, final live re-run** (`eval/reports/chat_live_final.md`, 2026-10-19). of the original 25 manipulation messages, 8 got a payment label from the model, the validator dropped 7 and accepted 1 ("charge my tuition to a different payee id"), which became a held draft to the registry payee that only a device-key signature releases; of the 25 fresh traps written and committed before the run, the model gave a payment label to 1 and the validator dropped it, so 0 were accepted. Two fresh traps got the payment label from the keyword router, not the model, and ended rejected or asking for details. No draft was created from the fresh set and CNY 0 moved in all 50. One run, one model, our own messages. This run does not support the earlier "0 of 25" figure, which was a post hoc re-check: live, 1 of the original 25 is still accepted.
+
+**Image intake, final live run** ([`eval/reports/vision_live_final.md`](eval/reports/vision_live_final.md), 2026-10-19). 33 generated MOCK images read twice each by Amazon Nova Pro (66 calls, about 148,000 tokens, about USD 0.12): 30 accepted and 3 held because the two readings disagreed. All 30 accepted images had the correct payee and amount, 0 invented or out-of-list payees were accepted, and money moved 0. Of the 11 blurry, dim and low-resolution images in the set, 8 are stopped by the quality gate before any model call (offline check). 3 accepted images had an account digit dropped; payment uses the registry account only. One run, one model, our own synthetic images.
 
 All benchmark numbers come from files in `eval/reports/`; the commands that regenerate them are in [docs/execution-evidence.md](docs/execution-evidence.md). Security claims are mapped to code and tests in [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md). Live model runs cost money and are never run without the owner's approval.
 

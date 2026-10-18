@@ -50,6 +50,9 @@ def validate_draft(draft: str, suspicious_text: str, allowed: list[str] | None =
             problems.append("contains a long number that could be an account or phone number")
     if re.search(r"\d{8,}", draft):
         problems.append("contains a long digit string")
+    from .chat import redact                      # a key, token or private key in a model draft is never acceptable
+    if redact(draft) != draft:
+        problems.append("contains a secret, key or token")
     return sorted(set(problems))
 
 

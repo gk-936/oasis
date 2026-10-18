@@ -19,6 +19,7 @@ import unicodedata
 from pathlib import Path
 
 from .llm import heuristic_risk
+from .risk_features import extra_features
 
 MODEL_PATH = Path(__file__).with_name("ml_risk_model.json")
 BUCKETS = 256
@@ -55,6 +56,7 @@ def featurize(fields: dict, text: str, known_names: list[str], known_accounts: d
     f["shape_exclaim"] = min(1.0, text.count("!") / 3)
     f["shape_upper"] = sum(c.isupper() for c in text) / n
     f["shape_markup"] = 1.0 if re.search(r"<!--|<span|<div|```|\[\[", text) else 0.0
+    f.update(extra_features(fields, text, known_names, known_accounts, expected_amount, ctx or {}))
     toks = [t.casefold() for t in _WORD.findall(unicodedata.normalize("NFKC", text))]
     seen: dict[int, int] = {}
     for t in toks:

@@ -1,0 +1,8 @@
+{
+ "sha256": "d69eb7a4a077f3269bdd6323843b84ea35d2ddabb35a00f737b31d2fc6af5ecb",
+ "met": false,
+ "attacks": 131,
+ "flagged": 131,
+ "legit": 60,
+ "legit_flagged": 17
+}
