@@ -1,8 +1,8 @@
 # Hosting Oasis in Docker
 
-Oasis ships as one container: the API, the already-built UI (`frontend/dist`, no Node needed) and its sandbox state under a `/data` volume. Defaults are **hosted-safe**: offline LLM, MOCK rates, simulated local anchor, judge mode on (API docs off, tighter limits), no secrets in the image, non-root user, one worker.
+Oasis ships as one container: the API, the already-built UI (`frontend/dist`, no Node needed) and its sandbox state under a `/data` volume. Image defaults are **hosted-safe**: offline LLM (the authors' own hosted demo turns the live model on, see section 6), MOCK rates, simulated local anchor, judge mode on (API docs off, tighter limits), no secrets in the image, non-root user, one worker.
 
-> **Status of this packaging (updated 2026-10-13).** The image was built and run with Docker 29.1.2 on Windows: the build succeeded, the container reached `healthy`, the UI and API were served, the public demo passcodes were refused, a judge login and a red-team attempt worked, `/docs` was off, and the filesystem was read-only with a non-root user. Two defects found by that first build were fixed: the entrypoint had Windows line endings (the Dockerfile now strips them) and `httpx` was missing from `requirements.txt`. **Not done:** deployment to a public host, load testing, and the Caddy `tls` profile (still untested end to end).
+> **Status of this packaging (updated 2026-10-13).** The image was built and run with Docker 29.1.2 on Windows: the build succeeded, the container reached `healthy`, the UI and API were served, the public demo passcodes were refused, a judge login and a red-team attempt worked, `/docs` was off, and the filesystem was read-only with a non-root user. Two defects found by that first build were fixed: the entrypoint had Windows line endings (the Dockerfile now strips them) and `httpx` was missing from `requirements.txt`. **Update 2026-10-18:** the image is deployed on an Azure VM behind the Caddy `tls` profile (certificate issued, redirect, headers, login and chat checked; section 5 notes and section 6 list the settings). **Still not done:** load testing and a test from inside China.
 
 ## 1. Quick start
 
@@ -159,7 +159,7 @@ The submitted copy runs the live model on the authors' key. To do the same, set 
 | `OASIS_BEDROCK_TOTAL_TOKENS` and `OASIS_BEDROCK_DAILY_TOKENS` | `3000000` and `3000000` | lifetime budget shared by every judge (not per day; about USD 3 at most at Nova Pro prices if every token were input, less in practice); the counter lives in the data volume and survives restarts. Keep the daily value at or above the total, or the lower one wins |
 | `OASIS_BEDROCK_MAX_RETRIES` / `OASIS_BEDROCK_TIMEOUT` | `1` / `45` | the server has one worker, so a hung call must not hold every user for minutes |
 
-- When the daily cap is used up or the model is unreachable, each AI feature returns its deterministic result and nothing raises (`tests/test_live_degrades.py`).
+- When the token budget (lifetime or daily) is used up or the model is unreachable, each AI feature returns its deterministic result and nothing raises (`tests/test_live_degrades.py`).
 - Typed text and uploaded images go to Bedrock on your account. Say so to judges (the judge guide does).
 - Put an AWS budget alert on the account, use a key scoped to Bedrock invoke, and revoke the key after judging.
 - The entrypoint accepts a Bedrock API key (fixed 2026-10-18; before that it only accepted access-key pairs, profiles or roles).

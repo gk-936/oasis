@@ -1,5 +1,7 @@
 # Handoff and new limitations (2026-10-16)
 
+> **Superseded (2026-10-18).** This is the 2026-10-16 handoff. Everything it lists as "NOT committed" was committed afterwards, the test counts and scores below were later updated, and live runs have since been made with approval. The current record is `newaddition.md` (sections 14.1 to 14.13) and `docs/results.md`. Kept as history.
+
 Everything below is MOCK data and offline runs. No paid model call was made at any point (Rule 1 in `CLAUDE.md`).
 
 ## 1. What we were doing
