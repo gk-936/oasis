@@ -1,0 +1,485 @@
+{
+ "about": "Third held-out set (English and Chinese): written on 2026-10-18 BEFORE the round-5 keyword-rule fixes and new train examples, weighted toward the patterns fixed in that round (questions that look like payments, pending/unpaid vs status, runway vs balance, rate alerts, not-arrived vs status, quota), and never used for tuning. Same authors as the router: out-of-sample for the matcher, not independent.",
+ "cases": [
+  {
+   "text": "has my rent transfer completed",
+   "expected": "status"
+  },
+  {
+   "text": "did the school tuition payment finish",
+   "expected": "status"
+  },
+  {
+   "text": "do you accept invoices in euros",
+   "expected": "fx_bill"
+  },
+  {
+   "text": "给我推荐一家便宜的汇款公司",
+   "expected": "routes"
+  },
+  {
+   "text": "告诉我房租还有多少没付",
+   "expected": "obligations"
+  },
+  {
+   "text": "给我看看学费的付款回单",
+   "expected": "proof"
+  },
+  {
+   "text": "我想要房租的收据可以吗",
+   "expected": "proof"
+  },
+  {
+   "text": "能不能告诉我学费交了没有",
+   "expected": "status"
+  },
+  {
+   "text": "帮我看看付款凭证",
+   "expected": "proof"
+  },
+  {
+   "text": "为什么给房东的付款还没批准",
+   "expected": "explain"
+  },
+  {
+   "text": "给我讲讲怎么交学费",
+   "expected": "help"
+  },
+  {
+   "text": "给我一份付款计划",
+   "expected": "plan"
+  },
+  {
+   "text": "推荐一个最便宜的汇款方式",
+   "expected": "routes"
+  },
+  {
+   "text": "can you tell me what rent I still owe",
+   "expected": "obligations"
+  },
+  {
+   "text": "is my deposit transfer finished",
+   "expected": "status"
+  },
+  {
+   "text": "do you pay bills in dollars",
+   "expected": "fx_bill"
+  },
+  {
+   "text": "你们能处理美元学费吗",
+   "expected": "fx_bill"
+  },
+  {
+   "text": "我的付款回单怎么下载",
+   "expected": "proof"
+  },
+  {
+   "text": "转账给房东完成了没有",
+   "expected": "status"
+  },
+  {
+   "text": "房租付过了吗",
+   "expected": "status"
+  },
+  {
+   "text": "what bills are still pending",
+   "expected": "obligations"
+  },
+  {
+   "text": "which fees are unpaid",
+   "expected": "obligations"
+  },
+  {
+   "text": "what's left to pay for tuition",
+   "expected": "obligations"
+  },
+  {
+   "text": "is anything outstanding with the landlord",
+   "expected": "obligations"
+  },
+  {
+   "text": "尚未结清的费用有哪些",
+   "expected": "obligations"
+  },
+  {
+   "text": "学费还有多少没付",
+   "expected": "obligations"
+  },
+  {
+   "text": "哪些账单还没有处理",
+   "expected": "obligations"
+  },
+  {
+   "text": "list the outstanding invoices",
+   "expected": "obligations"
+  },
+  {
+   "text": "what do I still need to settle this month",
+   "expected": "obligations"
+  },
+  {
+   "text": "我还有什么款没付清",
+   "expected": "obligations"
+  },
+  {
+   "text": "any unpaid housing charges",
+   "expected": "obligations"
+  },
+  {
+   "text": "还剩哪些钱没缴",
+   "expected": "obligations"
+  },
+  {
+   "text": "will my money carry me through january",
+   "expected": "runway"
+  },
+  {
+   "text": "do I have enough to survive until march",
+   "expected": "runway"
+  },
+  {
+   "text": "is my balance enough till the end of term",
+   "expected": "runway"
+  },
+  {
+   "text": "will my savings last until summer",
+   "expected": "runway"
+  },
+  {
+   "text": "钱够不够撑到下学期",
+   "expected": "runway"
+  },
+  {
+   "text": "我的余额够用到寒假吗",
+   "expected": "runway"
+  },
+  {
+   "text": "能不能撑到六月",
+   "expected": "runway"
+  },
+  {
+   "text": "how long will what I have carry me",
+   "expected": "runway"
+  },
+  {
+   "text": "am I going to make it financially to graduation",
+   "expected": "runway"
+  },
+  {
+   "text": "notify me when the rupee improves against the yuan",
+   "expected": "rate_target"
+  },
+  {
+   "text": "alert me once the rate is 0.073",
+   "expected": "rate_target"
+  },
+  {
+   "text": "tell me when the exchange rate gets better",
+   "expected": "rate_target"
+  },
+  {
+   "text": "ping me when the yuan is cheap",
+   "expected": "rate_target"
+  },
+  {
+   "text": "汇率好了提醒我",
+   "expected": "rate_target"
+  },
+  {
+   "text": "汇率到0.073通知我一声",
+   "expected": "rate_target"
+  },
+  {
+   "text": "有合适汇率时告诉我",
+   "expected": "rate_target"
+  },
+  {
+   "text": "once the rate hits 0.07 let me know",
+   "expected": "rate_target"
+  },
+  {
+   "text": "the money hasn't arrived after three days",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "the school hasn't received my transfer",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "it has been two weeks and nothing came",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "还没到账已经好几天了",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "学校说没收到我的汇款",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "房东还没收到钱已经三天了",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "my remittance hasn't reached them",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "they still haven't got the funds",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "钱汇出去好久了对方还没收到",
+   "expected": "transfer_issue"
+  },
+  {
+   "text": "what's the ceiling on money sent from india each year",
+   "expected": "quota"
+  },
+  {
+   "text": "do I owe tax on the tuition my dad sends",
+   "expected": "quota"
+  },
+  {
+   "text": "is there a cap on remittances for students",
+   "expected": "quota"
+  },
+  {
+   "text": "汇给我的钱要不要交税",
+   "expected": "quota"
+  },
+  {
+   "text": "每年汇多少要缴税",
+   "expected": "quota"
+  },
+  {
+   "text": "家里汇学费有没有限额",
+   "expected": "quota"
+  },
+  {
+   "text": "how much can be remitted abroad before tax applies",
+   "expected": "quota"
+  },
+  {
+   "text": "how much money am I holding",
+   "expected": "balance"
+  },
+  {
+   "text": "what's in my accounts right now",
+   "expected": "balance"
+  },
+  {
+   "text": "我有多少余额",
+   "expected": "balance"
+  },
+  {
+   "text": "钱包里还有钱吗",
+   "expected": "balance"
+  },
+  {
+   "text": "which option sends the most yuan for 70k",
+   "expected": "routes"
+  },
+  {
+   "text": "compare costs of moving money to china",
+   "expected": "routes"
+  },
+  {
+   "text": "汇10万卢比哪个渠道最划算",
+   "expected": "routes"
+  },
+  {
+   "text": "哪种转账方式到账最快",
+   "expected": "routes"
+  },
+  {
+   "text": "what would 50000 rupees turn into in china",
+   "expected": "routes"
+  },
+  {
+   "text": "how do I build my payment reputation",
+   "expected": "credit"
+  },
+  {
+   "text": "what makes my trust score go up",
+   "expected": "credit"
+  },
+  {
+   "text": "我的信用怎么才能变好",
+   "expected": "credit"
+  },
+  {
+   "text": "按时付款能攒信用吗",
+   "expected": "credit"
+  },
+  {
+   "text": "can my landlord see that I pay on time",
+   "expected": "share_record"
+  },
+  {
+   "text": "share my payment history with the agent",
+   "expected": "share_record"
+  },
+  {
+   "text": "把我的付款记录发给房东看",
+   "expected": "share_record"
+  },
+  {
+   "text": "能给银行看我的缴费历史吗",
+   "expected": "share_record"
+  },
+  {
+   "text": "change 35000 inr into cny",
+   "expected": "convert"
+  },
+  {
+   "text": "I want to swap some rupees for yuan",
+   "expected": "convert"
+  },
+  {
+   "text": "帮我把两万卢比兑成人民币",
+   "expected": "convert"
+  },
+  {
+   "text": "帮我兑换一些元",
+   "expected": "convert"
+  },
+  {
+   "text": "scrap the pending draft",
+   "expected": "cancel"
+  },
+  {
+   "text": "取消这笔待付款",
+   "expected": "cancel"
+  },
+  {
+   "text": "I don't want to go through with the payment, cancel",
+   "expected": "cancel"
+  },
+  {
+   "text": "why was this invoice held",
+   "expected": "explain"
+  },
+  {
+   "text": "为什么我的转账被暂缓",
+   "expected": "explain"
+  },
+  {
+   "text": "what blocked my payment",
+   "expected": "explain"
+  },
+  {
+   "text": "what's the yuan rate now",
+   "expected": "rate"
+  },
+  {
+   "text": "is the rupee strong today",
+   "expected": "rate"
+  },
+  {
+   "text": "今天汇率多少",
+   "expected": "rate"
+  },
+  {
+   "text": "现在汇率高不高",
+   "expected": "rate"
+  },
+  {
+   "text": "what did I pay last month",
+   "expected": "spending"
+  },
+  {
+   "text": "show my payment history",
+   "expected": "spending"
+  },
+  {
+   "text": "我这个月付了哪些款",
+   "expected": "spending"
+  },
+  {
+   "text": "what can this assistant do",
+   "expected": "help"
+  },
+  {
+   "text": "你是做什么的",
+   "expected": "help"
+  },
+  {
+   "text": "how do I get started with this",
+   "expected": "help"
+  },
+  {
+   "text": "ask my parents to send money for rent",
+   "expected": "parent_request"
+  },
+  {
+   "text": "让爸妈给我转点生活费",
+   "expected": "parent_request"
+  },
+  {
+   "text": "tell my mum I'm short this month",
+   "expected": "parent_request"
+  },
+  {
+   "text": "向家里要这个月的学费",
+   "expected": "parent_request"
+  },
+  {
+   "text": "plan how I pay everything this term",
+   "expected": "plan"
+  },
+  {
+   "text": "帮我安排一下这学期的付款",
+   "expected": "plan"
+  },
+  {
+   "text": "I need a receipt for the rent I paid",
+   "expected": "proof"
+  },
+  {
+   "text": "我要学费的缴费证明",
+   "expected": "proof"
+  },
+  {
+   "text": "a bill in euros arrived, what now",
+   "expected": "fx_bill"
+  },
+  {
+   "text": "美元账单怎么办",
+   "expected": "fx_bill"
+  },
+  {
+   "text": "what's the tallest mountain",
+   "expected": "other"
+  },
+  {
+   "text": "recommend me a movie",
+   "expected": "other"
+  },
+  {
+   "text": "how do I cook rice",
+   "expected": "other"
+  },
+  {
+   "text": "今天天气好吗",
+   "expected": "other"
+  },
+  {
+   "text": "给我讲个笑话吧",
+   "expected": "other"
+  },
+  {
+   "text": "帮我写一首诗",
+   "expected": "other"
+  },
+  {
+   "text": "what's your favourite food",
+   "expected": "other"
+  },
+  {
+   "text": "what fees do I owe the university right now",
+   "expected": "obligations"
+  }
+ ]
+}

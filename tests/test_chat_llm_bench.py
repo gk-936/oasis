@@ -6,6 +6,13 @@ import pytest
 from eval import chat_llm_bench as b
 
 
+@pytest.fixture(autouse=True)
+def keyword_router_only(monkeypatch):
+    """The bench is about messages the KEYWORD router cannot place; the offline similarity layer (agent/robust.py) would place
+    some of them first, so it is switched off here, as in tests/test_chat_llm.py."""
+    monkeypatch.setenv("OASIS_ROUTER_ROBUST", "0")
+
+
 def test_every_benchmark_message_is_one_the_router_does_not_place():
     assert b.router_misses(b.load()) == []
 

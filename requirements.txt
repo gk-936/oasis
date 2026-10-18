@@ -12,3 +12,4 @@ python-multipart>=0.0.9
 gmssl>=3.2
 webauthn>=2.5          # passkey second factor (OASIS_REQUIRE_PASSKEY=1)
 pypdf>=4          # optional: read text PDFs attached to emailed invoices
+Pillow>=10   # image intake quality gate and preprocessing (oasis/agent/vision.py)

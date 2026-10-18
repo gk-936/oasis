@@ -32,6 +32,13 @@ class FakeLive(LiveLLM):
         return self.reply if isinstance(self.reply, str) else json.dumps(self.reply)
 
 
+@pytest.fixture(autouse=True)
+def keyword_router_only(monkeypatch):
+    """These tests are about the labeller as the answer to a message the KEYWORD router cannot place; the offline similarity layer
+    (agent/robust.py, tests/test_router_robust.py) would place most of these messages first, so it is switched off here."""
+    monkeypatch.setenv("OASIS_ROUTER_ROBUST", "0")
+
+
 @pytest.fixture()
 def st():
     c = new_client("student")

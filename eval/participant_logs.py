@@ -125,6 +125,8 @@ def copy_live_reports() -> int:
     src = Path(__file__).resolve().parent / "reports"
     for f in LIVE_FILES:
         shutil.copyfile(src / f, dst / f)
+    if (src / "vision_live_final_rows.json").exists():       # only after an approved live vision run
+        shutil.copyfile(src / "vision_live_final_rows.json", dst / "vision_live_final_rows.json")
     return len(LIVE_FILES)
 
 

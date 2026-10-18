@@ -27,10 +27,10 @@ class FakeVision:
     """Stands in for the Live vision call: records what it was given and returns the transcribed payment fields."""
     seen: bytes | None = None
 
-    def __init__(self, llm=None):
+    def __init__(self, llm=None, world=None):
         pass
 
-    def to_text(self, data, mime="image/png"):
+    def to_text(self, data, mime="image/png", hint=""):
         FakeVision.seen = data
         return INVOICE_TEXT
 
@@ -95,7 +95,7 @@ def test_unreadable_image_is_held_and_still_not_stored(api_client, monkeypatch):
     from oasis.agent.llm import VisionUnavailable
 
     class Broken(FakeVision):
-        def to_text(self, data, mime="image/png"):
+        def to_text(self, data, mime="image/png", hint=""):
             raise VisionUnavailable("cannot read this image")
 
     monkeypatch.setattr(api, "VisionExtractor", Broken)

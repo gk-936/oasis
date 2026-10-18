@@ -129,25 +129,34 @@ def test_llm_rewrite_must_keep_numbers(tmp_path):
 
 
 def test_vision_uses_live_agent_model_only_and_never_guesses(tmp_path, monkeypatch):
-    llm, _ = make(tmp_path, ["Payee: X\nAmount: CNY 5"])
-    assert VisionExtractor(llm).to_text(b"\x89PNGfake") .startswith("Payee: X")
+    from pathlib import Path
+    from oasis.world import World
+    img = (Path(__file__).resolve().parents[1] / "eval" / "vision" / "images" / "clean_en_1.png").read_bytes()
+    ok = "\n".join(["Payee ID: payee_univ_x", "Account: 6228480000001234", "Amount: 30000", "Purpose: tuition", "Due: 2026-11-15"])
+    w = World()
+    llm, _ = make(tmp_path, [ok, ok])
+    text = VisionExtractor(llm, w).to_text(img)
+    assert text.startswith("Payee: University X Finance Office")      # the name comes from the registry, not the model
     call = llm.client.calls[0]
     assert call["model"] == config.AGENT_MODEL
     assert call["messages"][1]["content"][0]["type"] == "image_url"
+    assert len(llm.client.calls) == 2                                  # two reworded passes by default
     # primary fails -> the fallback model has no vision -> clear error, no fallback call
     bad, _ = make(tmp_path / "x", [Err("model not found", 404)])
     with pytest.raises(VisionUnavailable):
-        VisionExtractor(bad).to_text(b"img")
+        VisionExtractor(bad, w).to_text(img)
     assert len(bad.client.calls) == 1
     with pytest.raises(VisionUnavailable):
         VisionExtractor()
     with pytest.raises(VisionUnavailable):
-        VisionExtractor(llm).to_text(b"0" * (20 * 1024 * 1024 + 1))
+        VisionExtractor(llm, w).to_text(b"0" * (20 * 1024 * 1024 + 1))
+    with pytest.raises(VisionUnavailable):                              # no registry context: never read blind
+        VisionExtractor(llm).to_text(img)
     # runaway value from a blurry image: caught by the line-length rule (500 digits) and by the repeat rule (45 digits)
     for i, bad_out in enumerate(["Payee: X\nPayee ID: 1" + "0" * 500, "Payee: X\nPayee ID: 1" + "0" * 45]):
         junk, _ = make(tmp_path / f"junk{i}", [bad_out])
         with pytest.raises(VisionUnavailable):
-            VisionExtractor(junk).to_text(b"img")
+            VisionExtractor(junk, w).to_text(img)
 
 
 def test_redteam_variants_are_filtered_and_fall_back_to_templates(tmp_path):

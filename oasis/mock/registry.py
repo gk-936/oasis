@@ -8,6 +8,17 @@ from dataclasses import dataclass
 
 from ..trust.crypto import HybridSigner, canonical, demo_signer, verify_hybrid
 
+# Chinese names and aliases an invoice may print (MOCK, machine-drafted, unreviewed). They sit beside the signed credential, not in
+# it, so the credential body and its signatures are unchanged. Vision intake shows them to the model as a closed list.
+ALIASES: dict[str, tuple[str, ...]] = {
+    "payee_univ_x": ("测试大学财务处", "测试大学", "X大学财务处"),
+    "payee_landlord_chen": ("陈伟", "陈先生", "房东陈伟"),
+    "payee_student_self": ("本人人民币账户", "学生本人", "阿俊（本人）"),
+    "payee_telecom": ("深圳移动", "深圳移动（演示）"),
+    "payee_us_univ": ("示例州立大学（美国）", "示例州立大学"),
+    "payee_eu_univ": ("示例大学（欧盟）", "示例大学"),
+}
+
 
 @dataclass
 class Credential:
@@ -55,6 +66,9 @@ class VerifiedPayeeRegistry:
             if c.name.casefold() == name.casefold():
                 return self.lookup(c.payee_id)
         return None
+
+    def aliases(self, payee_id: str) -> list[str]:
+        return list(ALIASES.get(payee_id, ()))
 
     def set_contact(self, payee_id: str, channel: str, address: str) -> None:
         """The registry's verified channel for a payee (MOCK). Recovery messages go ONLY here."""

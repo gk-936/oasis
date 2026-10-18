@@ -46,6 +46,7 @@ from ..agent import localize as loc
 from ..agent.i18n import LANGS, UI_LANGS, lang_from_accept, ui_lang
 from ..agent.zh_messages import route_zh
 from ..agent.llm import LiveLLM, VisionExtractor, VisionUnavailable, explain_template, make_llm
+from ..agent.vision import VisionHold
 from ..agent.parent import parent_view
 from ..agent.pipeline import OasisAgent, Request
 from ..agent import plan_exec
@@ -918,7 +919,7 @@ def _run_intake(req: Request, notes: list[str] | None = None) -> dict:
 def _vision_reader():
     llm = S.world.llm if isinstance(S.world.llm, LiveLLM) else None
     try:
-        v = VisionExtractor(llm)
+        v = VisionExtractor(llm, S.world)
     except VisionUnavailable:
         return None
     return v.to_text
@@ -1024,11 +1025,19 @@ async def intake_image(file: UploadFile = File(...), remitter: str = "student", 
     data = await file.read()
     try:
         llm = S.world.llm if isinstance(S.world.llm, LiveLLM) else None
-        text = VisionExtractor(llm).to_text(data, file.content_type or "image/png")   # image is not stored
+        # image is not stored; quality gate, closed-list extraction, validators and the two-pass check run inside to_text
+        text = VisionExtractor(llm, S.world).to_text(data, file.content_type or "image/png", hint=f"{file.filename or ''} lang={ui}")
     except VisionUnavailable as e:
         req = Request("", source="screenshot", remitter=remitter)
-        o = _out(S.agent.handle(req))
+        oc = S.agent.handle(req)
+        if isinstance(e, VisionHold):          # name the doubtful field in a why-card; nothing is guessed or paid
+            oc.card = S.agent._card(oc, "(image invoice)", 0, "held", f"vision_{e.kind}", e.reasons,
+                                    "Send a clearer photo, or paste the invoice text, or confirm the fields.")
+            oc.trace.append(f"Vision: held ({e.kind}): " + "; ".join(e.reasons))
+        o = _out(oc)
         o["message"] = str(e)
+        if isinstance(e, VisionHold):
+            o["vision"] = {"kind": e.kind, "fields": e.fields, "metrics": e.metrics}
         S.save()
         return loc.localize_outcome(o, ui)
     return loc.localize_outcome(_intake(IntakeIn(text=text, remitter=remitter, source="screenshot")), ui)

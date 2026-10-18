@@ -1,0 +1,376 @@
+{
+ "before": {
+  "messages": {
+   "messages (first set)": {
+    "n": 26,
+    "right": 1,
+    "wrong": 0,
+    "unknown": 21,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "fresh": {
+    "n": 62,
+    "right": 30,
+    "wrong": 4,
+    "unknown": 6,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 2,
+    "trap_pay_label": 7
+   },
+   "held-out (chat labeller)": {
+    "n": 30,
+    "right": 0,
+    "wrong": 0,
+    "unknown": 20,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "scale": {
+    "n": 98,
+    "right": 2,
+    "wrong": 0,
+    "unknown": 71,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "router held-out 1 (326; tuned: drove the round-4 fixes)": {
+    "n": 326,
+    "right": 221,
+    "wrong": 2,
+    "unknown": 103,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "router held-out 2 (200; tuned: drove the round-5 rule classes)": {
+    "n": 200,
+    "right": 131,
+    "wrong": 9,
+    "unknown": 60,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 3,
+    "trap_pay_label": 0
+   },
+   "router held-out 3 (120; written first, never tuned on: the honest row)": {
+    "n": 120,
+    "right": 88,
+    "wrong": 4,
+    "unknown": 28,
+    "clarified": 0,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   }
+  },
+  "outside": {
+   "Codex scenarios (80)": {
+    "n": 80,
+    "passed": 70,
+    "unsafe": 0,
+    "money_moved": 0.0
+   },
+   "Codex round 2 (250)": {
+    "n": 250,
+    "passed": 126,
+    "unsafe": 0,
+    "money_moved": 0.0
+   }
+  },
+  "independent": {
+   "set 1": {
+    "tasks": [
+     116,
+     120
+    ],
+    "attacks": [
+     150,
+     150
+    ],
+    "lookalikes": [
+     50,
+     50
+    ]
+   },
+   "set 2": {
+    "tasks": [
+     133,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   },
+   "set 3 (ChatGPT)": {
+    "tasks": [
+     96,
+     120
+    ],
+    "attacks": [
+     150,
+     150
+    ],
+    "lookalikes": [
+     50,
+     50
+    ]
+   },
+   "set A": {
+    "tasks": [
+     149,
+     150
+    ],
+    "attacks": [
+     0,
+     0
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   },
+   "set C (Codex)": {
+    "tasks": [
+     129,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     57,
+     60
+    ]
+   },
+   "set G (Gemini)": {
+    "tasks": [
+     140,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   }
+  },
+  "latency_ms": {
+   "n": 862,
+   "median": 4.2,
+   "p95": 12.4,
+   "max": 525.5
+  }
+ },
+ "after": {
+  "messages": {
+   "messages (first set)": {
+    "n": 26,
+    "right": 9,
+    "wrong": 1,
+    "unknown": 1,
+    "clarified": 11,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "fresh": {
+    "n": 62,
+    "right": 32,
+    "wrong": 3,
+    "unknown": 1,
+    "clarified": 4,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 2,
+    "trap_pay_label": 7
+   },
+   "held-out (chat labeller)": {
+    "n": 30,
+    "right": 4,
+    "wrong": 2,
+    "unknown": 3,
+    "clarified": 11,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "scale": {
+    "n": 98,
+    "right": 18,
+    "wrong": 3,
+    "unknown": 14,
+    "clarified": 38,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "router held-out 1 (326; tuned: drove the round-4 fixes)": {
+    "n": 326,
+    "right": 252,
+    "wrong": 6,
+    "unknown": 22,
+    "clarified": 46,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "router held-out 2 (200; tuned: drove the round-5 rule classes)": {
+    "n": 200,
+    "right": 158,
+    "wrong": 6,
+    "unknown": 8,
+    "clarified": 28,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   },
+   "router held-out 3 (120; written first, never tuned on: the honest row)": {
+    "n": 120,
+    "right": 99,
+    "wrong": 4,
+    "unknown": 3,
+    "clarified": 14,
+    "money_moved": 0.0,
+    "paid": 0,
+    "drafts": 0,
+    "trap_pay_label": 0
+   }
+  },
+  "outside": {
+   "Codex scenarios (80)": {
+    "n": 80,
+    "passed": 74,
+    "unsafe": 0,
+    "money_moved": 0.0
+   },
+   "Codex round 2 (250)": {
+    "n": 250,
+    "passed": 140,
+    "unsafe": 0,
+    "money_moved": 0.0
+   }
+  },
+  "independent": {
+   "set 1": {
+    "tasks": [
+     116,
+     120
+    ],
+    "attacks": [
+     150,
+     150
+    ],
+    "lookalikes": [
+     50,
+     50
+    ]
+   },
+   "set 2": {
+    "tasks": [
+     133,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   },
+   "set 3 (ChatGPT)": {
+    "tasks": [
+     101,
+     120
+    ],
+    "attacks": [
+     150,
+     150
+    ],
+    "lookalikes": [
+     50,
+     50
+    ]
+   },
+   "set A": {
+    "tasks": [
+     149,
+     150
+    ],
+    "attacks": [
+     0,
+     0
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   },
+   "set C (Codex)": {
+    "tasks": [
+     128,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     57,
+     60
+    ]
+   },
+   "set G (Gemini)": {
+    "tasks": [
+     141,
+     150
+    ],
+    "attacks": [
+     200,
+     200
+    ],
+    "lookalikes": [
+     60,
+     60
+    ]
+   }
+  },
+  "latency_ms": {
+   "n": 862,
+   "median": 9.5,
+   "p95": 30.2,
+   "max": 60.5
+  }
+ }
+}

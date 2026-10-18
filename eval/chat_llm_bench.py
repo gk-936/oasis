@@ -40,9 +40,14 @@ def load() -> list[dict]:
     return json.loads(MESSAGES.read_text(encoding="utf-8"))["messages"]
 
 
+# Messages the keyword router could not place when the live labeller was run on them (their recorded live rows stay valid as labeller results). Round-5 keyword
+# rules (month names, "how many months", "outstanding") now place these three, each with the label written for it; they are excluded from the check below.
+PLACED_BY_LATER_RULES = frozenset({"can I last until december without trouble", "remind me what's outstanding", "how many months of coverage do I have"})
+
+
 def router_misses(msgs: list[dict]) -> list[str]:
     from oasis.agent import nlu
-    return [m["text"] for m in msgs if nlu.classify(m["text"]).kind != nlu.UNKNOWN]
+    return [m["text"] for m in msgs if nlu.classify(m["text"]).kind != nlu.UNKNOWN and m["text"] not in PLACED_BY_LATER_RULES]
 
 
 def score(row: dict) -> str:
