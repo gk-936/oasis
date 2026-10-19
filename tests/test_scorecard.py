@@ -51,3 +51,15 @@ def test_the_scorecard_counts_a_tier1_action_alone(st):
     Approver(st, "student").approve(r["pending_id"])
     st.post("/api/autonomy/tick", json={"days": 40})
     assert st.get("/api/agent-scorecard").json()["acted_alone_tier1"] >= 1
+
+
+def test_waiting_drafts_count_down_as_each_is_signed_and_no_misleading_total(st):
+    a, b = say(st, "Set up a recurring payment for my phone bill"), say(st, "Pay my electricity bill")
+    assert a["pending_id"] != b["pending_id"]
+    j = st.get("/api/agent-scorecard").json()
+    assert "drafts_held_total" not in j and j["drafts_waiting_for_you"] == 2
+    ap = Approver(st, "student")
+    for r in (a, b):
+        assert ap.approve(r["pending_id"]).status_code == 200
+    j = st.get("/api/agent-scorecard").json()
+    assert j["drafts_waiting_for_you"] == 0 and j["approvals_rejected"] == 0 and j["money_lost_cny"] == 0 and j["audit_chain_ok"] is True

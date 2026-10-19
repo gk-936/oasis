@@ -51,7 +51,7 @@ The raw rows were not saved (that is what item 8 fixes); both replies are recons
 |---|---|
 | `tests/test_chat_llm_bench.py` | 7 passed. Added an autouse `OASIS_ROUTER_ROBUST=0` fixture (as in `tests/test_chat_llm.py`); no assertion was changed. See the note below. |
 | Vision tests (`tests/test_vision_hardening.py`) | 65 passed |
-| Full suite (`OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q`) | 1979 passed, 2 skipped, 0 failed |
+| Full suite (`OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q`) | 2731 passed, 2 skipped, 0 failed |
 | `execution_evidence/verify_evidence.py` | ALL CHECKS PASSED (vision check skipped: no live rows yet) |
 | `python -m eval.runner --llm offline` | attack block rate 1.0, money lost 0 (the timestamp-only change to `eval/reports/benchmark.*` was reverted) |
 

@@ -8,7 +8,7 @@ All figures are offline (no model call). Nothing under `oasis/trust/*` was touch
 
 | Check | Result |
 |---|---|
-| Full suite (`OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q`) | 1979 passed, 2 skipped |
+| Full suite (`OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q`) | 2731 passed, 2 skipped |
 | `execution_evidence/verify_evidence.py` | ALL CHECKS PASSED |
 | `python -m eval.runner --llm offline` | attack block rate 1.0, money lost 0 |
 | Money moved on every message set, outside set and independent set | 0 |
@@ -87,4 +87,4 @@ The matcher takes about 1 ms. A full chat turn through the API test client over 
 
 ## Docs and PDFs still to update (on hold)
 
-Test count is now 1979 passed, 2 skipped. Places that state a test count, the old router figures or the old outside-set figures: `CLAUDE.md`, `AGENTS.md`, `README.md` (badge and test line), `features.md`, `docs/full-overview.md`, `docs/security-evidence-matrix.md`, `docs/results.md`, `docs/execution-evidence.md`, `Evidence/README.md`, `Evidence/test_suite_result.txt`, `Evidence/06_Security_and_Design_Notes/`, the `eval/chat_llm/messages_scale.json` note, and the builders `eval/build_techdoc_pdf.py`, `eval/build_security_pdf.py`, `eval/build_evidence_pdf.py`, `eval/build_evidence_folder.py`. The three PDFs (in `docs/`, `Evidence/01_Submission_Documents/` and `execution_evidence/`) need a rebuild afterwards.
+Test count is now 2731 passed, 2 skipped. Places that state a test count, the old router figures or the old outside-set figures: `CLAUDE.md`, `AGENTS.md`, `README.md` (badge and test line), `features.md`, `docs/full-overview.md`, `docs/security-evidence-matrix.md`, `docs/results.md`, `docs/execution-evidence.md`, `Evidence/README.md`, `Evidence/test_suite_result.txt`, `Evidence/06_Security_and_Design_Notes/`, the `eval/chat_llm/messages_scale.json` note, and the builders `eval/build_techdoc_pdf.py`, `eval/build_security_pdf.py`, `eval/build_evidence_pdf.py`, `eval/build_evidence_folder.py`. The three PDFs (in `docs/`, `Evidence/01_Submission_Documents/` and `execution_evidence/`) need a rebuild afterwards.

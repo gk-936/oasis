@@ -103,7 +103,7 @@ Examples that finish inside chat (each ends at a draft, an advice-only answer or
 
 `GET /api/chat/checkin` returns `{"reply": "Living CNY 150 is due in 3 day(s); you're CNY 42,150 short. Want a plan?", "intent": "checkin", ...}` the first time it is called in a session and `{"reply": null, ...}` afterwards. A following `yes` in `/api/chat` continues into the plan.
 
-`GET /api/agent-scorecard` (student or judge, read-only) returns `acted_alone_tier1`, `drafts_waiting_for_you`, `refusals_by_reason`, `scam_warnings`, `canary_freezes`, `money_lost_cny`, `audit_head`, `audit_chain_ok`, `caps` (the Tier-1 limit and each active standing instruction with its cap) and a one-sentence `mandate_card`. Every number comes from the audit log, the passport or the pending list.
+`GET /api/agent-scorecard` (student or judge, read-only) returns `acted_alone_tier1`, `drafts_waiting_for_you`, `refusals_by_reason`, `scam_warnings`, `canary_freezes`, `money_lost_cny`, `audit_head`, `audit_chain_ok`, `caps` (the Tier-1 limit and each active standing instruction with its id, kind, cap, interval, `payee_id` and `rate`) and a one-sentence `mandate_card`. Every number comes from the audit log, the passport or the pending list.
 
 ## 4. `POST /api/approve` (how to sign a draft)
 

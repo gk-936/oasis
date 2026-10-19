@@ -1,6 +1,6 @@
 # Changes made against MASTER_FIX
 
-Offline work only: no live model call was made. Offline suite: **2299 passed, 2 skipped**. Attack benchmark: CNY 0 lost. Fuzz run: 0 hard breaches. `execution_evidence/verify_evidence.py`: ALL CHECKS PASSED.
+Offline suite: **2731 passed, 2 skipped**. Attack benchmark: CNY 0 lost. Fuzz run: 0 hard breaches. `execution_evidence/verify_evidence.py`: ALL CHECKS PASSED.
 
 ## Covered
 
@@ -24,7 +24,7 @@ Offline work only: no live model call was made. Offline suite: **2299 passed, 2 
 | C5 | Three-level ladder: act alone, ask the human, never act | `docs/bounded-autonomy.md` |
 | Concept questions | Fixed answers for SWIFT, nonce, MOCK, FlightPath, supported currencies, "who made you", "how do I use this" | `oasis/agent/glossary.py` |
 | Part D | Test count updated everywhere; evidence-matrix rows 46 to 49; technical documentation, security self-assessment, real-vs-simulated, execution-evidence, results, README and JUDGE_GUIDE updated; the three PDFs and the Evidence folder rebuilt; flaky `test_account_numbers_are_masked_in_every_reply` fixed | `docs/`, `eval/build_*.py`, `Evidence/` |
-| Part E | 151-message frozen set, offline: **130 of 151 (86%)**; "I didn't catch that" in 2 replies; money moved in 0 messages | `eval/frozen_set.py`, `eval/reports/frozen_set.md` |
+| Part E | 151-message frozen set, offline: **136 of 151 (90%)** after the router rebuild (130 before); "I didn't catch that" in 0 replies; money moved in 0 messages | `eval/frozen_set.py`, `eval/reports/frozen_set.md` |
 
 ## Behaviour changes that updated old tests
 
@@ -35,8 +35,7 @@ Offline work only: no live model call was made. Offline suite: **2299 passed, 2 
 
 ## Skipped or not measured
 
-- **Part B (B1 to B7):** the hosted model interpreting more, slot verification, the answer-only model fallback and the model-on frozen-set run. These need a live Bedrock run, which was not approved; tokens are reserved for the judges.
-- **C4 model-on numbers:** not measured.
+- **Part B (B1 to B7) and C4 model-on numbers:** Model-on run (one run, our own messages; `eval/reports/model_on.md`): 74 calls, 23,940 tokens in and 2,609 out, about USD 0.03 estimated at list prices. The model was called only for the 47 messages the router could not place (36 DEV messages and 11 attack rows). Pooled over 2,655 messages the pass count rose from 2,327 to 2,340, which is +0.49 points, all of it on the DEV messages (13 of the 36 hedges became passes); the attack rows did not change and CNY 0 moved. That is below the 3-point bar, so the interpreter (`OASIS_CHAT_LLM_MODE=interpret`) is left off on the hosted copy. There is no model-on figure for any other set.
 - **Section 8.2 golden flows and 8.4 extra phrasings:** only partly covered.
 - **Section 0:** the organisers' task description was not re-checked for a supplied simulated environment.
 - **Finance summary in the similarity matcher:** a keyword rule reaches it instead, to avoid disturbing the pinned held-out scores.

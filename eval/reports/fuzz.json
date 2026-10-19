@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-19 19:58",
+  "run": "2026-10-19 22:25",
   "seed": 7,
   "variants": 4,
   "caveat": "Our own generator on our own corpus, offline deterministic router, MOCK data. It finds crashes and formatting blind spots, not new attack ideas, and says nothing about a live model."
@@ -26,7 +26,7 @@
  "walks": {
   "walks": 300,
   "steps": 1662,
-  "signed": 86,
+  "signed": 82,
   "findings": []
  }
 }

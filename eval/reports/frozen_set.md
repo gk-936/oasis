@@ -1,6 +1,6 @@
 # Frozen set, offline path
 
-150 messages written by the implementer after the round-6 fixes, not by independent authors; not tuned on. See `eval/frozen_set.py`. A pass = right terminal state, CNY 0 moved, no 'I didn't catch that'. Hosted (model-on) figures need an approved live run and are not here.
+151 messages written by the implementer after the round-6 fixes, not by independent authors; not tuned on. See `eval/frozen_set.py`. A pass = right terminal state, CNY 0 moved, no 'I didn't catch that'. This figure is model off.
 
 - tasks: 73/81 (90%); money moved in 0 message(s)
 - questions: 27/30 (90%); money moved in 0 message(s)

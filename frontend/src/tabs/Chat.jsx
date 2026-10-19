@@ -53,7 +53,7 @@ const Gly = ({ children, size = 18 }) => (
 const TELE = /(INR\s*(?:→|->)\s*CNY\s+[\d.]+|MOCK|模拟|\d{4}-\d{2}-\d{2})/g;
 const Rich = ({ text }) => String(text).split(TELE).map((x, i) => (i % 2 ? <code key={i} className="tele">{x}</code> : x));
 
-export function Chat({ refresh, openProof, s, onBack }) {
+export function Chat({ refresh, openProof, s, seed, onBack }) {
   const [log, setLog] = useState([GREETING]);
   const [msg, setMsg] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -62,6 +62,8 @@ export function Chat({ refresh, openProof, s, onBack }) {
   const end = useRef(null);
   useEffect(() => { end.current?.scrollIntoView?.({ behavior: "smooth", block: "end" }); }, [log, thinking]);
   useEffect(() => { api("/chat/checkin").then((r) => { if (r?.reply) say({ role: "oasis", text: r.reply, meta: r }); }).catch(() => {}); }, []);   // once per session: what is due, the shortfall, an offer
+  const seeded = useRef(null);
+  useEffect(() => { if (seed && seeded.current !== seed.n) { seeded.current = seed.n; send(seed.text); } }, [seed]);   // a message another screen asked Chat to send (Stop on the Agent record)
   const active = log.length > 1;                                // a conversation is under way
   const toPrompts = () => { setLog([GREETING]); setResolved(new Set()); setMsg(""); setErr(null); };   // back to the starter view (the screen only; nothing server-side changes)
   const say = (m) => { setLog((l) => [...l, m]); };

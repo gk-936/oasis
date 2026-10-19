@@ -5,6 +5,7 @@ import { api } from "./api.js";
 import { money } from "./ui.jsx";
 import { Corridors as CorridorTool } from "./tabs/Corridors.jsx";
 import { Spending } from "./tabs/Passport.jsx";
+import { AgentRecord } from "./tabs/AgentRecord.jsx";
 
 /** Landing page after login (all three roles): a welcome, a rail of feature cards that glides along by itself (and stops as soon as
     you hover, focus, drag or use the arrows), live numbers from the sandbox, the six steps every payment goes through and the one
@@ -246,6 +247,7 @@ export function Home({ role, tabs, roleTabs, onOpen, s, refresh }) {
             </div>
           </div>)}
 
+        {role === "judge" && <div className="home-tool"><AgentRecord s={s} role="judge" /></div>}
         {role !== "judge" && <Corridors canOpen />}
         {role === "student" && s?.spending && <div className="home-tool home-spend"><Spending s={s} refresh={refresh} /></div>}
 

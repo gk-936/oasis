@@ -145,6 +145,7 @@ export default function App() {
   const [proofSel, setProofSel] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [passSec, setPassSec] = useState("treasury");
+  const [chatSeed, setChatSeed] = useState(null);   // a message for Chat to send on open (Stop on the Agent record)
   const [corr, setCorr] = useState(null);
   setApiHandlers({
     unauth: (status) => { setAuth(null); setS(null); setNotice(status === 403 ? "notice.role" : "notice.ended"); },
@@ -207,8 +208,8 @@ export default function App() {
             <ErrorBox error={err} onRetry={refresh} />
             {view === "home" && <Home role={auth.role} tabs={tabs} roleTabs={TABS_BY_ROLE} onOpen={pick} s={s} refresh={refresh} />}
             {view === "demo" && <Demo refresh={refresh} openProof={openProof} />}
-            {view === "chat" && <Chat refresh={refresh} openProof={openProof} s={s} onBack={() => setTab("home")} />}
-            {view === "passport" && <Passport s={s} refresh={refresh} sec={passSec} onSec={setPassSec} />}
+            {view === "chat" && <Chat refresh={refresh} openProof={openProof} s={s} seed={chatSeed} onBack={() => setTab("home")} />}
+            {view === "passport" && <Passport s={s} refresh={refresh} sec={passSec} onSec={setPassSec} onStop={(text) => { setChatSeed({ text, n: Date.now() }); setTab("chat"); }} />}
             {view === "parent" && <Parent refresh={refresh} role={auth.role} />}
             {view === "redteam" && <RedTeam onProof={openProof} />}
             {view === "breakit" && <BreakIt />}

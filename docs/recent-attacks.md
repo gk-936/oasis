@@ -19,6 +19,6 @@ Public attack classes against payment flows, what Oasis does about each, and the
 - Confirmation of Payee bypass: no public technique was found; not tested.
 - Voice-clone phone confirmation: out of scope for a text and API system.
 
-## Round 2 (added 2026-10-16)
+## Further sources
 
 Bank-change notices in French, Chinese and Hindi plus "ignore the registry" and "verbally approved" pretexts; payee-id-only swap; odd amounts (`1e5`, negative, zero, NaN, huge, three decimals); extra body fields (mass assignment); foreign, junk and oversized pending ids; approve replay after paid; four parallel drafts together exceeding the balance; chat attacks claiming parent authority or a rewritten registry. All move no money outside the registry (23 more tests, 41 in total).

@@ -8,6 +8,7 @@ import { AgentPlan } from "./plan.jsx";
 import { TrustPass } from "./trustpass.jsx";
 import { CreditGrowth } from "./CreditGrowth.jsx";
 import { FxPlan } from "./FxPlan.jsx";
+import { AgentRecord } from "./AgentRecord.jsx";
 
 /* ------------------------------------------------------------------ Spending + Tier-1 autonomy */
 export function Spending({ s, refresh }) {
@@ -309,7 +310,7 @@ const ICON = {
   security: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2" /></>,
 };
 
-export function Passport({ s, refresh, sec = "treasury", onSec }) {
+export function Passport({ s, refresh, sec = "treasury", onSec, onStop }) {
   if (!s) return <Skeleton rows={6} />;
   const p = s.passport;
   const bal = (
@@ -396,6 +397,7 @@ export function Passport({ s, refresh, sec = "treasury", onSec }) {
   return (
     <section className="stack pp folds" aria-label={t("pass.aria")}>
       <h2>{t("tab.passport")}</h2>
+      <AgentRecord s={s} role="student" onStop={onStop} />
       <SubNav id="passportSubNav" label={t("pass.sub.aria")} value={sec} onChange={(k) => onSec && onSec(k)} items={SECTIONS.map((k) => [k, t(`pass.sub.${k}`), ICON[k]])} />
       {body}
     </section>

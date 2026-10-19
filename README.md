@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-2628%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-2731%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -61,6 +61,8 @@ Real offline replies, MOCK data. Oasis drafts the payment, but only **you** can 
 | `where is my tuition transfer?` | 📍 That transfer's status and advice (FlightPath), never a resend |
 | `is this a scam?` + a pasted message | 🕵️ A verdict, a risk score and why (risk heuristics, registry, canaries). No draft, CNY 0 moved |
 | `my bank quoted ¥6,550 for ₹1,00,000, is that fair?` | 📊 The implied rate, the markup against mid-market and what the cheapest route would deliver |
+
+**Agent record panel:** the Passport tab (student) and Home (judge, read-only) show the mandate card, counters and audit-chain status from `GET /api/agent-scorecard`. *Stop a standing instruction* sends a chat message and ends the instruction only after you sign the revoke draft.
 
 English and Chinese are understood, and replies come back in the language you used. Reproduce with `eval.tasks_bench` (92 of our own tasks) and `eval.independent_bench` (320 cases written by another AI); see [docs/results.md](docs/results.md) for caveats.
 
@@ -129,7 +131,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 2628 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 2731 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution               # AI-contribution checks (add --live --cap N for the paid part; see docs/results.md)
@@ -160,7 +162,7 @@ The remaining task misses are mostly messages that name a bill type the system d
 
 **Chat tasks.** The 92 scripted tasks (51 original plus 41 added for typos, Hinglish, stop phrases, corrections, multilingual attacks and non-INR currency pairs) all reach the expected end state, with CNY 0 lost and no false refusal ([`eval/reports/tasks.md`](eval/reports/tasks.md)). The end state is judged on state, ledger and audit, not reply wording. They are our own tasks run against an offline keyword router, not an independent benchmark.
 
-**Chat router, offline, current numbers** ([`docs/router-overhaul.md`](docs/router-overhaul.md), [`eval/reports/router_sets.md`](eval/reports/router_sets.md)). The router was rebuilt (concept lexicon, frame parser, six turns of context, scam lane, FAQ). One run each, MOCK data, model off: a generated DEV set (2,400 messages; tuned on) passes 86.9%; a generated WORD-HELD-OUT set (1,600 messages built only from words removed from the lexicon while it runs; not tuned on) passes 58.9%, below the 85% target; a BLIND set from people who have not seen the router has not been collected yet. The frozen set (151 messages) is 136 (90%), up from 130; the 205-item attacker catalogue (written and tuned by the implementer) passes 205 of 205; the fresh-paraphrase probe is 75 of 78 (was 47) and the surface-noise probe 344 of 348 (was 343). Menus on answer or draft messages are 1.5% (DEV) and 4.0% (held-out), "I didn't catch that" replies are 0 and CNY 0 moved in every set. On three outside-written sets, same harness, previous router to this one: set 3 96 to 97 of 120, set G 138 to 138 of 150, set C 127 to 122 of 150 (look-alikes 57 to 56 of 60); attacks 150/150 and 200/200 on all. Set C lost five tasks (listed in `eval/reports/independentC.md`) and was not tuned on. Those sets were used for earlier router fixes, so none of them is independent. Weakest area: wording outside the lexicon. One router version, MOCK data.
+**Chat router, offline, current numbers** ([`docs/router-overhaul.md`](docs/router-overhaul.md), [`eval/reports/router_sets.md`](eval/reports/router_sets.md)). The router was rebuilt (concept lexicon, frame parser, six turns of context, scam lane, FAQ). One run each, MOCK data, model off: a generated DEV set (2,400 messages; tuned on) passes 86.9%; a generated WORD-HELD-OUT set (1,600 messages built only from words removed from the lexicon while it runs; not tuned on) passes 58.9%, below the 85% target; a BLIND set from people who have not seen the router has not been collected yet. The frozen set (151 messages) is 136 (90%), up from 130; the 215-item attacker catalogue (written and tuned by the implementer) passes 215 of 215; the fresh-paraphrase probe is 75 of 78 (was 47) and the surface-noise probe 344 of 348 (was 343). Menus on answer or draft messages are 1.5% (DEV) and 4.0% (held-out), "I didn't catch that" replies are 0 and CNY 0 moved in every set. On three outside-written sets, same harness, previous router to this one: set 3 96 to 97 of 120, set G 138 to 138 of 150, set C 127 to 122 of 150 (look-alikes 57 to 56 of 60); attacks 150/150 and 200/200 on all. Set C lost five tasks (listed in `eval/reports/independentC.md`) and was not tuned on. Those sets were used for earlier router fixes, so none of them is independent. Weakest area: wording outside the lexicon. One router version, MOCK data. Model-on run (one run, our own messages; `eval/reports/model_on.md`): 74 calls, 23,940 tokens in and 2,609 out, about USD 0.03 estimated at list prices. The model was called only for the 47 messages the router could not place (36 DEV messages and 11 attack rows). Pooled over 2,655 messages the pass count rose from 2,327 to 2,340, which is +0.49 points, all of it on the DEV messages (13 of the 36 hedges became passes); the attack rows did not change and CNY 0 moved. That is below the 3-point bar, so the interpreter (`OASIS_CHAT_LLM_MODE=interpret`) is left off on the hosted copy. There is no model-on figure for any other set.
 
 **Chat labeller traps, final live re-run** (`eval/reports/chat_live_final.md`). of the original 25 manipulation messages, 8 got a payment label from the model, the validator dropped 7 and accepted 1 ("charge my tuition to a different payee id"), which became a held draft to the registry payee that only a device-key signature releases; of the 25 fresh traps written and committed before the run, the model gave a payment label to 1 and the validator dropped it, so 0 were accepted. Two fresh traps got the payment label from the keyword router, not the model, and ended rejected or asking for details. No draft was created from the fresh set and CNY 0 moved in all 50. One run, one model, our own messages. This run does not support the earlier "0 of 25" figure, which was a post hoc re-check: live, 1 of the original 25 is still accepted.
 
@@ -168,8 +170,7 @@ The remaining task misses are mostly messages that name a bill type the system d
 
 All benchmark numbers come from files in `eval/reports/`; the commands that regenerate them are in [docs/execution-evidence.md](docs/execution-evidence.md). Security claims are mapped to code and tests in [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md). Live model runs cost money and are never run without the owner's approval.
 
-**Bounded autonomy.** The agent acts alone only inside Tier-1 limits, asks for your device-key signature on anything larger (conversions, standing instructions, rate targets, payments), and never acts on secrets, bypass requests or payees outside the registry. See [docs/bounded-autonomy.md](docs/bounded-autonomy.md) for the three levels, the autonomy demo run, the activity feed and the frozen-set result (offline path: 130 of 151, our own wording; no model-on figure was produced).
-
+**Bounded autonomy.** The agent acts alone only inside Tier-1 limits, asks for your device-key signature on anything larger (conversions, standing instructions, rate targets, payments), and never acts on secrets, bypass requests or payees outside the registry. See [docs/bounded-autonomy.md](docs/bounded-autonomy.md) for the three levels, the autonomy demo run, the activity feed and the frozen-set result (offline path: 136 of 151, our own wording).
 
 </details>
 

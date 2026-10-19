@@ -306,3 +306,15 @@
 .shell .pp .kpi .k { font-size: .8rem; letter-spacing: .08em; }
 .shell .pp .kpi .v { font-size: clamp(1.9rem, 3.4vw, 2.6rem); font-weight: 750; line-height: 1.15; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .shell .fold-h { font-size: .9rem; color: #cbd5e1; }
+
+/* Agent record (mandate card, counters, audit chain) */
+.agent-record .agent-quote { margin: 10px 0; padding: 10px 14px; border-left: 3px solid var(--ok-line); background: var(--ok-bg); color: var(--ok-fg); border-radius: 6px; }
+.agent-record .agent-mandates { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+.agent-record .agent-mandates li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.agent-record .agent-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 14px 0 8px; }
+.agent-record .agent-counters div { display: grid; gap: 2px; }
+.agent-record .agent-counters span { font-size: .75rem; opacity: .75; }
+.agent-record .agent-counters b { font-size: 1.25rem; }
+.agent-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+.agent-badge.ok { background: var(--ok-bg); color: var(--ok-fg); border: 1px solid var(--ok-line); }
+.agent-badge.bad { background: var(--bad-bg); color: var(--bad-fg); border: 1px solid var(--bad-line); }

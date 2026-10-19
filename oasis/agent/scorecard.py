@@ -12,14 +12,12 @@ def build(S) -> dict:
     kinds = collections.Counter(e["kind"] for e in entries)
     refusals = collections.Counter(e["data"].get("category", "other") for e in entries if e["kind"] == "chat_refused")
     rejected = sum(1 for e in entries if e["kind"] == "policy_decision" and (e["data"].get("action") or e["data"].get("decision", {}).get("action")) in ("block", "reject", "rejected"))
-    held_audit = sum(1 for e in entries if e["kind"] == "policy_decision" and (e["data"].get("action") or e["data"].get("decision", {}).get("action")) == "hold")
     active = [m for m in p.rules.mandates if m.get("active")]
     from ..trust.audit import verify_chain
     ok = verify_chain(entries).ok
     return {
         "acted_alone_tier1": kinds.get("autonomous_action", 0),
         "drafts_waiting_for_you": len(S.pending),
-        "drafts_held_total": held_audit,
         "refusals_by_reason": dict(refusals),
         "scam_warnings": refusals.get("scam", 0),
         "rejected_by_policy": rejected,
@@ -30,7 +28,7 @@ def build(S) -> dict:
         "audit_chain_ok": bool(ok),
         "audit_entries": len(entries),
         "caps": {"tier1_auto_limit_cny": float(p.rules.tier1_auto_limit_cny),
-                 "mandates": [{"id": m["id"], "kind": m.get("kind"), "cap_cny": m.get("cap_cny"), "every_days": m.get("every_days"), "created": m.get("created"),
+                 "mandates": [{"id": m["id"], "kind": m.get("kind"), "cap_cny": m.get("cap_cny"), "every_days": m.get("every_days"), "created": m.get("created"), "payee_id": m.get("payee_id"), "rate": m.get("rate"),
                                "expires": "until you revoke it"} for m in active]},
         "source": "audit log, passport and pending drafts; read-only",
     }

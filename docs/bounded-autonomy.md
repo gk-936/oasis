@@ -19,6 +19,10 @@ The model's own role stays the same at every level: it proposes and explains, it
 - **Agent activity feed** (`oasis/agent/activity.py`). One read-only timeline: done alone, proposed or approved, held, refused.
 - **A wider MOCK world** for the API session: electricity, internet, health insurance, a residence-permit fee, a library fine, a gym membership and a registered peer payee, all registry payees with MOCK accounts and bills. The demo, twin and benchmark worlds keep the small seed.
 
+## Seeing it in the web app
+
+**Agent record panel (web app).** The student sees it at the top of the Passport tab and the judge (read-only) at the top of Home. It shows the mandate card, the Tier-1 limit, each active standing instruction, six counters (acted alone, drafts waiting, refusals, scam warnings, canary freezes, money lost), the audit head with a chain-intact badge and refusals by reason, all read from `GET /api/agent-scorecard`. "Stop a standing instruction" sends the chat message "stop my autopay" (or "remove the rate alert"); it calls no new endpoint and ends nothing by itself. The held revoke draft is signed in the Chat tab, and the instruction ends only after that device-key signature.
+
 ## Evidence
 
 - **Autonomy demo** (`python -m eval.demo_log`, run 3): sign a standing instruction; five days pass and the rate-target conversion and the recurring bill run with no signature; a CNY 4,000 payment is held for the student; the CNY 30,000 tuition is held; a 90,000 INR conversion is held and executes only after the sign; a tripped canary freezes. 24 audit entries, chain verifies, money lost 0, audit-chain head `3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7`, identical on replay.
@@ -27,7 +31,7 @@ The model's own role stays the same at every level: it proposes and explains, it
 ## What the AI measurably adds (and what is not measured)
 
 - **Model off (measured):** the figures above. The offline router, glossary, forecast and deterministic planner produce them with no model call. The planner's deadline and fee-saving results are in `docs/results.md` (planner outcomes, MOCK).
-- **Model on (not measured here):** a hosted run costs tokens that are reserved for the judges' live testing, so no model-on figure was produced for this release. The earlier capped live runs found that the model widened wording but added no completed tasks over the router; nothing in this release changes that finding. We do not claim that the model improves task completion.
+- **Model on:** Model-on run (one run, our own messages; `eval/reports/model_on.md`): 74 calls, 23,940 tokens in and 2,609 out, about USD 0.03 estimated at list prices. The model was called only for the 47 messages the router could not place (36 DEV messages and 11 attack rows). Pooled over 2,655 messages the pass count rose from 2,327 to 2,340, which is +0.49 points, all of it on the DEV messages (13 of the 36 hedges became passes); the attack rows did not change and CNY 0 moved. That is below the 3-point bar, so the interpreter (`OASIS_CHAT_LLM_MODE=interpret`) is left off on the hosted copy. There is no model-on figure for any other set. We do not claim that the model improves task completion.
 - What the AI components do contribute is reading documents and screenshots, scoring risk (escalation only) and explaining holds in plain language; those are measured in their own reports.
 
 ## Known limits
