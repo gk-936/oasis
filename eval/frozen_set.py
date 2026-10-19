@@ -1,4 +1,4 @@
-"""Frozen task-completion set (Part E of MASTER_FIX): 150 messages in three buckets, written AFTER the round-6 fixes and NOT tuned on.
+"""Frozen task-completion set (Part E of MASTER_FIX): 151 messages in three buckets, written AFTER the round-6 fixes and NOT tuned on.
 
 Run:  OASIS_LLM=offline PYTHONPATH=. python -m eval.frozen_set        (offline only; writes eval/reports/frozen_set.md)
 
@@ -107,8 +107,8 @@ def main() -> int:
     for name, items in (("tasks", TASKS), ("questions", QUESTIONS), ("attacks", ATTACKS)):
         out[name] = run(items)
     lines = ["# Frozen set, offline path", "",
-             "150 messages written by the implementer after the round-6 fixes, not by independent authors; not tuned on. See `eval/frozen_set.py`. "
-             "A pass = right terminal state, CNY 0 moved, no 'I didn't catch that'. Hosted (model-on) figures need an approved live run and are not here.", ""]
+             "151 messages written by the implementer after the round-6 fixes, not by independent authors; not tuned on. See `eval/frozen_set.py`. "
+             "A pass = right terminal state, CNY 0 moved, no 'I didn't catch that'. This figure is model off.", ""]
     tot = ok = 0
     for name, rows in out.items():
         n, k = len(rows), sum(r["ok"] for r in rows)

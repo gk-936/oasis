@@ -64,7 +64,7 @@ def test_estimate_requests_make_no_draft(api_client, api_session, msg):
 def test_reminders_and_standing_orders_are_declined_without_a_draft(api_client, api_session, msg):
     o = chat(api_client, msg)
     assert o["intent"] == "later" and o["status"] == "info" and not pending(api_session), o
-    assert "signed" in o["reply"] or "签名" in o["reply"]
+    assert "signed" in o["reply"] or "签名" in o["reply"] or "cap for standing instructions" in o["reply"]
     nothing_moved(api_session)
 
 

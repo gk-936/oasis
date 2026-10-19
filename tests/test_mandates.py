@@ -43,7 +43,7 @@ def test_a_wrong_signature_creates_no_mandate(st):
 
 def test_large_bills_are_not_eligible_for_a_mandate(st):
     j = st.post("/api/chat", json={"message": "pay my rent every month"}).json()
-    assert j["status"] == "info" and not j["pending_id"] and "can't set" in j["reply"]
+    assert j["status"] == "info" and not j["pending_id"] and "can't automate it" in j["reply"]
 
 
 def test_a_bill_above_the_signed_cap_is_held_not_paid(st):
@@ -104,3 +104,46 @@ def test_remove_the_rate_alert_revokes_a_signed_rate_target(st):
     import oasis.api.main as api
     assert all(t["status"] != "watching" for t in api.S.world.passport.rules.rate_targets)
     assert not any(m["active"] for m in _mandates(st))
+
+
+# ---- ROUTER_FIXES_ROUND2.md 2.4: natural wording
+def _chat(c, m):
+    return c.post("/api/chat", json={"message": m}).json()
+
+
+@pytest.mark.parametrize("m", ["set up auto pay for my phone", "pay my phone bill every month", "set up autopay for my mobile", "enable a standing order for my phone bill"])
+def test_round2_autopay_wording_makes_the_standing_instruction_draft(st, m):
+    j = _chat(st, m)
+    assert j["intent"] == "later" and j["status"] == "held" and j["pending_id"] and "Standing instruction draft" in j["reply"]
+
+
+@pytest.mark.parametrize("m", ["pay my rent every month", "set up a standing order for rent", "pay my rent automatically every month", "set up autopay for rent"])
+def test_round2_rent_above_the_cap_gets_the_cap_sentence_and_no_draft(st, m):
+    j = _chat(st, m)
+    assert "above the CNY 500 cap for standing instructions" in j["reply"] and "say 'pay my rent'" in j["reply"] and not j.get("pending_id") and "can't set reminders" not in j["reply"]
+
+
+@pytest.mark.parametrize("m", ["turn off auto pay", "turn off the auto payments", "cancel my rate alert", "delete the rate target", "cancel the rate alert"])
+def test_round2_turn_off_wording_is_a_revoke(st, m):
+    assert _chat(st, m)["intent"] == "revoke"
+
+
+def test_round2_yuan_cheaper_than_12_rupees_is_read_as_0_0833(st):
+    j = _chat(st, "tell me when yuan gets cheaper than 12 rupees")
+    assert j["intent"] == "rate_target" and "0.0833" in j["reply"] and not j.get("pending_id")
+
+
+def test_round2_usd_alert_says_the_supported_pair(st):
+    j = _chat(st, "alert me when USD reaches 86")
+    assert "INR to CNY" in j["reply"] and not j.get("pending_id")
+
+
+def test_round2_create_sign_revoke_by_chat_then_nothing_to_stop(st):
+    j = _chat(st, "set up auto pay for my phone")
+    ap = Approver(st, "student")
+    assert ap.approve(j["pending_id"]).json()["status"] == "paid"
+    r = _chat(st, "turn off auto pay")
+    assert r["status"] == "held" and r["pending_id"]
+    assert ap.approve(r["pending_id"]).json()["status"] == "paid"
+    assert not _mandates(st)[0]["active"]
+    assert _chat(st, "stop my autopay")["reply"] == "You have no active standing instruction to stop."

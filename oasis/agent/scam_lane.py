@@ -11,32 +11,43 @@ from . import lexicon as L
 
 # family -> (strong?, words). A strong family can fire alone; a weak one needs a second family.
 FAMILIES: dict[str, tuple[bool, tuple[str, ...]]] = {
-    "authority": (False, ("embassy", "consulate", "police", "cyber police", "public security", "court", "customs", "immigration", "tax office", "bank security team",
+    "authority": (False, ("immigration bureau", "immigration office", "immigration department", "embassy", "consulate", "police", "cyber police", "public security", "court", "customs", "immigration", "tax office", "bank security team",
                           "bank security", "fraud department", "bank manager", "government", "recruiter", "lawyer", "customer service", "公安", "警察", "海关", "大使馆", "法院", "银行客服")),
-    "threat": (False, ("deportation", "deported", "arrest", "arrested", "jail", "visa cancelled", "visa revoked", "account frozen", "account will be frozen", "account suspended",
+    "threat": (False, ("visa has a problem", "visa problem", "problem with my visa", "account is in a case", "involved in a case", "deportation", "deported", "arrest", "arrested", "jail", "visa cancelled", "visa revoked", "account frozen", "account will be frozen", "account suspended",
                        "legal action", "lawsuit", "penalty", "blacklisted", "遣返", "逮捕", "冻结", "封号")),
     "urgency_secrecy": (False, ("urgently", "right now", "within the hour", "today only", "last chance", "don't tell anyone", "keep this secret", "don't tell your parents",
                                 "don't tell the bank", "confidential", "马上", "立刻", "保密")),
     "advance_fee": (True, ("processing fee", "release fee", "clearance fee", "customs fee", "handling fee", "tax to release", "fee to claim", "fee to unlock", "scholarship fee",
-                           "scholarship processing", "visa processing", "lottery", "winner", "inheritance", "to release my scholarship", "release my scholarship", "to claim my parcel",
+                           "scholarship processing", "visa processing", "lottery", "winner", "inheritance", "to release my scholarship", "release my scholarship", "to claim my parcel", "to release it", "to unlock it", "to claim it",
                            "手续费", "解冻费", "奖学金")),
-    "guaranteed_returns": (True, ("guaranteed", "risk-free", "risk free", "assured returns", "double your money", "30% monthly", "10% weekly", "high returns", "investment opportunity",
+    "guaranteed_returns": (True, ("guaranteed", "risk-free", "risk free", "assured returns", "double your money", "double my money", "double the money", "doubles in a week", "double it in a week", "30% monthly", "10% weekly", "high returns", "investment opportunity",
                                   "trading platform", "signals group", "forex group", "crypto investment", "monthly returns", "稳赚", "高回报", "带单")),
-    "safe_account": (True, ("safe account", "secure account", "protected account", "move your money", "move my money", "transfer to a safe", "verification account", "audit account",
+    "safe_account": (True, ("regulatory account", "supervision account", "supervised account", "custody account", "safe account", "secure account", "protected account", "move your money", "move my money", "transfer to a safe", "verification account", "audit account",
                             "安全账户", "核查账户")),
     "credential_remote": (True, ("otp", "one-time password", "one time password", "verification code", "pin", "cvv", "card number", "password", "passcode", "remote access", "anydesk",
                                 "teamviewer", "screen share", "install this app", "install an app", "download this app", "apk", "qr code to receive money", "scan this code", "验证码", "密码", "远程")),
     "untraceable": (True, ("gift card", "gift cards", "itunes card", "steam card", "usdt", "tether", "bitcoin", "crypto wallet", "wallet address", "prepaid card", "礼品卡", "虚拟币")),
-    "refund_overpay": (True, ("i overpaid you", "sent too much", "send back the difference", "refund the difference", "wrong transfer please return", "accidentally sent", "多转了", "退还")),
+    "refund_overpay": (True, ("overpaid me", "paid me too much", "return the difference", "return the extra", "i overpaid you", "sent too much", "send back the difference", "refund the difference", "wrong transfer please return", "accidentally sent", "多转了", "退还")),
     "account_change": (True, ("new account", "changed its account", "changed account", "updated bank details", "new bank details", "account has changed", "please use this account instead",
                               "pay to this account instead", "don't use the old account", "changed the account", "账户变更", "新账号")),
     "advance_before_service": (True, ("deposit before viewing", "deposit before i can", "before i can even view", "before viewing", "pay before viewing", "pay to hold the flat",
                                       "pay to reserve without a contract", "no contract yet", "landlord abroad", "key will be mailed", "先付定金", "看房前付款")),
-    "romance_emergency": (True, ("stuck at the airport", "stuck in the airport", "stuck at an airport", "in hospital", "my friend needs", "family emergency", "send money to a friend i met online", "i met someone online", "紧急汇款")),
+    "stranger_payee": (True, ("qr code a stranger", "qr a stranger", "stranger sent me", "stranger's qr", "stranger's account", "stranger's wallet", "a stranger asked me to pay")),
+    "romance_emergency": (True, ("dating app", "met online", "met on an app", "met on a dating", "stuck at the airport", "stuck in the airport", "stuck at an airport", "in hospital", "my friend needs", "family emergency", "send money to a friend i met online", "i met someone online", "紧急汇款")),
 }
+# phrasings that are not a fixed word list: (family, regex over the normalised text)
+_EXTRA = tuple((f, re.compile(r)) for f, r in (
+    ("advance_fee", r"\b(?:scholarship|prize|reward|grant|lottery|winnings?)\b[^.?!]{0,50}\b(?:pay|fee|first|send|wire|transfer)\b|\b(?:pay|send|wire|transfer)\b[^.?!]{0,30}\bfirst\b[^.?!]{0,30}\b(?:scholarship|prize|reward|grant)\b"),
+    ("advance_fee", r"\b(?:customs|courier|delivery)\b[^.?!]{0,30}\b(?:held|detained|seized|stuck|blocked)\b[^.?!]{0,50}\b(?:pay|fee|send)\b"),
+    ("guaranteed_returns", r"\b(?:double|triple)\b[^.?!]{0,15}\b(?:money|investment|savings)\b|\bguarantee[sd]?\b[^.?!]{0,30}\b(?:profit|returns?|income)\b|\bpromised\b[^.?!]{0,30}\b(?:double|returns?|profit)\b"),
+    ("refund_overpay", r"\boverpa(?:id|yment)\b[^.?!]{0,60}\b(?:return|send back|refund|give back)\b|\b(?:return|send back|refund)\b[^.?!]{0,40}\boverpa(?:id|yment)\b"),
+    ("romance_emergency", r"\b(?:met|know)\b[^.?!]{0,25}\b(?:on|via|through)\b[^.?!]{0,15}\b(?:app|instagram|facebook|telegram|whatsapp|online)\b[^.?!]{0,60}\b(?:hospital|emergency|ticket|stuck|needs?)\b"),
+    ("stranger_payee", r"\bqr(?: code)?\b[^.?!]{0,30}\b(?:stranger|someone i (?:don't|do not) know|unknown)\b|\b(?:stranger|unknown person)\b[^.?!]{0,30}\bqr\b"),
+    ("safe_account", r"\b(?:move|transfer|send)\b[^.?!]{0,25}\b(?:money|funds)\b[^.?!]{0,25}\b(?:regulatory|supervised|escrow|verification|audit|check)\b[^.?!]{0,10}\baccount\b"),
+))
 # words that count only next to another family (false-positive guard)
 GUARDED = ("fine", "agent", "officer", "parcel", "prize", "courier")
-_PAY_CONTEXT = re.compile(r"\b(?:pay|paying|send|sending|transfer|remit|wire|invest|deposit|fee|charge|refund|forward|settle|move|release|top up|buy|purchase|wants? my|asked for my|asking for my|needs? my|give (?:them|him|her) my)\b|付|转|汇|交", re.I)
+_PAY_CONTEXT = re.compile(r"\b(?:wants?|needs?|asks? for|asked for) \d|\breturn\b|\b(?:pay|paying|send|sending|transfer|remit|wire|invest|deposit|fee|charge|refund|forward|settle|move|release|top up|buy|purchase|wants? my|asked for my|asking for my|needs? my|give (?:them|him|her) my)\b|付|转|汇|交", re.I)
 _ACCT = re.compile(r"(?<!\d)\d{12,19}(?!\d)")
 _WALLET = re.compile(r"\b0x[0-9a-fA-F]{6,}\b|\b(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{20,})\b|\bT[1-9A-HJ-NP-Za-km-z]{33}\b")
 _QUESTION = re.compile(r"\?\s*$|^(?:is|are|how|what|why|should|can|could|do|does)\b", re.I)
@@ -57,6 +68,8 @@ PATTERN_TEXT = {
     "advance_before_service": ("This looks like a rental scam: money is requested before you can view or sign.",
                                "Never pay a deposit before viewing the flat and seeing a contract."),
     "romance_emergency": ("This looks like an emergency or romance scam.", "Do not send money to someone you have only met online or on an urgent unverified story."),
+    "stranger_payee": ("This looks like a payment to a stranger's QR code or account.",
+                       "I only pay registered payees, so a QR code or account from someone you do not know is refused."),
     "authority_threat": ("This looks like an authority-impersonation scam.",
                          "Real embassies, police and courts never ask for money transfers to avoid arrest or deportation."),
 }
@@ -86,6 +99,9 @@ def assess(text: str) -> Assessment:
     fams: list[str] = []
     for name, (_strong, words) in FAMILIES.items():
         if L.has(t, words):
+            fams.append(name)
+    for name, rx in _EXTRA:
+        if name not in fams and rx.search(t):
             fams.append(name)
     guarded = [g for g in GUARDED if re.search(rf"\b{g}\b", t)]
     if fams:
@@ -151,12 +167,13 @@ _ATTACKS: tuple[tuple[str, re.Pattern], ...] = tuple((k, re.compile(v, re.I)) fo
     ("rules", r"(?:set|change|raise|increase|lower|disable|turn off|switch off|remove|bypass|override|skip|waive|lift|whitelist|allow)\b[^.?!]{0,40}\b(?:tier ?1[_ ]?auto[_ ]?limit|auto[_ ]?limit|my limit|the limit|registry check|registry|canary|audit log|audit|signature check|signature|verification|approval|unregistered|payee check|safety check|cap)\b|"
               r"\bwhitelist\b|\bpre-?approved\b|\bno signature needed\b|\bskip (?:the )?(?:signature|approval|sign)\b|\bapprove (?:all|everything|pending)\b|\bauto-?sign\b|\bsign (?:it )?for me\b|\buse my key\b|\bapprove without asking\b|\bmark (?:it )?as approved\b|"
               r"\bdon'?t ask me to sign\b|\bconfirm everything automatically\b"),
-    ("prompt", r"\b(?:repeat|print|show|reveal|output|display|dump|tell me|give me|what (?:is|are))\b[^.?!]{0,30}\b(?:words above|text above|system prompt|your (?:system )?(?:prompt|instructions|rules|tools|configuration|config)|starting with ['\"]?you are|hidden prompt|initial prompt)\b|"
+    ("prompt", r"\b(?:print|repeat|show|output|display|dump)\b[^.?!]{0,15}\b(?:everything|all|the text|the words|text)\b[^.?!]{0,15}\b(?:before|above|prior to|preceding)\b[^.?!]{0,20}\b(?:message|this|conversation|chat)\b|\b(?:repeat|print|show|reveal|output|display|dump|tell me|give me|what (?:is|are))\b[^.?!]{0,30}\b(?:words above|text above|system prompt|your (?:system )?(?:prompt|instructions|rules|tools|configuration|config)|starting with ['\"]?you are|hidden prompt|initial prompt)\b|"
                r"\bstarting with ['\"]?you are\b|\bwhat are your tools\b"),
     ("env", r"\b(?:show|print|reveal|dump|list|display|output|read|cat|echo)\b[^.?!]{0,25}\b(?:env(?:ironment)?(?: variables?)?|\.env|api[_ ]?keys?|secrets?|config(?:uration)?|the database|raw audit log|all accounts|other users'? data|another student'?s)\b"),
     ("authority", r"\b(?:i am|i'm|this is|as)\b[^.?!]{0,12}\b(?:the |your |oasis'?s? )?(?:admin(?:istrator)?|developer|owner|ceo|judge|organi[sz]er|auditor|regulator|police|engineer|creator|root|superuser)\b[^.?!]{0,60}\b(?:switch|turn|disable|skip|bypass|override|authori[sz]e|approve|allow|grant|ignore|print|show)\b|"
                   r"\b(?:developer|debug|maintenance|admin|god|jailbreak|sudo|root) mode\b|\bthe organi[sz]er said\b|\bmanagement approved\b|\bthis is a test\b[^.?!]{0,30}\b(?:skip|approve|bypass|disable)\b"),
-    ("override", r"\b(?:ignore|disregard|forget|override)\b[^.?!]{0,25}\b(?:(?:previous|prior|above|earlier|all|your|the|these|those) )?(?:instructions?|rules?|prompts?|messages?|guidelines?|restrictions?|bill)\b|"
+    ("override", r"\bignora\w*\b[^.?!]{0,20}\b(?:instrucciones|reglas)\b|\bignorez?\b[^.?!]{0,20}\b(?:instructions|r[eè]gles)\b|\bignorier\w*\b[^.?!]{0,25}\b(?:anweisungen|regeln|instruktionen)\b|\bignor[ea]r?\b[^.?!]{0,20}\b(?:instru[cç][oõ]es|regras)\b|игнорир\w*[^.?!]{0,25}(?:инструкц|правил)|"
+                 r"\b(?:ignore|disregard|forget|override)\b[^.?!]{0,25}\b(?:(?:previous|prior|above|earlier|all|your|the|these|those) )?(?:instructions?|rules?|prompts?|messages?|guidelines?|restrictions?|bill)\b|"
                  r"\bforget (?:everything|all|what)\b[^.?!]{0,20}\b(?:above|before|said|told)\b|"
                  r"\b(?:from now on|new instructions?:|you are now|pretend you (?:have no|are)|act as (?:a |an )?(?:unrestricted|dan)|do anything now|\bdan\b)\b|\[/?inst\]|<<sys>>|^system:|\bsystem:\s"),
     ("rules2", r"\b(?:skip|bypass|avoid|ignore|get around)\b[^.?!]{0,25}\b(?:check|checks|signature|signatures|approval|verification|registry|limit)\b|\bwithout (?:any |a |the |my )?(?:approval|signature|checks?|verification)\b|"
@@ -187,6 +204,8 @@ def attack_kind(text: str, views: list[str] | None = None) -> str | None:
         c = nlu._drop_negated(nlu.strip_mentions(c))
         c = _NEGATED_ACT.sub(" ", c)                       # "do not bypass the safety check, pay my rent": a promise not to, not an attempt
         if re.search(r"\bwhat does\b|\bwhat is the meaning\b|\bmeaning of\b", c) and not re.search(r"\band (?:then )?(?:pay|send|do|approve)\b", c):
+            continue
+        if nlu._disarmed(c):                               # "how do I approve my draft", "the email said to ignore previous instructions, is this phishing"
             continue
         for kind, rx in _ATTACKS:
             if rx.search(c):

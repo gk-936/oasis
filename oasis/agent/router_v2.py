@@ -15,6 +15,28 @@ from . import chat_llm, faq, frames, lexicon as L, nlu
 _BAD_AMOUNT = re.compile(r"\b(?:nan|inf|infinity)\b|\b\d+(?:\.\d+)?e[+-]?\d+\b|\b(?:all|everything|entire|whole)\b[^.?!]{0,15}\b(?:my )?(?:money|balance|funds|savings|cash)\b|\bas much as (?:possible|you can)\b|\d{20,}|\bmillion million\b")
 _SCHEDULE_ABUSE = re.compile(r"\bevery (?:day|minute|hour|second|week|morning)\b|\b(?:daily|hourly|weekly)\b|\bautopay for everything\b|\bunlimited\b")
 _CONCEPT_Q = re.compile(r"^(?:what(?:'s| is| are| does| do)|explain|define|tell me what|is it true that|my \w+ said)\b[^,;]{0,80}\b(?:mean|means|meaning|jailbreak|injection|dan|attack|known|say|says)\b")
+_HOW_APPROVE = re.compile(r"\b(?:how (?:do|can|could|to) (?:i )?(?:approve|sign)|(?:i want|i'd like|i need) to (?:approve|sign))\b[^.?!]{0,25}\b(?:draft|payment|transfer|bill)s?\b")
+_IGNORE_PHISH = re.compile(r"\b(?:email|e-?mail|message|text|sms|site|website)\b[^.?!]{0,40}\b(?:ignore|disregard)\b[^.?!]{0,30}\b(?:instructions?|rules)\b[^.?!]*\b(?:phish\w*|scam|fake|legit|real|safe)\b")
+_GET_TRUST = re.compile(r"\b(?:get|make|have|help)\b[^.?!]{0,30}\b(?:banks?|landlords?|lenders?|universit\w+)\b[^.?!]{0,12}\btrust me\b")
+_CHEAPER_YUAN = re.compile(r"\b(?:tell|alert|notify|ping|let) me when (?:the )?(?:yuan|cny|rmb) (?:gets|goes|is|drops|falls|becomes)\b[^.?!]{0,15}\b(?:cheaper|below|under|lower)\b[^.?!]{0,10}\bthan (\d+(?:\.\d+)?) (?:rupees|inr)\b")
+_USD_ALERT = re.compile(r"\b(?:alert|tell|notify|ping|let) me when (?:the )?(?:usd|dollar)\b")
+_AUTOPAY_SETUP = re.compile(r"\b(?:set up|setup|start|enable|turn on|create|activate)\b[^.?!]{0,10}\b(?:auto-? ?pay|autopay|standing (?:order|instruction)|recurring (?:payment|pay))\b[^.?!]{0,12}\b(?:for )?(?:my |the )?(phone|mobile|rent|tuition)\b")
+_MARKUP_ASK = re.compile(r"\b(?:ripping|ripped) (?:me )?off\b|\brip-?off\b|\bhow much is (?:my |the )?bank charging me\b|\b(?:overcharging|overcharged) me\b")
+_ZH_PAY = re.compile(r"^(学费|房租|租金|押金|电话费|话费)(?:帮我|麻烦|请)?(?:付|交|缴)(?![了过完])(?!.*[吗嘛?？])")
+_PROOF_FOR = re.compile(r"\bgive my (?:landlord|lender|bank)\b[^.?!]{0,20}\bproof\b")
+_LANDLORD_Q = re.compile(r"\bwho(?:'s| is) my (?:landlord|landlady)\b|\bwhat(?:'s| is) my (?:landlord|landlady)'?s? name\b|\bmy (?:landlord|landlady)'?s? name\b")
+_USD_NEED = re.compile(r"^i need (\d[\d,]*) (?:dollars|usd|bucks)\b")
+# (pattern over the lower-cased message, canonical sentence handled exactly as if typed): wording the keyword router reads as a different intent
+_R2_REWRITES = tuple((re.compile(p), t) for p, t in (
+    (r"^(?!(?:how|what|which|when|why|is|are|do|does)\b).*?\b(?:get|clear|settle|sort|finish|handle|take care of)\b[^.?!]{0,25}\b(?:mobile|phone)\b[^.?!]{0,12}\b(?:bill|recharge|top.?up)\b", "pay my phone bill"),
+    (r"\b(?:pay|clear|settle|sort)\b[^.?!]{0,25}\b(?:accommodation|lodging)\b(?!\s*(?:fee|charge)s?\?)", "pay my rent"),
+    (r"^(?:what(?:'s| is) )?(?:my )?(?:wallet|balance|total)\b[^.?!]{0,15}\bin (?:rupees|inr)\??$", "what is my balance"),
+    (r"\bhow much (?:do i|will i|must i|have i got to) (?:need to |have to )?pay in total\b|\btotal (?:i )?(?:need to|have to|must) pay\b", "what do I owe"),
+    (r"\b(?:has|did|have) (?:the )?(?:university|school|landlord) (?:got|get|received|receive)\b[^.?!]{0,15}\b(?:my )?(?:money|payment)\b", "did my payment go through"),
+    (r"\bwhat will (?:the )?(?:university|landlord|school|they) get if i send (\d[\d,]*) rupees\b", "cheapest way to send 100000 rupees to China"),
+    (r"^what(?:'s| is) 1 (?:yuan|cny|rmb) in (?:rupees|inr)\??$", "what is the exchange rate today"),
+    (r"\bmake something i can (?:send|give|show|hand)\b[^.?!]{0,15}\b(?:lender|bank|landlord)\b", "share my payment record"),
+))
 CRYPTO = {"BTC", "ETH", "USDT", "USDC"}
 
 
@@ -107,6 +129,35 @@ def route(c: Ctx) -> Route | None:
         return None                                    # a message about labels, JSON or intents is an instruction to a labeller, not a request from the student
     if f.revoke:
         return Route("revoke")
+    for rx, text in _R2_REWRITES:
+        if rx.search(f.text):
+            return Route("rewrite", text)
+    mt = _CHEAPER_YUAN.search(f.text)
+    if mt and float(mt.group(1)) > 0:
+        return Route("rewrite", f"set a rate alert at {1 / float(mt.group(1)):.4f}")          # "12 rupees per yuan" is 0.0833 yuan per rupee
+    if _USD_ALERT.search(f.text):
+        return Route("say", "Rate alerts work on the INR to CNY rate only, for example 'alert me when the rate reaches 0.0720'. A USD target isn't supported. Nothing moved.", "rate_target", "needs_info")
+    if _AUTOPAY_SETUP.search(f.text):
+        return Route("rewrite", "pay my " + _AUTOPAY_SETUP.search(f.text).group(1) + " every month")
+    if _MARKUP_ASK.search(f.text) and not re.search(r"\d{3,}", f.text):
+        return Route("say", "I can check that. Tell me what the bank offered, for example 'my bank gave me 6800 yuan for 100000 rupees', and I'll compare it with the mid-market rate and show the markup. Nothing moved.", "markup_check", "info")
+    m = _ZH_PAY.match(f.raw.strip())
+    if m:
+        return Route("rewrite", "交" + m.group(1))
+    if _PROOF_FOR.search(f.text):
+        return Route("rewrite", "share my payment record")
+    if _LANDLORD_Q.search(f.text):
+        ll = next((r for r in c.recips if _role(c, r.id) == "landlord"), None)
+        if ll:
+            return Route("say", f"Your registered landlord is {ll.name} (account {_mask(ll.account_ref)}). I only pay this registry account, never one from a message.", "info", "info")
+    if _USD_NEED.search(f.text):
+        return Route("say", "Do you want to buy 500 USD with your rupees, or pay a bill in USD? Tell me which and I'll continue. Nothing moved.".replace("500", _USD_NEED.search(f.text).group(1)), "fx_bill", "needs_info")
+    if it.kind == nlu.UNKNOWN and _HOW_APPROVE.search(f.text):
+        return Route("faq", "how_to_approve")
+    if it.kind == nlu.UNKNOWN and _IGNORE_PHISH.search(f.text):
+        return Route("faq", "ignore_rules_phishing")
+    if it.kind == nlu.UNKNOWN and _GET_TRUST.search(f.text):
+        return Route("rewrite", L.INFO["credit"][0])
     if _SCORECARD_Q.search(f.text) and not f.pay:
         return Route("scorecard")
     if _MANDATE_Q.search(f.text) and not f.pay:
@@ -157,7 +208,7 @@ def route(c: Ctx) -> Route | None:
         return Route("bill_statement", bills=f.bills)
     if re.search(r"\b(?:bills?|payments?|dues|fees)\b.{0,15}\b(?:piling up|pile up|stacking up|adding up|mounting)\b|\b(?:so many|too many|lots? of|a lot of) (?:bills|payments|dues|things to pay)\b", f.text):
         return Route("bills_pile")
-    if f.act == "worry" and not f.order and not (set(f.info) - {"runway", "balance"}) and re.search(r"money|enough|rent|tuition|fees|afford|broke|cash|funds|savings|tight", f.text) and not re.search(r"scam|hack|stolen|fraud", f.text):
+    if f.act == "worry" and not f.order and not (set(f.info) - {"runway", "balance"}) and re.search(r"money|enough|rent|tuition|fees|afford|broke|cash|funds|savings|tight|short", f.text) and not re.search(r"scam|hack|stolen|fraud", f.text):
         return Route("worry")
     if f.order and f.bills and not f.nopay and not f.info_q and it.kind in _PAY_REWRITE_FROM:
         a = f" {f.amounts[0]:.0f}" if f.amounts and f.amounts[0] > 0 and not f.approx else ""

@@ -12,6 +12,8 @@ _ELLIPSIS = re.compile(r"^(?:and|what about|how about|also|and what about)\s+(?:
 _OTHER = re.compile(r"^(?:and )?(?:the )?(?:other|next|another) (?:one|bill)\s*[?.!]*$|^what about the other one\s*[?.!]*$", re.I)
 _AGAIN = re.compile(r"^(?:same again|again|once more|one more( time)?|same|do it again|the same|like before|as before)\s*[?.!]*$", re.I)
 _SAME_BUT = re.compile(r"^(?:same|the same|again) but (?P<n>[\d,.]+k?)\s*[?.!]*$", re.I)
+_AND_NUM = re.compile(r"^(?:and|what about|how about|or|no,?|actually,?|make it)\s+(?:make it\s+)?(?P<n>\d[\d,]*(?:\.\d+)?k?)\s*[?.!]*$", re.I)
+_PAY_IT = re.compile(r"^(?:ok(?:ay)?,? |yes,? |please |pls )*pay (?:it|him|her|them|that|this)(?: now| please| pls)?\s*[?.!]*$", re.I)
 _WHY = re.compile(r"^(?:why|why\??|how come|really|how so|why is that|why not)\s*[?.!]*$", re.I)
 _PICK = re.compile(r"^(?:option |number |#)?([1-3])\s*[.)]?$|^the (first|second|third)(?: one)?\s*[?.!]*$", re.I)
 
@@ -62,6 +64,12 @@ def resolve(d: dict, message: str, f: frames.Frame, open_bills: list[str]) -> tu
         tmp = frames.parse(obj)
         if tmp.bills:
             return "rewrite", _again(last, tmp.bills[0])
+    if _PAY_IT.match(t) and bill and bill in L.BILLS:
+        return "rewrite", f"pay my {L.BILLS[bill][0]}"                          # "what do I owe", "and the rent?", "pay it": the bill the last answer was about
+    m = _AND_NUM.match(t)
+    if m and c.get("last_canon") and last in ("convert", "pay_obligation", "routes") and re.search(r"\d", c["last_canon"]):
+        n = m.group("n").replace(",", "")
+        return "rewrite", re.sub(r"\d[\d,.]*k?", n, c["last_canon"], count=1)
     m = _SAME_BUT.match(t)
     if m and c.get("last_canon"):
         n = m.group("n").replace(",", "")

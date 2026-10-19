@@ -95,10 +95,10 @@ INFO: dict[str, tuple[str, tuple[str, ...]]] = {
     "share_record": ("share my payment record", (
         "share my record", "show my landlord", "prove to my landlord", "prove i pay on time", "proof of payment history", "reference letter", "financial reference",
         "bank reference", "export my record", "export my payment record", "hand to a bank", "give to a landlord", "shareable", "trust pass", "verifiable record",
-        "certificate", "generate something i can hand", "出示记录", "证明", "信任通行证")),
+        "certificate", "generate something i can hand", "proof that i always pay", "proof that i pay on time", "something i can send to my lender", "something i can send to my landlord", "send to my lender", "give my landlord proof", "give my lender proof", "出示记录", "证明", "信任通行证")),
     "proof": ("show me the proof of payment", ("proof", "proof pack", "receipt", "payment proof", "prove it was paid", "show me proof", "audit trail", "verification link", "证明包", "凭证")),
     "plan": ("plan my payments", ("plan my payments", "what should i pay first", "order of payments", "prioritise", "prioritize", "priorities", "budget plan", "how should i split", "计划", "先付哪个")),
-    "markup": ("is the exchange rate fair", ("markup", "hidden fee", "hidden charges", "spread", "margin", "what is the real cost", "is the rate fair", "overcharged", "隐藏费用", "汇率差价")),
+    "markup": ("is the exchange rate fair", ("markup", "hidden fee", "hidden charges", "spread", "margin", "what is the real cost", "is the rate fair", "overcharged", "overcharging", "ripping me off", "ripping off", "rip off", "rip-off", "fair rate", "fair price", "scamming me on the rate", "隐藏费用", "汇率差价")),
     "help": ("what can you do", (
         "what can you do", "what do you do", "how do i use this", "how does this work", "getting started", "where do i start", "new here", "first time",
         "new international student", "i just landed", "i just arrived", "i'm new", "what should i sort out first", "menu", "options", "commands", "madad", "帮助", "你能做什么", "怎么用")),
@@ -134,7 +134,7 @@ DENY = ("no", "nope", "nah", "not that", "not that one", "wrong", "don't", "do n
 CANCEL = ("cancel", "cancel it", "cancel that", "cancel the payment", "cancel my payment", "drop it", "forget it", "forget that", "never mind", "nevermind", "scrap it",
           "abort", "call it off", "discard", "withdraw the draft", "stop it", "hold on", "hold off", "don't send", "don't pay", "取消", "算了", "别付")
 REVOKE = ("stop my autopay", "cancel my standing instruction", "stop the recurring payment", "remove the rate alert", "cancel my autopay", "stop autopay", "end my standing instruction",
-          "revoke my mandate", "revoke the mandate", "cancel the rate alert", "delete the rate alert", "remove my rate alert", "turn off autopay", "stop my standing order",
+          "revoke my mandate", "revoke the mandate", "cancel the rate alert", "delete the rate alert", "remove my rate alert", "turn off autopay", "stop my standing order", "turn off auto pay", "turn off auto-pay", "turn off the auto payments", "turn off auto payments", "turn off the autopay", "turn off the auto pay", "stop auto pay", "cancel my rate alert", "cancel the rate alert", "cancel rate alert", "delete the rate target", "delete my rate target", "delete the rate alert", "delete my rate alert", "cancel the rate target",
           "cancel my standing order", "cancel the standing instruction", "remove the standing instruction", "stop the autopay", "cancel the autopay", "cancel the recurring payment",
           "remove my autopay", "cancel my recurring payment", "stop my recurring payment", "cancel my rate target", "remove the rate target", "停止自动付款", "取消定期付款")
 NOPAY = ("just asking", "only asking", "don't pay", "do not pay", "no payment", "not paying", "without paying", "hypothetically", "what if", "just checking", "for information", "只是问问", "不付款")
@@ -147,7 +147,7 @@ NEED_CUES = ("i need", "i have to", "i must", "i should", "i'm supposed to", "i'
 FACT_CUES = ("is due", "are due", "due on", "due by", "due friday", "deadline", "deadlines", "expires", "owe", "overdue", "late on", "behind on", "chasing me", "reminded me",
              "emailed me", "messaged me", "sent me a bill", "piling up", "forgot to pay", "i forgot", "is due tomorrow", "due tomorrow", "due today")
 WORRY_CUES = ("worried", "afraid", "scared", "nervous", "stressed", "anxious", "not sure i can", "won't have enough", "might not have enough", "short on", "running low",
-              "running out", "tight this month", "i'm broke", "i am broke", "i'll run out", "i will run out")
+              "running out", "a bit short", "a little short", "short this month", "short on cash", "can't make rent", "cant make rent", "can't afford", "cant afford", "tight this month", "i'm broke", "i am broke", "i'll run out", "i will run out")
 REPORTED_CUES = ("he said", "she said", "they said", "they told me", "he told me", "she told me", "my dad said", "my mum said", "my mom said", "my parents said",
                  "the email says", "the message says", "the website says", "someone said", "i was told", "i heard", "apparently", "according to", "my dad says",
                  "my mom says", "my mum says", "my parents say", "he says", "she says", "they say", "the officer called", "asked me to", "told me to")

@@ -1367,6 +1367,13 @@ def _later(S, it: ChatIntent, message: str, lang: str, secrets=None, run_intake=
                  f"Creating it moves no money and takes effect only after you sign this exact draft (#{h}) with your device key; every automatic run is re-checked by the same rules and audited. Tap Sign and approve.")
             d["last_pending"] = pid
             return _result("later", t, secrets, status="held", pending_id=pid, draft_hash=dr.get("draft_hash"), needs=_needs(item) if item else [], outcome=o)
+    if _RECUR.search(message) and obs and lang != "zh":
+        cap = float(S.world.passport.rules.tier1_auto_limit_cny)
+        b = obs[0]
+        name = _bill_name(b.type)
+        if b.remaining > cap or b.currency != "CNY":
+            return _result("later", f"{name.capitalize()} is CNY {b.remaining:,.0f}, above the CNY {cap:,.0f} cap for standing instructions, so I can't automate it. "
+                           f"I can draft the one-off payment: say 'pay my {name}'. Nothing moved.", secrets, status="info")
     due = ("；" if lang == "zh" else "; ").join(_obl_line(S.world, o, lang) for o in obs[:3])
     if lang == "zh":
         t = ("我不能在聊天里设置提醒、定时付款或自动扣款：每一笔付款都要在支付当时由您用设备密钥签名。没有创建任何草稿，也没有任何资金转出。"
@@ -1866,9 +1873,13 @@ _REPEAT = re.compile(r"\b\d+\s*(?:times|x)\b|\b(?:twice|thrice)\b", re.I)
 _EXTRA = re.compile(r"\b(?:also|and|plus|with)\b[^.?!]{0,30}\b(?:additional|extra|another)?\s*(?P<what>tip|gift|bonus|commission|fee|donation)\b[^.?!]{0,20}?(?P<amt>\d[\d,]*(?:\.\d+)?)", re.I)
 
 
+_TRAD_TO_SIMP = str.maketrans("學費雜繳匯轉賬帳餘額電話幫還單據預約條線證記錄戶號證請問題確認統計劃寫費", "学费杂缴汇转账账余额电话帮还单据预约条线证记录户号证请问题确认统计划写费")
+
+
 def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None, tp_share=None) -> dict:
     """One chat turn. `S` is the server session; `run_intake(Request) -> outcome dict` is the pipeline entry used by invoices.
     `source` in the result says who labelled the message: the keyword router, or (opt-in, F14) a model proposal that passed validation."""
+    message = message.translate(_TRAD_TO_SIMP).replace("月租", "房租")        # Traditional forms and 月租 (monthly rent) read as the Simplified words the router knows
     d = dialog_for(S.dialogs, jti)
     if not d["awaiting"]:
         extra = _scam_check(S, message, ui, secrets) if _SCAM_Q.search(message) else (_markup_check(S, message, ui, secrets) if _MARKUP_Q.search(message) else None)
@@ -1908,7 +1919,8 @@ def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None, tp_s
         message = f"pay my {router_v2.canon(lo0['bill'])}" if lo0["kind"] == "pay" else "plan my payments"
         it, src = nlu.classify(message, ui), "offer"
     ctx_mod.tick(d)
-    if it.kind not in nlu.REFUSALS and it.kind != nlu.PAY_INVOICE and not nlu.INVOICE_HINT.search(message):
+    social_refusal = it.kind == nlu.BYPASS and it.category == "social"          # "police called me ...": a scam pattern, so name the pattern rather than the approval claim
+    if (it.kind not in nlu.REFUSALS or social_refusal) and it.kind != nlu.PAY_INVOICE and not nlu.INVOICE_HINT.search(message):
         ak = scam_lane.attack_kind(message, nlu.decoded_views(message))
         if ak:                                            # section 7: rule changes, prompt and secret requests, authority claims, override text: a clear refusal
             cat = "secrets" if ak in ("prompt", "env", "exfil") else "bypass"
@@ -1952,6 +1964,8 @@ def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None, tp_s
             d["last_offer"] = rt.offer
         elif res.get("intent") not in ("convert", "confirm", "clarify"):
             d.pop("last_offer", None)
+        if res.get("intent") == "info":
+            _remember(d, res, message, it)                # "who is my landlord" then "pay him" binds to the rent; chit-chat must not refresh the context
         return res
     if rt is not None:
         it2 = nlu.classify(rt.text, ui)

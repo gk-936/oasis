@@ -362,9 +362,27 @@ def _drop_negated(norm: str) -> str:
     return _NEG_ASK.sub(lambda m: m.group(0) if _REVEAL.search(m.group(0)) else " ", norm)
 
 
+_QUESTION_OPEN = re.compile(r"^\s*(?:(?:ok|okay|hey|hi|so|and|but)[, ]+)?(?:how (?:do|can|could|would|should|to)\b|can i\b|could i\b|what does\b|what happens\b|is (?:this|it|that)\b|should i\b|i want to (?:approve|sign)\b|i'?d like to (?:approve|sign)\b|i need to (?:approve|sign)\b)", re.I)
+_REPORTED_OPEN = re.compile(r"^\s*(?:the |this |an? |my )?(?:email|e-?mail|message|text|sms|letter|site|website|page|ad)\b[^.?!]{0,30}\b(?:said|says|told|tells|asked|asks|wrote|writes)\b|^\s*(?:he|she|they|someone|a man|a woman|somebody)\s+(?:said|says|told me|tells me|asked me)\b", re.I)
+# a clause addressed to the agent is never disarmed
+_ADDRESSED = re.compile(r"\byou (?:must|should|will|have to|need to|can|may)\b|\bi authori[sz]e you\b|\b(?:oasis|assistant|bot|agent)\s*[,:]|^\s*system\s*:|\bapprove (?:it|them) for me\b|\bapprove (?:all|every\w*|everything)\b|\bsign for me\b|\bpending drafts?\b|^\s*(?:please\s+)?ignore\b|\b(?:skip|bypass|disable|override|waive|developer mode|god mode|no limits|for me|on my behalf|yourself|then)\b|\byou are now\b", re.I)
+_TRUST_OBJ = re.compile(r"\b(?:get|make|have|help|want|need)\b[^.?!]{0,30}\b(?:banks?|landlords?|lenders?|universit\w+|employers?)\b[^.?!]{0,12}\btrust me\b", re.I)
+
+
+def _disarmed(norm: str) -> bool:
+    """A question form or reported speech talks ABOUT approving or ignoring; it is not a request to the agent."""
+    if _ADDRESSED.search(norm):
+        return False
+    if _REPORTED_OPEN.search(norm) and not _QUESTION_OPEN.search(norm):
+        return bool(re.search(r"\?|\bis (?:this|it|that)\b|\bphish\w*|\bscam\b|\blegit\b|\bfake\b|\bwhat does\b|\bmean\b", norm))       # narration only counts when the message asks ABOUT it
+    return bool(_QUESTION_OPEN.search(norm))
+
+
 def security_category(norm: str) -> str | None:
     """privacy | secrets | injection | bypass | registry | role | social | None, for a normalised message."""
     norm = _drop_negated(norm)
+    norm = _TRUST_OBJ.sub(" ", norm)                 # "get a bank to trust me": trust me is the object of a verb, not an authority claim
+    disarm = _disarmed(norm)
     if privacy_kind(norm):                  # decided before any other intent
         return "privacy"
     # asking HOW to reset a login is help, not a request to reveal one; every other check below still applies
@@ -378,6 +396,8 @@ def security_category(norm: str) -> str | None:
         return "secrets"
     if _OTHER_USERS.search(norm):
         return "secrets"
+    if disarm and not (_REGISTRY_EDIT.search(norm) or _PAYEE_VERIFY.search(norm) or _PAYEE_EDIT.search(norm)):
+        return None
     if _INJECTION.search(norm):
         return "injection"
     if _SOCIAL.search(norm) and not (_STILL_SIGN.search(norm) and not _bypass_asked(norm)):
