@@ -74,5 +74,6 @@ MOCK data. This is a record of verified payments inside Oasis, not a credit scor
 
 - Demo run legit: 29 audit entries, chain verifies True, money lost 0, head `1c2a752a7fb3ebe48fa681cb02fda309a159e48c40ab26df2c2ff7c8d4318641`, identical on replay True, network used False
 - Demo run attack: 22 audit entries, chain verifies True, money lost 0, head `5acc5728bce68a8efe419b04a2dabcd87da3a0b6c280aeb697835dd642373561`, identical on replay True, network used False
+- Demo run autonomy: 24 audit entries, chain verifies True, money lost 0, head `3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7`, identical on replay True, network used False
 - Tamper test: intact chain verifies True; after editing entry 5 it verifies False, first broken link 5 (entry content was altered)
 

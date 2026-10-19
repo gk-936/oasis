@@ -1057,6 +1057,23 @@
  },
  "openapi": "3.1.0",
  "paths": {
+  "/api/activity": {
+   "get": {
+    "description": "What the agent did alone, proposed, held and refused: one read-only timeline.",
+    "operationId": "activity_feed_api_activity_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Activity Feed"
+   }
+  },
   "/api/approve": {
    "post": {
     "description": "Approve (or decline) a held payment AS THE ROLE OF THE SESSION. Approving needs a signature, made with that\nrole's registered device key, over the pending payment's exact draft hash. The role string grants nothing.",

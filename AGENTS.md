@@ -15,7 +15,7 @@ Amazon Nova Pro on Bedrock is billed. **No live model call unless the owner appr
 ## 2. Commands (offline)
 
 ```bash
-# tests: expect "2252 passed, 2 skipped" (update the README if the count changes)
+# tests: expect "2296 passed, 2 skipped" (update the README if the count changes)
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline   # also eval.flightpath_bench, eval.netting_bench, eval.tasks_bench

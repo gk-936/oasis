@@ -33,12 +33,13 @@ Everything below ran on the simulated sandbox (MOCK rates, rails, registry and b
 | Risk model, new features, cross-validated | `risk_cv.md/.json`, `risk_heldout.md/.json` | out-of-fold 77 of 87 attacks (89%, 95% CI 80-94%), 2 of 47 legitimate flagged (unregistered-payee phone bills); optimistic, features designed after reading the held-out misses (54% before); sealed outside-written set (`risk_sealed.md`): 131/131 attacks flagged but 17/60 legitimate also flagged, criterion NOT met |
 | Risk scorer sealed set | `risk_sealed.md/.json` | see the row above |
 | Execution evidence by problem (unprotected vs protected) | folder `execution_evidence/` at the repository root: `Execution_Evidence_Report.pdf`, `operation_log.jsonl`, `evidence_results.json`, `evidence_summary.md`, `verify_evidence.py` (plus copies of the benchmark and demo data) | 8 sandbox cases (6 scams, 2 genuine controls) each run with protections off and on: CNY 126,000 lost unprotected vs CNY 0 protected, genuine payments 2 of 2 in both; 9 of 10 tampered signed payments refused; cost, runway and verified-record logs; audit-chain tamper test. MOCK, offline, seeded; our own scenarios (white-box) | `PYTHONPATH=. python -m eval.execution_evidence`, then `python -m eval.build_evidence_pdf`; check with `python execution_evidence/verify_evidence.py` |
-| Scripted demo log | `demo.md`, `demo.json` | Both demo runs, step headlines, money lost, chain verification and the audit-chain head hash, replayed twice to show identical heads | `python -m eval.demo_log` |
+| Scripted demo log | `demo.md`, `demo.json` | All three demo runs (legitimate, attack, autonomy), step headlines, money lost, chain verification and the audit-chain head hash, replayed twice to show identical heads | `python -m eval.demo_log` |
 
 Audit-chain heads for the seeded demo (offline model, seed 7, seeded DEMO keys, simulated clock), reproduced on every run:
 
 - Run 1 (legit): `1c2a752a7fb3ebe48fa681cb02fda309a159e48c40ab26df2c2ff7c8d4318641` (29 entries, money lost 0)
 - Run 2 (attack): `5acc5728bce68a8efe419b04a2dabcd87da3a0b6c280aeb697835dd642373561` (22 entries, money lost 0)
+- Run 3 (autonomy): `3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7` (24 entries, money lost 0): signed standing instruction, rate-target conversion and recurring bill done alone, CNY 4,000 and CNY 30,000 held, a 90,000 INR conversion held until signed, a canary freeze; see [bounded-autonomy.md](bounded-autonomy.md)
 
 If the code or ruleset changes, these hashes change; regenerate with `python -m eval.demo_log` and read `demo.md`. The API exposes the same data live: `GET /api/audit`, `GET /api/audit/verify`, `GET /api/proof/{intent_id}/verify`, `POST /api/demo/run`.
 

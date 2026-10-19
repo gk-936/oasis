@@ -272,7 +272,7 @@ body:has(.shell) { background: #000; }
 .engine-pill { position: absolute; inset: 0; z-index: -1; border-radius: 9px; background: linear-gradient(135deg, rgba(34, 211, 238, .22), rgba(100, 116, 139, .2)); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .4), 0 0 18px rgba(34, 211, 238, .12); }
 .engine em { font: 600 9px/1 ui-monospace, "Cascadia Mono", Consolas, monospace; font-style: normal; letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; border-radius: 5px; color: #fcd34d; background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .25); }
 .engine-note { margin: 12px 0 0; padding: 9px 12px; border-radius: 9px; font: 12px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; color: #94a3b8; background: rgba(255, 255, 255, .02); border: 1px solid rgba(255, 255, 255, .05); }
-.runs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.runs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .run { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 16px; text-align: left; border-radius: 14px; color: var(--ink); transition: background .2s, border-color .2s; }
 .run:hover:not(:disabled) { filter: none; }
 .run-ico { flex: none; }

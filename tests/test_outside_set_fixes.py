@@ -25,7 +25,7 @@ def test_phone_bill_becomes_a_draft_for_the_registered_carrier(api_client, api_s
     nothing_moved(api_session)
 
 
-@pytest.mark.parametrize("msg", ["pay my electricity bill", "pay my internet bill", "pay my gas bill"])
+@pytest.mark.parametrize("msg", ["pay my gas bill", "pay my water bill"])
 def test_other_utilities_still_have_no_payee(api_client, api_session, msg):
     assert chat(api_client, msg)["status"] == "rejected"
     nothing_moved(api_session)

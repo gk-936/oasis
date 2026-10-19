@@ -356,7 +356,7 @@ PAY_MARGIN = 0.08
 def arbitrate(text: str, ui: str, payees, kw: ChatIntent) -> Result | None:
     """A keyword result that confident evidence disagrees with: a Result holding an answer-only intent, or a clarification, or None (the keyword result stands).
     A question without an explicit "pay ..." is never turned into a payment draft: the best answer-only intent is used, else the candidates are offered."""
-    if kw.slots.get("labelled"):
+    if kw.slots.get("labelled") or kw.slots.get("instalment"):
         return None
     if kw.kind not in _CONTEST:
         return _doubt(text, ui, payees, kw)
@@ -396,7 +396,7 @@ def _doubt(text: str, ui: str, payees, kw: ChatIntent) -> Result | None:
     """A keyword ANSWER the similarity evidence disagrees with: offer both as numbered options instead of trusting either. The keyword answer stands
     when the evidence is weak, and an explicit keyword parse (a rate target with numbers, a cancel, a refusal) is never second-guessed."""
     mine = label_of(kw)
-    if mine not in ANSWER_ONLY or mine == "cancel" or (kw.kind == nlu.RATE_TARGET and not kw.slots.get("incomplete")) or (kw.kind == nlu.HELP and kw.slots):
+    if mine not in ANSWER_ONLY or mine == "cancel" or (kw.kind == nlu.RATE_TARGET and not kw.slots.get("incomplete")) or (kw.kind == nlu.HELP and kw.slots) or kw.slots.get("strong"):
         return None
     if kw.kind in nlu.TOPIC_KINDS or kw.kind in (nlu.CONVERT, nlu.RATE):
         return None                                     # specific keyword rules (transfer issue, foreign bill, parent request, quota, share record, convert, rate): they stand

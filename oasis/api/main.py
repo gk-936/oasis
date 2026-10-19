@@ -315,7 +315,7 @@ class Session:
 
     def _build(self, snap: dict | None = None, world: World | None = None) -> None:
         self.world = world or World(Features.full(), make_llm(), store=self.store, autonomy=True, signer=self.signer,
-                                    approvers=self.approvers, sim_devices=False)    # real humans only: no simulated devices
+                                    approvers=self.approvers, sim_devices=False, extra_bills=True)    # real humans only: no simulated devices
         self.journeys = {}
         if snap:
             self.world.restore(snap)
@@ -404,14 +404,14 @@ class Session:
 def _request_to(r: Request) -> dict:
     return {"text": r.text, "source": r.source, "purpose_hint": r.purpose_hint, "remitter": r.remitter,
             "recurring": r.recurring, "tool_poison": r.tool_poison, "draft": r.draft, "pay_again": r.pay_again,
-            "signed_approvals": list(r.signed_approvals), "channel": r.channel}
+            "signed_approvals": list(r.signed_approvals), "channel": r.channel, "conversion": r.conversion, "mandate": getattr(r, "mandate", None)}
 
 
 def _request_from(d: dict) -> Request:
     return Request(d["text"], source=d["source"], purpose_hint=d.get("purpose_hint"), remitter=d["remitter"],
                    recurring=d.get("recurring", False), tool_poison=d.get("tool_poison"), draft=d.get("draft"),
                    pay_again=bool(d.get("pay_again", False)), signed_approvals=tuple(d.get("signed_approvals", [])),
-                   channel=d.get("channel"))
+                   channel=d.get("channel"), conversion=d.get("conversion"), mandate=d.get("mandate"))
 
 
 class SandboxRouter:
@@ -1318,6 +1318,13 @@ def rate_target_approve(body: TargetIdIn, p: Principal = Depends(STUDENT)):
     res = S.agent.approve_rate_target(body.target_id)
     S.save()
     return jsonable_encoder(res)
+
+
+@app.get("/api/activity")
+def activity_feed(p: Principal = Depends(STUDENT_JUDGE)):
+    """What the agent did alone, proposed, held and refused: one read-only timeline."""
+    from ..agent import activity as act_mod
+    return jsonable_encoder(act_mod.timeline(S))
 
 
 @app.post("/api/autonomy/tick")

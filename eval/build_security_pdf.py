@@ -105,7 +105,7 @@ def build(pages: dict[str, int]) -> str:
 <p>The assessment covers the Oasis backend (API, agent, trust layer, executor, audit log), the browser-side approval keys, the live-model paths (Amazon Nova Pro on Amazon Bedrock is the only live provider) and the public deployment on one Azure virtual machine. It does not cover real banks, real regulators or the registry itself, which is a mock.</p>
 <h3>2.2  Method</h3>
 <ul><li><b>Code inspection</b> of the policy engine, executor, intent signing, approvals, authentication and storage against the claims in this report.</li>
-<li><b>Automated tests.</b> The offline suite (2252 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
+<li><b>Automated tests.</b> The offline suite (2296 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
 <li><b>Authorization sweep.</b> A script calls every route and method as four identities (no session, student, parent, judge) with two request bodies and compares each response with the roles the code declares.</li>
 <li><b>Benchmarks and attack sets.</b> A 32-attack and 12-genuine scenario benchmark run four ways (protections added one layer at a time), stress and fuzz runs, and three attack sets written by other AI assistants from the project description only.</li>
 <li><b>Live-model checks</b> on saved report rows, run with a token cap.</li></ul>
@@ -265,6 +265,7 @@ def build(pages: dict[str, int]) -> str:
     ]
     rr = "".join(f"<tr><td class='n'>{i}</td><td>{SEV[s]}</td><td><b>{e(t)}</b><br>{e(d)}</td><td>{e(st)}</td><td>{e(m)}</td></tr>" for i, (s, t, d, st, m) in enumerate(risks, 1))
     h.append(sec(8, f"""<p>Severity is the authors' judgement of the harm if the risk were exploited in a real deployment, not a score from a standard. Status says what has been done in this build. Findings from earlier adversarial reviews that were fixed (races on approval, non-finite amounts, cross-origin posts, duplicate payment, proof-pack forgery and others) are in Appendix A.</p>
+<p><b>Added 2026-10-19: signed conversions, standing instructions and rate targets (C01, C02).</b> New risks and their tests: a conversion or standing instruction released without the student's key (wrong signature and the parent's key give 403, a replayed nonce is refused); a recurring bill whose amount grows after signing (held above the signed cap); an unregistered person named in chat (no draft, no account stored). Residual: the web form <code>POST /api/rate-target</code> creates a bounded Tier-1 target without a device-key signature, and an own-balance conversion executes at the price at execution time. Tests: <code>test_conversion_drafts.py</code>, <code>test_mandates.py</code>, <code>test_core_four.py</code>.</p>
 <table class="tight"><tr><th class="n" style="width:4%">#</th><th style="width:10%">Severity</th><th style="width:47%">Risk</th><th style="width:12%">Status</th><th>Mitigation or next step</th></tr>{rr}</table>"""))
 
     # 8 -------------------------------------------------------------------------------------------------------------
@@ -294,7 +295,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(f"""<section class="s"><h2 id="A2">Appendix B.&nbsp; {APPENDICES[1]}</h2>
 <p>All commands run offline and make no model call. Run them from the repository root.</p>
 <table class="tight"><tr><th style="width:34%">Purpose</th><th>Command</th></tr>
-<tr><td>Offline test suite (expect 2252 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
+<tr><td>Offline test suite (expect 2296 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
 <tr><td>Role matrix only</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m pytest -q tests/test_role_matrix.py</code></td></tr>
 <tr><td>Offline benchmark</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m eval.runner --llm offline</code></td></tr>
 <tr><td>Rebuild this report</td><td><code>PYTHONPATH=. python -m eval.build_security_pdf</code></td></tr></table>

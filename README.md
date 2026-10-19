@@ -9,7 +9,7 @@
 
 **A finance assistant for international students:** it plans the semester's payments, finds the route that delivers the most, warns before money runs short, and **will not pay the wrong person**.
 
-![Tests](https://img.shields.io/badge/tests-2252%20passed-2ea44f)
+![Tests](https://img.shields.io/badge/tests-2296%20passed-2ea44f)
 ![Attacks blocked](https://img.shields.io/badge/attacks%20blocked-CNY%200%20lost-00A88F)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![UI](https://img.shields.io/badge/UI-English%20%7C%20中文-0B1F2A)
@@ -86,7 +86,7 @@ Open the printed URL and log in. The passcodes are not in the repository: the sc
 | 🎓 student | `<student passcode>` | chat, plans, signed approvals and the scripted Demo tab |
 | 👪 parent | `<parent passcode>` | co-sign top-ups (English, Chinese) |
 
-**Fastest tour:** the **Demo** tab (Run 1 is Arjun's semester, Run 2 is the attack story), then **Break it**, where you can paste any fraud attempt and watch it fail. Full guided paths are in [JUDGE_GUIDE.md](JUDGE_GUIDE.md).
+**Fastest tour:** the **Demo** tab (Run 1 is Arjun's semester, Run 2 is the attack story, Run 3 shows bounded autonomy: what the agent does alone and what it holds for your signature), then **Break it**, where you can paste any fraud attempt and watch it fail. Full guided paths are in [JUDGE_GUIDE.md](JUDGE_GUIDE.md).
 
 ## 🛡️ The AI proposes, code decides
 
@@ -129,7 +129,7 @@ Source: [`eval/reports/chat_llm_heldout.md`](eval/reports/chat_llm_heldout.md). 
 ## 📊 Tested, and reproducible
 
 ```bash
-OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 2252 passed, 2 skipped, no network
+OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q    # 2296 passed, 2 skipped, no network
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline       # offline attack benchmark
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.tasks_bench                # offline chat task benchmark (92 scripted tasks)
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.ai_contribution               # AI-contribution checks (add --live --cap N for the paid part; see docs/results.md)
@@ -167,6 +167,9 @@ The remaining task misses are mostly messages that name a bill type the system d
 **Image intake, final live run** ([`eval/reports/vision_live_final.md`](eval/reports/vision_live_final.md), 2026-10-19). 33 generated MOCK images read twice each by Amazon Nova Pro (66 calls, about 148,000 tokens, about USD 0.12): 30 accepted and 3 held because the two readings disagreed. All 30 accepted images had the correct payee and amount, 0 invented or out-of-list payees were accepted, and money moved 0. Of the 11 blurry, dim and low-resolution images in the set, 8 are stopped by the quality gate before any model call (offline check). 3 accepted images had an account digit dropped; payment uses the registry account only. One run, one model, our own synthetic images.
 
 All benchmark numbers come from files in `eval/reports/`; the commands that regenerate them are in [docs/execution-evidence.md](docs/execution-evidence.md). Security claims are mapped to code and tests in [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md). Live model runs cost money and are never run without the owner's approval.
+
+**Bounded autonomy.** The agent acts alone only inside Tier-1 limits, asks for your device-key signature on anything larger (conversions, standing instructions, rate targets, payments), and never acts on secrets, bypass requests or payees outside the registry. See [docs/bounded-autonomy.md](docs/bounded-autonomy.md) for the three levels, the autonomy demo run, the activity feed and the frozen-set result (offline path: 130 of 151, our own wording; no model-on figure was produced).
+
 
 </details>
 

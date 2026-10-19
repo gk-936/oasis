@@ -2280,6 +2280,15 @@
     "replay_head_identical": true,
     "network_used": false,
     "llm": "offline-deterministic"
+   },
+   "autonomy": {
+    "audit_head": "3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7",
+    "entries": 24,
+    "audit_ok": true,
+    "money_lost_cny": 0,
+    "replay_head_identical": true,
+    "network_used": false,
+    "llm": "offline-deterministic"
    }
   },
   "tamper_test": {

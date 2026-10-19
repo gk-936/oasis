@@ -28,6 +28,17 @@ LANDLORD_ACCT = "6222021111110001"
 LANDLORD_ACCT_NEW = "6222021111110002"
 STUDENT_SELF_ACCT = "acct_student_cny"
 TELECOM_ACCT = "6228480000002468"
+# Extra MOCK registry payees and one open bill each (sandbox only): a scripted task such as "pay my electricity" needs a bill and a registered payee to exist.
+# (payee id, name, type, account, bill amount CNY, due date, label)
+EXTRA_BILLS = (
+    ("payee_power", "State Grid Electricity (demo, MOCK)", "merchant", "6228480000003001", 220.0, "2026-10-28", "Electricity (MOCK)"),
+    ("payee_internet", "Shenzhen Broadband (demo, MOCK)", "merchant", "6228480000003002", 99.0, "2026-10-30", "Internet (MOCK)"),
+    ("payee_health", "Student Health Insurance (demo, MOCK)", "merchant", "6228480000003003", 1200.0, "2026-11-10", "Health insurance (MOCK)"),
+    ("payee_visa", "Exit-Entry Administration (demo, MOCK)", "merchant", "6228480000003004", 400.0, "2026-11-20", "Residence permit fee (MOCK)"),
+    ("payee_library", "University Library (demo, MOCK)", "merchant", "6228480000003005", 35.0, "2026-10-25", "Library fine (MOCK)"),
+    ("payee_gym", "Campus Gym (demo, MOCK)", "merchant", "6228480000003006", 150.0, "2026-11-05", "Gym membership (MOCK)"),
+)
+PEER_PAYEE = ("payee_peer_priya", "Priya (peer, demo, MOCK)", "peer", "6228480000003007")    # a registered friend: "send 200 to Priya" is a free payment to a registry account
 MIN_CONVERSION_CNY = 500.0
 FX_ACCTS = {"USD": "acct_student_usd", "EUR": "acct_student_eur"}   # the student's own foreign-currency accounts (MOCK)
 
@@ -65,7 +76,7 @@ class World:
                  inr: float = 500000, persona: str = "arjun", audit_path=None, deterministic: bool = False,
                  store=None, autonomy: bool = False, signer: HybridSigner | None = None,
                  approvers: ApproverRegistry | None = None, sim_devices: bool = True,
-                 rates_mode: str | None = None):
+                 rates_mode: str | None = None, extra_bills: bool = False):
         """`deterministic=True` (scripted demo only): seeded demo keys and nonces, simulated-clock anchor
         timestamps, so a run reproduces the same audit-chain head every time. `store` is an optional SqliteStore.
         `signer` supplies the trust signing keys (the API passes the persistent server keys, see trust/keystore.py);
@@ -82,6 +93,7 @@ class World:
         self.deterministic = deterministic
         self.store = store
         self.autonomy_enabled = autonomy
+        self.extra_bills = extra_bills      # the API session's wider MOCK world (utilities, insurance, visa fee, a peer); the demo, twin and benchmarks keep the small one
         self.start = datetime(2026, 10, 12, 10, 0, tzinfo=CST)
         self.now = self.start
         self.day_index = 0
@@ -172,6 +184,18 @@ class World:
             self.passport.obligations.append(Obligation(
                 id="obl_phone_1", type="living", payee_id="payee_telecom", amount=150, due="2026-10-15",
                 recurring=True, every_days=30, label="Mobile plan (recurring)"))
+        if self.autonomy_enabled and self.extra_bills:
+            for pid, name, typ, acct, amt, due, label in EXTRA_BILLS:
+                r.issue(pid, name, typ, acct)
+                r.set_contact(pid, "the provider's official app", f"app:{pid} (MOCK)")
+                self.ledger.open(acct, name)
+                Verifier.seed_verified(self.passport, Recipient(id=pid, name=name, payee_type=typ, account_ref=acct))
+                self.passport.obligations.append(Obligation(id=f"obl_{pid[6:]}_1", type="living", payee_id=pid, amount=amt, due=due, label=label))
+            pid, name, typ, acct = PEER_PAYEE
+            r.issue(pid, name, typ, acct)
+            r.set_contact(pid, "the peer's verified contact (MOCK)", "peer:priya (MOCK)")
+            self.ledger.open(acct, name)
+            Verifier.seed_verified(self.passport, Recipient(id=pid, name=name, payee_type=typ, account_ref=acct))
         # Canary bait: a decoy payee that exists only as bait.
         if self.canaries:
             for d in self.canaries.decoy_payees:

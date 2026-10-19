@@ -156,8 +156,8 @@ def test_convert_quotes_then_converts_only_after_yes(st):
 
 
 def test_a_big_conversion_is_not_done_from_chat(st):
-    q = say(st, "convert 200000 INR to CNY")
-    assert q["status"] == "info" and "auto limit" in q["reply"]
+    q = say(st, "convert 200000 INR to CNY")                       # above the auto limit: a held draft (A6), never executed from chat
+    assert q["status"] == "held" and "Draft ready" in q["reply"] and st.get("/api/state").json()["passport"]["balances"][1]["amount"] == 0
     assert say(st, "yes")["money_moved"] == 0 and st.get("/api/state").json()["passport"]["balances"][1]["amount"] == 0
 
 
@@ -176,7 +176,10 @@ def test_an_account_number_given_as_the_answer_is_refused(st):
 
 def test_rate_target_still_works_and_reports_its_fields(st):
     j = say(st, "convert 1500 when the rate reaches 0.0700")
-    assert j["intent"] == "rate_target" and j["status"] == "done" and j["target"]["rate"] == 0.07
+    assert j["intent"] == "rate_target" and j["status"] == "held" and "moves no money" in j["reply"]       # a standing instruction: a draft until signed
+    from tests.auth_helpers import Approver
+    assert Approver(st, "student").approve(j["pending_id"]).json()["status"] == "paid"
+    assert any(t["rate"] == 0.07 for t in st.get("/api/state").json()["autonomy"]["targets"])
 
 
 def test_chinese_flow_replies_in_chinese_without_a_language_header(st):
@@ -187,7 +190,7 @@ def test_chinese_flow_replies_in_chinese_without_a_language_header(st):
 
 
 def test_unregistered_bill_type_is_explained_and_audited(st):
-    j = say(st, "Settle my electricity bill for CNY 380.")
+    j = say(st, "Settle my gas bill for CNY 380.")
     assert j["status"] == "rejected" and j["money_moved"] == 0 and not pending(st) and "no registered payee" in j["reply"]
     assert "chat_unregistered_bill_type" in [e["kind"] for e in st.get("/api/state").json()["security_feed"]]
 
@@ -253,16 +256,16 @@ def test_change_the_amount_then_a_bare_number_redrafts(st):
 
 @pytest.mark.parametrize("msg,has,not_has", [
     ("convert 5000 INR to USD", "INR → about", "CNY"),
-    ("convert 1000 EUR to CNY", "EUR → about", "INR"),
-    ("convert 5000 USD to EUR", "USD → about", "CNY"),
+    ("convert 1000 EUR to CNY", "not enough EUR", "INR"),
+    ("convert 5000 USD to EUR", "not enough USD", "CNY"),
     ("what is the rate INR to EUR", "INR→EUR", "INR→CNY"),
     ("cheapest way to send INR to USD", "INR→CNY only", "Education payment"),
     ("how should I send euros to China", "EUR→CNY", "Education payment"),
 ])
 def test_other_currency_pairs_are_answered_for_that_pair_not_as_inr_to_cny(st, msg, has, not_has):
     j = say(st, msg)
-    assert j["status"] in ("info", "needs_confirmation") and has in j["reply"] and not_has not in j["reply"].split("(")[0].replace("INR→CNY only", "")
-    assert j["money_moved"] == 0 and not pending(st)
+    assert j["status"] in ("info", "needs_confirmation", "held", "rejected") and has in j["reply"] and not_has not in j["reply"].split("(")[0].replace("INR→CNY only", "")
+    assert j["money_moved"] == 0 and (j["status"] == "held" or not pending(st))
 
 
 def test_a_currency_the_wallet_does_not_hold_is_named_not_swapped_for_another_pair(st):

@@ -13,7 +13,7 @@ REPORTS = Path(__file__).parent / "reports"
 
 
 def main() -> None:
-    runs = {name: play(name) for name in ("legit", "attack")}
+    runs = {name: play(name) for name in ("legit", "attack", "autonomy")}
     again = {name: play(name)["audit_head"] for name in runs}
     out = {n: {"audit_head": r["audit_head"], "audit_entries": r["audit_entries"], "audit_ok": r["audit_ok"],
                "money_lost_cny": r["money_lost"], "llm": r["llm"], "network_used": r["network_used"], "seed": r["seed"],

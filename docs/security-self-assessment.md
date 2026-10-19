@@ -90,6 +90,9 @@ A forged request never changes the genuine recipient's record. The request is re
 
 ## Known limitations
 
+0. **Added 2026-10-19: signed conversions, mandates and rate targets (C01, C02).** New risks and their tests: a conversion or standing instruction approved without the student's key (`tests/test_conversion_drafts.py`, `tests/test_mandates.py`: wrong signature 403, parent key 403, replayed nonce refused); a recurring bill whose amount grows after signing (held above the signed cap); an unregistered person named in chat (no draft, no account stored, `tests/test_core_four.py`). Residual: `POST /api/rate-target` (web form) is an authenticated-session Tier-1 action with no device-key signature; own-balance conversions execute at the price at execution time.
+
+
 1. **Authentication is demo-grade.** Roles use per-role passcodes (student, parent, judge): the judge has its own separate passcode. None is built in or in the repository. Someone running Oasis locally gets fresh random passcodes printed in their own terminal at each start, and a hosted copy uses passcodes the operator sets and sends to judges with the submission, so they are not public. There are no per-person accounts and no MFA, and approver device keys are trust-on-first-use. An optional passkey (WebAuthn) second factor exists (`OASIS_REQUIRE_PASSKEY=1`, off by default; a role can enrol its first passkey with the passcode alone); it was tested with a software authenticator and a virtual one in Chrome, not a hardware key, and is not independently audited ([security self-assessment][sec]).
 2. **Key files are plaintext unless `OASIS_KEY_PASSPHRASE` is set (the judge start scripts now set a random one and require it, so their sandbox keys are wrapped).** Otherwise the keys under `data/keys/` rely on OS permissions only, so set the passphrase before any recorded demo ([hardening][sec-hard]).
 3. **FISCO BCOS is a 4-node local test chain** (real FISCO BCOS 3.17.1, all nodes on one host), opt-in via `OASIS_ANCHOR=fisco`. It shows the integration, not decentralised trust, and Oasis does NOT claim the on-chain challenge bonus (that is Topic F; Oasis is Topic C) ([FISCO BCOS notes][fisco]).
@@ -198,7 +201,7 @@ Limits: the router is keyword-based with clarify-instead-of-guess layers, and on
 - Table names, row ids (for example `int_0001`) and row counts are not encrypted.
 - Device-key registration is trust on first use, and the browser key is readable by script running in the page (XSS) while unlocked; there is no hardware-backed key (WebAuthn would be the next step).
 - Passcodes are per role, not per person; none is built in (random per run locally, operator-set when hosted).
-- Conversions between the student's own accounts (rate targets, plan conversions) are authorised by the authenticated student session, not by a per-action signature; only parent-remitted conversions need a signed parent consent.
+- Conversions between the student's own accounts: a conversion made through chat above the auto limit or in another pair, a standing instruction and a rate target made through chat each need the student's device-key signature on the exact draft (rules C01 and C02). Two paths stay authorised by the authenticated student session alone: the web form `POST /api/rate-target` (a bounded Tier-1 target) and the Convert screen's `POST /api/fx/convert` (own balances only, nobody is paid). Parent-remitted conversions still need a signed parent consent.
 - The in-memory rate limiter and token store reset on restart and are per process.
 
 ### Disputed miss kept on purpose: an account number typed into a payment request (set A, TA-076)

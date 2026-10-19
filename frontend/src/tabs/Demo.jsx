@@ -218,6 +218,11 @@ export function Demo({ refresh, openProof }) {
             <span className="run-t"><b>{t("demo.start.attack")}</b><small>{t("demo.run2.sub")}</small></span>
             <span className="run-go">{PLAY}</span>
           </motion.button>
+          <motion.button type="button" className="run ok" disabled={busy} onClick={() => start("autonomy")} whileHover={{ y: -2 }} whileTap={{ scale: 0.985 }}>
+            <svg className="run-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4.5 6v5.5c0 4.7 3 8 7.5 9.5 4.5-1.5 7.5-4.8 7.5-9.5V6z" /><path d="M12 8v5M12 16v.5" /></svg>
+            <span className="run-t"><b>{t("demo.start.autonomy")}</b><small>{t("demo.run3.sub")}</small></span>
+            <span className="run-go">{PLAY}</span>
+          </motion.button>
         </div>
         {busy && !info && <div className="row"><Loading>{t("demo.running")}</Loading></div>}
       </motion.div>

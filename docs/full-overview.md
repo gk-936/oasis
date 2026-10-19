@@ -112,7 +112,7 @@ Arjun lands in Shenzhen with INR 5 lakh. He owes tuition, rent, a deposit and a 
 - **Sends the invoice the way it arrives.** A forged test email (failed sender authentication, Reply-To on another domain, free-mail sender, hidden instruction text) scores risk 0.98 and is rejected at Verify; the genuine one scores 0 and waits for his signature.
 - **Acts within small limits:** a rate-target conversion and a recurring bill, then a **savings receipt** (CNY 1,313.66 in the demo).
 
-Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story).
+Try it in the Demo tab (Run 1 is this story, Run 2 is the attack story, Run 3 is bounded autonomy).
 
 ## What the AI does vs what code does
 
@@ -162,7 +162,7 @@ python -m venv .venv
 PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 # open http://localhost:8000 and log in (passcodes: see below); API docs at /docs
 # optional UI rebuild: cd frontend && npm ci && npm run build   (a built copy is committed)
-# tests (2252 passed, 2 skipped, no network):
+# tests (2296 passed, 2 skipped, no network):
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 # simulation benchmarks (write eval/reports/flightpath.* and netting.*):
 PYTHONPATH=. .venv/Scripts/python -m eval.flightpath_bench

@@ -66,5 +66,45 @@
         "headline": "Money lost: CNY 0.00; 3 why-cards; audit chain intact"
       }
     ]
+  },
+  "autonomy": {
+    "audit_head": "3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7",
+    "audit_entries": 24,
+    "audit_ok": true,
+    "money_lost_cny": 0,
+    "llm": "offline-deterministic",
+    "network_used": false,
+    "seed": 7,
+    "replay_head_identical": true,
+    "steps": [
+      {
+        "title": "1. Sign a standing instruction",
+        "headline": "Standing instruction for the phone bill: held (held), then created on the student's device-key signature (paid); creating it moved no money"
+      },
+      {
+        "title": "2. Time passes",
+        "headline": "Time advanced 5 days: 1 rate-target conversion(s) and 1 recurring bill(s) done without a signature, all inside Tier-1 limits"
+      },
+      {
+        "title": "3. A larger request",
+        "headline": "A CNY 4,000 payment is held: above Tier 1, so it waits for the student's signature"
+      },
+      {
+        "title": "4. A bigger one",
+        "headline": "The CNY 30,000 tuition is held: it needs student; the agent cannot release it"
+      },
+      {
+        "title": "5. A big conversion",
+        "headline": "A 90,000 INR conversion (above the auto limit) is held, then executed (paid) only after the student signs the exact draft"
+      },
+      {
+        "title": "6. A canary trips",
+        "headline": "A tripped canary: frozen; nothing paid"
+      },
+      {
+        "title": "7. What the agent did",
+        "headline": "Activity feed: 2 done alone inside Tier-1 limits; the CNY 4,000, CNY 30,000 and canary cases were held or frozen; money lost 0"
+      }
+    ]
   }
 }

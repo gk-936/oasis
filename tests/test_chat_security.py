@@ -114,7 +114,8 @@ def test_yes_never_signs_for_the_student(st):
 
 def test_account_numbers_are_masked_in_every_reply(st):
     for m in ("pay my rent", "pay Chen Wei 6000 for rent", "show my bills", "which account will rent go to?"):
-        assert not re.search(r"\b\d{9,}\b", st.post("/api/chat", json={"message": m}).json()["reply"]), m
+        reply = re.sub(r"#[0-9a-f]{10}", "", st.post("/api/chat", json={"message": m}).json()["reply"])    # the draft hash can be all digits
+        assert not re.search(r"\b\d{9,}\b", reply), m
 
 
 def test_labelled_injected_invoice_still_goes_through_the_pipeline(st):

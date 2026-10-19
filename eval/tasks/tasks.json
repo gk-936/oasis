@@ -632,7 +632,12 @@
    "id": "rate_target",
    "category": "convert",
    "turns": [
-    "convert 1500 when the rate reaches 0.0700"
+    {
+     "say": "convert 1500 when the rate reaches 0.0700",
+     "sign": [
+      "student"
+     ]
+    }
    ],
    "setup": {},
    "expect": {
@@ -1643,7 +1648,7 @@
     "intents": [
      "convert"
     ],
-    "pending": 0,
+    "pending": 1,
     "reply_contains": [
      "INR",
      "USD"

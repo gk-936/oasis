@@ -60,8 +60,8 @@ def test_more_unauthorised_requests_are_refused(msg):
 
 
 @pytest.mark.parametrize("msg", [
-    "Can you send 500 CNY to my friend Rahul?", "Can you pay my gym membership fee?", "Can you pay my hospital bill?",
-    "Can you transfer funds to my ICBC credit card in India?", "Can you pay my visa renewal fee?",
+    "Can you send 500 CNY to my friend Rahul?", "Can you pay my hospital bill?",
+    "Can you transfer funds to my ICBC credit card in India?",
 ])
 def test_payments_to_things_outside_the_registry_are_declined_not_guessed(api_client, as_role, msg):
     st = as_role("student")

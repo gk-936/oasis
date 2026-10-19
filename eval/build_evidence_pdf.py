@@ -575,6 +575,7 @@ Each run had a token cap and was measured with a token meter.</p>
     tt = i["tamper_test"]
     heads = "".join(f"<tr><td>{n.title()}</td><td class='n'>{d['entries']}</td><td class='c'>{'Yes' if d['audit_ok'] else 'No'}</td><td class='n'>{d['money_lost_cny']}</td><td><code>{d['audit_head'][:32]}<br>{d['audit_head'][32:]}</code></td><td class='c'>{'Yes' if d['replay_head_identical'] else 'No'}</td></tr>" for n, d in i["demo"].items())
     h.append(sec(10, f"""<p>Every audit entry contains the hash of the entry before it. A completed payment was recorded, then one entry was edited; the verifier detected the change and named the first broken link.</p>
+<p>The third scripted run (autonomy) shows the three levels: a signed standing instruction, a rate-target conversion and a recurring bill done with no signature inside Tier 1, a CNY 4,000 payment and the CNY 30,000 tuition held for the student, a 90,000 INR conversion held until the student signs the exact draft, and a canary freeze. It replays to the same audit-chain head. On the frozen task-completion set (151 messages written by the implementer, offline path, model off), 130 passed (86%), with 2 replies of &quot;I didn't catch that&quot; and CNY 0 moved; this is not an out-of-sample estimate and no model-on figure was produced.</p>
 <pre class="log"><b>Log output: tamper test</b>
 VERIFY    before edit   entries={tt['entries']}  intact={tt['intact_verifies']}
 EDIT      entry {tt['edited_entry']}  amount changed to 1.0
@@ -599,7 +600,7 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
           ("evidence_results.json", "All results in structured form: every case, the executor tests, the cost, runway and verified-record data, and the integrity checks."),
           ("evidence_summary.md", "A plain-text summary of the same results."),
           ("benchmark_results.json", "The wider benchmark (Section 8.1): attacks and genuine changes across four configurations."),
-          ("demo_run_log.json", "The two scripted demonstration runs and their audit-chain heads (Section 10)."),
+          ("demo_run_log.json", "The three scripted demonstration runs (legitimate, attack, autonomy) and their audit-chain heads (Section 10)."),
           ("live_reports/", "Copies of the saved live-model report and row files named in Section 9."),
           ("verify_evidence.py", "A standard-library program. It checks that every audit chain is linked, recomputes the money paid to attacker accounts and the executor result from the log, and recomputes the live and offline AI figures of Section 5 from the saved rows.")]
     h.append(f'<section class="s"><h2 id="A1">Appendix A.&nbsp; {APPENDICES[0]}</h2><p>The numbers in this report can be verified from the folder named <b>execution_evidence</b>, submitted with it. The folder contains:</p>'

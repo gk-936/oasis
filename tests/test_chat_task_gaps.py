@@ -132,7 +132,7 @@ def test_rate_alert_asks_for_the_amount_then_sets_the_target(api_client, api_ses
     o = chat(api_client, "set a rate alert at 0.072")
     assert o["status"] == "needs_info" and "info:amount" in o["needs"]
     done = chat(api_client, "2000")
-    assert done["intent"] == "rate_target" and done["status"] == "done" and "0.0720" in done["reply"], done
+    assert done["intent"] == "rate_target" and done["status"] == "held" and "0.0720" in done["reply"], done
     nothing_moved(api_session)
 
 
@@ -219,7 +219,7 @@ def test_a_negative_answer_to_the_rate_alert_question_is_refused_and_the_questio
     chat(api_client, "set a rate alert at 0.072")
     assert chat(api_client, answer)["status"] == "rejected"
     done = chat(api_client, "2000")
-    assert done["status"] == "done" and "2,000" in done["reply"]
+    assert done["status"] == "held" and "2,000" in done["reply"]
 
 
 def test_calculate_it_and_pay_still_drafts(api_client):

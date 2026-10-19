@@ -94,11 +94,15 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 
 ## 6. Tests
 
-2252 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
+2296 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
 
 ## 7. Scripted demo (offline, repeats exactly)
 
-`eval/reports/demo.md`. Run 1 (legitimate): Arjun's plan is valid after 2 proposals and saves CNY 1,653 vs a typical bank route; the savings receipt totals CNY 1,313.66; 4 proof packs, audit chain intact, money lost 0. Run 2 (attack): the forged invoice, rewritten payment instructions and hidden-page injection are all stopped; money lost CNY 0. Audit-chain heads are listed in [execution-evidence.md](execution-evidence.md).
+`eval/reports/demo.md`. Run 1 (legitimate): Arjun's plan is valid after 2 proposals and saves CNY 1,653 vs a typical bank route; the savings receipt totals CNY 1,313.66; 4 proof packs, audit chain intact, money lost 0. Run 2 (attack): the forged invoice, rewritten payment instructions and hidden-page injection are all stopped; money lost CNY 0. Run 3 (autonomy): the agent acts alone only inside Tier 1 (a rate-target conversion and a recurring bill), holds the CNY 4,000 payment, the CNY 30,000 tuition and a 90,000 INR conversion for the student's device-key signature, and freezes on a tripped canary; 24 audit entries, money lost 0, chain intact, identical head on replay. Audit-chain heads are listed in [execution-evidence.md](execution-evidence.md).
+
+## Frozen task-completion set (offline path, 2026-10-19)
+
+`python -m eval.frozen_set` runs 151 messages (81 student tasks, 30 open questions, 40 attacks and look-alikes) through the API and checks the terminal state of each: a held draft, an answer, one clarifying question or a refusal. Result: 130 of 151 (86%): tasks 74 of 81, questions 21 of 30, attacks 35 of 40; "I didn't catch that" in 2 replies; money moved in 0 messages. Caveats: the messages were written by the implementer, not by independent people, after the round-6 fixes, so this is not an out-of-sample estimate; the model was off (a model-on figure needs a live run, which was not made); two task labels predate the wider MOCK world and are left as written. Misses are listed in `eval/reports/frozen_set.md`.
 
 ## Trained fraud-risk model vs the rule scorer (optional, `OASIS_ML_RISK=1`)
 

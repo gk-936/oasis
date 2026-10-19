@@ -165,7 +165,9 @@ def test_recurring_bill_not_automatic_unless_verified_full_and_small():
 def test_autonomy_api_and_chat_target(api_client):
     c = api_client
     r = c.post("/api/chat", json={"message": "convert 1500 when the rate reaches 0.0700"}).json()
-    assert r["target"]["rate"] == 0.0700 and "own" in r["reply"]
+    assert r["status"] == "held" and "own" in r["reply"]                       # chat makes a draft; the student's device key sets the target
+    from tests.auth_helpers import Approver
+    assert Approver(c, "student").approve(r["pending_id"]).json()["status"] == "paid"
     t = c.post("/api/autonomy/tick", json={"days": 5}).json()
     assert {a["kind"] for a in t["actions"]} == {"rate_target_conversion", "recurring_bill_paid"}
     assert c.get("/api/state").json()["autonomy"]["log"]

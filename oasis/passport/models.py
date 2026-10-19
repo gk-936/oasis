@@ -69,6 +69,7 @@ class Rules(BaseModel):
     parent_coapproval_above_inr: float = 50000
     hard_limit_cny: float = 200000
     tier1_auto_convert_cny: float = 5000      # a student-set rate target may convert up to this much automatically
+    mandates: list[dict] = Field(default_factory=list)       # signed standing instructions (agent/mandate_exec.py)
     rate_targets: list[dict] = Field(default_factory=list)  # {"id","pair":"INR-CNY","rate":0.09,"convert_cny":5000,"status"}
 
 

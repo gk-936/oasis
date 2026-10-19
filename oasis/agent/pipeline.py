@@ -68,6 +68,8 @@ class Request:
     pay_again: bool = False          # the student explicitly confirmed paying a suspected duplicate a second time (R17)
     genuine: dict | None = None      # benchmark only: the document's genuine (pre-injection) fields, from the scenario
     channel: dict | None = None      # real inbound channel provenance (email headers, sender); risk evidence only
+    conversion: dict | None = None   # {"src","dst","amount"}: an own-balance conversion on a signed draft (agent/conversion_exec.py)
+    mandate: dict | None = None      # {"obligation_id"}: a standing instruction for a recurring bill, on a signed draft (agent/mandate_exec.py)
     fx: dict | None = None           # {"obligation_id"}: a foreign-currency payment built from the Passport + registry (agent/fx_exec.py)
 
 
@@ -238,6 +240,12 @@ class OasisAgent:
 
     # ---------------------------------------------------------------- main flow
     def handle(self, req: Request, approver: ApprovalProvider | None = None) -> Outcome:
+        if req.mandate is not None:
+            from .mandate_exec import handle_mandate
+            return handle_mandate(self, req, approver)
+        if req.conversion is not None:
+            from .conversion_exec import handle_conversion
+            return handle_conversion(self, req, approver)
         if req.fx is not None:
             from .fx_exec import handle_fx
             return handle_fx(self, req, approver)

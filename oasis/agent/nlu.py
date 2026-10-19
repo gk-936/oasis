@@ -24,6 +24,7 @@ CONVERT, RATE_TARGET, STATUS, CANCEL, CORRECT, CONFIRM, DENY, EXPLAIN, PROOF, CR
     "convert", "rate_target", "status", "cancel", "correct", "confirm", "deny", "explain", "proof", "credit", "undo")
 SECRETS, BYPASS, PAY_INVOICE, HELP, GREETING, UNKNOWN = "secrets", "bypass", "pay_invoice", "help", "greeting", "unknown"
 SPENDING = "spending"
+FINANCE_SUMMARY = "finance_summary"
 # sub-topic questions: every one is answer-only (no draft, no signature, no conversion, no money moves)
 TRANSFER_ISSUE, FX_BILL, PARENT_REQUEST, QUOTA, SHARE_RECORD = "transfer_issue", "fx_bill", "parent_request", "quota", "share_record"
 TOPIC_KINDS = (TRANSFER_ISSUE, FX_BILL, PARENT_REQUEST, QUOTA, SHARE_RECORD)
@@ -466,6 +467,15 @@ _OBLIGATIONS = re.compile(r"没交|未交|没有支付|未支付|还没(?:有)?(
                           r"when (?:is|are)[^?]{0,30}due|(?:what|which) (?:payments|bills)|应付|要付|欠|到期|待付|哪些费用|哪些账单|什么账单|要交什么|交什么钱|什么(?:钱)?没(?:付|交|缴)|没(?:付|交|缴)的", re.I)
 _SPENDING = re.compile(r"\b(?:what|how much) (?:did|have) i (?:spend|spent|paid|pay)\b|\bmy (?:spending|expenses|transactions)\b|\b(?:pichla|last|previous|recent) transactions?\b|\bspending\b|\bexpenses?\b|"
                        r"\btransaction (?:history|list)\b|where (?:did|does) my money go|花了多少|花销|开销|消费|支出|\balready paid\b|\bwhich (?:bills|fees|payments)\b[^?]{0,25}\b(?:already|have i|did i)\b|已经付过|付过哪些|已付", re.I)
+_INSTALMENT = re.compile(r"\binstal?lments?\b|\bin (?:two|three|four|\d) (?:parts|payments|pieces|chunks)\b|\b(?:split|divide|break)\b[^.?!]{0,30}\b(?:into|in) (?:two|three|four|2|3|4)\b|\bin parts\b|\bpart by part\b|分期|分(?:两|三|四|2|3|4)期|(?:two|three) payments\b", re.I)
+_PARTS_N = {"two": 2, "2": 2, "three": 3, "3": 3, "four": 4, "4": 4, "两": 2, "三": 3, "四": 4}
+
+
+def _n_parts(norm: str) -> int | None:
+    m = re.search(r"\b(two|three|four|2|3|4)\b (?:equal )?(?:parts|payments|pieces|chunks)|分(两|三|四|2|3|4)期|\binto (two|three|four|2|3|4)\b", norm)
+    return _PARTS_N.get(next((g for g in m.groups() if g), "")) if m else None
+
+
 _FRACTION = re.compile(r"\b(half|a third|one third|a quarter|one quarter|quarter)\b(?: of)?|一半", re.I)
 _FRACTION_V = {"half": 0.5, "a third": 1 / 3, "one third": 1 / 3, "a quarter": 0.25, "one quarter": 0.25, "quarter": 0.25, "一半": 0.5}
 _RATE = re.compile(r"\b(?:exchange |fx |forex |conversion )?rates?\b|inr (?:to|/|-|→) ?cny|cny (?:to|/) ?inr|how many (?:yuan|cny|rmb) (?:per|for|is)|汇率|兑换率|换汇率", re.I)
@@ -653,13 +663,57 @@ _SHARE_RECORD = re.compile(
     r"\b(?:landlord|agent|agency|lender|bank|university|leasing office)\b[^.?!]{0,30}\b(?:wants?|needs?|asked|requires?|check|verify|see)\b[^.?!]{0,30}\b(?:proof|record|history|reference|payments?)\b|"
     r"\b(?:prove|proof|show|give|send|provide)\b[^.?!]{0,30}\b(?:on[- ]time|reliab\w+|track record|payment history|rent history)\b[^.?!]{0,30}\b(?:landlord|agent|agency|lender|bank|university)\b|"
     r"\b(?:issue|share|present|give)\b[^.?!]{0,15}\btrust pass\b|"
+    r"\b(?:show|prove|tell|convince|assure|let)\b[^.?!]{0,25}\b(?:landlord|lender|bank|agent|agency|university)\b[^.?!]{0,40}\b(?:on[- ]time|payment history|payment record|reliab\w+|pay my)\b|"
+    r"\b(?:can|could|how can) i (?:show|prove|share)\b[^.?!]{0,30}\b(?:landlord|lender|bank|agent)\b|"
     r"(?:房东|中介|贷款|银行|学校|租赁)[^。！？]{0,10}(?:要看|要求|需要|想看|核实|查看)[^。！？]{0,8}(?:付款|缴费|租金|信用|记录|证明)|"
     r"(?:给|向|出示|展示|分享|发|提供|导出)[^。！？]{0,10}(?:房东|中介|贷款|银行|租赁)[^。！？]{0,10}(?:记录|历史|证明)|"
     r"(?:证明|出示|分享|导出|提供)[^。！？]{0,8}(?:按时付款|按时交租|信用|租金历史|租金记录|缴费历史)|信用护照分享|\bproof of (?:my )?(?:on[- ]time|payments? history|rent history)\b", re.I)
 
 
+# core-four phrasings the generic rules and the similarity matcher kept answering with a menu or "I didn't catch that": explicit, answer-only rules
+_FIN_SUMMARY = re.compile(
+    r"\b(?:am i|are we) (?:over-?spending|overspent|spending too much|on track|doing (?:ok|okay|fine|well|alright))\b|"
+    r"\b(?:summary|overview|snapshot|picture|state) of (?:my )?(?:finances|money|financial \w+|budget|situation|accounts?)\b|"
+    r"\bmy (?:finances|financial (?:situation|position|health|status|picture))\b|\bhow am i doing\b|\bhow(?:'?s| is) my (?:money|budget|finances)\b|"
+    r"\bfinancial (?:summary|overview|health|check ?up)\b|\bhow(?:'?s| is) (?:this|the) month going\b|\bam i (?:ok|okay) (?:financially|money wise)\b|财务(?:状况|概况|总结)|我的财务|花多了吗", re.I)
+_TRANSFER_TIME = re.compile(
+    r"\bhow (?:long|many days)\b[^?.]{0,40}\b(?:transfer|remittance|remit|payment|wire|send(?:ing)?|money)\b[^?.]{0,30}\b(?:take|takes|arrive|arrives|reach|get there|get to)\b|"
+    r"\bhow (?:long|many days) (?:does|do|will|would|until|before)\b[^?.]{0,20}\b(?:transfer|remittance|payment|wire)\b|\b(?:transfer|remittance|payment|wire) (?:time|duration|speed)\b|"
+    r"\bhow (?:fast|quick\w*|soon)\b[^?.]{0,25}\b(?:transfer|remittance|arrive|reach)\b|\bwhen will (?:it|the money|my money|the transfer) (?:arrive|reach|get there)\b|汇款(?:要)?多久|多久(?:能)?到账", re.I)
+_BANK_VS_APP = re.compile(
+    r"\b(?:bank|banks|swift|wire)\b[^?.]{0,25}\b(?:or|vs|versus|instead of|rather than|compared? to)\b[^?.]{0,25}\b(?:remittance|app|apps|wise|fintech|money transfer|transfer service)\b|"
+    r"\b(?:remittance|apps?|wise|fintech)\b[^?.]{0,25}\b(?:or|vs|versus|instead of)\b[^?.]{0,20}\b(?:bank|banks|swift)\b|银行[^。？]{0,6}(?:还是|和|与)[^。？]{0,6}汇款(?:应用|软件|app)", re.I)
+_CREDIT_STATUS = re.compile(
+    r"\bhow many\b[^?.]{0,30}\b(?:payments?|bills?)\b[^?.]{0,30}\bon[- ]?time\b|\bon[- ]?time (?:count|payments|streak|record|history)\b|\b(?:payment )?streak\b|"
+    r"\bimprove (?:my )?(?:payment )?(?:record|history|trust|standing)\b|\bwhat (?:should|can|do) i do (?:next )?[^?.]{0,25}\b(?:record|history|trust pass|credit)\b|"
+    r"\bwhat(?:'?s| is) next\b[^?.]{0,20}\b(?:record|history|credit|trust)\b|\bnext milestone\b|多少笔[^。？]{0,6}按时", re.I)
+_SHORT_Q = re.compile(r"\bwhat (?:if|happens if|happens when) (?:it|the (?:money|transfer|payment)|my (?:money|transfer|payment)) (?:arrives?|comes?|lands?|is|gets there|ends up) (?:short|less|late|partial\w*|incomplete)\b|"
+                      r"\bwhat if (?:it|the money|the transfer) (?:is|arrives?) (?:short|less)\b|\bif (?:it|the transfer) arrives short\b", re.I)
+_START_Q = re.compile(r"\b(?:new|first[- ]year|just arrived|just landed)\b[^?.]{0,30}\bstudent\b|\bwhere (?:do|should|can) i (?:start|begin)\b|\bgetting started\b|\bget started\b|"
+                      r"\bhow (?:do|should|can) i (?:start|begin)\b|\bi(?:'m| am) new (?:here|to this)\b|\bfirst time here\b|新生|刚到|从哪.{0,2}开始", re.I)
+_ACCT_CHANGED = re.compile(
+    r"\b(?:bank|payment) (?:account|details)\b[^?.]{0,30}\b(?:changed|changing|updated|moved|different)\b|\b(?:changed|new|updated|different) (?:bank )?(?:account|payment|bank) (?:details|number|info\w*)\b|"
+    r"\b(?:account|bank details) (?:has |have |was |were )?(?:changed|updated)\b|账户(?:已)?(?:变更|更改|更新)|账号(?:已)?(?:变更|更改|更新)", re.I)
+_AUTH_Q = re.compile(r"\b(?:is|are|was)\s+(?:this|that|it|these|the (?:following|message|email|text|invoice))\b[^\n]{0,40}\b(?:real|authentic|true|safe|trustworthy|genuine|legit)\b", re.I)
+
+
 def _topic_intent(norm: str) -> ChatIntent | None:
     """The five sub-topic intents, checked in this order. Answer-only, so they are safe to match before the pay rules."""
+    if _SHORT_Q.search(norm):
+        return ChatIntent(TRANSFER_ISSUE, {"wording": norm + " short", "hypo": True}, 0.85, detect_lang(norm))
+    if not _PAY_IMPERATIVE.search(norm):
+        if _FIN_SUMMARY.search(norm):
+            return ChatIntent(FINANCE_SUMMARY, {}, 0.85, detect_lang(norm))
+        if _TRANSFER_TIME.search(norm):
+            return ChatIntent(ROUTES, {"strong": True, "topic": "transfer_time"}, 0.85, detect_lang(norm))
+        if _BANK_VS_APP.search(norm):
+            return ChatIntent(ROUTES, {"strong": True, "topic": "bank_vs_app"}, 0.85, detect_lang(norm))
+        if _CREDIT_STATUS.search(norm):
+            return ChatIntent(CREDIT, {"strong": True, "status": True}, 0.85, detect_lang(norm))
+        if _ACCT_CHANGED.search(norm):
+            return ChatIntent(FAQ, {"topic": "acct_changed"}, 0.85, detect_lang(norm))
+        if _START_Q.search(norm):
+            return ChatIntent(HELP, {"start": True}, 0.85, detect_lang(norm))
     if _TRANSFER_ISSUE.search(norm):
         return ChatIntent(TRANSFER_ISSUE, {"wording": norm}, 0.85, detect_lang(norm))
     if _FX_PAY_IN.search(norm) and _OBL_WORD.search(norm):
@@ -736,6 +790,9 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
     if not acct and re.search(r"\b(?:make|build|create|prepare|draw up|give me|help me (?:make|build|create))\b[^.?!]{0,15}\b(?:a |an |my )?(?:payment )?plan\b", norm):
         a = _amount(raw)                                                       # "make a plan to cover tuition" asks for a plan, not a draft
         return ChatIntent(PLAN, {"amount": a[0] if a else None, "currency": a[1] if a else None}, 0.8, lang)
+    if not acct and _INSTALMENT.search(norm) and _OBL_WORD.search(norm) and not _CONVERT.search(norm) and not re.search(r"\b(?:how|why|what|can you explain)\b|\?", norm):
+        return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": None, "currency": None, "urgent": urgent, "fraction": None,
+                                           "instalment": True, "n_parts": _n_parts(norm)}, 0.85, lang)       # "split my tuition into two payments": N equal parts, the first one confirmed
     # 4b. a payment with an explicit account, or a plain "pay/send ..." request
     if acct and (_PAY_WORD.search(norm) or nl_extract.money(raw)):
         a = _amount(raw, bare=True)
@@ -777,9 +834,11 @@ def classify(text: str, ui: str = "en") -> ChatIntent:
         if not _CONVERT.search(norm) or _OBL_WORD.search(norm):
             a = _amount(raw, bare=True)
             fr = _FRACTION.search(norm)
+            inst = _INSTALMENT.search(norm) if not a and not fr else None
             return ChatIntent(PAY_OBLIGATION, {"type": nl_extract.purpose_in_text(raw), "amount": a[0] if a else None,
                                                "currency": a[1] if a else None, "urgent": urgent,
-                                               "fraction": _FRACTION_V[fr.group(1) or fr.group(0)] if fr and not a else None}, 0.85, lang)
+                                               "fraction": _FRACTION_V[fr.group(1) or fr.group(0)] if fr and not a else None,
+                                               **({"instalment": True, "n_parts": _n_parts(norm)} if inst else {})}, 0.85, lang)
     # 4c. a bill named without a verb ("phone bill pls", "Rent time again"), or a bill type with no registered payee: a payment request,
     # unless the sentence asks, reports a past payment or says not to. The chat layer decides which bill; the draft still needs a signature.
     if not zh_q and not _INFO_CUE.search(norm) and not _NOPAY.search(norm):

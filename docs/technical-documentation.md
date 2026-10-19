@@ -85,6 +85,8 @@ Tiers: 1 = the agent may act alone within bounds, 2 = needs explicit human appro
 
 **Tier-1 autonomy** (`oasis/agent/autonomy.py`, rules R10 and R13 in `policy.py`). A student sets a rate target ("convert CNY 2,000 if the rate reaches 0.0700"); the agent watches the mock rate, never predicts it, and `decide_conversion` allows a conversion up to the student's auto limit (CNY 5,000), holds a larger one for the student, and freezes if a canary tripped. Recurring bills (a mock mobile plan) are paid through the full pipeline, taking the recipient's account from the Passport, and are automatic only for a Verified_Full recipient within the CNY 500 Tier-1 limit (R10); otherwise they are held. Every action is in the Passport's autonomy log and the audit chain.
 
+**Bounded autonomy, level 2 (added 2026-10-19)** (`oasis/agent/conversion_exec.py`, `mandate_exec.py`, `activity.py`; rules C01 and C02). A conversion chat cannot confirm on its own, a recurring-bill instruction and a rate target made through chat each become a held draft released only by the student's device-key signature over the exact draft hash; the nonce is single use, the cap and payee sit inside the signed hash, and every automatic run afterwards goes through the same pipeline and is audited. `GET /api/activity` and the chat question "what did you do for me?" return one timeline of what the agent did alone, proposed, held and refused. See [bounded-autonomy.md](bounded-autonomy.md). Chat router order is unchanged: security refusals first, then exact patterns and keyword rules, then the similarity matcher, then clarify; core-four phrasings (bank versus app, transfer time, on-time count, finance summary, guided start, "university account changed") have explicit answer-only rules, and concept questions (SWIFT, nonce, MOCK, FlightPath, currencies) get fixed answers from `oasis/agent/glossary.py`. The optional model labeller is unchanged and was not widened.
+
 **Persistence** (`oasis/storage.py`). SQLite via the standard library. The audit log is written entry by entry; the Passport, ledger, proofs, cards, pending approvals, clock and registry facts are saved as a snapshot after each state-changing request, and restored on start. Keys are not stored.
 
 **Scripted demo** (`oasis/demo.py`). Fixed seed, fixed mock data, offline model, seeded demo keys/nonces and the simulated clock, so each run reproduces the same audit-chain head. Run 2 catches the forged invoice at Verify (the registry contradicts the account); the step-5 intent-mismatch catch is shown by the second attack (rewritten payment instructions).
@@ -167,7 +169,8 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/plan/{plan_id}` | one plan with live step status |
 | POST | `/api/plan/{plan_id}/accept` | student accepts (re-validated) |
 | POST | `/api/plan/{plan_id}/execute` | run the steps due today through the normal pipeline (a parent-remitted conversion waits for the parent's signed consent) |
-| POST | `/api/rate-target` | student sets a rate target |
+| POST | `/api/rate-target` | student sets a rate target from the form (a bounded Tier-1 target; chat requests for a target are signed drafts) |
+| GET | `/api/activity` | one timeline of what the agent did alone, proposed, held and refused (read-only) |
 | POST | `/api/rate-target/approve` | student approves a conversion above the auto limit |
 | POST | `/api/autonomy/tick` | the agent's Tier-1 work (rate targets, recurring bills) |
 | POST | `/api/spending/simulate` | import mock wallet spending |
@@ -192,7 +195,7 @@ Generated from `oasis/api/main.py` (FastAPI; interactive docs at `/docs`). If `f
 | GET | `/api/audit` | audit chain |
 | GET | `/api/audit/verify` | recompute the chain; first broken link if any |
 | GET | `/api/benchmark` | benchmark and simulation reports |
-| POST | `/api/demo/start` | start a scripted run (`{"run": "legit" or "attack", "mode": "offline" or "live"}`; live replays recorded model responses from `eval/fixtures/demo_cache/`, no network, with a per-step mode/model label) |
+| POST | `/api/demo/start` | start a scripted run (`{"run": "legit", "attack" or "autonomy", "mode": "offline" or "live"}`; live replays recorded model responses from `eval/fixtures/demo_cache/`, no network, with a per-step mode/model label) |
 | POST | `/api/demo/next` | play the next step |
 | GET | `/api/demo/state` | current demo state |
 | POST | `/api/demo/run` | play a whole run in one call |
@@ -243,13 +246,14 @@ What the AI never does: hold the payment credential, approve a payment, change a
 
 ## 10. Scripted demo (works offline, repeats exactly)
 
-Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"}`, then `POST /api/demo/next` per step, or `POST /api/demo/run` for the whole run). The demo uses a fixed seed, fixed mock data, seeded **demo-only** signing keys and a simulated clock, so each run produces the same statuses, amounts and the same audit-chain head hash every time (`tests/test_features.py` and `tests/test_review_fixes.py` check this). It never uses the network. A toggle in the Demo tab (`"mode": "offline"|"live"` in the API) chooses who reads, scores and plans:
+Open the **Demo** tab (or call `POST /api/demo/start {"run": "legit"|"attack"|"autonomy"}`, then `POST /api/demo/next` per step, or `POST /api/demo/run` for the whole run). The demo uses a fixed seed, fixed mock data, seeded **demo-only** signing keys and a simulated clock, so each run produces the same statuses, amounts and the same audit-chain head hash every time (`tests/test_features.py` and `tests/test_review_fixes.py` check this). It never uses the network. A toggle in the Demo tab (`"mode": "offline"|"live"` in the API) chooses who reads, scores and plans:
 
 - **Offline** (default): the deterministic parser, scorer and planner, no AI model. Each step is labelled "offline parser".
 - **Live-replay**: a live model reads the documents (live-agent extraction), adds an escalate-only AI risk score and plans with native tool calling; its answers are recorded once into the committed fixture `eval/fixtures/demo_cache/` (model name, response text and date only) and replayed from it, so the demo repeats exactly with no network. Each step shows its mode and model and the date of the recorded response. If a response is missing from the fixture, that call falls back to the offline parser, heuristic scorer or deterministic planner and the step says so. **Status of the fixture: not recorded.** The earlier recording attempt used the Groq provider, which has been removed (its free-tier allowance ran out before the recording finished), so live-replay shows the labelled offline fallback on every step. Recording it now would use Amazon Nova Pro on Bedrock with `PYTHONPATH=. python -m eval.record_demo_fixture`, which is a paid live run and needs the owner's explicit approval first.
 
 - Run 1 (legitimate): Passport and forecast, agent plan with validator revision, tuition paid with a signed intent, parent co-approves a top-up , landlord's genuine account change completes through the verification ramp, Tier-1 autonomy (rate target + recurring bill), proof packs and savings receipt.
 - Run 2 (attack): the forged invoice is caught at step 3 (Verify: the registry contradicts the account) and stopped with a why-card; payment instructions rewritten at execution (the second attack) are stopped at step 5 by the executor's intent check; hidden page injection reaches a canary, freeze and recovery plan, the student approves the recovery and the genuine payment completes.
+- Run 3 (autonomy): a signed standing instruction for the phone bill; five days pass and the rate-target conversion and the recurring bill run with no signature; a CNY 4,000 payment and the CNY 30,000 tuition are held; a 90,000 INR conversion is held and executes only after the student's device-key signature; a tripped canary freezes the agent. See [bounded-autonomy.md](bounded-autonomy.md).
 
 **Recording the demo:** set `OASIS_KEY_PASSPHRASE` before recording (for example `export OASIS_KEY_PASSPHRASE=...` before starting uvicorn) so the key files under `data/keys/` are passphrase-wrapped and plaintext keys are never shown on screen; use custom `OASIS_PASS_*` passcodes too, and start from a clean sandbox (`POST /api/reset`).
 

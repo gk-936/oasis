@@ -13,7 +13,7 @@
 | Corridor rules engine with data file `inr_cny.yaml` (values researched 2026-10-11, each with source, date and status: primary-confirmed, secondary-sourced or unconfirmed) | Simulated humans in the benchmark (student / parent approvers) |
 | SHA-256 hash-chained audit log and verifier | Simulated clock and "minutes to resolve" |
 | Proof packs and an independent verifier | Outcome simulation is a **model** with stated assumptions (`eval/simulator.py`) |
-| Tier-1 autonomy: student rate targets and recurring bills to Verified_Full recipients, under the policy engine | Rates that targets are checked against (mock path unless `OASIS_RATES=live`) |
+| Tier-1 autonomy: student rate targets and recurring bills to Verified_Full recipients, under the policy engine; standing instructions, rate targets and large conversions made through chat are signed drafts (device key) | Rates that targets are checked against (mock path unless `OASIS_RATES=live`) |
 | Spending categorisation and the cold-start → own-pattern forecast | Reference costs and the transactions it learns from in the demo (mock wallet data) |
 | SQLite persistence of Passport, audit log, proofs, why-cards | Anchoring runs on `LocalAnchorChain`, a local hash-linked simulation, by default (and in tests, benchmark and scripted demo). **4-node local test chain:** with `OASIS_ANCHOR=fisco` it uses a real FISCO BCOS 3.17.1 chain of 4 nodes on one host (WSL2); real tx hashes in [fisco-bcos.md](fisco-bcos.md); not decentralised trust. The Proof tab shows the tx hash and block |
 | Scripted, repeatable demo (fixed seed, offline; always the mock rate) | Demo signing keys are seeded and public; real server keys persist in a git-ignored file and are not vault-backed |

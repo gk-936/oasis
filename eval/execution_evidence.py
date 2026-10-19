@@ -214,7 +214,7 @@ def executor_attacks() -> list[dict]:
 
 # ------------------------------------------------------------------------------------------------ integrity
 def integrity() -> dict:
-    runs = {n: play(n) for n in ("legit", "attack")}
+    runs = {n: play(n) for n in ("legit", "attack", "autonomy")}
     again = {n: play(n)["audit_head"] for n in runs}
     w = new_world(Features.full())
     agent, humans = OasisAgent(w), SimulatedHumans()

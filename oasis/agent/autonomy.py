@@ -81,6 +81,12 @@ def _pay_recurring(agent: OasisAgent, ob: Obligation) -> dict | None:
     rec = p.recipients.get(ob.payee_id)
     if rec is None or rec.verification.level != Level.VERIFIED_FULL:
         return None     # only fully verified recipients are eligible for autonomous payment
+    base_id = ob.id.split("#")[0]
+    if any(m.get("obligation") == base_id for m in p.rules.mandates):
+        mand = next((m for m in p.rules.mandates if m.get("obligation") == base_id and m.get("active")), None)
+        if mand is None or ob.remaining > mand["cap_cny"] + 0.005:
+            ob.status = "planned"      # the signed mandate is revoked or the bill rose above its signed cap: the student decides
+            return _log(agent, "recurring_bill_held", obligation=ob.id, status="held", rule="C02_mandate_cap", reasons=["The bill is outside the signed mandate."])
     text = (f"Recurring bill (agent-initiated from the Passport)\nPayee: {rec.name}\nPayee ID: {rec.id}\n"
             f"Account: {rec.account_ref}\nAmount: CNY {ob.remaining:,.0f}\nPurpose: {ob.type}\nDue: {ob.due}")
     req = Request(text, source="recurring", recurring=True)

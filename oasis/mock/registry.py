@@ -15,6 +15,13 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "payee_landlord_chen": ("陈伟", "陈先生", "房东陈伟"),
     "payee_student_self": ("本人人民币账户", "学生本人", "阿俊（本人）"),
     "payee_telecom": ("深圳移动", "深圳移动（演示）"),
+    "payee_power": ("国家电网（演示）", "国家电网"),
+    "payee_internet": ("深圳宽带（演示）", "深圳宽带"),
+    "payee_health": ("学生医疗保险（演示）", "学生医保"),
+    "payee_visa": ("出入境管理局（演示）", "出入境管理局"),
+    "payee_library": ("大学图书馆（演示）", "大学图书馆"),
+    "payee_gym": ("校园健身房（演示）", "校园健身房"),
+    "payee_peer_priya": ("普丽娅（同学，演示）", "普丽娅"),
     "payee_us_univ": ("示例州立大学（美国）", "示例州立大学"),
     "payee_eu_univ": ("示例大学（欧盟）", "示例大学"),
 }
