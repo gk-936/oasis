@@ -249,15 +249,15 @@ def cut(s: str, n: int) -> str:
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
-def chat_log(p: dict) -> str:
-    L = ["<b>Log output: chat session (offline, MOCK rails)</b>"]
-    for t in p["chat"]["turns"]:
+def chat_log(p: dict, key: str = "chat", title: str = "Log output: chat session (offline, MOCK rails)") -> str:
+    L = [f"<b>{title}</b>"]
+    for t in p[key]["turns"]:
         good = t["status"] in ("rejected", "refused", "held", "paid", "info")
         L.append(f"YOU       {e(t['you'])}")
         L.append(f"AGENT     intent={e(str(t['intent']))}  status=<b style='color:{GREEN if good else RED}'>{e(str(t['status']))}</b>"
                  + (f"  refusal={e(str(t['refusal']))}" if t.get("refusal") else "") + f"  money_moved={t.get('money_moved', 0)}")
         L.append(f"REPLY     {e(cut(t['reply'] or '', 235))}")
-    c = p["chat"]
+    c = p[key]
     L.append(f"LEDGER    {c['payments']} payment to {e(', '.join(c['payees']))} (registry account); money lost {c['ledger_money_lost']}")
     L.append(f"CHAIN     {c['audit_entries']} audit entries, {'verified' if c['audit_intact'] else 'BROKEN'}")
     return pre(L)
@@ -329,13 +329,24 @@ def planner_live(pl: dict) -> tuple[str, str]:
     return table, log
 
 
-def indep_row(name: str, author: str, off: str, live: str | None) -> str:
-    def g(fn):
-        t = (REPORTS / fn).read_text(encoding="utf-8")
-        return [re.search(rf"\| {k} \| (\d+/\d+)", t).group(1) for k in ("tasks", "attacks", "lookalikes")]
-    a = g(off)
-    b = g(live) if live else ["not run", "not run", "not run"]
-    return f"<tr><td>{name}</td><td>{author}</td><td class='n'>{a[0]}</td><td class='n'>{a[1]}</td><td class='n'>{a[2]}</td><td class='n'>{b[0]}</td><td class='n'>{b[1]}</td><td class='n'>{b[2]}</td></tr>"
+def router_now() -> dict[str, list[str]]:
+    """Offline pass counts on the current router, read from router_robust.md (the 'after' side of each before > after cell)."""
+    t = (REPORTS / "router_robust.md").read_text(encoding="utf-8")
+    out = {}
+    for m in re.finditer(r"^\| set (\w+)[^|]*\| ([\d/]+) > ([\d/]+) \| ([\d/]+) > ([\d/]+) \| ([\d/]+) > ([\d/]+) \|$", t, re.M):
+        out[m[1]] = [m[3], m[5], m[7]]
+    return out
+
+
+def indep_row(name: str, author: str, live: str | None) -> str:
+    a = [("none" if x.startswith("0/") else x) for x in router_now()[name]]
+    b, when = ["not run", "not run", "not run"], ""
+    if live:
+        t = (REPORTS / live).read_text(encoding="utf-8")
+        b = [re.search(rf"\| {k} \| (\d+/\d+)", t).group(1) for k in ("tasks", "attacks", "lookalikes")]
+        when = re.search(r"Run: (\d{4}-\d\d-\d\d)", t).group(1)
+    sub = f"<br><span class='small'>{when}</span>" if when else ""
+    return f"<tr><td>{name}</td><td>{author}</td><td class='n'>{a[0]}</td><td class='n'>{a[1]}</td><td class='n'>{a[2]}</td><td class='n'>{b[0]}{sub}</td><td class='n'>{b[1]}</td><td class='n'>{b[2]}</td></tr>"
 
 
 def build(o: dict, bench: dict, bmeta: dict, pages: dict[str, int]) -> str:
@@ -367,12 +378,16 @@ def build(o: dict, bench: dict, bmeta: dict, pages: dict[str, int]) -> str:
     inj, gen, rsk = ac["injection"], ac["genuine"], ac["risk_scorer"]
     cl = tr["claims"]
     # ---- 1
+    att = [c for c in cases if c["expect"] in ("attacker_blocked", "split_blocked")]
+    n_blocked = sum(c["verdict"]["PROTECTED"]["result"] == "BLOCKED" for c in att)
+    n_partly = sum(c["verdict"]["PROTECTED"]["result"].startswith("PARTLY") for c in att)
+    n_open = sum(c["verdict"]["UNPROTECTED"]["good"] for c in att)
     kp = [("Student tasks", "Genuine payments completed (tuition, rent after a landlord account change)", "", ok(f"{s['legit_paid']['PROTECTED']} of {s['legit_cases']}")),
           ("Student tasks", "Cheapest route against a typical bank route (INR 100,000, simulated)", "", ok(f"+{money(c0['saved_cny'])} ({c0['saved_pct']}%)")),
           ("AI participant", "Payment plans proposed by the live model and accepted by the validator", "", ok(f"{ps['valid_without_fallback']} of {ps['scenarios_run']}")),
           ("AI participant", "Poisoned invoices where the live model changed account, amount or payee", "", ok(f"{inj['model_changed_a_field']} of {inj['cases']}")),
           ("AI participant", "Genuine invoices held for the student's signature exactly as offline", "", ok(f"{gen['as_offline']} of {gen['cases']}")),
-          ("Protection", "Scam and attack scenarios mitigated", bad(f"{s['attacks_stopped']['UNPROTECTED']} of {s['attack_cases']}"), ok(f"{s['attacks_stopped']['PROTECTED']} of {s['attack_cases']}")),
+          ("Protection", f"Scam and attack scenarios (of {s['attack_cases']})", bad(f"{n_open} blocked"), ok(f"{n_blocked} blocked, {n_partly} partly held (P6)")),
           ("Protection", "Simulated money paid to attacker accounts", bad(money(s['money_lost_cny']['UNPROTECTED'])), ok(money(s['money_lost_cny']['PROTECTED']))),
           ("Protection", "Tampered signed payments refused at the executor", "not applicable", ok(f"{s['executor_blocked']} of {s['executor_attacks']}"))]
     kp_rows = "".join(f"<tr><td>{a}</td><td>{b}</td><td class='c'>{c or '&ndash;'}</td><td class='c'>{d}</td></tr>" for a, b, c, d in kp)
@@ -380,7 +395,7 @@ def build(o: dict, bench: dict, bmeta: dict, pages: dict[str, int]) -> str:
 In Oasis the AI plans, reads invoices, answers in chat and explains risk, while deterministic code and the student's device signature decide every payment.</p>
 <p>The report shows operation logs from a simulated account (MOCK accounts, rates, fees and registry): the student's tasks completed (Section 4), the AI taking part in them with what it proposed, what code decided and how much money moved (Section 5), the protections against costly failures (Section 6), and cost, benchmarks and live-run records (Sections 7 to 9).</p>
 <table><tr><th>Area</th><th>Measure</th><th class="c">Without Oasis protections</th><th class="c">With Oasis</th></tr>{kp_rows}</table>
-<p class="small">Mitigated: no payment reached an attacker and none beyond the approval limit went through (in P6 the first of three CNY 3,300 transfers, below the limit, was executed and two were held). Planner and invoice figures are live runs of Amazon Nova Pro (Section 9); the rest are offline.</p>
+<p class="small">Blocked or partly held: no payment reached an attacker and none beyond the approval limit went through (in P6 the first of three CNY 3,300 transfers, below the limit, was executed and two were held). Planner and invoice figures are live runs of Amazon Nova Pro (Section 9); the rest are offline.</p>
 <p class="small"><b>Supporting design choice.</b> Payments and credit records are signed with both Ed25519 and post-quantum ML-DSA-65 (NIST FIPS 204), and both must verify, so a student's payment history stays checkable for the years a landlord, lender or visa office may need it.</p>"""))
 
     # ---- 2
@@ -454,6 +469,7 @@ Every case replayed to an identical audit-chain head: <b>{"yes" if m['problem_ca
 <tr><td>Rewrites an explanation</td><td>Accepted only if every number is kept, none added and the text is plain; otherwise the template stands</td><td>5.5</td></tr></table>
 <h3>5.2  Chat assistant</h3>
 <p>The student talks to Oasis in chat. The log shows an estimate with no draft, a rent draft, the student's device signature over the exact draft, the proof, two answer-only questions (a delayed transfer, which gets advice and never a resend, and a request to a parent, which gets the gap and never a tuition draft), and three refused requests. Nothing outside the one signed payment moved money.</p>{chat_log(P)}
+<p>The next log is a second offline session with the tasks the chat now completes itself. A USD bill becomes a USD draft for signature, a Trust Pass is issued with a link, a transfer's status is read from its bill, a plan leads to the first draft, and the check-in offers a plan once. It also shows the corrected readings (2 lakh is INR 200,000, "6 times" is not an amount, an extra tip is not paid), a scam check and a markup check that make no draft, and the security replies for a parent's balance and for removing parent co-approval. Only the last rent draft is left waiting; CNY 0 moved and chat could not approve it.</p>{chat_log(P, "chat_tasks", "Log output: chat tasks session (offline, MOCK rails)")}
 <p>For messages the keyword router cannot place, the live model proposes a label and the validator checks it. On {len(sc_rows)} fresh messages written for this test with the prompt frozen, the model labelled {sc_ok} of {len(sc_par)} paraphrases correctly and {sc_wrong} wrongly. Among {len(sc_trap)} manipulation messages, 1 received a payment label as run and 0 after a validator rule added afterwards (reported as post hoc; a payment label only ever creates a draft for a signature). On the earlier held-out set the model labelled 18 of 20 correctly and 0 of 10 traps as a payment.
 On held-out set 3 (120 messages written before the final router fixes and never used for tuning; our own team, offline, one run) the router answered 99 correctly (82.5%), 4 wrongly (3.3%), asked a clarifying question for 14 (11.7%) and found no intent for 3 (2.5%); no payment draft and CNY 0 moved on any of the 646 held-out phrases (`docs/router-changes.md`).</p>
 <h3>5.3  Payment planning</h3>
@@ -503,23 +519,23 @@ Plan fees were {ps['fee_reduction_vs_bank_pct']}% below the typical bank route o
 by a typical bank route, a difference of {money(c0['saved_cny'])} ({c0['saved_pct']}%).</p>
 <figure>{fig_cost(c0)}<figcaption><b>Figure 2.</b> Delivered amount by route for INR {c0['send_inr']:,}.</figcaption></figure>
 <table><tr><th>Route</th><th class="c">Typical bank</th><th class="n">Delivered (CNY)</th><th class="n">Days</th></tr>{ctab}</table>
-<h3>7.2  Shortfall warning</h3><p><b>Shortfall:</b> the student's INR {run['balances']['INR']:,.0f} (worth about {money(run['cover']['available_cny'])} at the simulated rate) covers about {run['cover']['available_cny'] / run['cover']['bills_cny'] * 100:.0f}% of the {money(run['cover']['bills_cny'])} due for tuition, rent and deposit, a gap of {money(run['cover']['shortfall_cny'])}; Oasis proposes a parent remittance for the rest (Section 5.3). The agent raises these warnings before a payment is missed:</p><ul>{trig}</ul>
+<h3>7.2  Shortfall warning</h3><p><b>Shortfall:</b> the student's INR {run['balances']['INR']:,.0f} (worth about {money(run['cover']['available_cny'])} at the simulated rate) covers about {run['cover']['available_cny'] / run['cover']['bills_cny'] * 100:.0f}% of the {money(run['cover']['bills_cny'])} due for tuition, rent and deposit. The agent raises these warnings before a payment is missed:</p><ul><li><b>Shortfall:</b> a gap of {money(run['cover']['shortfall_cny'])} against the bills due; Oasis proposes a parent remittance for the rest (Section 5.3).</li>{trig}</ul>
 <h3>7.3  Verified payment record</h3><p>Three payments (tuition, rent and deposit) completed through Oasis produce a record that the student can choose to share: payments on time {cl['on_time_all']['on_time']} of {cl['on_time_all']['of']};
 payees verified {cl['verified_payees']['verified']} of {cl['verified_payees']['of']}; current on-time streak {cl['on_time_streak']['count']}. This is a record of verified payments inside Oasis. It is not a credit score, and no lender has accepted it.</p>"""))
 
     # ---- 8
     bt = "".join(f"<tr><td>{k}</td><td class='n'>{v['attack_block_rate']*100:.1f}%</td><td class='n'>{money(v['money_lost_cny'])}</td><td class='n'>{v['legit_completion_rate']*100:.0f}%</td><td class='n'>{v['false_block_rate']*100:.0f}%</td></tr>" for k, v in bench.items())
     cfgs = "".join(f"<tr><td>{k}</td><td class='n'>{ls[k]['attack_block_rate']*100:.1f}%</td><td class='n'>{money(ls[k]['money_lost_cny'])}</td><td class='n'>{ls[k]['legit_completion_rate']*100:.1f}%</td><td class='n'>{ls[k]['model_followed_injection']} of {ls[k]['injection_scenarios']}</td></tr>" for k in ("baseline", "+verification", "+intents+policy", "full"))
-    ind = "".join([indep_row("1", "another AI system", "independent.md", None), indep_row("2", "another AI system", "independent2.md", None),
-                   indep_row("3", "ChatGPT", "independent3.md", "independent3_live.md"), indep_row("G", "Gemini", "independentG.md", "independentG_live.md"),
-                   indep_row("C", "Codex", "independentC.md", "independentC_live.md")])
+    ind = "".join([indep_row("1", "another AI system", None), indep_row("2", "another AI system", None),
+                   indep_row("3", "ChatGPT", "independent3_live.md"), indep_row("A", "another AI system", None), indep_row("G", "Gemini", "independentG_live.md"),
+                   indep_row("C", "Codex", "independentC_live.md")])
     h.append(sec(8, f"""<h3>8.1  Layering of protections (offline)</h3><p>The wider benchmark applies {bmeta['attacks']} attack scenarios and {bmeta['legit']} genuine account changes to four configurations, adding one protection at a time.</p>
 <figure>{fig_suite(bench)}<figcaption><b>Figure 3.</b> Attack block rate as protections are added.</figcaption></figure>
 <table><tr><th>Configuration</th><th class="n">Attack block rate</th><th class="n">Money lost (simulated)</th><th class="n">Genuine completed</th><th class="n">False blocks</th></tr>{bt}</table>
-<h3>8.2  Sets written by outside AI systems</h3><p>Chat-task sets were written by other AI systems from the public pitch and API description, without seeing the code. Each set has task prompts, attacks and look-alike messages. Live columns are the same sets run with the live model on (extraction, risk scorer, chat labeller).</p>
-<table><tr><th>Set</th><th>Written by</th><th class="n">Tasks (offline)</th><th class="n">Attacks</th><th class="n">Look-alikes</th><th class="n">Tasks (live)</th><th class="n">Attacks</th><th class="n">Look-alikes</th></tr>{ind}</table>
-<p class="small">The live model added no completed task on top of the router. Through the live path, 550 attacks and 170 look-alikes produced no breach and every score equalled the offline score.</p>
-<p>Two further sets (separate from set C in the table) were written afterwards by Codex from the pitch and the API description alone and run offline, first run, before any fix: 80 scenarios (46 met every expectation) and 250 scenarios (106 met every expectation, after a mechanical repair of 30 malformed entries). Money moved in none of the 330 scenarios. The misses are mostly unusual wording the offline keyword router cannot place; the live model has not been measured on these sets. Fixes made afterwards were made against these sets, so only the first-run figures are independent.</p>
+<h3>8.2  Sets written by outside AI systems</h3><p>Chat-task sets were written by other AI systems from the public pitch and API description, without seeing the code. Each set has task prompts, attacks and look-alike messages. Offline columns are the current router (re-run 2026-10-19, <code>router_robust.md</code>). Live columns are the same sets run with the live model on (extraction, risk scorer, chat labeller) on the date shown, with the earlier router; they were not repeated on the current router.</p>
+<table><tr><th>Set</th><th>Written by</th><th class="n">Tasks (offline, current router)</th><th class="n">Attacks</th><th class="n">Look-alikes</th><th class="n">Tasks (live, earlier router)</th><th class="n">Attacks</th><th class="n">Look-alikes</th></tr>{ind}</table>
+<p class="small">On the earlier router the live model added no completed task on top of the offline router. Through the live path, 550 attacks and 170 look-alikes produced no breach.</p>
+<p>Two further sets (separate from set C in the table) were written afterwards by Codex from the pitch and the API description alone and run offline, first run, before any fix: 80 scenarios (46 met every expectation, <code>outside_firstrun.json</code>) and 250 scenarios (106 met every expectation, after a mechanical repair of 30 malformed entries). Money moved in none of the 330 scenarios. The misses are mostly unusual wording the offline keyword router cannot place; the live model has not been measured on these sets. Fixes made afterwards were made against these sets, so only the first-run figures are independent; on the current router the same sets reach 74 of 80 and 146 of 250 (Figure 4).</p>
 {fig_outside_sets(4)}
 <h3>8.3  Live-model benchmark (model extraction, escalate-only risk scorer)</h3>
 <table><tr><th>Configuration</th><th class="n">Attack block rate</th><th class="n">Money lost (simulated)</th><th class="n">Genuine completed</th><th class="n">Injections followed</th></tr>{cfgs}</table>
@@ -571,11 +587,11 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
     h.append(sec(11, """<p>The caveats of this report are stated here once and apply to every section.</p><ul>
 <li><b>Simulation only.</b> The ledger, exchange rates, fees, payee registry and the simulated humans are MOCK. No real bank, account or blockchain was involved. Savings are not a measure of what a real student would save.</li>
 <li><b>Who wrote the tests.</b> The cases, executor tests, attack scenarios and chat sets were written by the project team or by outside AI systems from the public documentation. The outside sets were used to find and fix failures and the router was tuned on them, so their final scores are not out-of-sample and the layering results do not show performance against unknown attackers. No external human audit has been done.</li>
-<li><b>Live-model samples are small.</b> One model, one provider, MOCK data; they show the controls hold on the tested cases and are not a robustness claim. Sets 1, 2 and A were not run live. The chat-label validator rule that removed the one trap label was added after the run and is post hoc.</li>
+<li><b>Live-model samples are small.</b> One model, one provider, MOCK data; they show the controls hold on the tested cases and are not a robustness claim. Sets 1, 2 and A (Section 8.2) were not run live. The chat-label validator rule that removed the one trap label was added after the run and is post hoc.</li>
 <li><b>Live runs are not in the audit chain.</b> Nova calls are not written to the Oasis audit chain, so the saved report and row files are the record, not a provider-side or signed log.</li>
-<li><b>Wording the router does not know.</b> On held-out set 3 (120 messages written before the final router fixes and never used for tuning; our own team, offline, one run) the router answered 99 correctly (82.5%), 4 wrongly (3.3%), asked a clarifying question for 14 (11.7%) and found no intent for 3 (2.5%); no payment draft and CNY 0 moved on any of the 646 held-out phrases. Security held in every case; unusual wording can still get a clarifying question or a wrong answer-only reply.</li>
+<li><b>Wording the router does not know.</b> Unusual wording can still get a clarifying question or a wrong answer-only reply; security held in every case. The held-out set 3 figures are in Section 5.2.</li>
 <li><b>Image reading can drop a digit</b> (3 of 30 accepted images in the final live run had an account digit dropped). Payment uses the registry account only and the student confirms the fields; the earlier failures (an invented payee, a runaway value) came before the quality gate and runaway guard.</li>
-<li><b>Machine-drafted languages.</b> Chinese, Tamil and Hindi text is machine-drafted; this report is in English.</li></ul>"""))
+<li><b>Machine-drafted languages.</b> Chinese text is machine-translated; the Tamil and Hindi text was checked by the team. The interface is English and Chinese, and the parent view is English, Tamil, Hindi and Chinese. This report is in English.</li></ul>"""))
 
     # ---- appendices
     vf = [("operation_log.jsonl", "The raw operation log: one record per operation with the request, outcome, ledger transfers and audit entries. Sections 4 and 6 and Appendix B are drawn from it."),
@@ -601,12 +617,16 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
                 good = st["outcome"]["status"] in ("rejected", "frozen", "held", "needs_verification") or not any(t["to_is_attacker"] for t in mv)
                 rows_a.append(f"<tr><td class='n'>{n}</td><td>{e(cid(c))} step {k}</td><td>{label}</td><td>{e(st['outcome']['status'])}</td>"
                               f"<td style='color:{GREEN if good else RED}'>{e(mv_s)}</td><td><code>{head}</code></td></tr>")
+    exec_rows = {}
     for r in o["executor_attacks"]:
         n += 1
+        exec_rows.setdefault(r["audit_head"], []).append(n)
         rows_a.append(f"<tr><td class='n'>{n}</td><td>executor: {e(r['attack'].replace('_', ' '))}</td><td>With Oasis</td><td>{e(r['status'])}</td>"
-                      f"<td style='color:{GREEN}'>extra {r['extra_money_moved']:.2f}</td><td><code>{r['audit_head'][:16]}</code></td></tr>")
+                      f"<td style='color:{GREEN}'>extra {r['extra_money_moved']:.2f}</td><td><code>{r['audit_head'][:16]}</code>{' &dagger;' if sum(x['audit_head'] == r['audit_head'] for x in o['executor_attacks']) > 1 else ''}</td></tr>")
+    same_head = "".join(f'<p class="small">&dagger; Rows {" and ".join(str(x) for x in v)} have the same chain head. Both tests freeze the payment for the same reason (&ldquo;signature invalid&rdquo;) from the same starting state, so the audit chains are identical; the heads are not a copy error.</p>'
+                        for v in exec_rows.values() if len(v) > 1)
     h.append(f'<section class="s"><h2 id="A2">Appendix B.&nbsp; {APPENDICES[1]}</h2><p>One row per recorded operation. The head column is the first 16 characters of the audit-chain hash after the operation.</p>'
-             f'<table class="long"><tr><th class="n">#</th><th>Operation</th><th>Configuration</th><th>Status</th><th>Money moved</th><th>Chain head</th></tr>{"".join(rows_a)}</table></section>')
+             f'<table class="long"><tr><th class="n">#</th><th>Operation</th><th>Configuration</th><th>Status</th><th>Money moved</th><th>Chain head</th></tr>{"".join(rows_a)}</table>{same_head}</section>')
     gl = [("Audit chain", "A log in which each entry contains the hash of the previous one, so any later change is detectable."),
           ("Canary", "A decoy credential or account that no honest request would touch; using it signals an attack."),
           ("Device-key approval", "A signature made with the approver's registered device key over the exact payment draft."),

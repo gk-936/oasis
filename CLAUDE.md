@@ -15,7 +15,7 @@ Amazon Nova Pro on Bedrock is billed. **No live model call unless the owner appr
 ## 2. Commands (offline)
 
 ```bash
-# tests: expect "2214 passed, 2 skipped" (update the README if the count changes)
+# tests: expect "2252 passed, 2 skipped" (update the README if the count changes)
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline   # also eval.flightpath_bench, eval.netting_bench, eval.tasks_bench
@@ -36,7 +36,7 @@ cd frontend && npm ci && npm run build   # frontend/dist is committed; rebuild a
 - Simulated data stays labelled MOCK. Never present a sandbox result, credential or compliance mapping as real, licensed, audited or a credit score.
 - Every number in the README or docs comes from a file in `eval/reports/` and keeps its caveat.
 - When a fact changes (provider, test count, live-run status), update every doc that states it; grep first. Bedrock (Nova Pro) is the only live provider.
-- English is the default language; Chinese, Tamil and Hindi text is machine-drafted and stays marked.
+- English is the default language; Chinese text is machine-translated and stays marked; Tamil and Hindi text was checked by the team.
 
 ## 5. Conventions and git
 

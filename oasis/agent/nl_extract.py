@@ -17,9 +17,10 @@ _NUM = r"\d[\d,，]*(?:\.\d+)?"
 _UNIT_WORDS = r"yuan|rupees?|rupaye|rupiya|rs\.?|块|元|卢比|人民币"
 _MULT = {"k": 1_000, "K": 1_000, "万": 10_000, "千": 1_000}
 
-_PRE = re.compile(rf"(?P<cur>\b(?:{_CUR})\b|[{_SYM}]|人民币)\s*(?P<num>{_NUM})(?P<mult>\s*[kK万])?(?![\d.]*\s*(?:lakh|lac)\b)", re.I)
+_PRE = re.compile(rf"(?P<cur>\b(?:{_CUR})\b|[{_SYM}]|人民币)\s*(?P<num>{_NUM})(?P<mult>\s*[kK万])?(?![\d.]*\s*(?:lakh|lac|crore)\b)", re.I)
 _POST = re.compile(rf"(?P<num>{_NUM})(?P<mult>\s*[kK万])?\s*(?P<cur>\b(?:{_CUR})\b|{_UNIT_WORDS})", re.I)
-_LAKH = re.compile(rf"(?P<num>\d+(?:\.\d+)?)\s*(?:lakh|lac)s?\b", re.I)
+_LAKH = re.compile(rf"(?P<num>\d+(?:\.\d+)?)\s*(?P<unit>lakh|lac|crore)s?\b", re.I)
+_INDIAN_GROUPS = re.compile(r"(?<![\d,.])\d{1,2}(?:,\d{2})+,\d{3}(?!\d)(?!,\d)")           # 1,00,000 -> 100000
 _ACCT_RUN = re.compile(r"\d[\d ]{9,}\d")        # 11+ digits (account / card numbers) must never be read as money
 _ACCT_LABELLED = re.compile(r"(?:account|acct|a/c|账号|账户|卡号)(?:\s*(?:no\.?|number|#))?\s*[:：]?\s*(\d[\d -]{5,}\d)", re.I)
 _ACCT_BARE = re.compile(r"(?<![\d.])(\d{12,24})(?![\d])")
@@ -76,7 +77,7 @@ def money(text: str, bare: bool = False) -> tuple[float, str] | None:
     """The one amount the sentence states, as (value, currency). None when there is none, or when the sentence states
     two different amounts (the student is asked instead of a guess being paid). With `bare`, a number straight after
     'pay/send/transfer' counts as CNY (used only to describe a refused chat transfer, never to fill a payment)."""
-    t = _ACCT_RUN.sub(" ", _clean(text))
+    t = _INDIAN_GROUPS.sub(lambda m: m.group(0).replace(",", ""), _ACCT_RUN.sub(" ", _clean(text)))
     if _EXPONENT.search(t):
         return None                      # '1e5' is not read as 5 or 100000: the student is asked
     found: set[tuple[float, str]] = set()
@@ -86,7 +87,7 @@ def money(text: str, bare: bool = False) -> tuple[float, str] | None:
             if v and v > 0:
                 found.add((round(v, 2), _cur(m["cur"])))
     for m in _LAKH.finditer(t):
-        found.add((round(float(m["num"]) * 100_000, 2), "INR"))
+        found.add((round(float(m["num"]) * (10_000_000 if m["unit"].lower() == "crore" else 100_000), 2), "INR"))
     for m in _ZH_AMOUNT.finditer(t):
         v = zh_numeral(m.group(1))
         if v:
@@ -101,6 +102,20 @@ def money(text: str, bare: bool = False) -> tuple[float, str] | None:
         if v and v > 0:
             found.add((round(v, 2), "CNY"))
     return next(iter(found)) if len(found) == 1 else None
+
+
+def all_money(text: str) -> list[tuple[float, str]]:
+    """Every (value, currency) the sentence states, in no particular order (the single-amount `money` returns None for two different ones)."""
+    t = _INDIAN_GROUPS.sub(lambda m: m.group(0).replace(",", ""), _ACCT_RUN.sub(" ", _clean(text)))
+    found: set[tuple[float, str]] = set()
+    for rx in (_PRE, _POST):
+        for m in rx.finditer(t):
+            v = _number(m["num"], m["mult"])
+            if v and v > 0:
+                found.add((round(v, 2), _cur(m["cur"])))
+    for m in _LAKH.finditer(t):
+        found.add((round(float(m["num"]) * (10_000_000 if m["unit"].lower() == "crore" else 100_000), 2), "INR"))
+    return sorted(found)
 
 
 def account_in_text(text: str) -> str | None:

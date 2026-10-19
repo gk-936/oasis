@@ -289,12 +289,13 @@ def write_log(o: dict) -> int:
 
 def to_markdown(o: dict, nlines: int) -> str:
     s, m = o["summary"], o["meta"]
+    att = [c for c in o["cases"] if c["expect"] in ("attacker_blocked", "split_blocked")]
     md = ["# Execution evidence (MOCK sandbox, offline, seeded)", "",
           "Every case runs twice on a fresh sandbox: UNPROTECTED (all protections off) and PROTECTED (full Oasis). No network, no model call, "
           "no real money. Regenerate: `OASIS_LLM=offline PYTHONPATH=. python -m eval.execution_evidence`.", "",
           f"Operation log: `operation_log.jsonl` ({nlines} lines). Check it with `python verify_evidence.py`.", "",
           "## Headline", "",
-          f"- Scam and attack cases: {s['attack_cases']}. Mitigated: UNPROTECTED {s['attacks_stopped']['UNPROTECTED']}, PROTECTED {s['attacks_stopped']['PROTECTED']}.",
+          f"- Scam and attack cases: {s['attack_cases']}. Without protections: {s['attacks_stopped']['UNPROTECTED']} stopped. With Oasis: {sum(c['verdict']['PROTECTED']['result'] == 'BLOCKED' for c in att)} blocked, {sum(c['verdict']['PROTECTED']['result'].startswith('PARTLY') for c in att)} partly held (P6).",
           f"- Money lost to attacker accounts: UNPROTECTED CNY {s['money_lost_cny']['UNPROTECTED']:,.2f}, PROTECTED CNY {s['money_lost_cny']['PROTECTED']:,.2f}.",
           f"- Genuine payments completed: UNPROTECTED {s['legit_paid']['UNPROTECTED']} of {s['legit_cases']}, PROTECTED {s['legit_paid']['PROTECTED']} of {s['legit_cases']}.",
           f"- Executor attacks on a signed payment: {s['executor_blocked']} of {s['executor_attacks']} refused; honest control paid: {s['executor_control_paid']}; extra money moved: CNY {s['executor_extra_money_moved']:,.2f}.",

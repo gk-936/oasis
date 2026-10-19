@@ -1,8 +1,8 @@
 {
  "meta": {
-  "run": "2026-10-15 18:44",
-  "routes": 94,
-  "calls": 752,
+  "run": "2026-10-19 08:36",
+  "routes": 98,
+  "calls": 784,
   "caveat": "Reads the allowed roles from the code's own require(...) dependencies and checks the responses. It does not check that the roles themselves are the right ones; that is the security evidence matrix and a human review."
  },
  "rows": [
@@ -363,6 +363,84 @@
    }
   },
   {
+   "path": "/api/breakit/executor",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/breakit/executor",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     422,
+     422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     422,
+     422
+    ]
+   }
+  },
+  {
+   "path": "/api/breakit/executor/all",
+   "method": "POST",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
    "path": "/api/breakit/generate",
    "method": "POST",
    "roles": [
@@ -402,6 +480,31 @@
     "student": [
      422,
      422
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     403,
+     403
+    ]
+   }
+  },
+  {
+   "path": "/api/chat/checkin",
+   "method": "GET",
+   "roles": [
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
     ],
     "parent": [
      403,

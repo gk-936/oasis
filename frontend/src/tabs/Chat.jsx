@@ -61,6 +61,7 @@ export function Chat({ refresh, openProof, s, onBack }) {
   const { busy, err, setErr, run } = useGuard();
   const end = useRef(null);
   useEffect(() => { end.current?.scrollIntoView?.({ behavior: "smooth", block: "end" }); }, [log, thinking]);
+  useEffect(() => { api("/chat/checkin").then((r) => { if (r?.reply) say({ role: "oasis", text: r.reply, meta: r }); }).catch(() => {}); }, []);   // once per session: what is due, the shortfall, an offer
   const active = log.length > 1;                                // a conversation is under way
   const toPrompts = () => { setLog([GREETING]); setResolved(new Set()); setMsg(""); setErr(null); };   // back to the starter view (the screen only; nothing server-side changes)
   const say = (m) => { setLog((l) => [...l, m]); };

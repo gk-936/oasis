@@ -1,6 +1,6 @@
 # Translation glossary (English / 简体中文)
 
-English is the default and the competition's official language. The Chinese below is **machine-drafted and needs native-speaker review** before real use (same status as the Tamil and Hindi parent text). Keep this list in step with `frontend/src/i18n/zh.js`, `oasis/agent/zh_messages.py` and `oasis/agent/i18n.py`.
+English is the default and the competition's official language. The Chinese below is **machine-drafted and needs native-speaker review** before real use (the Tamil and Hindi parent text was checked by the team). Keep this list in step with `frontend/src/i18n/zh.js`, `oasis/agent/zh_messages.py` and `oasis/agent/i18n.py`.
 
 | English | 简体中文 | Note |
 |---|---|---|

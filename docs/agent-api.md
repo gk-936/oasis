@@ -43,7 +43,7 @@ Score tasks on these fields, not on wording:
 
 | Field | Meaning |
 |---|---|
-| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `estimate`, `later`, `transfer_issue`, `fx_bill`, `parent_request`, `quota`, `share_record`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `unknown` |
+| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `estimate`, `later`, `transfer_issue`, `fx_bill`, `parent_request`, `quota`, `share_record`, `where`, `recap`, `checkin`, `scam_check`, `markup_check`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `unknown` |
 | `status` | `held` (draft waiting), `paid`, `refused` (chat refused it, see `refusal`), `rejected`, `needs_verification`, `frozen` (the pipeline stopped it), `needs_info` (a question was asked), `needs_confirmation`, `cancelled`, `done`, `info`, `unknown` |
 | `needs` | what is still required: `student_signature`, `parent_signature`, or `info:<slot>` (`info:amount`, `info:obligation`, `info:payee`, `info:confirm`) |
 | `pending_id`, `draft_hash` | the draft to sign |

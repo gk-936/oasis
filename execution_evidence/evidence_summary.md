@@ -6,7 +6,7 @@ Operation log: `operation_log.jsonl` (31 lines). Check it with `python verify_ev
 
 ## Headline
 
-- Scam and attack cases: 6. Mitigated: UNPROTECTED 0, PROTECTED 6.
+- Scam and attack cases: 6. Without protections: 0 stopped. With Oasis: 5 blocked, 1 partly held (P6).
 - Money lost to attacker accounts: UNPROTECTED CNY 126,000.00, PROTECTED CNY 0.00.
 - Genuine payments completed: UNPROTECTED 2 of 2, PROTECTED 2 of 2.
 - Executor attacks on a signed payment: 10 of 10 refused; honest control paid: True; extra money moved: CNY 0.00.

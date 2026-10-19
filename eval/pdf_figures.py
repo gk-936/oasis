@@ -1,6 +1,7 @@
 """Inline SVG figures shared by the submission PDFs. Every number is read from a file in execution_evidence/ or eval/reports/."""
 from __future__ import annotations
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,21 +34,49 @@ def fig_money_lost(n: int = 1) -> str:
     return _fig("".join(svg), f"Figure {n}. Simulated money (MOCK) that reached an attacker account, per attack scenario. Source: execution_evidence/evidence_results.json.")
 
 
+def _after_fix() -> tuple[dict[str, tuple[int, int]], int, int]:
+    """Per-category pass counts and the total for the 250 set on the current router (eval/reports/outside_outside_codex_round2.md)."""
+    txt = (ROOT / "eval" / "reports" / "outside_outside_codex_round2.md").read_text(encoding="utf-8")
+    total = re.search(r"Passed (\d+) of (\d+)", txt)
+    cats = {m[0]: (int(m[1]), int(m[2])) for m in re.findall(r"^\| (\w+) \| (\d+) \| (\d+) \|$", txt, re.M)}
+    return cats, int(total[1]), int(total[2])
+
+
+def _heldout3() -> tuple[int, int]:
+    """Held-out set 3 (120 phrases, never tuned on), correct answers on the current router (eval/reports/router_robust.md)."""
+    txt = (ROOT / "eval" / "reports" / "router_robust.md").read_text(encoding="utf-8")
+    m = re.search(r"router held-out 3[^|]*\| (\d+) \| \d+ > (\d+) \|", txt)
+    return int(m[2]), int(m[1])
+
+
 def fig_outside_sets(n: int = 1) -> str:
-    """First-run pass counts per category for the 250-scenario outside set (Codex), with the zero-money-moved result in the title."""
+    """The 250-scenario outside set (Codex): first run beside the current router, per category, plus held-out set 3."""
     d = json.loads(FIRST.read_text(encoding="utf-8"))["round2_codex_250"]
+    after, a_pass, a_tot = _after_fix()
+    h3, h3n = _heldout3()
     cats = sorted(d["by_category"].items(), key=lambda kv: kv[1][0] / kv[1][1])
-    w, rowh, left = 640, 20, 110
-    svg = [f'<svg viewBox="0 0 {w} {len(cats) * rowh + 44}" width="100%" {FONT}>',
-           f'<text x="0" y="13" font-size="10.5" font-weight="700" fill="{INK}">First run: {d["passed"]} of {d["total"]} scenarios met every expectation. Money moved in any scenario: CNY 0.</text>']
+    w, rowh, left, bw = 640, 24, 110, 400
+    top = 92
+    svg = [f'<svg viewBox="0 0 {w} {top + len(cats) * rowh + 8}" width="100%" {FONT}>',
+           f'<text x="0" y="13" font-size="10.5" font-weight="700" fill="{INK}">Scenarios meeting every expectation. Money moved in any scenario: CNY 0.</text>']
+    for j, (lab, p, t, col) in enumerate([("250 set, first run", d["passed"], d["total"], AMBER), ("250 set, current router", a_pass, a_tot, GREEN),
+                                           ("Held-out set 3, never tuned on", h3, h3n, GREEN)]):
+        y = 22 + j * 15
+        svg.append(f'<text x="{left + 40}" y="{y + 9}" text-anchor="end" font-size="9.5" fill="{INK}">{lab}</text>')
+        svg.append(f'<rect x="{left + 48}" y="{y}" width="{bw}" height="11" fill="#e4e6ea"/><rect x="{left + 48}" y="{y}" width="{bw * p / t}" height="11" fill="{col}"/>')
+        svg.append(f'<text x="{left + 48 + bw + 6}" y="{y + 9}" font-size="9" fill="{INK}">{p} of {t} ({100 * p / t:.0f}%)</text>')
+    svg.append(f'<text x="0" y="{top - 6}" font-size="9" fill="{MID}">By category (250 set):</text><text x="{left + 48}" y="{top - 6}" font-size="9" fill="{INK}"><tspan fill="{AMBER}" font-weight="700">&#9632;</tspan> first run   <tspan fill="{GREEN}" font-weight="700">&#9632;</tspan> current router</text>')
     for i, (k, (p, t)) in enumerate(cats):
-        y = 26 + i * rowh
-        svg.append(f'<text x="{left - 8}" y="{y + 10}" text-anchor="end" font-size="9.5" fill="{INK}">{k.replace("_", " ")}</text>')
-        svg.append(f'<rect x="{left}" y="{y}" width="460" height="12" fill="#e4e6ea"/><rect x="{left}" y="{y}" width="{460 * p / t}" height="12" fill="{AMBER}"/>')
-        svg.append(f'<text x="{left + 466}" y="{y + 10}" font-size="9" fill="{INK}">{p} of {t}</text>')
+        y = top + i * rowh
+        q, qt = after.get(k, (p, t))
+        svg.append(f'<text x="{left - 8}" y="{y + 11}" text-anchor="end" font-size="9.5" fill="{INK}">{k.replace("_", " ")}</text>')
+        svg.append(f'<rect x="{left}" y="{y}" width="{bw + 48}" height="9" fill="#e4e6ea"/><rect x="{left}" y="{y}" width="{(bw + 48) * p / t}" height="9" fill="{AMBER}"/>')
+        svg.append(f'<rect x="{left}" y="{y + 10}" width="{bw + 48}" height="9" fill="#e4e6ea"/><rect x="{left}" y="{y + 10}" width="{(bw + 48) * q / qt}" height="9" fill="{GREEN}"/>')
+        svg.append(f'<text x="{left + bw + 54}" y="{y + 8}" font-size="8.5" fill="{INK}">{p} of {t}</text><text x="{left + bw + 54}" y="{y + 18}" font-size="8.5" fill="{INK}">{q} of {qt}</text>')
     svg.append("</svg>")
-    return _fig("".join(svg), f"Figure {n}. Scenarios written by an outside AI (Codex) from the pitch and the API description only; offline keyword router, no live model. "
-                "The score is a first run before any fix; misses are mostly unusual wording the live model is meant to handle. Source: eval/reports/outside_firstrun.json.")
+    return _fig("".join(svg), f"Figure {n}. Scenarios written by an outside AI (Codex) from the pitch and the API description only; offline keyword router plus clarify layers, no live model. "
+                "Amber is the first run before any fix; green is the same set on the current router, after fixes written while reading it (a development figure). "
+                "Held-out set 3 was written by our own team before the final fixes and never used for tuning. Sources: eval/reports/outside_firstrun.json, outside_outside_codex_round2.md, router_robust.md.")
 
 
 def fig_payment_path(n: int = 1) -> str:

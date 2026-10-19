@@ -61,7 +61,7 @@ _CURRENCY = (("inr", r"₹|\brs\.?(?=\s*\d|\b)|\brupees?\b|\brupaye\b|\brupiya\b
              ("usd", r"\$|\bdollars?\b|\bbucks\b|美元|美金"), ("eur", r"€|\beuros?\b|欧元"), ("gbp", r"£|\bpounds?\b|英镑"), ("aud", r"\baussie dollars?\b|澳元"))
 _UNITS = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split())}
 _TENS = {w: 10 * i for i, w in enumerate("_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()) if w != "_"}
-_BIG = {"hundred": 100, "thousand": 1000, "lakh": 100_000, "lakhs": 100_000, "lac": 100_000, "lacs": 100_000, "million": 1_000_000}
+_BIG = {"hundred": 100, "thousand": 1000, "lakh": 100_000, "lakhs": 100_000, "lac": 100_000, "lacs": 100_000, "crore": 10_000_000, "crores": 10_000_000, "million": 1_000_000}
 _WORDNUM = re.compile(r"\b(?:(?:a|an|" + "|".join(list(_UNITS) + list(_TENS)) + r")(?:[ -]+(?:and[ ]+)?)?)*(?:" + "|".join(_BIG) + r")\b"
                       r"(?:[ -]+(?:and[ ]+)?(?:(?:" + "|".join(list(_UNITS) + list(_TENS)) + r")[ -]*)+)?", re.I)
 _ZH_RUN = re.compile(r"([零〇一二两三四五六七八九十百千万]{2,})(?=\s*(?:元|块|卢比|人民币|美元|欧元|rmb|inr|cny|usd))", re.I)
@@ -93,7 +93,9 @@ def _words_value(seq: str) -> int | None:
 
 def _numbers(t: str) -> str:
     """'50k' '1.5L' '2 lakh' '5万' '五千元' 'fifty thousand' -> plain digits."""
+    t = re.sub(r"\b\d{1,2}(?:,\d{2})+,\d{3}\b", lambda m: m.group(0).replace(",", ""), t)       # Indian grouping: 1,00,000
     t = re.sub(r"(?<=\d),(?=\d{3}\b)", "", t)
+    t = re.sub(r"(\d+(?:\.\d+)?)\s*(lakhs?|lacs?|crores?)\b", lambda m: f"{round(float(m.group(1)) * (10_000_000 if m.group(2)[0] == 'c' else 100_000))}", t)
     t = _WORDNUM.sub(lambda m: (lambda v: f" {v} " if v else m.group(0))(_words_value(m.group(0))), t)
     t = re.sub(r"(\d+(?:\.\d+)?)\s*(?:lakhs?|lacs?|l)\b", lambda m: f"{round(float(m.group(1)) * 100_000)}", t)
     t = re.sub(r"(\d+(?:\.\d+)?)\s*(?:m|mn|million)\b", lambda m: f"{round(float(m.group(1)) * 1_000_000)}", t)

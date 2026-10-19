@@ -106,6 +106,7 @@ _INJECTION = re.compile(
     r"jailbreak|\bdan\b|do anything now|sudo\b(?!\s+pay\b)|override (?:the )?(?:safety|security|policy|rules?|limit)|"
     r"忽略(?:以上|之前|上面|所有)?(?:的)?(?:指令|规则|提示)|忽略[^，。,.\s]{0,8}(?:规则|指令|提示|限制)|无视(?:以上|之前|所有)|开发者模式|管理员模式|调试模式|越狱|扮演", re.I)
 _BYPASS = re.compile(
+    r"(?:remove|drop|lift|delete|get rid of|waive) (?:the |my |a |any )?(?:(?:parent|mum|mom|dad|guardian)(?:'?s'?)? |parental )?(?:co-?approv\w*|approval|co-?sign\w*|co-?signature)\b|"
     r"approve (?:all|every|any|everything|the pending|all pending|them)|(?<!i'll )(?<!i will )(?<!i am going to )(?<!i'm going to )(?<!let me )(?<!app to )(?<!in the app )(?:approve|sign) my (?:[a-z]+ ){0,2}(?:draft|payment|bill)\b|(?:skip|bypass|disable|turn off|waive|without|no need for|don'?t need|no time for) "
     r"(?:the |a |an |any |my |your )?(?:(?:parent|mum|mom|dad|guardian)(?:'?s'?)? |parental )?(?:approval|signature|signing|verification|check|checks|2fa|otp|registry|policy|limits?|safety|security|co-?approv\w*)|"
     r"auto[- ]?approve|pre-?approved|already approved|i (?:hereby )?approve|(?:sign|approve) (?:it |this |that )?(?:for me|on my behalf)|(?:sign|approve)\b[^.?!]{0,40}\b(?:for me|on my behalf)\b|admin(?:istrator)? (?:privileges?|rights|access)|override (?:my |the )?(?:daily |spending |transfer |payment )*(?:limit|cap|threshold)|(?:even though|regardless of|despite|ignore) the registered|(?:larger|bigger|higher) amount\b[^.?!]{0,25}\banyway|"
@@ -172,6 +173,8 @@ _PRIV_ACCOUNT = re.compile(
     r"完整(?:的)?.{0,4}(?:账号|账户|卡号)|全部(?:账号|账户|卡号)|(?:不要|别|去掉|取消)(?:打码|遮挡|隐藏|掩码)|(?:账号|账户)(?:的)?(?:全部|完整)", re.I)
 _CONTACT = (r"(?:phone|mobile|cell|telephone|contact)(?: ?(?:number|no\.?|details|info\w*))?|(?:id|passport|aadhaar|ssn|visa|national id)(?: ?(?:number|no\.?|card|copy|details))?|"
             r"home address|address|e-?mail(?: address)?|wechat|whatsapp|\bdob\b|date of birth|bank details")
+_PRIV_PARENT = re.compile(r"\b(?:parents?|mother|father|mom|mum|dad|guardian)(?:'s|s'|')\s+(?:\w+ ){0,2}(?:balance|savings|funds|salary|income|transactions?|bank account|account)\b|\b(?:balance|savings|funds|salary|income)\b (?:of|for) (?:my |the )?(?:parents?|mother|father|mom|mum|dad|guardian)\b|"
+                          r"(?:家长|父母|妈妈|爸爸)(?:的)?(?:余额|存款|收入|工资|账户|账号)", re.I)       # a parent's money is the parent's own data, whoever asks
 _PRIV_PERSON = re.compile(
     rf"\b{_PEOPLE}'?s? (?:\w+ ){{0,2}}(?:{_CONTACT})\b|\b(?:{_CONTACT})\b (?:of|for) (?:my |the )?{_PEOPLE}\b|"
     r"(?:家长|父母|妈妈|爸爸|房东|学校|大学|财务处|老师|室友|同学|收款人|收款方)(?:的)?(?:电话|手机|手机号|身份证|护照|地址|联系方式|邮箱|微信|银行卡)", re.I)
@@ -205,6 +208,8 @@ def privacy_kind(norm: str, doc: bool = False) -> str | None:
         return "exfil"
     if doc:
         return None
+    if _PRIV_PARENT.search(norm):
+        return "parent"
     if _PRIV_ACCOUNT.search(norm):
         return "account"
     if _PRIV_PERSON.search(norm) and (re.search(_P_VERB, norm, re.I) or "?" in norm or len(norm) < 40):

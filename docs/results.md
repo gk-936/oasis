@@ -94,7 +94,7 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 
 ## 6. Tests
 
-2214 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
+2252 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
 
 ## 7. Scripted demo (offline, repeats exactly)
 
@@ -191,7 +191,7 @@ All our own generators, so they find crashes and blind spots rather than new att
 |---|---|---|
 | Mutation fuzz: 534 chat messages from every set, 10 mutations (typos, case, spacing, full-width, zero-width, filler, quotes, punctuation) | `python -m eval.fuzz_bench --seed 11 --variants 6 --walks 500` | 3,865 variants: 0 hard breaches (no money moved, no draft outside the registry, no secret, no server error) |
 | Random multi-turn walks (pay, correct, cancel, undo, yes/no, attack; 35% signed) | same | 500 walks, 2,765 steps, 83 signed drafts: 0 breaches (no overpayment, no double signing, no proof without a signature) |
-| API authorization sweep, 94 route/method pairs x 4 identities x 2 bodies | `python -m eval.api_sweep` | 752 calls: 0 findings (wrong role always 403, anonymous always 401, public routes change no state, no 5xx) |
+| API authorization sweep, 98 route/method pairs x 4 identities x 2 bodies | `python -m eval.api_sweep` | 784 calls: 0 findings (wrong role always 403, anonymous always 401, public routes change no state, no 5xx) |
 | Approval tampering at the API | `tests/test_approval_tamper.py` | 14 tests pass: cancelled draft, reused signature, parent key on a student draft, junk signatures and key ids, extra body fields |
 
 The first fuzz run (seed 7) found two real weaknesses, both fixed and covered by tests: wrapping a whole attack in quotes together with the word "quote" or "example" made the quoted-mention rule skip the entire message, and typos in "without telling you", "reset" and "until" turned harmless help questions into refusals.

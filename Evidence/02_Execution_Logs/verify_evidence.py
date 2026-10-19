@@ -60,6 +60,11 @@ check("honest control payment executed", next(r for r in ex if r["case"] == "exe
 # 5. the AI-participant logs (offline, participant_logs.json) and the saved live-model rows (live_reports/)
 part = json.loads((HERE / "participant_logs.json").read_text(encoding="utf-8"))
 check("chat session: one payment, nothing lost, audit chain intact", part["chat"]["payments"] == 1 and part["chat"]["ledger_money_lost"] == 0 and part["chat"]["audit_intact"])
+ct = part["chat_tasks"]
+check("chat tasks session: no payment, nothing lost, audit chain intact, no draft from a scam or markup check",
+      ct["payments"] == 0 and ct["ledger_money_lost"] == 0 and ct["audit_intact"]
+      and all(t.get("money_moved", 0) == 0 for t in ct["turns"])
+      and all(t.get("draft_hash") is None for t in ct["turns"] if t["intent"] in ("scam_check", "markup_check", "recap", "checkin")))
 check("FlightPath advice never offers a resend", not any(f["any_resend"] for f in part["flightpath"]), f"{len(part['flightpath'])} cases")
 live = HERE / "live_reports"
 if live.exists():

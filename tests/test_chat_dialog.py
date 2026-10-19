@@ -288,7 +288,7 @@ def test_no_wait_make_it_corrects_the_draft_instead_of_cancelling_it(st):
 def test_a_question_while_we_wait_for_a_pick_is_answered_and_drafts_nothing(st):
     assert say(st, "pay my bills")["needs"] == ["info:obligation"]
     j = say(st, "when is my tuition due and how much?")
-    assert j["intent"] == "obligations" and j["status"] == "info" and "tuition" in j["reply"] and "rent" not in j["reply"]
+    assert j["intent"] == "obligations" and j["status"] == "info" and "tuition" in j["reply"].lower() and "rent" not in j["reply"]
     assert not pending(st)
     k = say(st, "2")                                  # our question is still open: the number still picks a bill
     assert k["status"] == "held"

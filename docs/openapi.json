@@ -1589,6 +1589,23 @@
     "summary": "Chat"
    }
   },
+  "/api/chat/checkin": {
+   "get": {
+    "description": "Once per session: what is due soon, the shortfall and an offer to plan (reply is null when there is nothing to say or it was already said).\nA 'yes' in the next /api/chat turn continues into the plan. Read-only apart from the chat dialog state.",
+    "operationId": "chat_checkin_api_chat_checkin_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Chat Checkin"
+   }
+  },
   "/api/corridor/rules": {
    "get": {
     "description": "Every corridor rule with its value, precise source, retrieval date, confidence and status (confirmed-primary |\nresearched-secondary | unconfirmed). Read-only view of the YAML data file; any logged-in role may read it.",

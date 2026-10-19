@@ -1151,12 +1151,35 @@ def parent_pending(lang: str | None = None, p: Principal = Depends(require("pare
             "device": ({"key_id": S.world.approvers.active("parent")["key_id"]} if S.world.approvers.active("parent") else None)}
 
 
+def _chat_trust_share(audience: str | None) -> dict:
+    """Chat 'share my record with X': the same issue -> present -> verify -> share path as the Passport tab, with the minimum disclosure
+    (three exact claims, no individual payment revealed). Raises ValueError when the record cannot back a claim."""
+    holder = tp.issue(S.world, ["on_time_all", "verified_payees", "history_months"], audience)
+    pres = tp.present(holder, reveal=[])
+    if not _tp_verify(pres)["ok"]:
+        raise ValueError("the credential did not verify against this server")
+    code = tp.share(S.trust_shares, pres, S.world.today.isoformat())
+    S.save()
+    return {"code": code, "link": f"/api/trust-pass/check/{code}", "valid_until": pres["credential"]["valid_until"],
+            "claims": [c["statement"] for c in pres["credential"]["claims"]]}
+
+
+@app.get("/api/chat/checkin")
+def chat_checkin(p: Principal = Depends(STUDENT), ui: str = UI):
+    """Once per session: what is due soon, the shortfall and an offer to plan (reply is null when there is nothing to say or it was already said).
+    A 'yes' in the next /api/chat turn continues into the plan. Read-only apart from the chat dialog state."""
+    res = chatmod.checkin(S, p.jti, ui)
+    if res.get("reply"):
+        S.chat.append({"role": "oasis", "text": res["reply"]})
+    return res
+
+
 @app.post("/api/chat", response_model=ChatOut)
 def chat(body: ChatIn, p: Principal = Depends(STUDENT), ui: str = UI):
     """Natural-language tasks (agent/chat.py). Every reply carries intent, status, pending_id, draft_hash, needs, money_moved and
     proof_id so a script can score it. A payment ends as a held draft that only the student's device-key signature releases."""
     S.chat.append({"role": "student", "text": body.message})
-    res = chatmod.handle(S, body.message, ui, jti=p.jti, run_intake=_run_intake, secrets=list(passcodes_from_env().values()))
+    res = chatmod.handle(S, body.message, ui, jti=p.jti, run_intake=_run_intake, secrets=list(passcodes_from_env().values()), tp_share=_chat_trust_share)
     S.chat.append({"role": "oasis", "text": res["reply"]})
     del S.chat[:-500]                      # a chat log, not an archive
     return res

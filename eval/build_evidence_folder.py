@@ -18,7 +18,7 @@ GROUPS = {
     "03_Attack_Task_and_Stress_Benchmarks": [R / f"{n}.{x}" for n in (
         "benchmark", "benchmark_hidden", "benchmark_hidden_prefix", "benchmark_fresh", "benchmark_fresh_prefix", "benchmark_blind2", "benchmark_blind2_prefix",
         "benchmark_attempts", "tasks", "independent", "independent2", "independent3", "independentG", "independentC", "independentA",
-        "mega", "mega2_abuse", "mega2_inject", "mega2_tasks", "fuzz", "api_sweep", "risk_fresh", "simulation", "demo") for x in ("md", "json") if (R / f"{n}.{x}").exists()] + [R / "ml_risk.md"],
+        "mega", "mega2_abuse", "mega2_inject", "mega2_tasks", "fuzz", "api_sweep", "risk_fresh", "simulation", "demo") for x in ("md", "json") if (R / f"{n}.{x}").exists()] + [R / "ml_risk.md", R / "router_robust.md", R / "outside_scenarios_offline.md", R / "outside_outside_codex_round2.md", R / "outside_firstrun.json"],
     "04_Live_Model_Evidence": [R / f"{n}.{x}" for n in (
         "ai_contribution", "ai_contribution_live_runs", "planning", "fxplan_live", "fxplan", "benchmark_live", "chat_llm", "chat_llm_heldout", "chat_llm_scale",
         "chat_llm_scale_rows", "chat_llm_heldout_rows", "chat_llm_rows", "chat_llm_heldout_repro_2026-10-17", "independent3_live", "independentG_live", "independentC_live",
@@ -70,7 +70,7 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | Tokens, calls and USD of every metered live run | `04_.../ai_contribution_live_runs.json` |
 | FlightPath, peer netting, corridor rules | `05_.../flightpath.md`, `netting.md`, `corridors.md` |
 | Post-quantum signatures and TLS | `05_.../pqtls.md`, `06_.../pq-tls.md` |
-| Test suite: 2214 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
+| Test suite: 2252 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
 | Each security claim maps to named tests | `06_.../security-evidence-matrix.md` |
 | Informal conversations with 10 people we know: 6 international students (Europe, Southeast Asia) and 4 parents (who, what we asked, limits) | `interviews.md` |
 | Known limits, MOCK labelling | `06_.../security-self-assessment.md`, `real-vs-simulated.md`, `problem-evidence.md` |
@@ -91,7 +91,7 @@ def main() -> None:
     shutil.copyfile(ROOT / "docs" / "interviews.md", DST / "interviews.md")
     (DST / "README.md").write_text(INDEX, encoding="utf-8")
     (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run 2026-10-19 (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
-                                                          "2214 passed, 2 skipped in 299.61s (0:04:59)",
+                                                          "2252 passed, 2 skipped in 184.32s (0:03:04)",
                                                           "The 2 skipped tests are the live FISCO and live PQ-TLS tests.", ""]), encoding="utf-8")
     print(f"wrote {DST.name}/: {n} files in {len(GROUPS)} groups + execution logs + index")
 
