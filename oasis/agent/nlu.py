@@ -693,7 +693,7 @@ _START_Q = re.compile(r"\b(?:new|first[- ]year|just arrived|just landed)\b[^?.]{
                       r"\bhow (?:do|should|can) i (?:start|begin)\b|\bi(?:'m| am) new (?:here|to this)\b|\bfirst time here\b|新生|刚到|从哪.{0,2}开始", re.I)
 _ACCT_CHANGED = re.compile(
     r"\b(?:bank|payment) (?:account|details)\b[^?.]{0,30}\b(?:changed|changing|updated|moved|different)\b|\b(?:changed|new|updated|different) (?:bank )?(?:account|payment|bank) (?:details|number|info\w*)\b|"
-    r"\b(?:account|bank details) (?:has |have |was |were )?(?:changed|updated)\b|账户(?:已)?(?:变更|更改|更新)|账号(?:已)?(?:变更|更改|更新)", re.I)
+    r"\b(?:account|bank details) (?:has |have |was |were )?(?:changed|updated)\b|\b(?:changed|changing|updated|switched|moved)\b[^?.]{0,25}\b(?:bank|payment)\b[^?.]{0,10}\b(?:account|details)\b|账户(?:已)?(?:变更|更改|更新)|账号(?:已)?(?:变更|更改|更新)", re.I)
 _AUTH_Q = re.compile(r"\b(?:is|are|was)\s+(?:this|that|it|these|the (?:following|message|email|text|invoice))\b[^\n]{0,40}\b(?:real|authentic|true|safe|trustworthy|genuine|legit)\b", re.I)
 
 
@@ -710,7 +710,7 @@ def _topic_intent(norm: str) -> ChatIntent | None:
             return ChatIntent(ROUTES, {"strong": True, "topic": "bank_vs_app"}, 0.85, detect_lang(norm))
         if _CREDIT_STATUS.search(norm):
             return ChatIntent(CREDIT, {"strong": True, "status": True}, 0.85, detect_lang(norm))
-        if _ACCT_CHANGED.search(norm):
+        if _ACCT_CHANGED.search(norm) and not re.search(r"\b(?:use|using|instead|just|go ahead|these new|those new|pay (?:to |it to )?(?:the |these|this|them)|send (?:it |money )?to (?:the |these|this))\b", norm):    # an instruction to use the new account stays a refusal
             return ChatIntent(FAQ, {"topic": "acct_changed"}, 0.85, detect_lang(norm))
         if _START_Q.search(norm):
             return ChatIntent(HELP, {"start": True}, 0.85, detect_lang(norm))

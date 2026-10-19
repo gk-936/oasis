@@ -70,7 +70,7 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | Tokens, calls and USD of every metered live run | `04_.../ai_contribution_live_runs.json` |
 | FlightPath, peer netting, corridor rules | `05_.../flightpath.md`, `netting.md`, `corridors.md` |
 | Post-quantum signatures and TLS | `05_.../pqtls.md`, `06_.../pq-tls.md` |
-| Test suite: 2296 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
+| Test suite: 2299 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
 | Each security claim maps to named tests | `06_.../security-evidence-matrix.md` |
 | Informal conversations with 10 people we know: 6 international students (Europe, Southeast Asia) and 4 parents (who, what we asked, limits) | `interviews.md` |
 | Known limits, MOCK labelling | `06_.../security-self-assessment.md`, `real-vs-simulated.md`, `problem-evidence.md` |
@@ -91,7 +91,7 @@ def main() -> None:
     shutil.copyfile(ROOT / "docs" / "interviews.md", DST / "interviews.md")
     (DST / "README.md").write_text(INDEX, encoding="utf-8")
     (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run 2026-10-19 (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
-                                                          "2296 passed, 2 skipped in 184.32s (0:03:04)",
+                                                          "2299 passed, 2 skipped in 184.32s (0:03:04)",
                                                           "The 2 skipped tests are the live FISCO and live PQ-TLS tests.", ""]), encoding="utf-8")
     print(f"wrote {DST.name}/: {n} files in {len(GROUPS)} groups + execution logs + index")
 

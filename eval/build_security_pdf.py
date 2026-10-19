@@ -105,7 +105,7 @@ def build(pages: dict[str, int]) -> str:
 <p>The assessment covers the Oasis backend (API, agent, trust layer, executor, audit log), the browser-side approval keys, the live-model paths (Amazon Nova Pro on Amazon Bedrock is the only live provider) and the public deployment on one Azure virtual machine. It does not cover real banks, real regulators or the registry itself, which is a mock.</p>
 <h3>2.2  Method</h3>
 <ul><li><b>Code inspection</b> of the policy engine, executor, intent signing, approvals, authentication and storage against the claims in this report.</li>
-<li><b>Automated tests.</b> The offline suite (2296 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
+<li><b>Automated tests.</b> The offline suite (2299 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
 <li><b>Authorization sweep.</b> A script calls every route and method as four identities (no session, student, parent, judge) with two request bodies and compares each response with the roles the code declares.</li>
 <li><b>Benchmarks and attack sets.</b> A 32-attack and 12-genuine scenario benchmark run four ways (protections added one layer at a time), stress and fuzz runs, and three attack sets written by other AI assistants from the project description only.</li>
 <li><b>Live-model checks</b> on saved report rows, run with a token cap.</li></ul>
@@ -295,7 +295,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(f"""<section class="s"><h2 id="A2">Appendix B.&nbsp; {APPENDICES[1]}</h2>
 <p>All commands run offline and make no model call. Run them from the repository root.</p>
 <table class="tight"><tr><th style="width:34%">Purpose</th><th>Command</th></tr>
-<tr><td>Offline test suite (expect 2296 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
+<tr><td>Offline test suite (expect 2299 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
 <tr><td>Role matrix only</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m pytest -q tests/test_role_matrix.py</code></td></tr>
 <tr><td>Offline benchmark</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m eval.runner --llm offline</code></td></tr>
 <tr><td>Rebuild this report</td><td><code>PYTHONPATH=. python -m eval.build_security_pdf</code></td></tr></table>

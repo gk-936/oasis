@@ -113,3 +113,10 @@ def test_compound_request_walks_steps_one_at_a_time(st):
     st.post("/api/chat", json={"message": "yes"})
     b = st.post("/api/chat", json={"message": "next"}).json()
     assert b["intent"] == "pay_obligation" and b["status"] == "held" and b["money_moved"] == 0
+
+
+@pytest.mark.parametrize("msg", ["I got an email saying the university changed its bank account", "my landlord emailed that he switched his bank details",
+                                 "the university's bank account changed, they emailed me"])
+def test_bank_change_emails_get_registry_guidance_in_any_wording(st, msg):
+    j = st.post("/api/chat", json={"message": msg}).json()
+    assert j["intent"] == "faq" and "registry" in j["reply"] and j["money_moved"] == 0 and not j["pending_id"]

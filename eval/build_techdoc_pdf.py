@@ -332,7 +332,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(sec(5, f"""
 <p>Offline results are deterministic and reproducible; live results are from Amazon Nova Pro. Reports are in <code>eval/reports/</code>. Caveats are in Section 6.</p>
 {tbl(["Evidence", "Result"], [
-    ["Test suite", "2296 passed, 2 skipped (live FISCO and live PQ-TLS)"],
+    ["Test suite", "2299 passed, 2 skipped (live FISCO and live PQ-TLS)"],
     ["Visible benchmark: 32 attacks, 12 genuine changes, four layer configurations", "Attack block rate 6.2% baseline, 68.8% with verification, 100% with intents and policy; money lost CNY 479,000 baseline, 0 with the full system; genuine completion 100%"],
     ["Hidden blind set: 40 cases", "100% blocked and 100% genuine completed after fixes"],
     ["Live extraction, Nova Pro", "Model followed an injection in 0 of 6 cases; full system money lost 0; genuine completion 83.3% (a usability cost)"],
@@ -392,7 +392,7 @@ def build(pages: dict[str, int]) -> str:
 <ul>
 <li>Offline mode, fixed seeds, seeded demo keys and nonces, and a simulated clock make the scripted demo repeat exactly; replays reach identical audit-chain heads.</li>
 <li>Benchmarks run offline: <code>eval.runner --llm offline</code>, <code>eval.flightpath_bench</code>, <code>eval.netting_bench</code>, <code>eval.tasks_bench</code>. Live runs are checkpointed, token-capped and saved as report rows.</li>
-<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 2296 passed, 2 skipped.</li>
+<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 2299 passed, 2 skipped.</li>
 <li>The execution evidence folder contains a standard-library verifier that recomputes the audit chains and the headline figures from the logs.</li></ul>"""))
 
     h.append(app(4, """
