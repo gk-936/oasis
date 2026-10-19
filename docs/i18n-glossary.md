@@ -39,7 +39,7 @@ Acronyms stay Latin with a gloss on first use: LRS（自由汇款计划）, TCS�
 
 ## Stays English by design
 
-Invoice text and sample payloads, payee and person names, legal and regulatory source quotes, rule ids (R01-R17), machine codes, hashes, key ids, endpoint names, tool-call JSON in the planner trace, the generated benchmark reports (Numbers tab, shown with a note), and the recovery draft message to a third party when a model wrote it. Chinese appears next to them, never instead of them.
+Invoice text and sample payloads, payee and person names, legal and regulatory source quotes, rule ids (R01-R19), machine codes, hashes, key ids, endpoint names, tool-call JSON in the planner trace, the generated benchmark reports (Numbers tab, shown with a note), and the recovery draft message to a third party when a model wrote it. Chinese appears next to them, never instead of them.
 
 ## Formats
 

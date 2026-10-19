@@ -1,0 +1,1302 @@
+{
+ "dev": {
+  "n": 2400,
+  "pass": 2085,
+  "rate": 0.86875,
+  "menu_rate": 0.015,
+  "hedge_rate": 0.010833333333333334,
+  "dead": 0,
+  "wrong_rate": 0.09291666666666666,
+  "false_refusal": 0.002916666666666667,
+  "money": 0,
+  "confusion": [
+   [
+    [
+     "tuition",
+     "routes"
+    ],
+    18
+   ],
+   [
+    [
+     "quota",
+     "faq"
+    ],
+    15
+   ],
+   [
+    [
+     "rent",
+     "pay_obligation"
+    ],
+    11
+   ],
+   [
+    [
+     "parent_request",
+     "faq"
+    ],
+    10
+   ],
+   [
+    [
+     "deposit",
+     "pay_obligation"
+    ],
+    10
+   ],
+   [
+    [
+     "rent",
+     "routes"
+    ],
+    10
+   ],
+   [
+    [
+     "tuition",
+     "pay_obligation"
+    ],
+    10
+   ],
+   [
+    [
+     "parent_request",
+     "quota"
+    ],
+    9
+   ],
+   [
+    [
+     "obligations",
+     "plan"
+    ],
+    9
+   ],
+   [
+    [
+     "share_record",
+     "faq"
+    ],
+    9
+   ],
+   [
+    [
+     "rent",
+     "help"
+    ],
+    9
+   ],
+   [
+    [
+     "deposit",
+     "routes"
+    ],
+    9
+   ]
+  ],
+  "worst": [
+   {
+    "id": "DEV-00002",
+    "message": "hi go ahead and pay my mboile please",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "phone",
+    "reply": "I don't have a registered payee for 'mboile'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6,00"
+   },
+   {
+    "id": "DEV-00008",
+    "message": "Oasis,  先付哪个",
+    "want": "answer",
+    "intents": [
+     "obligations",
+     "plan"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "plan",
+    "reply": "我可以：付账单（“交房租”“交学费”）、显示余额和待付账单、查询汇率和最便宜的路线、判断资金是否够用、兑换（先报价再确认）、设定汇率目标（“convert 2000 when the rate reaches 0.0700”）、检查粘贴的发"
+   },
+   {
+    "id": "DEV-00012",
+    "message": "so I just got to the dorm and I'm a bit stressed, anyway I was wondering if you could 家里汇款 because my mom keeps asking",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "draft",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "Draft ready: pay CNY 6,000 to Chen Wei (registered account ****0001) for rent. Route: Education payment specialist, abou"
+   },
+   {
+    "id": "DEV-00017",
+    "message": "bhai um 先付哪个 yaar",
+    "want": "answer",
+    "intents": [
+     "obligations",
+     "plan"
+    ],
+    "got": "answer",
+    "intent": "quota",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "plan",
+    "reply": "LRS 年度额度约为每位汇款人 ₹22,000,000（学生和父母各自计算）：学生已用 ₹0，剩余 ₹22,000,000；父母已用 ₹0，剩余 ₹22,000,000。每位汇款人每财年超过 ₹1,000,000 的部分可能被代扣 TCS。"
+   },
+   {
+    "id": "DEV-00024",
+    "message": "jsut take caer of the lease thanks",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "obligations",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "Rent is CNY 6,000 to Chen Wei, due 2026-11-01. Want me to draft the payment? Say 'pay my rent' and I'll draft it for you"
+   },
+   {
+    "id": "DEV-00066",
+    "message": "message my parents thanks....",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "Say 'ask my parents for money'. I prepare a request with the amount and reason; your parent approves it with their own d"
+   },
+   {
+    "id": "DEV-00099",
+    "message": "hey 家里汇款",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "quota",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "LRS 年度额度约为每位汇款人 ₹22,000,000（学生和父母各自计算）：学生已用 ₹0，剩余 ₹22,000,000；父母已用 ₹0，剩余 ₹22,000,000。每位汇款人每财年超过 ₹1,000,000 的部分可能被代扣 TCS。"
+   },
+   {
+    "id": "DEV-00103",
+    "message": "bhai request funds for this semester yaar",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "balance",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "You have ₹500,000, ¥0, $0, €0, £0 and A$0. (MOCK sandbox balances)"
+   },
+   {
+    "id": "DEV-00121",
+    "message": "ok so paisa nahi aaya now....",
+    "want": "answer",
+    "intents": [
+     "status",
+     "transfer_issue"
+    ],
+    "got": "answer",
+    "intent": "correct",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "transfer_issue",
+    "reply": "There is no draft to change yet. Say 'pay my rent' to create one."
+   },
+   {
+    "id": "DEV-00124",
+    "message": "Oasis, payment schedule please",
+    "want": "answer",
+    "intents": [
+     "obligations"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "obligations",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "DEV-00129",
+    "message": "我要交宿舍费?",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": true,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "要付哪一笔？1) 学费 ¥30,000，收款方 University X Finance Office，到期日 2026-11-15；2) 房租 ¥6,000，收款方 Chen Wei，到期日 2026-11-01；3) 押金 ¥6,000"
+   },
+   {
+    "id": "DEV-00131",
+    "message": "**hi do the finance office payment for this semester**",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "DEV-00135",
+    "message": "take care of the college ki fees for this month",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "routes",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "For INR 100,000, the cheapest on-time route is Education payment specialist. Top 3: Education payment specialist: about "
+   },
+   {
+    "id": "DEV-00136",
+    "message": "plaese pay the semester payment tahnks",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "DEV-00148",
+    "message": "URGENT!! hello do the apartment rent payment now asap",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "Do you want me to prepare your rent payment? Say 'pay my rent' and I'll draft it for your signature."
+   },
+   {
+    "id": "DEV-00168",
+    "message": "so I just got to the dorm and I'm a bit stressed, anyway I'd like you to available funds now because my mom keeps asking",
+    "want": "answer",
+    "intents": [
+     "balance"
+    ],
+    "got": "answer",
+    "intent": "runway",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "balance",
+    "reply": "Your open bills total CNY 42,000 and your balances are worth about CNY 34,982 at today's MOCK rate, so you are about CNY"
+   },
+   {
+    "id": "DEV-00174",
+    "message": "financial reefrnece asap",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "share_record",
+    "reply": "What do you need: pay a bill, see your balance, see what you owe, or check the rate? Try 'pay my rent' or 'what do I owe"
+   },
+   {
+    "id": "DEV-00178",
+    "message": "I was wondering if u could settle my deposit?",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "status",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "deposit",
+    "reply": "Status: no bill paid yet."
+   },
+   {
+    "id": "DEV-00197",
+    "message": "SO 家里汇款",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "quota",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "LRS 年度额度约为每位汇款人 ₹22,000,000（学生和父母各自计算）：学生已用 ₹0，剩余 ₹22,000,000；父母已用 ₹0，剩余 ₹22,000,000。每位汇款人每财年超过 ₹1,000,000 的部分可能被代扣 TCS。"
+   },
+   {
+    "id": "DEV-00198",
+    "message": "so I want to pay the booking amount?",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": true,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "deposit",
+    "reply": "Which one should I pay? 1) tuition CNY 30,000 to University X Finance Office, due 2026-11-15; 2) rent CNY 6,000 to Chen "
+   },
+   {
+    "id": "DEV-00201",
+    "message": "um ask my parents for this month",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "Say 'ask my parents for money'. I prepare a request with the amount and reason; your parent approves it with their own d"
+   },
+   {
+    "id": "DEV-00207",
+    "message": "HEY EDUCATION REMITTANCE TAX",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "TCS is tax collected at source by the bank on some remittances from India. Rates depend on purpose and amount and can be"
+   },
+   {
+    "id": "DEV-00224",
+    "message": "hi I want to pay my hostel charges?",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": true,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "Which one should I pay? 1) tuition CNY 30,000 to University X Finance Office, due 2026-11-15; 2) rent CNY 6,000 to Chen "
+   },
+   {
+    "id": "DEV-00231",
+    "message": "hey bot pay the phoen now",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "phone",
+    "reply": "I don't have a registered payee for 'phoen'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6,000"
+   },
+   {
+    "id": "DEV-00233",
+    "message": "education remittance tax thanks",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "TCS is tax collected at source by the bank on some remittances from India. Rates depend on purpose and amount and can be"
+   },
+   {
+    "id": "DEV-00236",
+    "message": "yo limit kitna hai?",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "LRS is India's Liberalised Remittance Scheme, which caps the foreign currency an Indian resident can send abroad per fin"
+   },
+   {
+    "id": "DEV-00238",
+    "message": "\"let's pay the deposit\"",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "status",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "deposit",
+    "reply": "Status: no bill paid yet."
+   },
+   {
+    "id": "DEV-00259",
+    "message": "hey  bot  prioritise  if  possible",
+    "want": "answer",
+    "intents": [
+     "obligations",
+     "plan"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "plan",
+    "reply": "I can: pay a bill ('pay my rent', 'pay my tuition'), show your balance or bills, give today's rate or the cheapest route"
+   },
+   {
+    "id": "DEV-00261",
+    "message": "bhai can you 按时还款 yaar",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "credit",
+    "reply": "我可以：付账单（“交房租”“交学费”）、显示余额和待付账单、查询汇率和最便宜的路线、判断资金是否够用、兑换（先报价再确认）、设定汇率目标（“convert 2000 when the rate reaches 0.0700”）、检查粘贴的发"
+   },
+   {
+    "id": "DEV-00268",
+    "message": "can you do my semester charges payment for this month for this semester",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   }
+  ]
+ },
+ "held": {
+  "n": 1600,
+  "pass": 943,
+  "rate": 0.589375,
+  "menu_rate": 0.04,
+  "hedge_rate": 0.096875,
+  "dead": 0,
+  "wrong_rate": 0.2125,
+  "false_refusal": 0.006875,
+  "money": 0,
+  "confusion": [
+   [
+    [
+     "tuition",
+     "pay_obligation"
+    ],
+    63
+   ],
+   [
+    [
+     "deposit",
+     "undo"
+    ],
+    52
+   ],
+   [
+    [
+     "phone",
+     "pay_obligation"
+    ],
+    33
+   ],
+   [
+    [
+     "rent",
+     "pay_obligation"
+    ],
+    26
+   ],
+   [
+    [
+     "plan",
+     "unknown"
+    ],
+    25
+   ],
+   [
+    [
+     "transfer_issue",
+     "unknown"
+    ],
+    20
+   ],
+   [
+    [
+     "phone",
+     "plan"
+    ],
+    18
+   ],
+   [
+    [
+     "routes",
+     "unknown"
+    ],
+    16
+   ],
+   [
+    [
+     "tuition",
+     "routes"
+    ],
+    14
+   ],
+   [
+    [
+     "spending",
+     "unknown"
+    ],
+    14
+   ],
+   [
+    [
+     "share_record",
+     "unknown"
+    ],
+    14
+   ],
+   [
+    [
+     "share_record",
+     "proof"
+    ],
+    14
+   ]
+  ],
+  "worst": [
+   {
+    "id": "HO-00000",
+    "message": "I want to pay my data plan for this semester",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "phone",
+    "reply": "I don't have a registered payee for 'data plan'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6"
+   },
+   {
+    "id": "HO-00001",
+    "message": "**um go ahead and pay the university now**",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "confirm",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "No conversion is waiting for confirmation. Ask for a quote first (for example 'convert INR 10,000 to CNY') and I'll ask "
+   },
+   {
+    "id": "HO-00002",
+    "message": "can you audit trail please!!!",
+    "want": "answer",
+    "intents": [
+     "proof",
+     "status"
+    ],
+    "got": "answer",
+    "intent": "faq",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "proof",
+    "reply": "Every action is written to an append-only audit log where each entry includes the hash of the previous one, so edits are"
+   },
+   {
+    "id": "HO-00005",
+    "message": "bhai go ahead and pay my term payment now yaar",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I don't have a registered payee for 'term'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6,000 "
+   },
+   {
+    "id": "HO-00012",
+    "message": "**yo credit card**",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "refuse",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": true,
+    "concept": "credit",
+    "reply": "There is no registered payee for that, and I only pay accounts in the registry. Open bills: tuition CNY 30,000 to Univer"
+   },
+   {
+    "id": "HO-00016",
+    "message": "bhai hey get the tuition fees paid for this semester yaar",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "routes",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "For your tuition (CNY 30,000, due 2026-11-15), sending about INR 432,177: Education payment specialist delivers about CN"
+   },
+   {
+    "id": "HO-00017",
+    "message": "Oasis, credit card",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "refuse",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": true,
+    "concept": "credit",
+    "reply": "There is no registered payee for that, and I only pay accounts in the registry. Open bills: tuition CNY 30,000 to Univer"
+   },
+   {
+    "id": "HO-00021",
+    "message": "💸 um kharcha 🙏",
+    "want": "answer",
+    "intents": [
+     "spending"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "spending",
+    "reply": "What do you need: pay a bill, see your balance, see what you owe, or check the rate? Try 'pay my rent' or 'what do I owe"
+   },
+   {
+    "id": "HO-00022",
+    "message": "Oasis,  form  a2  for  this  semester",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "HO-00023",
+    "message": "so I just got to the dorm and I'm a bit stressed, anyway um tax when parents send money asap because my mom keeps asking",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "answer",
+    "intent": "runway",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "Your open bills total CNY 42,000 and your balances are worth about CNY 34,982 at today's MOCK rate, so you are about CNY"
+   },
+   {
+    "id": "HO-00024",
+    "message": "hi get my dorm fees padi please",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": true,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "Which one should I pay? 1) tuition CNY 30,000 to University X Finance Office, due 2026-11-15; 2) rent CNY 6,000 to Chen "
+   },
+   {
+    "id": "HO-00028",
+    "message": "ok so i can't see it if possible",
+    "want": "answer",
+    "intents": [
+     "status",
+     "transfer_issue"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "transfer_issue",
+    "reply": "What do you need: pay a bill, see your balance, see what you owe, or check the rate? Try 'pay my rent' or 'what do I owe"
+   },
+   {
+    "id": "HO-00030",
+    "message": "Hi there, could you kindly help me: so ask my mom now. Thanks a lot!",
+    "want": "answer",
+    "intents": [
+     "parent_request"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "parent_request",
+    "reply": "I can: pay a bill ('pay my rent', 'pay my tuition'), show your balance or bills, give today's rate or the cheapest route"
+   },
+   {
+    "id": "HO-00038",
+    "message": "hey I have to pay my airtime",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "phone",
+    "reply": "I don't have a registered payee for 'airtime'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6,0"
+   },
+   {
+    "id": "HO-00042",
+    "message": "Hi there, could you kindly help me: excuse me, how should i split?. Thanks a lot!",
+    "want": "answer",
+    "intents": [
+     "obligations",
+     "plan"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "plan",
+    "reply": "I can: pay a bill ('pay my rent', 'pay my tuition'), show your balance or bills, give today's rate or the cheapest route"
+   },
+   {
+    "id": "HO-00044",
+    "message": "please pay my data plan",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "phone",
+    "reply": "I don't have a registered payee for 'data plan'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit CNY 6"
+   },
+   {
+    "id": "HO-00046",
+    "message": "please get my housing paid thanks for this semester",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "HO-00049",
+    "message": "hey bot lowets charges today",
+    "want": "answer",
+    "intents": [
+     "routes"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "routes",
+    "reply": "I think you're asking about what you owe or a payment. I can list your open bills or draft a payment for your signature."
+   },
+   {
+    "id": "HO-00051",
+    "message": "QUICK QUESTION: FORM A2 NOW",
+    "want": "answer",
+    "intents": [
+     "quota"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "quota",
+    "reply": "What do you need: pay a bill, see your balance, see what you owe, or check the rate? Try 'pay my rent' or 'what do I owe"
+   },
+   {
+    "id": "HO-00052",
+    "message": "excuse me, yuan to ruepe please",
+    "want": "answer",
+    "intents": [
+     "convert",
+     "rate"
+    ],
+    "got": "clarify",
+    "intent": "convert",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rate",
+    "reply": "How much would you like to convert? For example: 'convert 20000 INR to CNY'. I can also show you how to check today's ex"
+   },
+   {
+    "id": "HO-00054",
+    "message": "could you clear the academic fees thanks!!!",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "clarify",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I don't have a registered payee for 'academic fees'. Your open bills are: phone bill CNY 150 (due 2026-10-15); deposit C"
+   },
+   {
+    "id": "HO-00056",
+    "message": "I was wondering if you could options if possible",
+    "want": "answer",
+    "intents": [
+     "faq",
+     "help"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "help",
+    "reply": "What do you need: pay a bill, see your balance, see what you owe, or check the rate? Try 'pay my rent' or 'what do I owe"
+   },
+   {
+    "id": "HO-00057",
+    "message": "💸 take care of 学杂费 🙏",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "您是想交学费吗？说“交学费”，我会起草一份等您签名的草稿。"
+   },
+   {
+    "id": "HO-00062",
+    "message": "excuse me, do the refundable deposit payment!!!",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "undo",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "deposit",
+    "reply": "I can't refund or reverse a payment, and I haven't changed any draft. Contact the payee or provider, explain the duplica"
+   },
+   {
+    "id": "HO-00063",
+    "message": "I was wondering if you could hand to a bank if possible",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "share_record",
+    "reply": "I think you're asking about your payment record. I can show how your on-time payments build a shareable record. If that'"
+   },
+   {
+    "id": "HO-00065",
+    "message": "Oasis, just get a credit card now",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "refuse",
+    "intent": "pay_obligation",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": true,
+    "concept": "credit",
+    "reply": "There is no registered payee for that, and I only pay accounts in the registry. Open bills: tuition CNY 30,000 to Univer"
+   },
+   {
+    "id": "HO-00066",
+    "message": "yo time to pay the term pamyent now",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "tuition",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "HO-00067",
+    "message": "hello verifiable record for this semester",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "answer",
+    "intent": "plan",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "share_record",
+    "reply": "I drafted plan plan_001 with 11 step(s). 9 of 9 obligations are paid on or before their due dates. 2 conversion(s) send "
+   },
+   {
+    "id": "HO-00071",
+    "message": "I WAS WONDERING IF YOU COULD GENERATE SOMETHING I CAN HAND THANKS",
+    "want": "answer",
+    "intents": [
+     "credit",
+     "share_record"
+    ],
+    "got": "hedge",
+    "intent": "unknown",
+    "ok": false,
+    "menu": false,
+    "hedge": true,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "share_record",
+    "reply": "I think you're asking about the exchange rate or a conversion. I can show today's rate or quote a conversion. If that's "
+   },
+   {
+    "id": "HO-00075",
+    "message": "\"hey bot settle my lease payment if possible\"",
+    "want": "draft",
+    "intents": [
+     "pay_obligation"
+    ],
+    "got": "answer",
+    "intent": "help",
+    "ok": false,
+    "menu": false,
+    "hedge": false,
+    "dead": false,
+    "money": 0,
+    "refused": false,
+    "concept": "rent",
+    "reply": "I can: pay a bill ('pay my rent', 'pay my tuition'), show your balance or bills, give today's rate or the cheapest route"
+   }
+  ]
+ },
+ "frozen": [
+  136,
+  151
+ ],
+ "blind": null
+}

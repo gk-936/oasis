@@ -63,14 +63,14 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | 128 poisoned invoices: model changed no field; 40 of 40 genuine invoices held as offline; risk scorer 168 scored | `04_.../ai_contribution.md`, `ai_contribution.json` |
 | Planner 56 of 56 valid, 140 of 140 deadlines, 7 repeats | `04_.../planning.md`, `planning.json` |
 | Foreign-currency planner | `04_.../fxplan_live.md`, `fxplan_live.json` |
-| Chat labeller: 72 of 73 paraphrases, traps: 0 of 25 fresh accepted, 1 of 25 original (a held draft); router held-out 3: 99 of 120 right, 4 wrong, 14 clarified | `04_.../chat_llm_scale.md`, `chat_llm_scale_rows.json`, `chat_llm_heldout.md` |
+| Chat labeller: 72 of 73 paraphrases, traps: 0 of 25 fresh accepted, 1 of 25 original (a held draft); router rebuilt: DEV 86.9%, words withheld from the lexicon 58.9%, frozen 136 of 151, catalogue 205 of 205 (model off) | `04_.../chat_llm_scale.md`, `chat_llm_scale_rows.json`, `chat_llm_heldout.md` |
 | Outside sets through the live path: 550 attacks and 170 look-alikes, 0 breaches | `04_.../independent3_live.md`, `independentG_live.md`, `independentC_live.md` |
 | Live extraction and risk benchmark (injections followed 0 of 6) | `04_.../benchmark_live.md`, `benchmark_live.json` |
 | Image intake: 4 of 6 correct | `04_.../vision_live.md`, `vision_live/` |
 | Tokens, calls and USD of every metered live run | `04_.../ai_contribution_live_runs.json` |
 | FlightPath, peer netting, corridor rules | `05_.../flightpath.md`, `netting.md`, `corridors.md` |
 | Post-quantum signatures and TLS | `05_.../pqtls.md`, `06_.../pq-tls.md` |
-| Test suite: 2299 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
+| Test suite: 2628 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
 | Each security claim maps to named tests | `06_.../security-evidence-matrix.md` |
 | Informal conversations with 10 people we know: 6 international students (Europe, Southeast Asia) and 4 parents (who, what we asked, limits) | `interviews.md` |
 | Known limits, MOCK labelling | `06_.../security-self-assessment.md`, `real-vs-simulated.md`, `problem-evidence.md` |
@@ -90,8 +90,8 @@ def main() -> None:
     shutil.copytree(ROOT / "execution_evidence", DST / "02_Execution_Logs", ignore=shutil.ignore_patterns("*.pdf", "__pycache__"))
     shutil.copyfile(ROOT / "docs" / "interviews.md", DST / "interviews.md")
     (DST / "README.md").write_text(INDEX, encoding="utf-8")
-    (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run 2026-10-19 (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
-                                                          "2299 passed, 2 skipped in 184.32s (0:03:04)",
+    (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
+                                                          "2628 passed, 2 skipped in 851.81s (0:14:11)",
                                                           "The 2 skipped tests are the live FISCO and live PQ-TLS tests.", ""]), encoding="utf-8")
     print(f"wrote {DST.name}/: {n} files in {len(GROUPS)} groups + execution logs + index")
 

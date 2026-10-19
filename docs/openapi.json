@@ -1074,6 +1074,23 @@
     "summary": "Activity Feed"
    }
   },
+  "/api/agent-scorecard": {
+   "get": {
+    "description": "The agent's measurable record and live mandate, read from the audit log (read-only).",
+    "operationId": "agent_scorecard_api_agent_scorecard_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Agent Scorecard"
+   }
+  },
   "/api/approve": {
    "post": {
     "description": "Approve (or decline) a held payment AS THE ROLE OF THE SESSION. Approving needs a signature, made with that\nrole's registered device key, over the pending payment's exact draft hash. The role string grants nothing.",

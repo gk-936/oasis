@@ -27,7 +27,10 @@ from ..proof import credit_growth as cg
 from ..trust import corridor
 from ..market import provenance
 from . import localize as loc
-from . import activity, chat_llm, glossary, fx_exec, nl_extract, nlu, robust
+from . import activity, chat_llm, faq, frames, glossary, fx_exec, nl_extract, nlu, robust, router_v2
+from . import context as ctx_mod
+from . import scorecard as scorecard_mod
+from . import scam_lane
 from .llm import LiveLLM, heuristic_risk
 from .nlu import ChatIntent
 from .pipeline import Request
@@ -1393,9 +1396,13 @@ def _unknown(S, message: str, lang: str, secrets=None) -> dict:
         t = (f"您是想交{_OBL_ZH.get(typ, typ)}吗？说“交{_OBL_ZH.get(typ, typ)}”，我会起草一份等您签名的草稿。" if typ else
              "我没听明白。您想交账单、查余额，还是看汇率" + ("，或者取消草稿" if pend else "") + "？可以说“交房租”“交学费”“交押金”或“交话费”。")
     else:
-        t = (f"Do you want me to prepare your {typ} payment? Say 'pay my {typ}' and I'll draft it for your signature." if typ else
-             "I didn't catch that. Pay a bill, check your balance, or see the rate" + (", or cancel your draft" if pend else "") + "? "
-             "Say for example 'pay my rent', 'pay my tuition', 'pay the deposit' or 'pay my phone bill'.")
+        if typ:
+            t = f"Do you want me to prepare your {typ} payment? Say 'pay my {typ}' and I'll draft it for your signature."
+        else:
+            hit = faq.answer(message)
+            if hit:
+                return _result("faq", f"{hit[0]} (Screen: {hit[1]}.)", secrets, status="info")
+            t = faq.hedge(message) + (" You can also cancel your draft." if pend else "")
     return _result(nlu.UNKNOWN, t, secrets, status="unknown")
 
 
@@ -1747,6 +1754,8 @@ def _scam_check(S, message: str, ui: str, secrets=None) -> dict | None:
     body = _SCAM_Q.sub(" ", message)
     if len(body.strip()) < 25:                                   # a bare "is this a scam?" is the general safety FAQ, not a pasted message
         return None
+    if len(body.strip()) < 60 and not re.search(r"\d|https?:|www\.|@|[¥￥$€£₹]", body):      # "is it safe to give you my bank details": a question with nothing pasted is the safety FAQ
+        return None
     w = S.world
     recs = [r for r in _recipients(w)]
     known = {r.name: r.account_ref for r in recs}
@@ -1886,13 +1895,69 @@ def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None, tp_s
         res["source"] = "router"
         return res
     it = nlu.classify(message, ui)
+    d["_msg"] = message[:300]
     src, conf, clar = "router", None, None
     if d["awaiting"] == "clarify":                        # "1" / "the second" / "quote" answers our numbered question; anything else leaves it
         picked = _clarify_pick(d, message, it)
         d["awaiting"], d["ctx"] = None, {}
         if picked is not None:
             it, src = picked, "clarify"
-    if not d["awaiting"] and robust.enabled() and not nlu._SIGN_ASK.match(message.strip()) and not _affirms(message):
+    lo0 = d.get("last_offer") or {}
+    if not d["awaiting"] and lo0.get("kind") in ("pay", "plan") and (it.kind == nlu.CONFIRM or _affirms(message)):
+        d.pop("last_offer", None)                         # a bare "yes" binds only to the offer made last turn; a pay offer still ends in a draft that needs the device-key signature
+        message = f"pay my {router_v2.canon(lo0['bill'])}" if lo0["kind"] == "pay" else "plan my payments"
+        it, src = nlu.classify(message, ui), "offer"
+    ctx_mod.tick(d)
+    if it.kind not in nlu.REFUSALS and it.kind != nlu.PAY_INVOICE and not nlu.INVOICE_HINT.search(message):
+        ak = scam_lane.attack_kind(message, nlu.decoded_views(message))
+        if ak:                                            # section 7: rule changes, prompt and secret requests, authority claims, override text: a clear refusal
+            cat = "secrets" if ak in ("prompt", "env", "exfil") else "bypass"
+            nm = nlu.normalise(message)
+            it = ChatIntent(nlu.SECRETS if cat == "secrets" else nlu.BYPASS, {"urgent": False, "detail": nlu.refusal_detail(nm, cat)}, 1.0, it.lang, cat)
+            d["awaiting"], d["ctx"] = None, {}
+        else:
+            a = scam_lane.assess(message)
+            if a.fire:                                    # section 6: the inducement is described in plain words; warn, never draft
+                reg = {r.account_ref for r in _recipients(S.world)}
+                S.world.audit.append("chat_refused", {"category": "scam"})
+                res = _result("scam_warning", scam_lane.warning(a, reg), secrets, status="info" if a.question and not a.pay_context else "refused")
+                res["source"] = "scam_lane"
+                res["money_moved"] = 0
+                return res
+    if not d["awaiting"] and src == "router" and not (_affirms(message) and len(message.split()) <= 3) and it.kind not in nlu.REFUSALS:
+        act = ctx_mod.resolve(d, message, frames.parse(message), [_bill_name(o.type) for o in _open_obligations(S.world)])
+        if act and act[0] == "say":
+            res = _result("info", act[1], secrets, status="info")
+            res["source"] = "router_v2"
+            return res
+        if act:
+            it2 = nlu.classify(act[1], ui)
+            if it2.kind not in nlu.REFUSALS and it2.kind != nlu.UNKNOWN:
+                it, message, src = it2, act[1], "context"
+        if src == "router":
+            comp = _compound(S, message, ui, d, run_intake, secrets, tp_share)
+            if comp is not None:
+                return comp
+    rt = None
+    if not d["awaiting"] and src in ("router", "context") and not nlu._SIGN_ASK.match(message.strip()) and not (_affirms(message) and len(message.split()) <= 3):
+        rt = router_v2.route(router_v2.Ctx(message, it, d, _recipients(S.world), _open_obligations(S.world), it.lang, bool(S.pending)))
+    if rt is not None and rt.note == "content" and robust.enabled() and robust.resolve(message, ui, _recipients(S.world)).status == "intent":
+        rt = None                                         # the similarity layer already places this message: keep its answer, the concept layer only fills the gaps
+    if rt is not None and rt.kind != "rewrite":
+        res = _v2_reply(S, rt, it.lang, d, run_intake, secrets)
+        res["source"] = "router_v2"
+        if res.get("status") in _LOGGED:
+            d.setdefault("log", []).append((res["intent"], res["status"], res["reply"].split(". ")[0][:140]))
+        if rt.offer:
+            d["last_offer"] = rt.offer
+        elif res.get("intent") not in ("convert", "confirm", "clarify"):
+            d.pop("last_offer", None)
+        return res
+    if rt is not None:
+        it2 = nlu.classify(rt.text, ui)
+        if it2.kind not in nlu.REFUSALS and it2.kind != nlu.UNKNOWN:
+            it, message, src = it2, rt.text, "router_v2"
+    if not d["awaiting"] and src == "router" and robust.enabled() and not nlu._SIGN_ASK.match(message.strip()) and not _affirms(message):
         payees = _recipients(S.world)
         if it.kind == nlu.UNKNOWN:
             r = robust.resolve(message, ui, payees)
@@ -1917,16 +1982,182 @@ def handle(S, message: str, ui: str, *, jti: str, run_intake, secrets=None, tp_s
         m = chat_llm.propose(S.world.llm, message)
         if m is not None:
             it, src = m, "model"
-    res = _clarify(d, clar, message, secrets) if clar is not None else _handle(S, it, message, d, run_intake, secrets, tp_share)
+    if (it.kind == nlu.UNKNOWN and not d["awaiting"] and not d.get("_interp") and chat_llm.interpret_enabled() and chat_llm.usable(S.world.llm)
+            and not nl_extract.purpose_in_text(message) and faq.answer(message) is None):
+        # section 8: the offline router would only hedge; one verified model interpretation may widen it. The canonical sentence is routed again through everything above.
+        facts = str(_balance(S, "en")["reply"]) + " " + str(_obligations(S, "en")["reply"])
+        out = chat_llm.interpret(S.world.llm, message, [x[2] for x in d.get("log", [])][-2:], [_bill_name(o.type) for o in _open_obligations(S.world)], facts, d.setdefault("_calls", []))
+        if out and out["kind"] == "question":
+            return _result("clarify_q", out["text"], secrets, status="needs_info")
+        if out and out["kind"] == "answer":
+            return _result("faq", out["text"], secrets, status="info")
+        if out and out["kind"] == "rewrite":
+            d["_interp"] = True
+            try:
+                res = handle(S, out["canonical"], ui, jti=jti, run_intake=run_intake, secrets=secrets, tp_share=tp_share)
+            finally:
+                d.pop("_interp", None)
+            res["source"] = "model_interpret"
+            return res
+    offer = None
+    if clar is None and not d["awaiting"] and (d.get("last_offer") or {}).get("kind") == "show" and (it.kind == nlu.CONFIRM or _affirms(message)):
+        lo = d.pop("last_offer")                          # a bare "yes" binds to the read-only answer offered last turn, nothing else
+        it, src = ChatIntent(lo["intent"], dict(lo["slots"]), 0.7, lo["lang"]), "offer"
+    if clar is not None:
+        res, offer = _answer_best(S, clar, message, d, run_intake, secrets, tp_share)
+    else:
+        res = _handle(S, it, message, d, run_intake, secrets, tp_share)
     res["source"] = "clarify" if clar is not None else src
     if res.get("intent") not in ("convert", "confirm", "clarify"):
         d.pop("last_offer", None)                         # only the very last offer can be confirmed
+    if offer:
+        d["last_offer"] = offer
     if res.get("status") in _LOGGED:                      # the session's own actions, for "what did I just do?"
         d.setdefault("log", []).append((res["intent"], res["status"], res["reply"].split(". ")[0][:140]))
         del d["log"][:-12]
     if conf is not None or clar is not None:
         res["confidence"] = round(conf if conf is not None else clar.confidence, 3)
+    _remember(d, res, message, it)
     return res
+
+
+_BILL_OF_TYPE = {"living": "phone"}
+_STATEFUL = (nlu.PAY_OBLIGATION, nlu.PAY_TEXT, nlu.PAY_INVOICE, nlu.RATE_TARGET, nlu.LATER, nlu.CORRECT, nlu.UNDO)
+_CLAUSE_LABEL = {"balance": "Balance", "obligations": "Open bills", "rate": "Rate", "routes": "Routes", "runway": "Runway", "plan": "Plan", "credit": "Record",
+                 "status": "Status", "spending": "Spending", "proof": "Proof", "transfer_issue": "Transfer", "quota": "Limits", "help": "Help", "convert": "Quote",
+                 "pay_obligation": "Payment", "faq": "Answer", "explain": "Why"}
+
+
+def _bill_name(typ: str) -> str:
+    t = _BILL_OF_TYPE.get(typ, typ)
+    return t if t in router_v2.L.BILLS else "rent"
+
+
+def _remember(d: dict, res: dict, message: str, it) -> None:
+    f = frames.parse(message)
+    bill = f.bills[0] if f.bills else (_bill_name(it.slots["type"]) if it.slots.get("type") else None)
+    keep = message if res.get("intent") in ("pay_obligation", "convert", "routes", "obligations", "balance", "rate") else None
+    ctx_mod.remember(d, res.get("intent") or "", keep, bill)
+
+
+def _compound(S, message: str, ui: str, d: dict, run_intake, secrets, tp_share):
+    """Section 5.5: a message with several requests answers every read-only part in one reply, makes the first state-changing draft and queues the rest.
+    A refused part is refused alone and named; the other parts still run. Returns None when the message is not a compound request."""
+    if len(message) > 220 or d.get("queue") or re.search(r"\b(?:pay|settle|send)\s+(?:it|that|this|them)\b", message, re.I):       # "calculate it and then pay it": one request, not two
+        return None
+    parts = frames.split_clauses(message)
+    if len(parts) < 2:
+        return None
+    its = []
+    if any(nlu.classify(p, ui).kind in (nlu.CORRECT, nlu.CANCEL, nlu.CONFIRM, nlu.DENY, nlu.UNDO) for p in parts):
+        return None                                       # corrections, cancels and confirmations talk about the draft already on the table: one request, not several
+    for p in parts:
+        i = nlu.classify(p, ui)
+        if i.kind == nlu.UNKNOWN:                         # the keyword router does not know this clause: ask the concept layer for a canonical sentence
+            rt = router_v2.route(router_v2.Ctx(p, i, d, _recipients(S.world), _open_obligations(S.world), i.lang))
+            i2 = nlu.classify(rt.text, ui) if rt is not None and rt.kind == "rewrite" else None
+            if i2 is None or i2.kind in (nlu.UNKNOWN,):
+                return None
+            i = i2
+        its.append(i)
+    out, first_state, refused, res_state, queued = [], None, [], None, []
+    last = None
+    for p, i in zip(parts, its):
+        if i.kind in nlu.REFUSALS:
+            r = _handle(S, i, p, d, run_intake, secrets, tp_share)
+            refused.append(p)
+            out.append(f"I refused this part ({p!r}): {r['reply']}")
+            continue
+        if i.kind in _STATEFUL:
+            if first_state is None:
+                first_state = p
+                res_state = _handle(S, i, p, d, run_intake, secrets, tp_share)
+                out.append(f"{_CLAUSE_LABEL.get(i.kind, 'Draft')}: {res_state['reply']}")
+            else:
+                queued.append(p)
+            continue
+        r = _handle(S, i, p, d, run_intake, secrets, tp_share)
+        last = r
+        out.append(f"{_CLAUSE_LABEL.get(r.get('intent'), 'Answer')}: {r['reply']}")
+    if queued:
+        d["queue"] = queued
+        out.append(f"Still to do: {queued[0]!r}. Say 'next' when you are ready; each step needs its own confirmation or signature.")
+    res = dict(res_state or last or _result("info", "", secrets))
+    res["reply"] = " ".join(out)
+    res["source"] = "compound"
+    if refused and res_state is None and last is None:
+        res["status"] = "refused"
+    return res
+
+
+def _v2_reply(S, rt, lang: str, d: dict, run_intake, secrets) -> dict:
+    """Fixed-grammar replies of the router v2 (sections 5.3 and 5.7). Everything here is read-only except `revoke`, which makes a held draft."""
+    w = S.world
+    if rt.kind == "say":
+        return _result(rt.intent, rt.text, secrets, status=rt.status)
+    if rt.kind == "faq":
+        hit = faq.by_id(rt.text)
+        return _result("faq", f"{hit[0]} (Screen: {hit[1]}.)", secrets, status="info")
+    if rt.kind == "bill_statement":
+        parts, first = [], None
+        for b in rt.bills:
+            xs = _open_obligations(w, b)
+            if not xs:
+                parts.append(f"Your {b} is not an open bill right now.")
+                continue
+            x = sorted(xs, key=lambda o: o.due)[0]
+            first = first or b
+            parts.append(f"{x.type.capitalize()} is {money(x.remaining, lang)} to {_payee_name(w, x.payee_id)}, due {x.due}.")
+        if first:
+            parts.append(f"Want me to draft the payment? Say 'pay my {router_v2.canon(first)}' and I'll draft it for your signature.")
+        res = _result("obligations", " ".join(parts), secrets, status="info")
+        rt.offer = {"kind": "pay", "bill": first} if first else None
+        return res
+    if rt.kind == "bills_pile":
+        o = sorted(_open_obligations(w), key=lambda x: x.due)
+        if not o:
+            return _result("obligations", "You have nothing due right now.", secrets)
+        tot = sum(x.remaining for x in o)
+        t = (f"You have {len(o)} open bill{'s' if len(o) != 1 else ''} totalling {money(tot, lang)}; the earliest is {o[0].type} due {o[0].due}. "
+             + "; ".join(_obl_line(w, x, lang) for x in o) + ". Want me to plan the order?")
+        rt.offer = {"kind": "plan"}
+        return _result("obligations", t, secrets, status="info")
+    if rt.kind == "worry":
+        res = _runway(S, lang, secrets, "will my money last")
+        res["reply"] += " Want me to plan what to pay first?"
+        rt.offer = {"kind": "plan"}
+        return res
+    if rt.kind == "revoke":
+        return _revoke(S, d, run_intake, lang, secrets)
+    if rt.kind == "scorecard":
+        return _result("scorecard", scorecard_mod.summary(S, lang), secrets, status="info")
+    if rt.kind == "mandate_card":
+        return _result("mandate", scorecard_mod.mandate_card(S), secrets, status="info")
+    return _result(nlu.UNKNOWN, faq.hedge(""), secrets, status="unknown")
+
+
+_REVOKE_RATE = re.compile(r"rate|target|alert|convert", re.I)
+
+
+def _revoke(S, d: dict, run_intake, lang: str, secrets=None) -> dict:
+    """5.7 item 9: ending a standing instruction or rate target is a held draft that only the student's device-key signature completes."""
+    msg = d.get("_msg", "")
+    ms = [m for m in S.world.passport.rules.mandates if m.get("active")]
+    want_rate = bool(_REVOKE_RATE.search(msg))
+    ms = [m for m in ms if (m.get("kind") == "rate_target") == want_rate]
+    if not ms:
+        return _result("revoke", "You have no active rate alert or standing instruction to stop." if want_rate else "You have no active standing instruction to stop.", secrets, status="info")
+    m = ms[0]
+    o = loc.localize_outcome(run_intake(Request("", source="chat", mandate={"kind": "revoke", "mandate_id": m["id"]})), lang)
+    dr, pid = o.get("draft") or {}, o.get("pending_id")
+    if o["status"] == "held" and pid:
+        item = S.pending.get(pid, {})
+        what = f"rate alert at {m.get('rate')}" if m.get("kind") == "rate_target" else f"standing instruction for your {m.get('obligation', 'bill')}"
+        t = (f"Stopping your {what}: this is a draft, not done yet. It ends only after you sign this exact draft (#{str(dr.get('draft_hash', ''))[:10]}) with your device key. "
+             f"No money moves. Tap Sign and approve.")
+        d["last_pending"] = pid
+        return _result("revoke", t, secrets, status="held", pending_id=pid, draft_hash=dr.get("draft_hash"), needs=_needs(item) if item else [], outcome=o)
+    return _result("revoke", "I could not prepare that change. Nothing was changed.", secrets, status="info")
 
 
 # ------------------------------------------------------------------ clarification (layer 6): numbered options, answer-only intents
@@ -1965,6 +2196,18 @@ def _option_text(o: dict, lang: str) -> str:
     return zh if lang == "zh" else en
 
 
+def _answer_best(S, r, message: str, d: dict, run_intake, secrets, tp_share):
+    """Section 5.2: every candidate is answer-only, so answer the best one. A runner-up within 25% is offered in one line (a bare 'yes' shows it); never a numbered menu."""
+    (lab, sc, it), rest = r.candidates[0], r.candidates[1:]
+    res = _handle(S, it, message, d, run_intake, secrets, tp_share)
+    if not rest or res.get("status") in ("refused", "held") or rest[0][1] < 0.75 * sc:
+        return res, None
+    lab2, _, it2 = rest[0]
+    en, zh, _ = _OPTION[lab2]
+    res["reply"] += (f" 我也可以{zh}——回复“是”即可。" if it.lang == "zh" else f" I can also show you how to {en} - say 'yes'.")
+    return res, {"kind": "show", "intent": it2.kind, "slots": dict(it2.slots), "lang": it2.lang}
+
+
 def _clarify(d: dict, r, message: str, secrets=None) -> dict:
     """The keyword router and the similarity step could not decide: offer the best answer-only candidates as numbered options. Nothing is drafted."""
     opts = [{"label": lab, "kind": ci.kind, "slots": ci.slots, "lang": ci.lang} for lab, _, ci in r.candidates[:3]]
@@ -1972,9 +2215,9 @@ def _clarify(d: dict, r, message: str, secrets=None) -> dict:
     items = " ".join(f"{i}) {_option_text(o, lang)}" for i, o in enumerate(opts, 1))
     pay = bool(nlu._PAY_WORD.search(nlu.normalise(message)) or nlu._OBL_WORD.search(nlu.normalise(message)))
     if lang == "zh":
-        t = f"我不太确定您的意思。您是想：{items}？回复编号或名称即可。" + (" 要付账单请直接说“交房租”。" if pay else "")
+        t = f"请选择：{items}？回复编号或名称即可。" + (" 要付账单请直接说“交房租”。" if pay else "")
     else:
-        t = f"I'm not sure what you mean. Did you mean: {items}? Reply with a number or the name." + (" To pay a bill, say for example 'pay my rent'." if pay else "")
+        t = f"Which of these do you want: {items}? Reply with a number or the name." + (" To pay a bill, say for example 'pay my rent'." if pay else "")
     d["awaiting"], d["ctx"] = "clarify", {"options": opts}
     return _result("clarify", t, secrets, status="needs_info", needs=["info:intent"], options=[o["label"] for o in opts])
 
@@ -2121,7 +2364,9 @@ def _handle(S, it: ChatIntent, message: str, d: dict, run_intake, secrets=None, 
                  "I can't sign for you. Tap Sign and approve so your device key signs this exact draft.")
             dr = f[1]["outcome"].get("draft") or {}
             return _result("confirm", t, secrets, status="held", pending_id=f[0], draft_hash=dr.get("draft_hash"), needs=_needs(f[1]))
-        return _result("confirm", "好的。有什么我可以帮您的？" if lang == "zh" else "Okay. What would you like me to do?", secrets)
+        first = sorted(_open_obligations(S.world), key=lambda o: o.due)[:1]
+        hint = f" I can pay your {'phone bill' if first[0].type == 'living' else first[0].type} or show your balance." if first else " I can show your balance or your open bills."
+        return _result("confirm", "好的。有什么我可以帮您的？" if lang == "zh" else "Do what?" + hint, secrets)
     if k == nlu.CORRECT:
         return _correct(S, run_intake, it, message, lang, d, secrets)
     if k == nlu.UNDO:

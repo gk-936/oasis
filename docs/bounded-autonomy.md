@@ -22,7 +22,7 @@ The model's own role stays the same at every level: it proposes and explains, it
 ## Evidence
 
 - **Autonomy demo** (`python -m eval.demo_log`, run 3): sign a standing instruction; five days pass and the rate-target conversion and the recurring bill run with no signature; a CNY 4,000 payment is held for the student; the CNY 30,000 tuition is held; a 90,000 INR conversion is held and executes only after the sign; a tripped canary freezes. 24 audit entries, chain verifies, money lost 0, audit-chain head `3efb9873089857e9c837079fc8a7fd07c4c1d6b1f9a6c2f1f8aef71c6f66fac7`, identical on replay.
-- **Frozen task-completion set** (`python -m eval.frozen_set`, offline path): 130 of 151 (86%); "I didn't catch that" in 2 replies; money moved in 0 messages. The set was written by the implementer after the round-6 fixes, not by independent people, so this is not an out-of-sample estimate. Two task labels predate the wider MOCK world and are left as written.
+- **Frozen task-completion set** (`python -m eval.frozen_set`, model off): 136 of 151 (90%; 130 before the router rebuild); "I didn't catch that" in 0 replies; money moved in 0 messages. The set was written by the implementer after the round-6 fixes, not by independent people, so this is not an out-of-sample estimate. Two task labels predate the wider MOCK world and are left as written.
 
 ## What the AI measurably adds (and what is not measured)
 

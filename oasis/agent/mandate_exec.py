@@ -23,6 +23,8 @@ def handle_mandate(agent, req, approver=None):
     m = req.mandate or {}
     if m.get("kind") == "rate_target":
         return _handle_rate_target(agent, req, out, t0)
+    if m.get("kind") == "revoke":
+        return handle_revoke(agent, req, out, t0)
     ob = p.obligation(str(m.get("obligation_id")))
     rec = p.recipients.get(ob.payee_id) if ob else None
     cred = w.registry.lookup(ob.payee_id) if ob else None
@@ -109,5 +111,51 @@ def _handle_rate_target(agent, req, out, t0):
     out.status, out.paid_cny = "paid", 0.0
     out.fields["mandate_id"] = mid
     out.trace.append(f"Rate target {t['id']} at {rate:.4f} for CNY {cny:,.0f}, signed with the student's device key")
+    out.sim_minutes = w.sim_minutes - t0
+    return out
+
+
+def handle_revoke(agent, req, out, t0):
+    """Ending a standing instruction or rate target is also a held draft: only the student's device-key signature over this exact draft ends it. It moves no money."""
+    w, p = agent.w, agent.w.passport
+    mid = str((req.mandate or {}).get("mandate_id"))
+    mand = next((x for x in p.rules.mandates if x["id"] == mid and x.get("active")), None)
+    if mand is None:
+        out.status = "rejected"
+        out.card = agent._card(out, "your own wallets", 0.0, "rejected", "revoke_unknown", ["There is no active standing instruction or rate target with that id."])
+        return out
+    ref = f"revoke:{mid}"
+    out.fields = {"payee_id": "own_balance", "payee_name": "your own wallets", "amount": float(mand["cap_cny"]), "currency": "CNY", "purpose": ref, "account_ref": ref}
+    out.label = "matches_known"
+    out.risk = {"score": 0.0, "evidence": ["Ends a standing instruction; no money moves."]}
+    draft = make_draft(payee_id="own_balance", account_ref=ref, amount=float(mand["cap_cny"]), currency="CNY", purpose=ref, route_id="standing_revoke",
+                       not_after=(req.draft or {}).get("not_after") or w.now.replace(hour=23, minute=59).isoformat(),
+                       nonce=(req.draft or {}).get("nonce") or w.builder.new_nonce())
+    out.draft, dh = draft, draft["draft_hash"]
+    signed = agent._verified_approvals(req, dh, out)
+    out.decision = {"action": "allow" if "student" in signed else "hold", "rule": RULE, "tier": 2, "required_approvals": ["student"], "ruleset": "mandate-v1",
+                    "reasons": ["Ending a standing instruction needs your device-key signature on this exact draft."]}
+    if "student" not in signed:
+        out.status, out.detected = "held", True
+        out.card = agent._card(out, "your own wallets", float(mand["cap_cny"]), "held", RULE, out.decision["reasons"], "Needs approval from: student")
+        out.sim_minutes = w.sim_minutes - t0
+        return out
+    if w.audit.find("mandate_revoked", nonce=draft["nonce"]) or w.now_iso() > draft["not_after"]:
+        out.status = "rejected"
+        out.card = agent._card(out, "your own wallets", 0.0, "rejected", "mandate_replay_or_expired", ["This signed revoke was already used or has expired."])
+        return out
+    mand["active"] = False
+    if mand.get("kind") == "rate_target":
+        for t in p.rules.rate_targets:
+            if t["id"] == mand.get("target") and t.get("status") in ("watching", "awaiting_approval"):
+                t["status"] = "revoked"
+    else:
+        for ob in p.obligations:
+            if ob.id.split("#")[0] == mand.get("obligation"):
+                ob.recurring = False
+    w.audit.append("mandate_revoked", {"mandate": mid, "nonce": draft["nonce"], "draft_hash": dh, "approval_key_id": signed["student"]["key_id"]})
+    out.status, out.paid_cny = "paid", 0.0
+    out.fields["mandate_id"] = mid
+    out.trace.append(f"Mandate {mid} revoked, signed with the student's device key")
     out.sim_minutes = w.sim_minutes - t0
     return out

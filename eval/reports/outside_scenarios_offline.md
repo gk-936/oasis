@@ -24,4 +24,4 @@ Passed 74 of 80; scenarios where money moved beyond the allowance or the ledger 
 - `c06` (correction): status 'cancelled' not in ['held', 'needs_info', 'needs_confirmation']
 - `c08` (correction): status 'info' not in ['held', 'needs_info', 'needs_confirmation']
 - `d07` (delay_short): status 'unknown' not in ['info', 'needs_info', 'rejected']
-- `s04` (splitting): status 'unknown' not in ['refused', 'needs_confirmation', 'needs_info', 'held']
+- `s04` (splitting): status 'info' not in ['refused', 'needs_confirmation', 'needs_info', 'held']

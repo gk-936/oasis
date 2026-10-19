@@ -11,6 +11,7 @@ The chain for any payment is always the same: **chat creates a draft, the studen
 | `POST /api/device/register` | student, parent | Register the Ed25519 public key that will sign approvals |
 | `POST /api/chat` | student | One natural-language turn |
 | `GET /api/chat/checkin` | student | Once per session: what is due soon, the shortfall and an offer |
+| `GET /api/agent-scorecard` | student, judge | The agent's record and live mandate, read from the audit log (read-only) |
 | `GET /api/state` | student, parent, judge | Balances, bills, rates, pending drafts, registered device keys |
 | `POST /api/approve` | student, parent | Release a pending draft with a device-key signature |
 | `GET /api/health` | public | Liveness (`200`) |
@@ -72,7 +73,7 @@ Every reply carries the same machine-readable fields, so a script can score a ta
 
 | Field | Meaning |
 |---|---|
-| `intent` | What the router understood (`pay_obligation`, `fx_bill`, `routes`, `scam_check`, `share_record`, `where`, `plan`, ...) |
+| `intent` | What the router understood (`pay_obligation`, `fx_bill`, `routes`, `scam_check`, `scam_warning`, `share_record`, `where`, `plan`, `faq`, `scorecard`, `revoke`, ...) |
 | `status` | `held` (a draft waits for a signature), `paid`, `refused`, `needs_info`, `needs_confirmation`, `cancelled`, `done`, `info`, `unknown`, `rejected` |
 | `pending_id` | The draft to sign, or `null` |
 | `draft_hash` | SHA-256 of the exact draft; this is what the device key signs |
@@ -92,8 +93,17 @@ Examples that finish inside chat (each ends at a draft, an advice-only answer or
 | `is this a scam? <pasted message>` | `intent: scam_check`, `verdict`, `risk_score`, `evidence`; no draft |
 | `my bank quoted ¥6,550 for ₹1,00,000, is that fair?` | `intent: markup_check`, `implied_rate`, `markup_pct`, `cheapest_cny` |
 | `approve it` / `sign it` | refused or pointed to the draft; chat cannot sign |
+| `my tuition is due on Friday` | `intent: obligations`: the tuition line and "Want me to draft the payment?"; a following `yes` makes the draft (still unsigned) |
+| `what's in my account and what do I owe` | one reply with a `Balance:` part and an `Open bills:` part |
+| `pay my rent then check my balance` | one held draft plus the balance; a second payment in the same message is queued until `next` |
+| `and my phone?` after `pay my rent` | the same action for the phone bill (a draft, still unsigned); context lasts 6 turns |
+| `The embassy officer called, I have to transfer 20000` | `intent: scam_warning`, `status: refused`, no draft |
+| `stop my autopay` / `remove the rate alert` | `intent: revoke`, `status: held`: a draft that ends the instruction only after the device-key signature |
+| `how are you doing` / `what is your mandate` | `intent: scorecard` / `mandate`: counts from the audit log, and the agent's cap |
 
 `GET /api/chat/checkin` returns `{"reply": "Living CNY 150 is due in 3 day(s); you're CNY 42,150 short. Want a plan?", "intent": "checkin", ...}` the first time it is called in a session and `{"reply": null, ...}` afterwards. A following `yes` in `/api/chat` continues into the plan.
+
+`GET /api/agent-scorecard` (student or judge, read-only) returns `acted_alone_tier1`, `drafts_waiting_for_you`, `refusals_by_reason`, `scam_warnings`, `canary_freezes`, `money_lost_cny`, `audit_head`, `audit_chain_ok`, `caps` (the Tier-1 limit and each active standing instruction with its cap) and a one-sentence `mandate_card`. Every number comes from the audit log, the passport or the pending list.
 
 ## 4. `POST /api/approve` (how to sign a draft)
 

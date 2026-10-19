@@ -70,7 +70,7 @@ def test_unknown_input_never_falls_back_to_a_status_dump():
     c = new_client("student")
     for m in ("tell me a joke", "", "blah", "🙂", "12345"):
         r = c.post("/api/chat", json={"message": m}).json()
-        assert "INR 500,000" not in r["reply"] and r["intent"] in ("help", "unknown"), m
+        assert "INR 500,000" not in r["reply"] and r["intent"] in ("help", "unknown", "faq"), m
         assert "pay my rent" in r["reply"]
 
 

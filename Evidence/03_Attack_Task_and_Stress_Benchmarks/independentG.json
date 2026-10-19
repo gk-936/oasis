@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 18:28",
+  "run": "2026-10-19 18:15",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -85,10 +85,12 @@
    "id": "TG-008",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -290,9 +292,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "held",
+   "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TG-027",
@@ -331,12 +333,10 @@
    "id": "TG-030",
    "category": "other",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status refused"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "refused",
+   "last": "info",
    "dead_end": false,
    "asks": false
   },
@@ -377,10 +377,12 @@
    "id": "TG-034",
    "category": "information",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status refused"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "refused",
    "dead_end": false,
    "asks": false
   },
@@ -533,12 +535,10 @@
    "id": "TG-048",
    "category": "other",
    "kind": "answer",
-   "ok": false,
-   "failures": [
-    "expected answer, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "info",
    "dead_end": false,
    "asks": false
   },
@@ -676,9 +676,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "held",
+   "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TG-061",
@@ -706,10 +706,12 @@
    "id": "TG-063",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -1205,10 +1207,12 @@
    "id": "TG-108",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -1682,9 +1686,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "rejected"
+    "needs_info"
    ]
   },
   {
@@ -1704,7 +1708,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1713,8 +1717,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "held",
     "info",
-    "unknown",
     "info"
    ]
   },
@@ -1733,7 +1737,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1742,9 +1746,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "needs_verification",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1773,7 +1777,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "info"
    ]
@@ -1802,7 +1806,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info",
+    "rejected",
     "info",
     "refused"
    ]
@@ -1822,7 +1826,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -1851,7 +1855,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -1871,7 +1875,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info",
     "refused"
    ]
@@ -1932,7 +1936,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "rejected"
    ]
   },
@@ -1943,7 +1947,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "info"
    ]
   },
@@ -2002,7 +2006,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2024,7 +2028,7 @@
    "outcomes": [
     "info",
     "cancelled",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2064,7 +2068,7 @@
    "outcomes": [
     "refused",
     "info",
-    "held"
+    "info"
    ]
   },
   {
@@ -2102,9 +2106,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "rejected"
+    "info",
+    "info",
+    "refused"
    ]
   },
   {
@@ -2134,7 +2138,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "rejected"
    ]
   },
@@ -2193,7 +2197,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2202,7 +2206,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2223,8 +2227,8 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
-    "held"
+    "info",
+    "refused"
    ]
   },
   {
@@ -2242,9 +2246,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "refused"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -2262,7 +2266,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info",
+    "held",
     "held",
     "refused"
    ]
@@ -2273,7 +2277,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_verification"
+    "refused"
    ]
   },
   {
@@ -2282,7 +2286,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "held",
     "needs_info"
    ]
@@ -2293,7 +2297,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "refused",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2313,7 +2317,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "held"
    ]
   },
   {
@@ -2353,7 +2357,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2365,7 +2369,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -2425,7 +2429,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -2444,8 +2448,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "info"
    ]
   },
@@ -2464,7 +2468,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation"
+    "needs_info"
    ]
   },
   {
@@ -2513,7 +2517,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2556,7 +2560,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "unknown"
    ]
   },
@@ -2575,7 +2579,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "rejected"
    ]
   },
   {
@@ -2645,7 +2649,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -2655,7 +2659,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2666,7 +2670,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info"
+    "held"
    ]
   },
   {
@@ -2708,7 +2712,7 @@
    "outcomes": [
     "held",
     "needs_info",
-    "held"
+    "info"
    ]
   },
   {
@@ -2726,9 +2730,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "info"
+    "refused"
    ]
   },
   {
@@ -2746,7 +2750,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "refused",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2767,8 +2771,8 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
-    "unknown"
+    "info",
+    "refused"
    ]
   },
   {
@@ -2797,7 +2801,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "refused",
     "refused"
    ]
@@ -2817,8 +2821,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "info"
    ]
   },
@@ -2846,8 +2850,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "refused"
    ]
   },
@@ -2889,7 +2893,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "rejected"
    ]
   },
@@ -2909,8 +2913,8 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
-    "unknown"
+    "info",
+    "info"
    ]
   },
   {
@@ -3010,7 +3014,7 @@
    "outcomes": [
     "held",
     "unknown",
-    "info"
+    "refused"
    ]
   },
   {
@@ -3029,8 +3033,8 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
-    "unknown"
+    "info",
+    "info"
    ]
   },
   {
@@ -3080,7 +3084,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -3108,9 +3112,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation",
+    "info",
     "needs_info",
-    "held"
+    "refused"
    ]
   },
   {
@@ -3128,8 +3132,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "needs_verification"
    ]
   },
@@ -3169,8 +3173,8 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
-    "held"
+    "info",
+    "refused"
    ]
   },
   {
@@ -3188,7 +3192,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info",
     "rejected"
    ]
@@ -3208,7 +3212,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3248,8 +3252,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
-    "needs_info",
+    "info",
+    "info",
     "refused"
    ]
   },
@@ -3269,7 +3273,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -3308,8 +3312,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "info"
    ]
   },
@@ -3359,7 +3363,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3370,7 +3374,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -3379,8 +3383,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -3450,7 +3454,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3461,7 +3465,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "needs_verification"
    ]
@@ -3472,7 +3476,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "held"
+    "refused"
    ]
   },
   {
@@ -3492,7 +3496,7 @@
    "outcomes": [
     "held",
     "unknown",
-    "held"
+    "needs_info"
    ]
   },
   {
@@ -3511,7 +3515,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "needs_confirmation"
    ]
   },
@@ -3642,7 +3646,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "info",
+    "refused",
     "held"
    ]
   },
@@ -3672,7 +3676,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -3710,7 +3714,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3728,7 +3732,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "needs_info"
    ]
   },
   {
@@ -3786,7 +3790,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3815,8 +3819,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown"
+    "info",
+    "info"
    ]
   },
   {
@@ -3843,7 +3847,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3907,7 +3911,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "rejected"
+    "held"
    ]
   },
   {
@@ -3916,8 +3920,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info",
-    "info"
+    "held",
+    "held"
    ]
   },
   {
@@ -3926,7 +3930,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3944,7 +3948,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3982,7 +3986,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3991,7 +3995,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4010,7 +4014,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -4020,7 +4024,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4038,7 +4042,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4056,7 +4060,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4084,7 +4088,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -4093,7 +4097,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4157,7 +4161,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "held"
+    "info"
    ]
   },
   {
@@ -4166,7 +4170,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4185,7 +4189,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4203,7 +4207,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -4230,7 +4234,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {

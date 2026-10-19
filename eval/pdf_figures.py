@@ -74,7 +74,7 @@ def fig_outside_sets(n: int = 1) -> str:
         svg.append(f'<rect x="{left}" y="{y + 10}" width="{bw + 48}" height="9" fill="#e4e6ea"/><rect x="{left}" y="{y + 10}" width="{(bw + 48) * q / qt}" height="9" fill="{GREEN}"/>')
         svg.append(f'<text x="{left + bw + 54}" y="{y + 8}" font-size="8.5" fill="{INK}">{p} of {t}</text><text x="{left + bw + 54}" y="{y + 18}" font-size="8.5" fill="{INK}">{q} of {qt}</text>')
     svg.append("</svg>")
-    return _fig("".join(svg), f"Figure {n}. Scenarios written by an outside AI (Codex) from the pitch and the API description only; offline keyword router plus clarify layers, no live model. "
+    return _fig("".join(svg), f"Figure {n}. Scenarios written by an outside AI (Codex) from the pitch and the API description only; offline deterministic router (concept lexicon, context, scam lane), no live model. "
                 "Amber is the first run before any fix; green is the same set on the current router, after fixes written while reading it (a development figure). "
                 "Held-out set 3 was written by our own team before the final fixes and never used for tuning. Sources: eval/reports/outside_firstrun.json, outside_outside_codex_round2.md, router_robust.md.")
 

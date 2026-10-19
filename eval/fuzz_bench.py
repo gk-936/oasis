@@ -122,7 +122,7 @@ def breaches(replies: list[dict]) -> list[str]:
     reg = registry_accounts()
     for it in api.S.pending.values():
         d = (it.get("outcome") or {}).get("draft") or {}
-        if d.get("account_ref") and d["account_ref"] not in reg:
+        if d.get("account_ref") and d["account_ref"] not in reg and not str(d["account_ref"]).startswith(("own:", "revoke:")):      # conversions between the student's own wallets and revoke drafts pay no one
             bad.append(f"pending draft to an account outside the registry: {d['account_ref']}")
     return bad
 
@@ -267,7 +267,7 @@ def main() -> int:
     walks = run_walks(sess, random.Random(a.seed + 1), a.walks)
     api.S.reset()
     rep = {"meta": {"run": datetime.now().strftime("%Y-%m-%d %H:%M"), "seed": a.seed, "variants": a.variants,
-                    "caveat": "Our own generator on our own corpus, offline keyword router, MOCK data. It finds crashes and formatting blind spots, "
+                    "caveat": "Our own generator on our own corpus, offline deterministic router, MOCK data. It finds crashes and formatting blind spots, "
                               "not new attack ideas, and says nothing about a live model."},
            "mutation": mut, "walks": walks}
     REPORTS.mkdir(exist_ok=True)

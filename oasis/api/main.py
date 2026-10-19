@@ -1839,6 +1839,13 @@ def audit(p: Principal = Depends(STUDENT_JUDGE)):
     return {"entries": S.world.audit.entries}
 
 
+@app.get("/api/agent-scorecard")
+def agent_scorecard(p: Principal = Depends(STUDENT_JUDGE)):
+    """The agent's measurable record and live mandate, read from the audit log (read-only)."""
+    from ..agent import scorecard
+    return jsonable_encoder({**scorecard.build(S), "mandate_card": scorecard.mandate_card(S)})
+
+
 @app.get("/api/audit/verify")
 def audit_verify(p: Principal = Depends(VIEWERS)):
     r = verify_chain(S.world.audit.entries)

@@ -15,11 +15,13 @@ Amazon Nova Pro on Bedrock is billed. **No live model call unless the owner appr
 ## 2. Commands (offline)
 
 ```bash
-# tests: expect "2299 passed, 2 skipped" (update the README if the count changes)
+# tests: expect "2628 passed, 2 skipped" (update the README if the count changes)
 OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m uvicorn oasis.api.main:app --port 8000
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.runner --llm offline   # also eval.flightpath_bench, eval.netting_bench, eval.tasks_bench
 cd frontend && npm ci && npm run build   # frontend/dist is committed; rebuild after frontend/src changes
+bash scripts/router_gates.sh <outdir>   # all router gates offline: pytest, eval.runner, eval.fuzz_bench, verify_evidence, eval.frozen_set (about 30 min)
+OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.router_sets   # DEV and WORD-HELD-OUT scores (model off); -m eval.attack_catalogue_run for rows A1-A20
 ```
 
 ## 3. Security invariants (do not weaken)
@@ -41,5 +43,6 @@ cd frontend && npm ci && npm run build   # frontend/dist is committed; rebuild a
 ## 5. Conventions and git
 
 - Python 3.10+, FastAPI in `oasis/`, React + Vite in `frontend/src/`, benchmarks in `eval/`, tests in `tests/`. Match surrounding style; deterministic code, seeded randomness; hermetic tests (no network, no writes outside temp dirs).
+- Router vocabulary lives in `oasis/agent/lexicon.py` (data, not regexes); add a word only with a test, and never tune on the WORD-HELD-OUT or BLIND sets. Write regexes with the Edit tool or a raw string: a `\b` inside a normal Python string becomes a backspace character.
 - New UI strings in both `frontend/src/i18n/en.js` and `zh.js`. New corridor values in `oasis/trust/rules/*.yaml` with source, date and status.
 - Never commit `.env`, `data/`, keys or `node_modules/`. Commit or push only when asked, after the offline test suite passes.

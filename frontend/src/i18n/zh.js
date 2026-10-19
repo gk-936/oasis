@@ -805,6 +805,7 @@ export default {
   "audit.fx_conversion": "货币兑换",
   "audit.conversion_executed": "已签名的兑换已执行",
   "audit.mandate_created": "长期指令已签名",
+  "audit.mandate_revoked": "长期指令已终止（已签名）",
   "audit.telegram_pair_code_issued": "已生成 Telegram 配对码",
   "audit.telegram_unpaired": "已解除 Telegram 配对",
   "audit.passkey_registered": "已注册通行密钥",

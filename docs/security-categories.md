@@ -1,6 +1,6 @@
 # Security categories: controls, tests and numbers
 
-Text prepared for the Security Self-Assessment (PDF not rebuilt yet). All figures are offline, MOCK data, our own tests; none is an independent audit. Full suite 2026-10-19: `2214 passed, 2 skipped`.
+Text prepared for the Security Self-Assessment (PDF not rebuilt yet). All figures are offline, MOCK data, our own tests; none is an independent audit. Full suite: `2214 passed, 2 skipped`.
 
 | Organiser attack category | Oasis controls | Tests that prove them | Numbers (and caveat) |
 |---|---|---|---|

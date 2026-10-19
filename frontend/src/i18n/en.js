@@ -806,6 +806,7 @@ export default {
   "audit.fx_conversion": "currency conversion",
   "audit.conversion_executed": "signed conversion executed",
   "audit.mandate_created": "standing instruction signed",
+  "audit.mandate_revoked": "standing instruction ended (signed)",
   "audit.telegram_pair_code_issued": "Telegram pairing code issued",
   "audit.telegram_unpaired": "Telegram unpaired",
   "audit.passkey_registered": "passkey registered",

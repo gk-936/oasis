@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 18:28",
+  "run": "2026-10-19 18:17",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -166,10 +166,12 @@
    "id": "TC-015",
    "category": "cancel",
    "kind": "cancelled",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected cancelled, last status refused"
+   ],
    "turns": 2,
-   "last": "cancelled",
+   "last": "refused",
    "dead_end": false,
    "asks": false
   },
@@ -362,7 +364,7 @@
    "turns": 1,
    "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TC-033",
@@ -487,9 +489,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-044",
@@ -498,9 +500,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-045",
@@ -564,8 +566,8 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -651,11 +653,13 @@
    "id": "TC-058",
    "category": "ambiguous_tuition",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status info"
+   ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -673,11 +677,13 @@
    "id": "TC-060",
    "category": "ambiguous_partial",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status info"
+   ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -739,10 +745,12 @@
    "id": "TC-066",
    "category": "held_payment",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status refused"
+   ],
    "turns": 2,
-   "last": "info",
+   "last": "refused",
    "dead_end": false,
    "asks": false
   },
@@ -786,9 +794,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-071",
@@ -799,7 +807,7 @@
    "turns": 2,
    "last": "unknown",
    "dead_end": true,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TC-072",
@@ -823,7 +831,7 @@
    "turns": 1,
    "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TC-074",
@@ -864,12 +872,12 @@
    "kind": "draft_awaiting_signature",
    "ok": false,
    "failures": [
-    "expected draft_awaiting_signature, last status unknown"
+    "expected draft_awaiting_signature, last status info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-078",
@@ -932,8 +940,10 @@
    "id": "TC-083",
    "category": "pay_deposit",
    "kind": "draft_awaiting_signature",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected draft_awaiting_signature, last status unknown"
+   ],
    "turns": 2,
    "last": "unknown",
    "dead_end": true,
@@ -946,19 +956,21 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-085",
    "category": "part_rent",
    "kind": "draft_awaiting_signature",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected draft_awaiting_signature, last status unknown"
+   ],
    "turns": 2,
-   "last": "needs_confirmation",
-   "dead_end": false,
+   "last": "unknown",
+   "dead_end": true,
    "asks": true
   },
   {
@@ -979,9 +991,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-088",
@@ -990,8 +1002,8 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -1116,10 +1128,10 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status held"
+    "expected clarifying_question, last status info"
    ],
    "turns": 1,
-   "last": "held",
+   "last": "info",
    "dead_end": false,
    "asks": false
   },
@@ -1242,9 +1254,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-111",
@@ -1255,7 +1267,7 @@
    "turns": 2,
    "last": "unknown",
    "dead_end": true,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TC-112",
@@ -1264,8 +1276,8 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -1363,9 +1375,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-122",
@@ -1374,8 +1386,8 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
+   "last": "info",
+   "dead_end": false,
    "asks": true
   },
   {
@@ -1385,9 +1397,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-124",
@@ -1411,7 +1423,7 @@
    "turns": 2,
    "last": "unknown",
    "dead_end": true,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TC-126",
@@ -1420,9 +1432,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "needs_confirmation",
+   "last": "info",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TC-127",
@@ -1513,12 +1525,12 @@
    "kind": "clarifying_question",
    "ok": false,
    "failures": [
-    "expected clarifying_question, last status unknown"
+    "expected clarifying_question, last status info"
    ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-135",
@@ -1615,20 +1627,22 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "needs_info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TC-144",
    "category": "unsupported_bill",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status needs_confirmation"
+   ],
    "turns": 2,
-   "last": "info",
+   "last": "needs_confirmation",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TC-145",
@@ -1715,7 +1729,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
+    "info",
     "info",
     "rejected"
    ]
@@ -1728,7 +1742,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "needs_confirmation"
+    "needs_info"
    ]
   },
   {
@@ -1766,7 +1780,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation"
+    "refused"
    ]
   },
   {
@@ -1784,7 +1798,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -1806,7 +1820,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "info"
    ]
@@ -1819,7 +1833,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "needs_info"
+    "info"
    ]
   },
   {
@@ -1864,8 +1878,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "refused"
    ]
   },
@@ -1875,9 +1889,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "held",
-    "held"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -1886,7 +1900,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info",
     "info"
    ]
@@ -1898,8 +1912,8 @@
    "failures": [],
    "outcomes": [
     "needs_info",
-    "needs_info",
-    "held"
+    "info",
+    "info"
    ]
   },
   {
@@ -1955,8 +1969,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
-    "needs_info",
+    "info",
+    "unknown",
     "info"
    ]
   },
@@ -1966,9 +1980,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "unknown"
+    "refused"
    ]
   },
   {
@@ -2015,7 +2029,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "refused"
    ]
   },
   {
@@ -2024,9 +2038,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -2057,7 +2071,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "rejected"
    ]
@@ -2105,8 +2119,8 @@
    "failures": [],
    "outcomes": [
     "needs_info",
-    "needs_info",
-    "held"
+    "unknown",
+    "needs_info"
    ]
   },
   {
@@ -2115,7 +2129,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
+    "info",
     "info",
     "refused"
    ]
@@ -2127,7 +2141,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "needs_verification"
    ]
   },
@@ -2137,9 +2151,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "held"
+    "unknown"
    ]
   },
   {
@@ -2195,7 +2209,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2206,7 +2220,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2264,9 +2278,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "held"
+    "info",
+    "info",
+    "refused"
    ]
   },
   {
@@ -2344,8 +2358,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "refused"
    ]
   },
@@ -2355,9 +2369,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "unknown"
+    "refused"
    ]
   },
   {
@@ -2366,7 +2380,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2377,9 +2391,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "held"
+    "needs_info"
    ]
   },
   {
@@ -2406,7 +2420,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2424,8 +2438,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -2437,7 +2451,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "unknown"
+    "held"
    ]
   },
   {
@@ -2446,8 +2460,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -2458,7 +2472,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -2504,9 +2518,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "held",
     "needs_info",
-    "needs_info",
-    "held"
+    "needs_verification"
    ]
   },
   {
@@ -2526,8 +2540,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
-    "needs_info",
+    "info",
+    "unknown",
     "held"
    ]
   },
@@ -2584,7 +2598,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -2617,9 +2631,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2666,7 +2680,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "held"
+    "info"
    ]
   },
   {
@@ -2675,7 +2689,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "rejected"
    ]
@@ -2686,7 +2700,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "info"
    ]
@@ -2699,7 +2713,7 @@
    "outcomes": [
     "cancelled",
     "info",
-    "held"
+    "info"
    ]
   },
   {
@@ -2708,8 +2722,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "refused"
    ]
   },
@@ -2747,8 +2761,8 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
-    "info"
+    "info",
+    "refused"
    ]
   },
   {
@@ -2768,7 +2782,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "info"
    ]
@@ -2826,8 +2840,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -2837,7 +2851,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "refused",
     "unknown",
     "info"
    ]
@@ -2848,9 +2862,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -2906,7 +2920,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "needs_verification"
    ]
@@ -2917,7 +2931,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -2928,9 +2942,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "needs_verification"
+    "refused"
    ]
   },
   {
@@ -2939,8 +2953,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info",
-    "needs_info",
+    "info",
+    "unknown",
     "held"
    ]
   },
@@ -3019,8 +3033,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -3048,7 +3062,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3057,7 +3071,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3067,7 +3081,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "info"
    ]
   },
@@ -3079,7 +3093,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -3099,9 +3113,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -3110,9 +3124,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "needs_info",
     "unknown",
-    "unknown",
-    "rejected"
+    "refused"
    ]
   },
   {
@@ -3221,7 +3235,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -3231,7 +3245,7 @@
    "failures": [],
    "outcomes": [
     "refused",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -3241,7 +3255,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3252,9 +3266,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "refused",
     "unknown",
-    "unknown",
-    "needs_verification"
+    "refused"
    ]
   },
   {
@@ -3264,8 +3278,8 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info"
    ]
   },
   {
@@ -3274,9 +3288,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -3315,7 +3329,7 @@
    "failures": [],
    "outcomes": [
     "info",
-    "unknown",
+    "info",
     "needs_verification"
    ]
   },
@@ -3336,7 +3350,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "needs_verification"
    ]
@@ -3349,7 +3363,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3376,7 +3390,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation"
+    "info"
    ]
   },
   {
@@ -3406,7 +3420,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -3416,7 +3430,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3476,7 +3490,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3485,7 +3499,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "refused"
    ]
@@ -3496,7 +3510,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info",
     "held"
    ]
@@ -3507,8 +3521,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "info"
    ]
   },
@@ -3518,9 +3532,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3529,9 +3543,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -3582,7 +3596,7 @@
    "outcomes": [
     "unknown",
     "unknown",
-    "info"
+    "refused"
    ]
   },
   {
@@ -3629,7 +3643,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -3639,7 +3653,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -3649,9 +3663,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
+    "info",
     "unknown",
-    "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -3661,7 +3675,7 @@
    "failures": [],
    "outcomes": [
     "refused",
-    "unknown",
+    "info",
     "refused"
    ]
   },
@@ -3672,7 +3686,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -3691,7 +3705,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_info"
+    "refused"
    ]
   },
   {
@@ -3720,7 +3734,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "unknown",
     "held"
    ]
@@ -3741,11 +3755,13 @@
   {
    "id": "LC-003",
    "category": "invoice_check",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "refused",
     "held"
    ]
   },
@@ -3765,7 +3781,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "needs_info",
     "held"
    ]
   },
@@ -3776,7 +3792,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown",
+    "info",
     "held"
    ]
   },
@@ -3877,7 +3893,7 @@
    "outcomes": [
     "held",
     "unknown",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -3886,7 +3902,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "cancelled",
     "cancelled"
    ]
@@ -3894,12 +3910,14 @@
   {
    "id": "LC-018",
    "category": "correction",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "held",
     "unknown",
-    "held"
+    "refused"
    ]
   },
   {
@@ -3988,8 +4006,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "info"
    ]
   },
@@ -4017,7 +4035,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "cancelled",
     "held"
    ]
@@ -4048,9 +4066,9 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
-    "unknown"
+    "info",
+    "info",
+    "info"
    ]
   },
   {
@@ -4090,7 +4108,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "needs_info",
     "info",
     "info"
    ]
@@ -4130,8 +4148,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "unknown",
+    "info",
+    "info",
     "held"
    ]
   },
@@ -4170,7 +4188,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info",
     "held"
    ]
@@ -4192,7 +4210,7 @@
    "outcomes": [
     "info",
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {

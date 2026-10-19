@@ -1,4 +1,4 @@
-# Changes made against MASTER_FIX (2026-10-19)
+# Changes made against MASTER_FIX
 
 Offline work only: no live model call was made. Offline suite: **2299 passed, 2 skipped**. Attack benchmark: CNY 0 lost. Fuzz run: 0 hard breaches. `execution_evidence/verify_evidence.py`: ALL CHECKS PASSED.
 

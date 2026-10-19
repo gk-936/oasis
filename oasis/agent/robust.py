@@ -328,7 +328,7 @@ def resolve(text: str, ui: str = "en", payees=()) -> Result:
     if _MAKE.search(norm) and not s.question:                  # a payment-like order the keyword router could not place: ask (chat's own reply), never answer a guess
         return Result("none", None, "slots")
     ranked = similar(text)
-    if ranked and ranked[0][0] == "other":                  # chit-chat or nonsense: no intent, no menu (the chat layer's own "I didn't catch that" answers)
+    if ranked and ranked[0][0] == "other":                  # chit-chat or nonsense: no intent, no menu (the chat layer answers from the FAQ or gives a hedge)
         return Result("none", None, "similarity", ranked[0][1])
     top = decide(ranked)
     if top == "other":

@@ -68,3 +68,39 @@ def test_a_rate_target_from_chat_is_a_draft_until_signed_then_converts_within_th
     assert any(m["kind"] == "rate_target" for m in _mandates(st))
     st.post("/api/autonomy/tick", json={"days": 6})
     assert st.get("/api/state").json()["ledger_money_lost"] == 0
+
+
+# ---- 5.7 item 9: ending a standing instruction or rate target is a held draft that only the device-key signature completes
+def test_stop_my_autopay_is_a_held_revoke_draft_and_the_mandate_ends_only_after_signing(st):
+    j = st.post("/api/chat", json={"message": "Set up a recurring payment for my phone bill"}).json()
+    Approver(st, "student").approve(j["pending_id"])
+    assert _mandates(st)[0]["active"]
+    r = st.post("/api/chat", json={"message": "stop my autopay"}).json()
+    assert r["status"] == "held" and r["pending_id"] and r["money_moved"] == 0 and "No money moves" in r["reply"]
+    assert _mandates(st)[0]["active"]                                   # a draft changes nothing
+    assert Approver(st, "student").approve(r["pending_id"]).json()["status"] == "paid"
+    assert not _mandates(st)[0]["active"]
+    st.post("/api/autonomy/tick", json={"days": 40})
+    acts = st.get("/api/activity").json()["acted_alone"]
+    assert not any(a["kind"] == "recurring_bill_paid" for a in acts)    # the revoked mandate pays nothing
+    assert st.get("/api/state").json()["ledger_money_lost"] == 0
+
+
+def test_a_forged_revoke_signature_ends_nothing(st):
+    j = st.post("/api/chat", json={"message": "Set up a recurring payment for my phone bill"}).json()
+    ap = Approver(st, "student")
+    ap.approve(j["pending_id"])
+    r = st.post("/api/chat", json={"message": "cancel my standing instruction"}).json()
+    forged = st.post("/api/approve", json={"pending_id": r["pending_id"], "signature": ap.device.sign("0" * 64), "key_id": ap.key_id})
+    assert forged.status_code == 403 and _mandates(st)[0]["active"]
+
+
+def test_remove_the_rate_alert_revokes_a_signed_rate_target(st):
+    j = st.post("/api/chat", json={"message": "convert 1500 when the rate reaches 0.0700"}).json()
+    Approver(st, "student").approve(j["pending_id"])
+    r = st.post("/api/chat", json={"message": "remove the rate alert"}).json()
+    assert r["status"] == "held" and r["pending_id"]
+    Approver(st, "student").approve(r["pending_id"])
+    import oasis.api.main as api
+    assert all(t["status"] != "watching" for t in api.S.world.passport.rules.rate_targets)
+    assert not any(m["active"] for m in _mandates(st))

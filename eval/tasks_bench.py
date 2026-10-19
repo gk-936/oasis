@@ -29,7 +29,7 @@ HERE = Path(__file__).resolve().parent
 TASKS = HERE / "tasks" / "tasks.json"
 REPORTS = HERE / "reports"
 SECRET_WORDS = ("student-demo", "parent-demo", "judge-demo")
-CAVEAT = ("Our own scripted tasks, written by the same team that built Oasis, run against the offline keyword router on MOCK data. "
+CAVEAT = ("Our own scripted tasks, written by the same team that built Oasis, run against the offline deterministic router on MOCK data. "
           "It shows the chat paths work end to end and that attacks fail; it is not an independent benchmark and says nothing "
           "about a live model.")
 

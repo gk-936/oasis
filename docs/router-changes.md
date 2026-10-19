@@ -1,3 +1,5 @@
+> **Superseded for current behaviour.** This file records the earlier keyword-plus-similarity router (before the rebuild). The router was then rebuilt (concept lexicon, frame parser, context, scam lane, FAQ; see [router-overhaul.md](router-overhaul.md)). Figures below describe that earlier build and are kept as history; current figures are in [`eval/reports/router_sets.md`](../eval/reports/router_sets.md) and [`eval/reports/router_overhaul.md`](../eval/reports/router_overhaul.md).
+
 # Offline chat router: current numbers (router frozen after this round)
 
 All figures are offline (no model call). Nothing under `oasis/trust/*` was touched. Shipped settings: answer threshold `ACCEPT` 0.17, margin 0.08, confusable-pair rule on, keyword-answer doubt off. `OASIS_ROUTER_ROBUST=0` switches the new layers off.
