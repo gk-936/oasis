@@ -100,19 +100,6 @@ The model **only proposes and explains**. It reads documents, proposes a payment
 
 The model never holds credentials, approves a payment, changes a verification status or writes the audit log. Its risk score can only **escalate** a decision.
 
-```mermaid
-flowchart LR
-  subgraph U["UNTRUSTED: documents, email, screenshots, tool output, the AI"]
-    S1["1 Understand"] --> S2["2 Plan"] -. proposal .-> V["Deterministic validator"]
-  end
-  S2 --> S3
-  subgraph T["TRUSTED: deterministic code"]
-    S3["3 Verify<br/>registry, limits"] --> S4["4 Commit<br/>policy, signed intent"] --> S5["5 Execute and watch<br/>executor enforces the intent"] --> S6["6 Prove<br/>audit chain, proof pack"]
-  end
-  S5 --> L[("Sandbox ledger (MOCK)")]
-  S5 --> FP["FlightPath"] --> EP["Evidence Passport"]
-  S6 --> TP["Trust Pass / ZK / W3C VC"]
-```
 
 ## Post-quantum signatures
 
@@ -161,13 +148,22 @@ Full per-set numbers, first-run baselines, the model-on router run, labeller-tra
 
 ## Documentation
 
-| Start here | Go deeper | Trust and compliance |
-|---|---|
-| [JUDGE_GUIDE.md](JUDGE_GUIDE.md): guided paths | [docs/full-overview.md](docs/full-overview.md): every feature and result | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) |
-| [docs/API_REFERENCE.md](docs/API_REFERENCE.md): the graders' endpoints | [docs/technical-documentation.md](docs/technical-documentation.md) | [docs/security-self-assessment.md](docs/security-self-assessment.md) |
-| [docs/results.md](docs/results.md) | [docs/configuration.md](docs/configuration.md) | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) |
+**Start here**
+- [JUDGE_GUIDE.md](JUDGE_GUIDE.md): guided paths
+- [docs/API_REFERENCE.md](docs/API_REFERENCE.md): the graders' endpoints
+- [docs/results.md](docs/results.md): benchmark results
 
-Also: [agent API](docs/agent-api.md), [problem evidence](docs/problem-evidence.md), [Bedrock setup](docs/bedrock-setup.md), [compliance mapping](docs/compliance-mapping.md) (alignment, not compliance), [path to production](docs/path-to-production.md).
+**Go deeper**
+- [docs/full-overview.md](docs/full-overview.md): every feature and result
+- [docs/technical-documentation.md](docs/technical-documentation.md)
+- [docs/configuration.md](docs/configuration.md)
+- [docs/agent-api.md](docs/agent-api.md), [docs/problem-evidence.md](docs/problem-evidence.md), [docs/bedrock-setup.md](docs/bedrock-setup.md), [docs/path-to-production.md](docs/path-to-production.md)
+
+**Trust and compliance**
+- [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md)
+- [docs/security-self-assessment.md](docs/security-self-assessment.md)
+- [docs/real-vs-simulated.md](docs/real-vs-simulated.md)
+- [docs/compliance-mapping.md](docs/compliance-mapping.md) (alignment, not compliance)
 
 ## Built with
 
