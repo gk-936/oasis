@@ -38,12 +38,12 @@ Arjun is leaving India to study in Shenzhen. In his first semester he has to pay
 
 ## Four pains, four answers
 
-| Pain | What Oasis does | Result *(sandbox; caveats in [docs/results.md](docs/results.md))* |
-|---|---|
-| **Invoice-redirect fraud** | An independent payee registry, signed intents, policy rules R01-R19 and an executor that enforces the signed intent exactly | **100%** of 32 visible, 28 hidden and 28 blind-set-2 attacks blocked, **CNY 0 lost** (our own sets; see limits) |
-| **Hidden fees** | Compares routes on what the recipient *receives*, plus a wallet converter and a deadline-aware planner | Fees **CNY 4,990 vs 29,378** for a typical bank route (**83% lower**, MOCK fees) |
-| **Arrives short, late or twice** | **FlightPath** checks before sending, detects delays and short credits, and never resends blindly. **Digital Twin** runs a Monte Carlo of the semester | **0 duplicate payments vs 62** at baseline in a simulation of 400 transfers (our own model) |
-| **No credit history** | **Trust Pass** is a student-held credential built from verified payments, with zero-knowledge threshold proofs and W3C VC export, plus **credit growth** guidance | Tamper and false-claim tests pass; a sandbox credential, **not a credit score** |
+| Pain | What Oasis does | Result (sandbox) |
+|---|---|---|
+| **Invoice-redirect fraud** | An independent payee registry, signed intents, policy rules R01-R19 and an executor that enforces the signed intent exactly | **100%** of 32 visible, 28 hidden and 28 blind-set-2 attacks blocked, **CNY 0 lost** |
+| **Hidden fees** | Compares routes on what the recipient *receives*, plus a wallet converter and a deadline-aware planner | Fees **CNY 4,990 vs 29,378** for a typical bank route (**83% lower**) |
+| **Arrives short, late or twice** | **FlightPath** checks before sending, detects delays and short credits, and never resends blindly. **Digital Twin** runs a Monte Carlo of the semester | **0 duplicate payments vs 62** at baseline in a simulation of 400 transfers |
+| **No credit history** | **Trust Pass** is a student-held credential built from verified payments, with zero-knowledge threshold proofs and W3C VC export, plus **credit growth** guidance | Tamper and false-claim tests pass; **not a credit score** |
 
 **Also inside:** a six-currency wallet · foreign-currency plans and payments (INR, CNY, USD, EUR) · an **Evidence Passport** (QR-verifiable proof that a payment arrived) · a peer netting simulation · email / screenshot / Chinese-text intake · a parent portal for co-signing · a scripted client and API for automatic testing ([docs/agent-api.md](docs/agent-api.md)).
 
