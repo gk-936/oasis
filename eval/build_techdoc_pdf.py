@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 COVER_META = ("Track: AI as a Financial Participant<br>Sub-track: Cross-border &amp; Student Finance Assistant<br>"
-              "20 October 2026<br>Hosted copy: oasis.koreacentral.cloudapp.azure.com")
+              "Hosted copy: oasis.koreacentral.cloudapp.azure.com")
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "Technical_Documentation.pdf"
 LOGO = ROOT / "docs" / "assets" / "oasis-logo-dark.svg"
@@ -381,7 +381,7 @@ def build(pages: dict[str, int]) -> str:
     ["Above CNY 200,000, a canary or a registry contradiction", "Frozen", "Tier 3: never"]], ["34%", "34%", "32%"])}
 <h3>6.2 Limitations</h3>
 {tbl(["Limitation", "Effect and mitigation"], [
-    ["Everything financial is simulated", "Rails, rates, fees and the registry are MOCK. Savings are not what a real student would save. A production path needs licensing, real rails, external audit and key management"],
+    ["Everything financial is simulated", "Rails, rates, fees and the registry are MOCK. Savings are not what a real student would save. A production path needs licensing, real rails, external audit and key management. Real bank and payment data was deliberately not used. Moving or reading real money for the INR to CNY corridor needs a licensed payment partner (in India, an authorised dealer bank under FEMA/LRS), and reading real account or student data needs user consent and compliance with India's data-protection law (DPDP Act 2023). A student prototype cannot responsibly hold either. We therefore used mock rails and accounts, and real data only where it is public: ECB reference exchange rates and the OFAC sanctions list."],
     ["Tests are largely self-written", "The attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; the first-run row of each report is the only out-of-sample number. Stress tests are white-box. The hidden attack set is partly burned. No external human audit"],
     ["Live evidence is small", "One model, one provider, small samples on MOCK data. The chat-label validator rule that removed the one trap label was added after the run and is post hoc. Model calls are not part of the Oasis audit chain: live results are saved report rows, not a provider-side log"],
     ["Some unusual wording is still missed", "A clarifying question or a wrong answer-only reply is possible; no money moves (figures in Section 5)"],

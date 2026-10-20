@@ -26,7 +26,7 @@ INK, MID, LIGHT = "#111", "#555", "#e4e6e8"
 RED, GREEN, AMBER, TEAL, NAVY = "#b42318", "#117a3d", "#b7791f", "#00A88F", "#0B1F2A"
 e = html.escape
 COVER_META = ("Track: AI as a Financial Participant<br>Sub-track: Cross-border &amp; Student Finance Assistant<br>"
-              "20 October 2026<br>Hosted copy: oasis.koreacentral.cloudapp.azure.com")
+              "Hosted copy: oasis.koreacentral.cloudapp.azure.com")
 SHORT = {"P1": "P1  Fake landlord, new account", "P2": "P2  Altered tuition invoice", "P3": "P3  Lookalike payee",
          "P4": "P4  Hidden instruction in a document", "P5": "P5  Tool rewrites payment details"}
 SECTIONS = ["Executive Summary", "Scope and Method", "Problem Statement", "Student Tasks Completed", "AI as a Financial Participant: Operation Logs",
@@ -632,7 +632,7 @@ VERIFY    after edit    intact={tt['after_edit_verifies']}  first_broken={tt['fi
 
     # ---- 11
     h.append(sec(11, """<p>The caveats of this report are stated here once and apply to every section.</p><ul>
-<li><b>Simulation only.</b> The ledger, exchange rates, fees, payee registry and the simulated humans are MOCK. No real bank, account or blockchain was involved. Savings are not a measure of what a real student would save.</li>
+<li><b>Simulation only.</b> The ledger, exchange rates, fees, payee registry and the simulated humans are MOCK. No real bank, account or blockchain was involved. Savings are not a measure of what a real student would save. Real bank and payment data was deliberately not used. Moving or reading real money for the INR to CNY corridor needs a licensed payment partner (in India, an authorised dealer bank under FEMA/LRS), and reading real account or student data needs user consent and compliance with India's data-protection law (DPDP Act 2023). A student prototype cannot responsibly hold either. We therefore used mock rails and accounts, and real data only where it is public: ECB reference exchange rates and the OFAC sanctions list.</li>
 <li><b>Who wrote the tests.</b> The cases, executor tests, attack scenarios and chat sets were written by the project team or by outside AI systems from the public documentation. The outside sets were used to find and fix failures and the router was tuned on them, so their final scores are not out-of-sample and the layering results do not show performance against unknown attackers. No external human audit has been done.</li>
 <li><b>Live-model samples are small.</b> One model, one provider, MOCK data; they show the controls hold on the tested cases and are not a robustness claim. Sets 1, 2 and A (Section 8.2) were not run live. The chat-label validator rule that removed the one trap label was added after the run and is post hoc.</li>
 <li><b>Live runs are not in the audit chain.</b> Nova calls are not written to the Oasis audit chain, so the saved report and row files are the record, not a provider-side or signed log.</li>
