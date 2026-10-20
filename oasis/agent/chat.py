@@ -185,8 +185,8 @@ _REFUSE_DETAIL = {
         "I can't give you another person's passcode or key, whoever they are: each one is only for its owner. A parent approves from their own session. Nothing was shared. Nothing moved.",
         "我不能给您别人的口令或密钥，无论对方是谁：每一个都只属于其主人。家长要在自己的会话里批准。没有分享任何内容，也没有任何资金转出。"),
     ("privacy", "account"): (
-        "I can't print a full account number. Payee accounts are shown masked (like ****1234), and money only goes to the account in the registry. You can check the last four digits on a draft before you sign. Nothing moved.",
-        "我不能显示完整的账号。收款账户只显示掩码（如 ****1234），款项只会汇到登记册中的账户。签名前您可以在草稿上核对后四位。没有任何资金转出。"),
+        "I can't print a full account number in chat. Payee accounts are masked here (like ****1234); the signing panel shows the full number so you can check it before you sign, and money only goes to the account in the registry. Nothing moved.",
+        "我不能在聊天中显示完整的账号。聊天里收款账户只显示掩码（如 ****1234）；签名面板会显示完整账号，供您签名前核对，款项只会汇到登记册中的账户。没有任何资金转出。"),
     ("privacy", "person"): (
         "I can't share another person's contact or ID details (phone, address, passport, e-mail): they aren't mine to give out. Your own details are on the Passport tab. Nothing moved.",
         "我不能提供别人的联系方式或证件信息（电话、地址、护照、邮箱）：这些不是我能对外提供的。您自己的资料在“护照”页。没有任何资金转出。"),

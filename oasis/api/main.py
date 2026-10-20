@@ -1308,6 +1308,9 @@ def rate_target(body: RateTargetIn, p: Principal = Depends(STUDENT)):
     mid = S.world.rates.mid(S.world.day_index)
     if not mid * 0.3 <= body.rate <= mid * 3:          # QA 2026-10-15: a target of 5 (70x the market) was accepted and could never fire
         raise HTTPException(400, f"rate is far from today's rate ({mid:.4f}); a target must be between {mid * 0.3:.4f} and {mid * 3:.4f}")
+    lim = S.world.passport.rules.tier1_auto_convert_cny
+    if body.convert_cny > lim:
+        raise HTTPException(400, f"A rate target above CNY {lim:,.0f} needs your signature. Ask in chat (e.g. 'convert {body.convert_cny:,.0f} when the rate reaches {body.rate}') and sign the draft with your device key.")
     t = S.agent.set_rate_target(body.rate, body.convert_cny)
     S.save()
     return t
@@ -1315,9 +1318,8 @@ def rate_target(body: RateTargetIn, p: Principal = Depends(STUDENT)):
 
 @app.post("/api/rate-target/approve")
 def rate_target_approve(body: TargetIdIn, p: Principal = Depends(STUDENT)):
-    res = S.agent.approve_rate_target(body.target_id)
-    S.save()
-    return jsonable_encoder(res)
+    # a role string is not an approval: nothing is released here. Larger targets are drafted in chat and signed with the device key.
+    raise HTTPException(409, "Nothing was released. A rate target above the auto limit needs your signature: ask in chat and sign the draft with your device key.")
 
 
 @app.get("/api/activity")

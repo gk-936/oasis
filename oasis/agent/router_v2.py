@@ -40,6 +40,15 @@ _R2_REWRITES = tuple((re.compile(p), t) for p, t in (
 CRYPTO = {"BTC", "ETH", "USDT", "USDC"}
 
 
+_OOS = re.compile(
+    r"\b(?:student|education(?:al)?|personal|home|car|business)\s+loans?\b|\b(?:apply|applying|qualify|eligible)\b[^.?!]{0,15}\bloans?\b|\b(?:get|need|want|take|borrow)\b[^.?!]{0,10}\b(?:a\s+)?loan\b|\bmortgage\b"
+    r"|\b(?:open|opening|create|creating|set up|setting up|start)\b[^.?!]{0,12}\b(?:bank|savings|checking|current|deposit)\s+account\b|\bbank account (?:opening|abroad)\b"
+    r"|\b(?:health|travel|medical|student|life)\s+insurance\b|\binsurance (?:policy|plan|cover(?:age)?)\b"
+    r"|\bvisa (?:application|extension|renewal|interview|requirements?)\b|\b(?:apply|applying|extend|renew)\b[^.?!]{0,15}\bvisa\b"
+    r"|\b(?:invest(?:ing|ment|ments)?|stocks?|mutual funds?|shares market|trading account)\b|\bbuy(?:ing)? (?:bitcoin|crypto(?:currency)?)\b", re.I)
+_OOS_DOCS = re.compile(r"\bwhat (?:documents?|paperwork|forms?)\b[^.?!]{0,50}\b(?:need|needed|required|send|transfer|remit)\b|\bdocuments? (?:needed|required) (?:to|for)\b[^.?!]{0,30}\b(?:send|transfer|remit|pay)\b", re.I)
+
+
 @dataclass
 class Route:
     kind: str                                  # rewrite | say | bill_statement | bills_pile | worry | faq | revoke | ask_other_currency
@@ -127,6 +136,15 @@ def route(c: Ctx) -> Route | None:
         return None
     if chat_llm._META.search(msg):
         return None                                    # a message about labels, JSON or intents is an instruction to a labeller, not a request from the student
+    if _OOS_DOCS.search(f.text):
+        return Route("say", "I can't give you a paperwork checklist: what a bank or authorised dealer asks for depends on the bank and the purpose code. "
+                     "The 'Corridor rules & sources' card in the Passport tab lists the LRS, TCS and SAFE limits I have researched, marked unconfirmed where a bank has not checked them. "
+                     "I can pay your registered bills, compare routes, convert, plan your semester or check a message for scams. Nothing moved.", "out_of_scope", "info")
+    if not f.pay or not f.bills:
+        if _OOS.search(f.text):
+            return Route("say", "That is outside what I can do here: I don't handle loans, insurance, visas, investments or opening bank accounts. "
+                         "I can pay your registered bills (for example 'pay my rent'), compare routes and fees ('cheapest route for 100000 rupees'), convert currency, "
+                         "plan your semester, check a message for scams and keep a verified payment record. Nothing moved.", "out_of_scope", "info")
     if f.revoke:
         return Route("revoke")
     for rx, text in _R2_REWRITES:

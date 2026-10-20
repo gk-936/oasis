@@ -15,6 +15,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+COVER_META = ("Track: AI as a Financial Participant<br>Sub-track: Cross-border &amp; Student Finance Assistant<br>"
+              "20 October 2026<br>Hosted copy: oasis.koreacentral.cloudapp.azure.com")
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "Technical_Documentation.pdf"
 LOGO = ROOT / "docs" / "assets" / "oasis-logo-dark.svg"
@@ -58,6 +60,7 @@ figure {{ margin: 12pt 0; break-inside: avoid; text-align: center; }} figcaption
 .cover .sub {{ font-size: 12.5pt; margin: 6mm 0 0; text-align: center; color:{MID}; }}
 .cover .mid {{ position:absolute; top: 128mm; left: 0; right: 0; }} .cover .mid img {{ width: 118mm; }}
 .cover .by {{ font-size: 14pt; margin-top: 5mm; font-style: italic; text-align: center; }}
+.cover .meta {{ position:absolute; top: 205mm; left: 0; right: 0; font-size: 11pt; line-height: 1.75; color:{MID}; text-align: center; }}
 .toc td {{ border: none; padding: 6pt 0; font-size: 12pt; }} .toc td.n {{ text-align: right; width: 14mm; }}
 .toc td.dots {{ border-bottom: 0.6pt dotted {MID}; }} .toc tr.app td {{ font-size: 11.5pt; }}
 """
@@ -120,7 +123,7 @@ def build(pages: dict[str, int]) -> str:
     logo = "data:image/svg+xml;base64," + base64.b64encode(LOGO.read_bytes()).decode()
     h = [f"<!doctype html><html><head><meta charset='utf-8'><title>Oasis Technical Documentation</title><style>{CSS}</style></head><body>"]
     h.append(f'<div class="cover"><div class="top"><h1>TECHNICAL DOCUMENTATION</h1><p class="sub">System Architecture, Core Algorithms and Security Design</p></div>'
-             f'<div class="mid"><img src="{logo}" alt="OASIS"><p class="by">by Avertix</p></div></div>')
+             f'<div class="mid"><img src="{logo}" alt="OASIS"><p class="by">by Avertix</p></div><div class="meta">{COVER_META}</div></div>')
 
     def row(label, key, cls=""):
         return f'<tr class="{cls}"><td style="white-space:nowrap">{e(label)}</td><td class="dots"></td><td class="n">{pages.get(key, "")}</td></tr>'
@@ -130,7 +133,8 @@ def build(pages: dict[str, int]) -> str:
     h.append(f'''<section class="s"><h2>{KEYNOTES}</h2>
 <p>Please read these points before using the system.</p>
 <ol>
-<li><b>Hosted copy and login passcodes (demo roles).</b> Address: <code>https://oasis.koreacentral.cloudapp.azure.com</code>. Passcodes are sent to judges separately by the organisers. Hosted copy: <code>OASIS_CHAT_LLM=1</code>, Amazon Nova Pro, so the chat labeller (Section 3.10) uses the live model there.</li>
+<li><b>&ldquo;Held for your signature&rdquo; is the correct end state; completion means signed and paid.</b> Chat drafts a payment but can never approve it; only the student&rsquo;s device-key signature over the exact draft releases it, so a held draft is a completed task. To complete one: (1) log in as student and send <code>pay my rent</code> to <code>POST /api/chat</code>; (2) read <code>pending_id</code> and <code>draft_hash</code>; (3) press Sign and approve in the web app, or run <code>python tools/oasis_client.py --base &lt;address&gt; chat &quot;pay my rent&quot; --sign</code>, which registers a local Ed25519 device key and signs <code>oasis-approval-v1|role|draft_hash</code>; (4) the executor re-checks the signature, exact match, nonce and expiry and pays the registry account. Manual signing and examples: <code>docs/API_REFERENCE.md</code>, section 4. Task completion here means: draft created from the registry, signed with the student&rsquo;s device key, executor paid; tuition and rent both show PAID. A held draft is a correct end state, not a failure.</li>
+<li><b>Hosted copy and login passcodes (demo roles).</b> Address: <code>https://oasis.koreacentral.cloudapp.azure.com</code>. Passcodes are sent to judges separately by the organisers. Hosted copy: <code>OASIS_CHAT_LLM=1</code>, Amazon Nova Pro, so the chat labeller (Section 3.10) uses the live model there: it labels only messages the router cannot place, and never sets a payee, an amount or an approval.</li>
 <li><b>API reference for graders.</b> <code>/docs</code> is off in judge mode, so <code>docs/API_REFERENCE.md</code> lists the login, chat, approve (how to sign a draft), state and reset endpoints with example requests and responses.</li>
 <li><b>The API key has a credit limit.</b> The key supplied with the project has a limited credit budget. When it is reached, the AI features fall back to the deterministic offline path, so every function keeps working.</li>
 <li><b>Quickstart.</b>
@@ -140,7 +144,7 @@ def build(pages: dict[str, int]) -> str:
 </ol></section>''')
 
     def sec(n, body):
-        flow = ' style="break-before:auto"' if n in (4, 5, 6) else ""          # a short section 4 tail should not leave a nearly empty page
+        flow = ' style="break-before:auto"' if n in (3, 4, 5, 6) else ""          # a short section 4 tail should not leave a nearly empty page
         return f'<section class="s"{flow}><h2>{n}.&nbsp; {SECTIONS[n - 1]}</h2>{body}</section>'
 
     def app(n, body):
@@ -162,7 +166,6 @@ def build(pages: dict[str, int]) -> str:
 <h3>1.2 The answer</h3>
 <p>A student abroad pays tuition, rent and living costs across borders, often in a second currency, to payees they cannot easily check, under deadlines. Scams (altered tuition invoices, impostor landlords, look-alike payees), hidden fees and late or short transfers cost real money. An AI assistant could help, but only if it can be given a role in the payment process without being able to move money wrongly.</p>
 <p>Oasis answers with one principle: {k("the AI proposes, deterministic code decides.")} The AI reads documents, plans payments, labels chat requests and explains risk. It never approves a payment, signs, holds a credential, changes who is trusted, or writes to the audit log. Every payment passes the same verification, policy, signing and enforcement path whether a person or the AI started it.</p>
-<p class="small"><b>Supporting design choice.</b> Payments and credit records are signed with both Ed25519 and post-quantum ML-DSA-65 (NIST FIPS 204), and both must verify, so a student's payment history stays checkable for the years a landlord, lender or visa office may need it.</p>
 <h3>1.3 What the system covers</h3>
 {tbl(["Track need", "Oasis feature"], [
     ["Tuition payments", "Verified-payee tuition flow; altered-invoice defence; invoice intake from text, email and image; duplicate-payment guard"],
@@ -171,7 +174,7 @@ def build(pages: dict[str, int]) -> str:
     ["Credit building", "Verified payment record and Oasis Trust Pass, with zero-knowledge threshold proofs and a credit-growth plan. A record, not a credit score; records are hybrid post-quantum signed so they remain verifiable long-term"],
     ["Long-lived trust", "Post-quantum hybrid signatures (Ed25519 + ML-DSA-65, both required) on every payment intent and proof, and a hybrid post-quantum TLS key exchange (Section 3.13)"]], ["28%", "72%"])}
 <h3>1.4 Main features</h3>
-<p>The main features, named as in the application's tabs.</p>
+<p>The main features, named as in the application's tabs. <b>Start with these five:</b> Chat, Plan, FlightPath, Break it and Proof; the rest support them.</p>
 {tbl(["Feature", "What it does"], [
     ["Chat", "Talk to Oasis in English or Chinese: ask about bills, rates and runway, estimate a payment, ask for a draft (including a USD or EUR bill), issue a Trust Pass link, track a transfer, check a message for scams or a bank quote for hidden markup. A payment always ends as a draft the student signs."],
     ["Passport", "The student's profile: balances in six currencies, bills, payees and payment history. Plans and checks start from it."],
@@ -291,11 +294,16 @@ def build(pages: dict[str, int]) -> str:
     ["Compound requests", "Up to four in one message: answered together, first draft made, the rest queued"],
     ["FAQ and fallback", "60+ fixed answers; otherwise a hedge that names the best guess, never a menu for a read-only question"],
     ["Revoke and scorecard", "&ldquo;stop my autopay&rdquo; is a held draft ended only by signature; the scorecard and mandate card are read from the audit log and shown in the web app as the Agent record panel (Passport for the student, Home for the judge); Stop sends a chat message and ends only on signature"],
-    ["Optional model help", "Off by default: a closed-list label or one sentence, re-checked by every lane above; it never sets a payee, an account or an amount"]], ["24%", "76%"])}
+    ["Model help", "Hosted copy: the labeller is on (a closed-list label for messages the router cannot place, re-checked by every lane above) and the interpreter is off. It never sets a payee, an account or an amount"]], ["24%", "76%"])}
 <p><b>Measured (model off):</b> {k("86.9%")} on 2,400 generated messages (tuned on), {k("58.9%")} on 1,600 built from words withheld from the lexicon (target 85% not met), {k("136 of 151")} on the frozen set (was 130), {k("215 of 215")} on our attacker catalogue, {k("CNY 0")} moved in every set. Weakest area: wording outside the lexicon.</p>
-<p><b>Model on.</b> Model-on run (one run, our own messages; eval/reports/model_on.md): 74 calls, 23,940 tokens in and 2,609 out, about USD 0.03 estimated at list prices. The model was called only for the 47 messages the router could not place (36 DEV messages and 11 attack rows). Pooled over 2,655 messages the pass count rose from 2,327 to 2,340, which is +0.49 points, all of it on the DEV messages (13 of the 36 hedges became passes); the attack rows did not change and CNY 0 moved. That is below the 3-point bar, so the interpreter (OASIS_CHAT_LLM_MODE=interpret) is left off on the hosted copy. There is no model-on figure for any other set.</p>
+{tbl(["", "Model off", "Model on (interpreter, one run, our own messages)"], [
+    ["Calls and tokens", "none", "74 calls, 23,940 tokens in, 2,609 out, about USD 0.03 at list prices"],
+    ["Messages the model saw", "none", "47 the router could not place (36 DEV messages, 11 attack rows)"],
+    ["Pass count, 2,655 messages pooled", "2,327", "2,340 (+0.49 points, all on DEV: 13 of 36 hedges became passes)"],
+    ["Attack rows; money moved", "unchanged; CNY 0", "unchanged; CNY 0"],
+    ["Hosted copy", "interpreter off", "Below the 3-point bar, so the interpreter (<code>OASIS_CHAT_LLM_MODE=interpret</code>) is off on the hosted copy; no model-on figure for any other set (<code>eval/reports/model_on.md</code>)"]], ["26%", "22%", "52%"])}
 <p>Chat completes these tasks itself, each ending at a draft for a signature, an advice-only answer or a refusal: {k("fx_bill")} (a USD or EUR bill to a fixed MOCK university), {k("share_record")} (Trust Pass, not a credit score), {k("where")}, {k("plan")}, check-in, {k("scam_check")} and {k("markup_check")}. {k("transfer_issue")}, {k("parent_request")} and {k("quota")} are answer-only. Lakh, crore, <code>1,00,000</code> and <code>5k</code> amounts are read; a number beside &ldquo;times&rdquo; is a count.</p>
-<p><b>Bounded autonomy.</b> The agent acts alone only inside Tier 1: an own-balance conversion at a student-set rate target up to CNY 5,000 (R13) and a recurring bill of at most CNY 500 to a fully verified registry payee (R10). Everything larger is a held draft that only the student's device-key signature over the exact draft hash releases: a conversion above the auto limit or in another pair (rule C01, <code>conversion_exec.py</code>), a standing instruction for a recurring bill and a rate target made through chat (rule C02, <code>mandate_exec.py</code>). The cap and the registry payee sit inside the signed hash, the nonce is single use, every automatic run is re-checked by the pipeline and audited, and a bill that rises above its signed cap is held. <code>GET /api/activity</code> and the chat question &quot;what did you do for me?&quot; return one timeline of what the agent did alone, proposed, held and refused. A third scripted demo run shows this end to end (24 audit entries, money lost 0, identical chain head on replay). Concept questions (SWIFT, nonce, MOCK, FlightPath, supported currencies) get fixed answers from code, not from a model. The web form <code>POST /api/rate-target</code> still creates a bounded Tier-1 target without a device-key signature (known limit).</p>
+<p><b>Bounded autonomy.</b> The agent acts alone only inside Tier 1: an own-balance conversion at a student-set rate target up to CNY 5,000 (R13) and a recurring bill of at most CNY 500 to a fully verified registry payee (R10). Everything larger is a held draft that only the student's device-key signature over the exact draft hash releases: a conversion above the auto limit or in another pair (rule C01, <code>conversion_exec.py</code>), a standing instruction for a recurring bill and a rate target made through chat (rule C02, <code>mandate_exec.py</code>). The cap and the registry payee sit inside the signed hash, the nonce is single use, every automatic run is re-checked by the pipeline and audited, and a bill that rises above its signed cap is held. <code>GET /api/activity</code> and the chat question &quot;what did you do for me?&quot; return one timeline of what the agent did alone, proposed, held and refused. A third scripted demo run shows this end to end (24 audit entries, money lost 0, identical chain head on replay). Concept questions (SWIFT, nonce, MOCK, FlightPath, supported currencies) get fixed answers from code, not from a model. On the web form, targets above the CNY 5,000 limit are refused at creation (400: ask in chat and sign the draft), <code>POST /api/rate-target/approve</code> releases nothing (409), and only targets within the limit are created without a signature.</p>
 <h3>3.11 Proofs, Trust Pass and credit growth</h3>
 <p>A proof pack holds the intent, its hash, verification state, costs, policy decision, audit entry and public keys, hybrid-signed. Because the keys in a pack prove nothing alone, verification reports success only when the key fingerprint matches one pinned out of band, and optionally when the anchor exists on an intact chain. The payment-reliability record lists only payments that completed the full pipeline with a verifying proof pack. The Trust Pass is built from it in the SD-JWT style: each entry gets a random salt and the credential signs only digests, so the holder discloses chosen entries or threshold claims ("at least N") and the verifier learns nothing else. Thresholds can be proved with Pedersen commitments and range proofs without revealing counts. It is a record of payment behaviour, {k("not a credit score")}. The credit-growth plan is read-only guidance over that record.</p>
 <h3>3.12 Hash-chained audit log</h3>
@@ -344,22 +352,35 @@ def build(pages: dict[str, int]) -> str:
     h.append(sec(5, f"""
 <p>Offline results are deterministic and reproducible; live results are from Amazon Nova Pro. Reports are in <code>eval/reports/</code>. Caveats are in Section 6.</p>
 {tbl(["Evidence", "Result"], [
-    ["Test suite", "2731 passed, 2 skipped (live FISCO and live PQ-TLS)"],
+    ["Test suite", "2752 passed, 2 skipped (live FISCO and live PQ-TLS)"],
     ["Visible benchmark: 32 attacks, 12 genuine changes, four layer configurations", "Attack block rate 6.2% baseline, 68.8% with verification, 100% with intents and policy; money lost CNY 479,000 baseline, 0 with the full system; genuine completion 100%"],
-    ["Hidden blind set: 40 cases", "100% blocked and 100% genuine completed after fixes"],
+    ["Hidden attack set: 40 cases (not the router blind set)", "100% blocked and 100% genuine completed after fixes"],
     ["Live extraction, Nova Pro", "Model followed an injection in 0 of 6 cases; full system money lost 0; genuine completion 83.3% (a usability cost)"],
     ["Live poisoned invoices", "0 of 128 changed account, amount or payee; 40 of 40 genuine invoices held for signature exactly as offline; 0 payments released without a signature"],
     ["Live planner (deterministic validator)", "56 of 56 plans valid without fallback; 140 of 140 deadlines met in the pooled run"],
     ["Outside-written sets through the live path", "550 attacks and 170 look-alikes, 0 breaches"],
-    ["Task completion: chat router, offline, model off", "Generated DEV set (2,400 messages, tuned on) 86.9%; generated set from words withheld from the lexicon (1,600, not tuned on) 58.9%, target 85% not met; BLIND set not yet collected. Frozen set 136 of 151 (was 130); attacker catalogue 215 of 215 (our own); paraphrase probe 75 of 78 (was 47); noise probe 344 of 348. Outside-written sets, same harness, previous to current router: set 3 96 to 97 of 120, set G 138 to 138 of 150, set C 127 to 122 of 150; every attack refused; CNY 0 moved in every set. Those sets were used for earlier fixes, so none is independent"],
+    ["Task completion: chat router, offline, model off", "Generated DEV set (2,400 messages, tuned on) 86.9%; generated set from words withheld from the lexicon (1,600, not tuned on) 58.9%, target 85% not met; Router blind set (people who have not seen the router) not yet collected. Frozen set 136 of 151 (was 130); attacker catalogue 215 of 215 (our own); paraphrase probe 75 of 78 (was 47); noise probe 344 of 348. Team held-out set H (never tuned on) 99 of 120. Outside-written sets, same harness, previous to current router: set 3 (ChatGPT) 96 to 97 of 120, set G 138 to 138 of 150, set C 127 to 122 of 150; every attack refused; CNY 0 moved in every set. Those sets were used for earlier fixes, so none is independent"],
     ["Offline planner; executor tamper tests", "8 of 8 plans valid, fees about 83% below a typical bank route; 10 of 10 tampered payments refused"],
     ["Audit chain and replay", "Demo reproduces identical chain heads; an edited entry is detected at the first broken link"]], ["34%", "66%"])}"""))
 
     # ------------------------------------------------------------------ 6
     h.append(sec(6, f"""
+<h3>6.1 What completes and what declines by design</h3>
+<p>A refusal in the left column is the intended result, not a failed task.</p>
+{tbl(["Request", "Oasis result", "Why"], [
+    ["Pay rent, tuition or a deposit to a registered payee", "Completes: a draft, then paid after the device-key signature", "Registry payee, registry account"],
+    ["Convert INR to CNY, compare routes, plan the semester, check a scam, share a Trust Pass", "Completes: answer, or a draft held for signature", "Nothing moves without the signature"],
+    ["Pay a new payee, a friend, a classmate or an arbitrary foreign university", "Declined: payee not in the registry", "Money goes only to registry payees; the verification ramp comes first"],
+    ["Pay an account typed in chat or printed on an invoice", "Declined or paid to the registry account instead", "An account read from a document is never a destination"],
+    ["Pay more than the bill, or the same invoice twice", "Declined or held (R17)", "Overpayment refused; an explicit signed pay-again is needed"],
+    ["&ldquo;Approve it&rdquo;, &ldquo;skip approval&rdquo;, raise limits, reveal passcodes", "Refused, audited, CNY 0 moved", "Chat can never approve, sign or change rules"],
+    ["A USD or EUR bill", "Completes only for the two fixed MOCK universities, always held for signature", "Foreign-currency payments are never automatic"],
+    ["Loans, insurance, visas, investments, opening a bank account", "Declined with a list of what Oasis can do", "Outside the sandbox&rsquo;s scope; nothing moved."],
+    ["Above CNY 200,000, a canary or a registry contradiction", "Frozen", "Tier 3: never"]], ["34%", "34%", "32%"])}
+<h3>6.2 Limitations</h3>
 {tbl(["Limitation", "Effect and mitigation"], [
     ["Everything financial is simulated", "Rails, rates, fees and the registry are MOCK. Savings are not what a real student would save. A production path needs licensing, real rails, external audit and key management"],
-    ["Tests are largely self-written", "The attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; the first-run row of each report is the only out-of-sample number. Stress tests are white-box. The hidden blind set is partly burned. No external human audit"],
+    ["Tests are largely self-written", "The attack and chat sets were written by the team or by outside AI systems (given only the pitch and API description, frozen before their first run) and then used to fix failures, so final scores are not out of sample; the first-run row of each report is the only out-of-sample number. Stress tests are white-box. The hidden attack set is partly burned. No external human audit"],
     ["Live evidence is small", "One model, one provider, small samples on MOCK data. The chat-label validator rule that removed the one trap label was added after the run and is post hoc. Model calls are not part of the Oasis audit chain: live results are saved report rows, not a provider-side log"],
     ["Some unusual wording is still missed", "A clarifying question or a wrong answer-only reply is possible; no money moves (figures in Section 5)"],
     ["Risk scorers are weaker out of sample", "They only escalate; the deterministic controls carry the guarantee"],
@@ -404,7 +425,7 @@ def build(pages: dict[str, int]) -> str:
 <ul>
 <li>Offline mode, fixed seeds, seeded demo keys and nonces, and a simulated clock make the scripted demo repeat exactly; replays reach identical audit-chain heads.</li>
 <li>Benchmarks run offline: <code>eval.runner --llm offline</code>, <code>eval.flightpath_bench</code>, <code>eval.netting_bench</code>, <code>eval.tasks_bench</code>. Live runs are checkpointed, token-capped and saved as report rows.</li>
-<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 2731 passed, 2 skipped.</li>
+<li>Test suite: <code>pytest -q</code> with an in-memory database and offline model; 2752 passed, 2 skipped.</li>
 <li>The execution evidence folder contains a standard-library verifier that recomputes the audit chains and the headline figures from the logs.</li></ul>"""))
 
     h.append(app(4, """

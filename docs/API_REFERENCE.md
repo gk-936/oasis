@@ -31,7 +31,7 @@ curl -s -c jar.txt -X POST "$BASE/api/auth/login?return_token=true" \
 - Roles: `student`, `parent`, `judge`. The judge role is read-only.
 - Use the cookie jar (`-b jar.txt`) or send `Authorization: Bearer <token>` on later calls. The `token` field appears only with `?return_token=true`.
 - A wrong role or passcode returns `401`; repeated failures return `429` with `Retry-After`.
-- Judge mode logs a session out after the configured lifetime (`OASIS_SESSION_TTL_S`, default 3600 s). Log in again if you get `401`.
+- Judge mode logs a session out after the configured lifetime (`OASIS_SESSION_TTL_S`: 7200 s on the hosted copy; the code default is 3600 s, or 1800 s in judge mode when unset). Log in again if you get `401`.
 
 ## 2. `POST /api/reset`
 

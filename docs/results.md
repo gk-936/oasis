@@ -94,7 +94,7 @@ Savings come from mock fees; the simulated student and parent are not oracles.
 
 ## 6. Tests
 
-2731 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
+2752 tests pass and 2 are skipped (live FISCO and live PQ-TLS), no network, no database file: `OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m pytest -q`.
 
 ## 7. Scripted demo (offline, repeats exactly)
 

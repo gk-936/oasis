@@ -4,7 +4,7 @@ Each claim below is mapped to the code that implements it, the exact automated t
 
     PYTHONPATH=. .venv/Scripts/python -m pytest -q <test id>
 
-Full suite: `2731 passed, 2 skipped` (offline, about 10 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
+Full suite: `2752 passed, 2 skipped` (offline, about 10 minutes) (the 2 skips are the live FISCO and live PQ-TLS tests, which need a running chain/proxy). All tests are hermetic (offline forced, outbound sockets blocked, in-memory or tmp databases).
 
 **Evidence types** used below: code inspection / automated test / manual test / independent verification. No independent verification exists today: there has been no independent audit, penetration test or certification of any kind. A claim without an automated test is labelled a gap.
 
@@ -86,7 +86,7 @@ Full suite: `2731 passed, 2 skipped` (offline, about 10 minutes) (the 2 skips ar
 
 ## Reproduce everything
 
-    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 2731 passed, 2 skipped
+    PYTHONPATH=. .venv/Scripts/python -m pytest -q          # 2752 passed, 2 skipped
     PYTHONPATH=. .venv/Scripts/python -m pytest -q -rs tests/test_pqtls.py tests/test_chain_fisco.py    # 9 passed, 2 skipped (reasons printed)
 
 ## Zero-knowledge threshold claims (Trust Pass)

@@ -19,7 +19,7 @@ curl -s -X POST 'localhost:8000/api/auth/login?return_token=true' -H 'content-ty
 | parent | `<parent passcode>` | co-sign (`/api/approve`), parent view |
 | judge | `<judge passcode>` | red-team console and read-only views. **Cannot use `/api/chat`** (403) |
 
-A hosted copy may use its own passcodes (`OASIS_PASS_*`). Failed logins are limited (10 a minute; 5 in judge mode) and answer **429** with `Retry-After`. Sessions last 30 minutes in judge mode. If a passkey second factor is required for a role, login returns a challenge instead of a cookie; the demo does not require it.
+A hosted copy may use its own passcodes (`OASIS_PASS_*`). Failed logins are limited (10 a minute; 5 in judge mode) and answer **429** with `Retry-After`. Sessions last two hours on the hosted copy (`OASIS_SESSION_TTL_S=7200`; the code default is one hour, or 30 minutes in judge mode when unset). If a passkey second factor is required for a role, login returns a challenge instead of a cookie; the demo does not require it.
 
 ## 2. Chat: one natural-language turn
 
@@ -43,7 +43,7 @@ Score tasks on these fields, not on wording:
 
 | Field | Meaning |
 |---|---|
-| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `estimate`, `later`, `transfer_issue`, `fx_bill`, `parent_request`, `quota`, `share_record`, `where`, `recap`, `checkin`, `scam_check`, `markup_check`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `faq` (a fixed answer), `scam_warning`, `scorecard`, `mandate`, `revoke`, `clarify_q` (a model question, interpreter mode only), `unknown` (a hedge that names the best guess) |
+| `intent` | what the router understood: `pay_obligation`, `pay_text`, `pay_invoice`, `balance`, `obligations`, `rate`, `routes`, `runway`, `plan`, `convert`, `rate_target`, `status`, `cancel`, `correct`, `confirm`, `deny`, `explain`, `proof`, `credit`, `estimate`, `later`, `transfer_issue`, `fx_bill`, `parent_request`, `quota`, `share_record`, `where`, `recap`, `checkin`, `scam_check`, `markup_check`, `undo`, `secrets`, `bypass`, `greeting`, `help`, `faq` (a fixed answer), `out_of_scope` (fixed decline; no draft; money_moved 0), `scam_warning`, `scorecard`, `mandate`, `revoke`, `clarify_q` (a model question, interpreter mode only), `unknown` (a hedge that names the best guess) |
 | `status` | `held` (draft waiting), `paid`, `refused` (chat refused it, see `refusal`), `rejected`, `needs_verification`, `frozen` (the pipeline stopped it), `needs_info` (a question was asked), `needs_confirmation`, `cancelled`, `done`, `info`, `unknown` |
 | `needs` | what is still required: `student_signature`, `parent_signature`, or `info:<slot>` (`info:amount`, `info:obligation`, `info:payee`, `info:confirm`) |
 | `pending_id`, `draft_hash` | the draft to sign |
@@ -52,6 +52,14 @@ Score tasks on these fields, not on wording:
 | `refusal` | for `status: "refused"`: `secrets`, `injection`, `bypass`, `registry` (adding or removing payees, or editing records), `role`, `social`; or `transfer` for a refused raw transfer |
 
 Multi-turn dialogue is kept per login session: ask "pay Chen Wei" and the reply is a question (`needs: ["info:obligation"]`); the next message answers it. "Change that to 2600" voids the old draft (a new draft hash, the old signature no longer works); "cancel" declines it. State is cleared by `POST /api/reset`.
+
+**What completes and what declines**
+
+| Request | Result |
+|---|---|
+| Pay a registered bill, convert, compare routes, plan, scam check | Completes as an answer or a draft held for the device-key signature (`status: held` is the correct end state) |
+| Pay an unregistered payee, an account typed in chat, approve or skip approval | Declined or refused, CNY 0 moved |
+| Loans, mortgages, opening a bank account, insurance, visas, investments, crypto, "what documents do I need to send money" | Declined: intent `out_of_scope`, status `info`, no draft, `money_moved` 0; the reply lists what Oasis can do and ends with "Nothing moved." |
 
 What chat will and will not do: it builds a payment **from the obligation and the registry's credential**, never from an account in the text; it never signs; it refuses requests for credentials, keys, its instructions or other users' data, and attempts to bypass approval, with a reason, an audit entry (`chat_refused`, category only) and CNY 0 moved. A raw "send 5000 to account N" runs through the real pipeline and is rejected with a why-card unless N is the registered account of a verified payee.
 

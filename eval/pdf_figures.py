@@ -43,14 +43,14 @@ def _after_fix() -> tuple[dict[str, tuple[int, int]], int, int]:
 
 
 def _heldout3() -> tuple[int, int]:
-    """Held-out set 3 (120 phrases, never tuned on), correct answers on the current router (eval/reports/router_robust.md)."""
+    """Team held-out set H (120 phrases, never tuned on; the 'held-out 3' row of router_robust.md), correct answers on the current router."""
     txt = (ROOT / "eval" / "reports" / "router_robust.md").read_text(encoding="utf-8")
     m = re.search(r"router held-out 3[^|]*\| (\d+) \| \d+ > (\d+) \|", txt)
     return int(m[2]), int(m[1])
 
 
 def fig_outside_sets(n: int = 1) -> str:
-    """The 250-scenario outside set (Codex): first run beside the current router, per category, plus held-out set 3."""
+    """The 250-scenario outside set (Codex): first run beside the current router, per category, plus team held-out set H."""
     d = json.loads(FIRST.read_text(encoding="utf-8"))["round2_codex_250"]
     after, a_pass, a_tot = _after_fix()
     h3, h3n = _heldout3()
@@ -60,7 +60,7 @@ def fig_outside_sets(n: int = 1) -> str:
     svg = [f'<svg viewBox="0 0 {w} {top + len(cats) * rowh + 8}" width="100%" {FONT}>',
            f'<text x="0" y="13" font-size="10.5" font-weight="700" fill="{INK}">Scenarios meeting every expectation. Money moved in any scenario: CNY 0.</text>']
     for j, (lab, p, t, col) in enumerate([("250 set, first run", d["passed"], d["total"], AMBER), ("250 set, current router", a_pass, a_tot, GREEN),
-                                           ("Held-out set 3, never tuned on", h3, h3n, GREEN)]):
+                                           ("Team held-out set H, never tuned on", h3, h3n, GREEN)]):
         y = 22 + j * 15
         svg.append(f'<text x="{left + 40}" y="{y + 9}" text-anchor="end" font-size="9.5" fill="{INK}">{lab}</text>')
         svg.append(f'<rect x="{left + 48}" y="{y}" width="{bw}" height="11" fill="#e4e6ea"/><rect x="{left + 48}" y="{y}" width="{bw * p / t}" height="11" fill="{col}"/>')
@@ -76,7 +76,7 @@ def fig_outside_sets(n: int = 1) -> str:
     svg.append("</svg>")
     return _fig("".join(svg), f"Figure {n}. Scenarios written by an outside AI (Codex) from the pitch and the API description only; offline deterministic router (concept lexicon, context, scam lane), no live model. "
                 "Amber is the first run before any fix; green is the same set on the current router, after fixes written while reading it (a development figure). "
-                "Held-out set 3 was written by our own team before the final fixes and never used for tuning. Sources: eval/reports/outside_firstrun.json, outside_outside_codex_round2.md, router_robust.md.")
+                "Team held-out set H was written by our own team before the final fixes and never used for tuning; it is a different set from the ChatGPT-written set 3 of the outside-set table. Sources: eval/reports/outside_firstrun.json, outside_outside_codex_round2.md, router_robust.md.")
 
 
 def fig_payment_path(n: int = 1) -> str:
