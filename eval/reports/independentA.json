@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-17 11:03",
+  "run": "2026-10-20 13:12",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -327,10 +327,12 @@
    "id": "TA-030",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -418,9 +420,9 @@
    "ok": true,
    "failures": [],
    "turns": 2,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "refused",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TA-039",
@@ -602,12 +604,14 @@
    "id": "TA-055",
    "category": "other",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status held"
+   ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "held",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TA-056",
@@ -624,10 +628,12 @@
    "id": "TA-057",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -635,10 +641,12 @@
    "id": "TA-058",
    "category": "other",
    "kind": "refused",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected refused, last status held"
+   ],
    "turns": 1,
-   "last": "rejected",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -833,12 +841,10 @@
    "id": "TA-076",
    "category": "security",
    "kind": "refused",
-   "ok": false,
-   "failures": [
-    "expected refused, last status held"
-   ],
+   "ok": true,
+   "failures": [],
    "turns": 1,
-   "last": "held",
+   "last": "refused",
    "dead_end": false,
    "asks": false
   },
@@ -879,12 +885,14 @@
    "id": "TA-080",
    "category": "pay_deposit",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TA-081",
@@ -1258,7 +1266,7 @@
    "turns": 1,
    "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "TA-115",
@@ -1275,12 +1283,14 @@
    "id": "TA-116",
    "category": "other",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status held"
+   ],
    "turns": 1,
-   "last": "needs_confirmation",
+   "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "TA-117",
@@ -1297,12 +1307,14 @@
    "id": "TA-118",
    "category": "pay_tuition",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status info"
+   ],
    "turns": 1,
-   "last": "unknown",
-   "dead_end": true,
-   "asks": true
+   "last": "info",
+   "dead_end": false,
+   "asks": false
   },
   {
    "id": "TA-119",
@@ -1429,8 +1441,10 @@
    "id": "TA-130",
    "category": "other",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -1734,11 +1748,13 @@
   {
    "id": "LA-009",
    "category": "ignore previous correction",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "held",
-    "needs_info"
+    "refused"
    ]
   },
   {
@@ -1756,7 +1772,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -1765,7 +1781,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1774,7 +1790,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1869,7 +1885,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1905,7 +1921,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1941,7 +1957,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -1959,7 +1975,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "held"
    ]
   },
   {
@@ -1986,7 +2002,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
+    "info",
     "info"
    ]
   },
@@ -1996,7 +2012,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2005,7 +2021,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation"
+    "needs_info"
    ]
   },
   {
@@ -2023,7 +2039,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2051,7 +2067,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "held"
+    "info"
    ]
   },
   {
@@ -2142,7 +2158,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "needs_confirmation"
+    "info"
    ]
   },
   {
@@ -2160,8 +2176,8 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown",
-    "held"
+    "info",
+    "info"
    ]
   },
   {

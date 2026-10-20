@@ -1,6 +1,6 @@
 # Changes made against MASTER_FIX
 
-Offline suite: **2752 passed, 2 skipped**. Attack benchmark: CNY 0 lost. Fuzz run: 0 hard breaches. `execution_evidence/verify_evidence.py`: ALL CHECKS PASSED.
+Offline suite: **2764 passed, 2 skipped**. Attack benchmark: CNY 0 lost. Fuzz run: 0 hard breaches. `execution_evidence/verify_evidence.py`: ALL CHECKS PASSED.
 
 ## Covered
 

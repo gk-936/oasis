@@ -1,11 +1,63 @@
 {
  "meta": {
-  "run": "2026-10-19 08:36",
-  "routes": 98,
-  "calls": 784,
+  "run": "2026-10-20 13:07",
+  "routes": 100,
+  "calls": 800,
   "caveat": "Reads the allowed roles from the code's own require(...) dependencies and checks the responses. It does not check that the roles themselves are the right ones; that is the security evidence matrix and a human review."
  },
  "rows": [
+  {
+   "path": "/api/activity",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
+  {
+   "path": "/api/agent-scorecard",
+   "method": "GET",
+   "roles": [
+    "judge",
+    "student"
+   ],
+   "codes": {
+    "none": [
+     401,
+     401
+    ],
+    "student": [
+     200,
+     200
+    ],
+    "parent": [
+     403,
+     403
+    ],
+    "judge": [
+     200,
+     200
+    ]
+   }
+  },
   {
    "path": "/api/approve",
    "method": "POST",

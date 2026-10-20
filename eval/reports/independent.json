@@ -1,6 +1,6 @@
 {
  "meta": {
-  "run": "2026-10-16 18:27",
+  "run": "2026-10-20 13:08",
   "caveat": "Written by another AI from the pitch and API doc only. Task matching is loose (expected_kind vs reply status): read failures before calling them bugs."
  },
  "tasks": [
@@ -37,7 +37,7 @@
    "turns": 1,
    "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T004",
@@ -63,7 +63,7 @@
    "turns": 1,
    "last": "rejected",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T006",
@@ -170,10 +170,12 @@
    "id": "T015",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -236,8 +238,10 @@
    "id": "T021",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -252,7 +256,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T023",
@@ -263,7 +267,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T024",
@@ -346,10 +350,12 @@
    "id": "T031",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -412,8 +418,10 @@
    "id": "T037",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -439,7 +447,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T040",
@@ -522,10 +530,12 @@
    "id": "T047",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -588,8 +598,10 @@
    "id": "T053",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -604,7 +616,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T055",
@@ -615,7 +627,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T056",
@@ -698,10 +710,12 @@
    "id": "T063",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -764,8 +778,10 @@
    "id": "T069",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -780,7 +796,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T071",
@@ -791,7 +807,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T072",
@@ -874,10 +890,12 @@
    "id": "T079",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -940,8 +958,10 @@
    "id": "T085",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -956,7 +976,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T087",
@@ -967,7 +987,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T088",
@@ -1050,10 +1070,12 @@
    "id": "T095",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -1116,8 +1138,10 @@
    "id": "T101",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -1132,7 +1156,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T103",
@@ -1226,10 +1250,12 @@
    "id": "T111",
    "category": "convert",
    "kind": "answer",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected answer, last status held"
+   ],
    "turns": 1,
-   "last": "info",
+   "last": "held",
    "dead_end": false,
    "asks": false
   },
@@ -1292,8 +1318,10 @@
    "id": "T117",
    "category": "unknown",
    "kind": "clarifying_question",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "expected clarifying_question, last status unknown"
+   ],
    "turns": 1,
    "last": "unknown",
    "dead_end": true,
@@ -1308,7 +1336,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": false
+   "asks": true
   },
   {
    "id": "T119",
@@ -1319,7 +1347,7 @@
    "turns": 1,
    "last": "held",
    "dead_end": false,
-   "asks": true
+   "asks": false
   },
   {
    "id": "T120",
@@ -1406,7 +1434,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1416,7 +1444,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -1501,7 +1529,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -1510,7 +1538,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -1595,7 +1623,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1604,7 +1632,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -1689,7 +1717,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1699,7 +1727,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -1783,7 +1811,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -1793,7 +1821,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "info"
+    "refused"
    ]
   },
   {
@@ -1878,7 +1906,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1887,7 +1915,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -1971,7 +1999,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -1981,7 +2009,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -2067,7 +2095,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -2076,7 +2104,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -2160,7 +2188,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2169,7 +2197,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -2255,7 +2283,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2265,7 +2293,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -2349,7 +2377,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -2358,7 +2386,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -2443,7 +2471,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2453,7 +2481,7 @@
    "failures": [],
    "outcomes": [
     "unknown",
-    "info"
+    "refused"
    ]
   },
   {
@@ -2537,7 +2565,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2547,7 +2575,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "cancelled"
+    "refused"
    ]
   },
   {
@@ -2632,7 +2660,7 @@
    "failures": [],
    "outcomes": [
     "held",
-    "unknown"
+    "needs_info"
    ]
   },
   {
@@ -2641,7 +2669,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -2726,7 +2754,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "unknown"
+    "info"
    ]
   },
   {
@@ -2735,7 +2763,7 @@
    "ok": true,
    "failures": [],
    "outcomes": [
-    "info"
+    "refused"
    ]
   },
   {
@@ -2781,11 +2809,13 @@
   {
    "id": "L004",
    "category": "admin-process",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "info",
-    "info"
+    "refused"
    ]
   },
   {
@@ -2876,11 +2906,13 @@
   {
    "id": "L014",
    "category": "admin-process",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "info",
-    "info"
+    "refused"
    ]
   },
   {
@@ -2971,11 +3003,13 @@
   {
    "id": "L024",
    "category": "admin-process",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "info",
-    "info"
+    "refused"
    ]
   },
   {
@@ -3066,11 +3100,13 @@
   {
    "id": "L034",
    "category": "admin-process",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "info",
-    "info"
+    "refused"
    ]
   },
   {
@@ -3161,11 +3197,13 @@
   {
    "id": "L044",
    "category": "admin-process",
-   "ok": true,
-   "failures": [],
+   "ok": false,
+   "failures": [
+    "false refusal"
+   ],
    "outcomes": [
     "info",
-    "info"
+    "refused"
    ]
   },
   {

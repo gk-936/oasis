@@ -113,7 +113,7 @@ Planner: `groq-tools`; model `qwen/qwen3.8-27b`, fallback `openai/gpt-oss-120b`;
 
 ## Tool-result format experiment (old `v1` vs compact `v2`), 2026-10-11
 
-Same settings as the earlier live runs: temperature 0.3, per-plan cap 22,000, cache salt `planrep<N>`, validator, scoring and fallback unchanged. Only what the model is shown changed (`oasis/planning/tools.py::present`). Details and caveats: [docs/planner-efficiency.md](../../docs/planner-efficiency.md). **Sample sizes are tiny; read the spread and the caveats.**
+Same settings as the earlier live runs: temperature 0.3, per-plan cap 22,000, cache salt `planrep<N>`, validator, scoring and fallback unchanged. Only what the model is shown changed (`oasis/planning/tools.py::present`). Details and caveats: docs/planner-efficiency.md (repository file `docs/planner-efficiency.md`). **Sample sizes are tiny; read the spread and the caveats.**
 
 | Group | Plans | Model-only valid | Final plan valid (with fallback) | Fallbacks (reasons) | Mean proposals to valid | Tokens / plan | Calls / plan | Seconds / plan | Validator errors by code |
 |---|---|---|---|---|---|---|---|---|---|

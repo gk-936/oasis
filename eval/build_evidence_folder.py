@@ -5,6 +5,8 @@ Copies only (saved reports, logs, the PDFs, evidence docs). No model call, no ne
     PYTHONPATH=. python -m eval.build_evidence_folder
 """
 from __future__ import annotations
+import os
+import re
 import shutil
 from pathlib import Path
 
@@ -57,13 +59,13 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | Hidden blind set and fresh set (first-run records kept) | `03_.../benchmark_hidden*`, `benchmark_fresh*`, `benchmark_blind2*` |
 | Outside-written sets 1, 2, 3, G, C, A | `03_.../independent*.md` |
 | 92,076 chat messages and 29,053 conversations, 0 hard breaches; mutation fuzz | `03_.../mega.md`, `mega2_*.md`, `fuzz.md` |
-| Authorization sweep: 94 routes, 752 calls, 0 findings | `03_.../api_sweep.md`, `api_sweep.json` |
+| Authorization sweep: 100 route/method pairs, 800 calls, 0 findings | `03_.../api_sweep.md`, `api_sweep.json` |
 | Chat task benchmark, 92 tasks, 0 false refusals | `03_.../tasks.md` |
 | Risk scorer out of sample, trained model | `03_.../risk_fresh.md`, `ml_risk.md` |
 | 128 poisoned invoices: model changed no field; 40 of 40 genuine invoices held as offline; risk scorer 168 scored | `04_.../ai_contribution.md`, `ai_contribution.json` |
 | Planner 56 of 56 valid, 140 of 140 deadlines, 7 repeats | `04_.../planning.md`, `planning.json` |
 | Foreign-currency planner | `04_.../fxplan_live.md`, `fxplan_live.json` |
-| Chat labeller: 72 of 73 paraphrases, traps: 0 of 25 fresh accepted, 1 of 25 original (a held draft); router rebuilt: DEV 86.9%, words withheld from the lexicon 58.9%, frozen 136 of 151, catalogue 215 of 215 (model off) | `04_.../chat_llm_scale.md`, `chat_llm_scale_rows.json`, `chat_llm_heldout.md` |
+| Chat labeller: 72 of 73 paraphrases, traps: 0 of 25 fresh accepted, 1 of 25 original (a held draft); router rebuilt: DEV 86.0%, words withheld from the lexicon 58.8%, frozen 136 of 151, catalogue 215 of 215 (model off) | `04_.../chat_llm_scale.md`, `chat_llm_scale_rows.json`, `chat_llm_heldout.md` |
 | Outside sets through the live path: 550 attacks and 170 look-alikes, 0 breaches | `04_.../independent3_live.md`, `independentG_live.md`, `independentC_live.md` |
 | Live extraction and risk benchmark (injections followed 0 of 6) | `04_.../benchmark_live.md`, `benchmark_live.json` |
 | Image intake: 4 of 6 correct | `04_.../vision_live.md`, `vision_live/` |
@@ -71,11 +73,34 @@ Rebuild this folder with `PYTHONPATH=. python -m eval.build_evidence_folder`. Th
 | FlightPath, peer netting, corridor rules | `05_.../flightpath.md`, `netting.md`, `corridors.md` |
 | Post-quantum signatures and TLS | `05_.../pqtls.md`, `06_.../pq-tls.md` |
 | Model-on run, one run on our own messages: 74 calls, about USD 0.03, +0.49 points pooled over 2,655 messages, interpreter left off on the hosted copy | `04_.../model_on.md` |
-| Test suite: 2752 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
+| Test suite: 2764 passed, 2 skipped (offline) | `test_suite_result.txt`; rerun with the command in `CLAUDE.md` |
 | Each security claim maps to named tests | `06_.../security-evidence-matrix.md` |
 | Informal conversations with 10 people we know: 6 international students (Europe, Southeast Asia) and 4 parents (who, what we asked, limits) | `interviews.md` |
 | Known limits, MOCK labelling | `06_.../security-self-assessment.md`, `real-vs-simulated.md`, `problem-evidence.md` |
 """
+
+
+LINK = re.compile(r"(?<!!)\[([^\]]+)\]\((?!https?://|mailto:|#)([^)\s#]+)(#[^)\s]*)?\)")
+
+
+def fix_links(dst: Path) -> None:
+    """The documents are copied flat, so their relative links no longer resolve. A link to a file that is also in this folder is pointed at
+    that copy; any other relative link becomes plain text with the repository path, so nothing in the folder is a dead link."""
+    index: dict[str, Path] = {}
+    for f in sorted(dst.rglob("*")):
+        if f.is_file():
+            index.setdefault(f.name, f)
+    for md in dst.rglob("*.md"):
+        text = md.read_text(encoding="utf-8")
+
+        def repl(m):
+            target = index.get(Path(m.group(2)).name)
+            if target is not None and target != md:
+                return f"[{m.group(1)}]({os.path.relpath(target, md.parent).replace(os.sep, '/')})"
+            return f"{m.group(1)} (repository file `{m.group(2).lstrip('./')}`)"
+        new = LINK.sub(repl, text)
+        if new != text:
+            md.write_text(new, encoding="utf-8")
 
 
 def main() -> None:
@@ -91,9 +116,11 @@ def main() -> None:
     shutil.copytree(ROOT / "execution_evidence", DST / "02_Execution_Logs", ignore=shutil.ignore_patterns("*.pdf", "__pycache__"))
     shutil.copyfile(ROOT / "docs" / "interviews.md", DST / "interviews.md")
     (DST / "README.md").write_text(INDEX, encoding="utf-8")
-    (DST / "test_suite_result.txt").write_text(chr(10).join(["Offline test suite, run (OASIS_DB=:memory: OASIS_LLM=offline, no network):",
-                                                          "2752 passed, 2 skipped in 336.25s (0:05:36)",
-                                                          "The 2 skipped tests are the live FISCO and live PQ-TLS tests.", ""]), encoding="utf-8")
+    suite = R / "suite_result.txt"                      # the saved summary of a real run of the offline suite; never a typed-in number
+    if not suite.exists():
+        raise SystemExit("eval/reports/suite_result.txt is missing: run the offline suite and save its summary there first")
+    shutil.copyfile(suite, DST / "test_suite_result.txt")
+    fix_links(DST)
     print(f"wrote {DST.name}/: {n} files in {len(GROUPS)} groups + execution logs + index")
 
 

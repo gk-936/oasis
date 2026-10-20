@@ -108,7 +108,7 @@ def build(pages: dict[str, int]) -> str:
 <p>The assessment covers the Oasis backend (API, agent, trust layer, executor, audit log), the browser-side approval keys, the live-model paths (Amazon Nova Pro on Amazon Bedrock is the only live provider) and the public deployment on one Azure virtual machine. It does not cover real banks, real regulators or the registry itself, which is a mock.</p>
 <h3>2.2  Method</h3>
 <ul><li><b>Code inspection</b> of the policy engine, executor, intent signing, approvals, authentication and storage against the claims in this report.</li>
-<li><b>Automated tests.</b> The offline suite (2752 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
+<li><b>Automated tests.</b> The offline suite (2764 passed, 2 skipped) runs with no network and forced offline mode. Each security claim maps to named tests in the security evidence matrix.</li>
 <li><b>Authorization sweep.</b> A script calls every route and method as four identities (no session, student, parent, judge) with two request bodies and compares each response with the roles the code declares.</li>
 <li><b>Benchmarks and attack sets.</b> A 32-attack and 12-genuine scenario benchmark run four ways (protections added one layer at a time), stress and fuzz runs, and three attack sets written by other AI assistants from the project description only.</li>
 <li><b>Live-model checks</b> on saved report rows, run with a token cap.</li></ul>
@@ -224,8 +224,8 @@ def build(pages: dict[str, int]) -> str:
 <h3>6.3  Task completion under the router</h3>
 <p>Security held where completion did not. Model off, MOCK data, one run each:</p>
 <table><tr><th>Measure</th><th class="n">Result</th></tr>
-<tr><td>Generated set, tuned on (2,400 messages)</td><td class="n"><b>86.9%</b></td></tr>
-<tr><td>Generated set built from words withheld from the lexicon (1,600; not tuned on)</td><td class="n"><b>58.9%</b> (target 85% not met)</td></tr>
+<tr><td>Generated set, tuned on (2,400 messages)</td><td class="n"><b>86.0%</b></td></tr>
+<tr><td>Generated set built from words withheld from the lexicon (1,600; not tuned on)</td><td class="n"><b>58.8%</b> (target 85% not met)</td></tr>
 <tr><td>Frozen set (151 messages)</td><td class="n"><b>136</b> (was 130)</td></tr>
 <tr><td>Attacker catalogue (215, written by us)</td><td class="n"><b>215 of 215</b></td></tr>
 <tr><td>Money moved, every set</td><td class="n"><b>CNY 0</b></td></tr></table>
@@ -272,7 +272,7 @@ def build(pages: dict[str, int]) -> str:
         ("Low", "Out-of-scope requests get a fixed decline", "Keyword-based, so unusual wording can still get the generic help reply.", "Mitigated", "CNY 0 moved."),
         ("Low", "Chat can add a sandbox foreign-currency bill", "A message such as \"pay a USD application fee of 100 dollars\" adds a USD or EUR bill to one of two fixed MOCK universities and drafts it. The payee and account come from that table, the amount is capped, the addition is audited and the draft still needs the device-key signature; the amount is typed by the student.", "Accepted for the sandbox", "With real payees a bill must come from the payee or the registry, not from chat."),
         ("Low", "Chat tasks tested only by our own tests; scam check is a heuristic", "The chat tasks have 38 team-written tests, no outside-written set; the model was run live once on messages the router could not place (74 calls, our own messages). The scam check uses deterministic rules and the registry, calls no model, and \"no warning signs\" is not a guarantee; it makes no draft and moves CNY 0.", "Open", "Run an outside-written set against these tasks and report it; keep the verdict wording as it is."),
-        ("Low", "Router misses some unseen wording", "Unseen wording can still get a fixed answer, a hedge or a question about which bill is meant; no draft, CNY 0 moved. Figures in Section 6.3.", "Mitigated (offline)", "Concept lexicon, context, scam lane and FAQ added; 58.9% on words withheld from the lexicon, so vocabulary outside it remains the weakest area."),
+        ("Low", "Router misses some unseen wording", "Unseen wording can still get a fixed answer, a hedge or a question about which bill is meant; no draft, CNY 0 moved. Figures in Section 6.3.", "Mitigated (offline)", "Concept lexicon, context, scam lane and FAQ added; 58.8% on words withheld from the lexicon, so vocabulary outside it remains the weakest area."),
         ("Medium", "Risk scorers weaker out of sample", "The heuristic was tuned on the benchmark, and neither scorer can see poisoned tool output (0 of 6). The trained model is modest (AUC 0.80 against 0.75).", "Accepted; escalate-only", "Executor and intent binding carry the guarantee. Sequence flags raised split-payment scores to 0.636."),
         ("Medium", "Authentication is demo-grade", "Per-role passcodes, no per-person accounts, no MFA. Device-key enrolment is trust on first use: anyone holding a role's session can replace that role's device key (the new key retires the old one). The login throttle is per address, so it can lock out the real user behind it: several judges on one network can share the limit of 5 failed logins a minute in judge mode; it resets after a minute. A stolen role passcode gives such a session; judging passcodes are random and each login gets its own sandbox.", "Open", "Per-user accounts, out-of-band device enrolment or WebAuthn. An optional passkey second factor exists, off by default and untested on a hardware key."),
         ("Medium", "Keys held as local files", "The data key and trust signing key are plaintext files protected by OS permissions unless a passphrase is set; on Windows file mode does not restrict access. Anyone who can read them can decrypt the database.", "Open", "A key vault or hardware module. The judge start scripts set a random passphrase."),
@@ -316,7 +316,7 @@ def build(pages: dict[str, int]) -> str:
     h.append(f"""<section class="s"><h2 id="A2">Appendix B.&nbsp; {APPENDICES[1]}</h2>
 <p>All commands run offline and make no model call. Run them from the repository root.</p>
 <table class="tight"><tr><th style="width:34%">Purpose</th><th>Command</th></tr>
-<tr><td>Offline test suite (expect 2752 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
+<tr><td>Offline test suite (expect 2764 passed, 2 skipped)</td><td><code>OASIS_DB=:memory: OASIS_LLM=offline PYTHONPATH=. python -m pytest -q</code></td></tr>
 <tr><td>Role matrix only</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m pytest -q tests/test_role_matrix.py</code></td></tr>
 <tr><td>Offline benchmark</td><td><code>OASIS_LLM=offline PYTHONPATH=. python -m eval.runner --llm offline</code></td></tr>
 <tr><td>Rebuild this report</td><td><code>PYTHONPATH=. python -m eval.build_security_pdf</code></td></tr></table>

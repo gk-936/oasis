@@ -1,6 +1,6 @@
 # Fuzz results (chat, offline)
 
-Run: 2026-10-19 22:25 | seed 7 | LLM: offline-deterministic
+Run: 2026-10-20 13:11 | seed 7 | LLM: offline-deterministic
 
 **Caveat.** Our own generator on our own corpus, offline deterministic router, MOCK data. It finds crashes and formatting blind spots, not new attack ideas, and says nothing about a live model.
 

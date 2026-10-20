@@ -1,13 +1,13 @@
 # API authorization sweep (offline)
 
-Run: 2026-10-19 08:36
+Run: 2026-10-20 13:07
 
 **Caveat.** Reads the allowed roles from the code's own require(...) dependencies and checks the responses. It does not check that the roles themselves are the right ones; that is the security evidence matrix and a human review.
 
 | Check | Result |
 |---|---|
-| Route/method pairs | 98 |
-| Calls made (4 identities, 2 bodies) | 784 |
+| Route/method pairs | 100 |
+| Calls made (4 identities, 2 bodies) | 800 |
 | Routes without a role dependency (public) | 14 |
 | Findings | 0 |
 
