@@ -3,7 +3,7 @@
     OASIS_LLM=offline PYTHONPATH=. python -m eval.vision_live_final                       # DRY RUN: lists the 30 files, no model call
     OASIS_LLM=bedrock PYTHONPATH=. python -m eval.vision_live_final --live --cap-tokens N --cap-usd X [--limit K]
 
-LIVE spends money and needs the owner's approval for that specific run (CLAUDE.md rule 1). Raw model replies go to
+LIVE spends money and needs the owner's approval for that specific run. Raw model replies go to
 eval/reports/vision_live_final_rows.json (OASIS_VISION_ROWS overrides the path; never the images). The model only transcribes;
 payment goes to the registry account regardless, and this part never calls the payment path, so "money moved" is 0 by construction.
 """

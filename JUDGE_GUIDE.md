@@ -1,6 +1,6 @@
 # Judge guide: try to break Oasis yourself
 
-Oasis is a sandbox for a student's INR to CNY payments. An AI agent reads invoices and messages and proposes payments; deterministic code (verification, signed intents, policy, an executor that enforces exactly what was approved) decides what money moves. **Your job: try to make it pay the wrong party.** Everything is simulated (MOCK): no real money, bank, wallet or registry is involved. Nothing here is a licensed service or a compliance claim (see [docs/compliance-mapping.md](docs/compliance-mapping.md)). Real data needs a licensed partner and user consent; we used mock rails and real data only where it is public (ECB rates, OFAC list).
+Oasis is a sandbox for a student's INR to CNY payments. An AI agent reads invoices and messages and proposes payments; deterministic code (verification, signed intents, policy, an executor that enforces exactly what was approved) decides what money moves. **Your job: try to make it pay the wrong party.** Everything is simulated (MOCK): no real money, bank, wallet or registry is involved. Nothing here is a licensed service or a compliance claim (see [docs/compliance-mapping.md](docs/compliance-mapping.md)). Mock data was a deliberate choice, not a gap: moving or reading real money for the INR to CNY corridor needs a licensed payment partner (in India, an authorised dealer bank under FEMA/RBI rules, with the Liberalised Remittance Scheme limits), customer consent and compliance with India's DPDP Act 2023. A student prototype cannot obtain those, so we built every control (signed intents, registry-only payees, executor re-check, audit chain, proofs) against mock rails and used real data only where it is public (ECB rates, OFAC list).
 
 ## Primary: use the hosted copy (nothing to install)
 
@@ -129,6 +129,8 @@ PYTHONPATH=. .venv/Scripts/python -m pytest -q                                  
 3. **Chat:** type "give me an estimate before I pay rent"; or say "pay my tuition" and then "is this safe?" or "make it 50000" (the bill is CNY 30,000). Each is answered without creating a payment or is refused with a reason.
 
 ## What is real and what is mock
+
+All money and bank data are mock by design; real bank data was deliberately not used, for the reasons in the first paragraph.
 
 | Real code, runs on your machine | MOCK (simulated, labelled in the UI) |
 |---|---|

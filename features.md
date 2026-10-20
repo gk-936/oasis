@@ -149,4 +149,3 @@ Every feature found in the code, the 102 API routes, the UI and the docs, with o
 116. **Reference-data fetchers** (`tools/fetch_reference.py`, `fetch_extra_sanctions.py`): rebuild the sanctions snapshots.
 117. **Test suite**: about 926 test functions (1766 cases), offline and hermetic.
 118. **Documentation set**: judge guide, technical documentation, security self-assessment, evidence matrix, compliance mapping, results, real-vs-simulated, path to production and more in `docs/`.
-119. **Progress ledger and rulebook**: `CLAUDE.md` holds the working rules (no paid model call without approval, security invariants).

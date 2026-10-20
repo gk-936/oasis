@@ -3,7 +3,7 @@
 Order: two-level quality gate (hard: no model call; borderline: model call with the forced two-pass check) -> preprocessing -> bilingual closed-list extraction prompt (the model picks a
 registry payee_id or "none"; its free-text payee name is never used) -> field validators -> a second, reworded pass whose answer must
 agree. Any failure raises `VisionHold`, which carries a why-card naming the doubtful field; nothing is ever guessed or paid from here.
-The model still only transcribes: money goes to the registry account whatever the image says (see CLAUDE.md, security invariants).
+The model still only transcribes: money goes to the registry account whatever the image says.
 Pillow only, no numpy/OpenCV. Thresholds were tuned on the generated MOCK images in `eval/vision/` (see `eval/vision_gate_bench.py`).
 """
 from __future__ import annotations

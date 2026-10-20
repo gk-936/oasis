@@ -3,7 +3,7 @@
     OASIS_LLM=offline PYTHONPATH=. python -m eval.chat_live_final                          # DRY RUN: counts only, no model call
     OASIS_LLM=bedrock PYTHONPATH=. python -m eval.chat_live_final --live --part traps|router|all --cap-tokens N --cap-usd X [--limit K]
 
-LIVE spends money and needs the owner's approval for that specific run (CLAUDE.md rule 1). Each message gets a fresh session (/api/reset).
+LIVE spends money and needs the owner's approval for that specific run. Each message gets a fresh session (/api/reset).
 Counted per message: the label chat acted on, whether the labeller was asked, the label it proposed and whether the validator accepted it,
 drafts created and money moved. Rows go to eval/reports/chat_live_final_rows.json; the model only proposes a label, it never pays.
 """
