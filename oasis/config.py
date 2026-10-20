@@ -35,11 +35,18 @@ LLM_RISK = os.getenv("OASIS_LLM_RISK", "0") == "1"
 
 
 # Amazon Bedrock (OASIS_LLM=bedrock): Amazon Nova Pro. The model id is the Bedrock id / inference profile enabled in YOUR account.
-BEDROCK_MODEL = os.getenv("OASIS_BEDROCK_MODEL", "us.amazon.nova-pro-v1:0")
+def _model_env(name: str, default: str) -> str:
+    """A model id from the environment. A Docker env_file keeps an inline comment as part of the value ('# default: same model'), which once
+    became the fallback model id on the hosted demo: anything empty or starting with '#' means 'use the default', and ' #...' is cut off."""
+    v = os.getenv(name, "").split(" #")[0].strip()
+    return default if not v or v.startswith("#") else v
+
+
+BEDROCK_MODEL = _model_env("OASIS_BEDROCK_MODEL", "us.amazon.nova-pro-v1:0")
 BEDROCK_REGION = os.getenv("OASIS_BEDROCK_REGION") or os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 AGENT_MODEL = BEDROCK_MODEL                                                  # the model every live LLM job uses
 REDTEAM_MODEL = AGENT_MODEL
-FALLBACK_MODEL = os.getenv("OASIS_BEDROCK_FALLBACK_MODEL", AGENT_MODEL)      # default: no silent downgrade to a weaker model
+FALLBACK_MODEL = _model_env("OASIS_BEDROCK_FALLBACK_MODEL", AGENT_MODEL)     # default: no silent downgrade to a weaker model
 # Client-side guard rails: calls per minute, and a daily token cap as a spend guard (about $1 at $0.10 in / $0.50 out per 1M).
 BEDROCK_RPM = float(os.getenv("OASIS_BEDROCK_RPM", "120"))
 BEDROCK_DAILY_TOKEN_BUDGET = int(os.getenv("OASIS_BEDROCK_DAILY_TOKENS", "2000000"))

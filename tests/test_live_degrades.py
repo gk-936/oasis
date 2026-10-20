@@ -126,3 +126,12 @@ def test_the_risk_scorer_falls_back_when_there_is_no_score_at_all(tmp_path):
     llm = LiveLLM(client=fake, cache_dir=tmp_path, rpm=0, fallback_model=None, extract_mode="llm", llm_risk=True)
     llm.risk({"payee_name": "X", "account_ref": "1", "amount": 1.0}, "plain text", ["X"], {}, 1.0)
     assert llm.risk_stats["failed"] == 1 and llm.risk_stats["salvaged"] == 0
+
+
+def test_a_comment_pasted_into_a_model_env_var_means_the_default(monkeypatch):
+    """Seen on the hosted demo: the fallback model id was the text '# default: same model (no silent downgrade)' copied from an env file."""
+    for raw, want in (("# default: same model (no silent downgrade)", "dflt"), ("", "dflt"), ("  ", "dflt"), ("my.model  # a note", "my.model"), ("my.model", "my.model")):
+        monkeypatch.setenv("OASIS_TEST_MODEL", raw)
+        assert config._model_env("OASIS_TEST_MODEL", "dflt") == want
+    monkeypatch.delenv("OASIS_TEST_MODEL")
+    assert config._model_env("OASIS_TEST_MODEL", "dflt") == "dflt"

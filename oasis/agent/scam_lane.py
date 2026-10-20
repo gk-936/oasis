@@ -37,6 +37,7 @@ FAMILIES: dict[str, tuple[bool, tuple[str, ...]]] = {
 }
 # phrasings that are not a fixed word list: (family, regex over the normalised text)
 _EXTRA = tuple((f, re.compile(r)) for f, r in (
+    ("threat", r"\bvisa\b[^.?!]{0,25}\b(?:cancel\w*|revoked|expir\w*|invalid|suspended|terminated|void)\b"),
     ("advance_fee", r"\b(?:scholarship|prize|reward|grant|lottery|winnings?)\b[^.?!]{0,50}\b(?:pay|fee|first|send|wire|transfer)\b|\b(?:pay|send|wire|transfer)\b[^.?!]{0,30}\bfirst\b[^.?!]{0,30}\b(?:scholarship|prize|reward|grant)\b"),
     ("advance_fee", r"\b(?:customs|courier|delivery)\b[^.?!]{0,30}\b(?:held|detained|seized|stuck|blocked)\b[^.?!]{0,50}\b(?:pay|fee|send)\b"),
     ("guaranteed_returns", r"\b(?:double|triple)\b[^.?!]{0,15}\b(?:money|investment|savings)\b|\bguarantee[sd]?\b[^.?!]{0,30}\b(?:profit|returns?|income)\b|\bpromised\b[^.?!]{0,30}\b(?:double|returns?|profit)\b"),
@@ -133,7 +134,9 @@ def assess(text: str) -> Assessment:
         needs = False                                    # a question about credentials or scams with nothing to pay to is answered by the FAQ, not warned about
     if re.search(r"\bi (?:refused|did not|didn't|said no|won't|will not)\b|\b(?:don't|do not|never)\s+(?:ask|tell|send)\b|\bwithout (?:sending|giving|sharing)\b", t):
         needs = False                                    # "someone told me to share my passcode, but I refused": narration, not an inducement
-    gate = strong or len([f for f in fams if f != "guarded"]) >= 2
+    if not pattern and "threat" in fams and pay and re.search(r"\b(?:unless|or else|otherwise|or you will|or i will)\b", t):
+        pattern = "authority_threat"
+    gate = strong or pattern == "authority_threat" or len([f for f in fams if f != "guarded"]) >= 2
     a = Assessment(score=score, families=fams, pattern=pattern, pay_context=pay, accounts=accts, wallet=wallet, question=bool(_QUESTION.search(t.strip())))
     a.fire = bool(fams and gate and needs and pattern)
     return a

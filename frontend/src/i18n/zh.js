@@ -1183,7 +1183,7 @@ export default {
   "home.stat.balance": "余额",
   "menu.group.verify": "结算与验证",
   "menu.group.eval": "评估",
-  "mock.env": "沙盒环境",
+  "mock.env": "沙盒环境 · 模拟日期 2026年10月12日",
   "demo.eyebrow": "流程沙盒 // 确定性回放",
   "demo.lead.clean": "同一条六步流程的两次固定运行：先是正常的学期，再是一次攻击。数据为模拟数据，每次运行结果完全相同。",
   "demo.chips.aria": "此演示使用的内容",

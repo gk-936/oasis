@@ -1184,7 +1184,7 @@ export default {
   "home.stat.balance": "Balance",
   "menu.group.verify": "Settlement and verification",
   "menu.group.eval": "Evaluation",
-  "mock.env": "Sandbox environment",
+  "mock.env": "Sandbox environment · simulated date 12 Oct 2026",
   "demo.eyebrow": "Pipeline sandbox // deterministic replay",
   "demo.lead.clean": "Two fixed runs of the same six-step pipeline: a legitimate semester, then an attack. The data is simulated and every run repeats exactly.",
   "demo.chips.aria": "What this demo uses",

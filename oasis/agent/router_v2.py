@@ -21,7 +21,7 @@ _GET_TRUST = re.compile(r"\b(?:get|make|have|help)\b[^.?!]{0,30}\b(?:banks?|land
 _CHEAPER_YUAN = re.compile(r"\b(?:tell|alert|notify|ping|let) me when (?:the )?(?:yuan|cny|rmb) (?:gets|goes|is|drops|falls|becomes)\b[^.?!]{0,15}\b(?:cheaper|below|under|lower)\b[^.?!]{0,10}\bthan (\d+(?:\.\d+)?) (?:rupees|inr)\b")
 _USD_ALERT = re.compile(r"\b(?:alert|tell|notify|ping|let) me when (?:the )?(?:usd|dollar)\b")
 _AUTOPAY_SETUP = re.compile(r"\b(?:set up|setup|start|enable|turn on|create|activate)\b[^.?!]{0,10}\b(?:auto-? ?pay|autopay|standing (?:order|instruction)|recurring (?:payment|pay))\b[^.?!]{0,12}\b(?:for )?(?:my |the )?(phone|mobile|rent|tuition)\b")
-_MARKUP_ASK = re.compile(r"\b(?:ripping|ripped) (?:me )?off\b|\brip-?off\b|\bhow much is (?:my |the )?bank charging me\b|\b(?:overcharging|overcharged) me\b")
+_MARKUP_ASK = re.compile(r"\b(?:ripping|ripped) (?:me )?off\b|\brip-?off\b|\bhow much is (?:my |the )?bank charging me\b|\b(?:overcharging|overcharged) me\b|\bam i (?:being )?(?:overcharged|ripped off)\b|\bbeing (?:overcharged|ripped off)\b[^.?!]{0,25}\bbank\b")
 _ZH_PAY = re.compile(r"^(学费|房租|租金|押金|电话费|话费)(?:帮我|麻烦|请)?(?:付|交|缴)(?![了过完])(?!.*[吗嘛?？])")
 _PROOF_FOR = re.compile(r"\bgive my (?:landlord|lender|bank)\b[^.?!]{0,20}\bproof\b")
 _LANDLORD_Q = re.compile(r"\bwho(?:'s| is) my (?:landlord|landlady)\b|\bwhat(?:'s| is) my (?:landlord|landlady)'?s? name\b|\bmy (?:landlord|landlady)'?s? name\b")
@@ -36,6 +36,10 @@ _R2_REWRITES = tuple((re.compile(p), t) for p, t in (
     (r"\bwhat will (?:the )?(?:university|landlord|school|they) get if i send (\d[\d,]*) rupees\b", "cheapest way to send 100000 rupees to China"),
     (r"^what(?:'s| is) 1 (?:yuan|cny|rmb) in (?:rupees|inr)\??$", "what is the exchange rate today"),
     (r"\bmake something i can (?:send|give|show|hand)\b[^.?!]{0,15}\b(?:lender|bank|landlord)\b", "share my payment record"),
+    (r"^(?:my )?tuition\s*\?+$", "how much is the tuition and when is it due?"),
+    (r"^(?:my )?rent\s*\?+$", "how much is the rent and when is it due?"),
+    (r"^(?:my )?deposit\s*\?+$", "how much is the deposit and when is it due?"),
+    (r"\btuition\b.*\b(?:without|avoid|reduce|lower|cheap\w*|save)\b.*\b(?:fees?|charges?|costs?)\b|\b(?:without|avoid|reduce|lower|cheap\w*|save)\b.*\b(?:fees?|charges?|costs?)\b.*\btuition\b", "compare bank transfer vs remittance apps for my tuition"),
 ))
 CRYPTO = {"BTC", "ETH", "USDT", "USDC"}
 
@@ -162,6 +166,9 @@ def route(c: Ctx) -> Route | None:
     m = _ZH_PAY.match(f.raw.strip())
     if m:
         return Route("rewrite", "交" + m.group(1))
+    mw = re.search(r"\b(?:send|move|put|transfer|get|change)\b[^.?!]{0,10}?(\d[\d,]*) (?:rupees|inr)\b[^.?!]{0,20}\b(?:yuan|cny|rmb)\b[^.?!]{0,25}\b(?:my own|own) (?:wallet|account|balance)\b", f.text)
+    if mw:
+        return Route("rewrite", f"convert {mw.group(1).replace(',', '')} inr to cny")
     if _PROOF_FOR.search(f.text):
         return Route("rewrite", "share my payment record")
     if _LANDLORD_Q.search(f.text):
