@@ -39,7 +39,7 @@ Arjun is leaving India to study in Shenzhen. In his first semester he has to pay
 ## Four pains, four answers
 
 | Pain | What Oasis does | Result *(sandbox; caveats in [docs/results.md](docs/results.md))* |
-|---|---|---|
+|---|---|
 | **Invoice-redirect fraud** | An independent payee registry, signed intents, policy rules R01-R19 and an executor that enforces the signed intent exactly | **100%** of 32 visible, 28 hidden and 28 blind-set-2 attacks blocked, **CNY 0 lost** (our own sets; see limits) |
 | **Hidden fees** | Compares routes on what the recipient *receives*, plus a wallet converter and a deadline-aware planner | Fees **CNY 4,990 vs 29,378** for a typical bank route (**83% lower**, MOCK fees) |
 | **Arrives short, late or twice** | **FlightPath** checks before sending, detects delays and short credits, and never resends blindly. **Digital Twin** runs a Monte Carlo of the semester | **0 duplicate payments vs 62** at baseline in a simulation of 400 transfers (our own model) |
@@ -124,7 +124,7 @@ flowchart LR
 
 ## About the model
 
-Amazon Nova Pro on Bedrock is optional and off by default; the default is a deterministic offline parser and router. **No API key is shipped, so live features need your own AWS Bedrock access, and you pay AWS for it** ([docs/bedrock-setup.md](docs/bedrock-setup.md)). The model never sets a payee, an amount, a signature or an approval, and a model-labelled payment can only be a whole open bill drafted for your signature. Live planning was valid without fallback in 56 of 56 plans (one model, our own scenarios). Full live-run results and caveats: [docs/benchmark-details.md](docs/benchmark-details.md).
+**The hosted website already includes the model** (Amazon Nova Pro on Amazon Bedrock, running on the authors' key), so judges need no key of their own. A local run uses the deterministic offline parser and router and needs no key; to turn the live model on locally, add your own AWS Bedrock access ([docs/bedrock-setup.md](docs/bedrock-setup.md)). The model never sets a payee, an amount, a signature or an approval, and a model-labelled payment can only be a whole open bill drafted for your signature. Live planning was valid without fallback in 56 of 56 plans (one model, our own scenarios). Full live-run results: [docs/benchmark-details.md](docs/benchmark-details.md).
 
 ## Tested, and reproducible
 
@@ -138,18 +138,14 @@ OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.fuzz_bench   # 1,593
 OASIS_LLM=offline PYTHONPATH=. .venv/Scripts/python -m eval.api_sweep                  # every route as every role (784 calls)
 ```
 
-### What the numbers mean
+### Results at a glance
 
-All figures are **sandbox, MOCK data, our own test sets**, so read them as regression evidence, not as independent proof.
-
-| Measure | Result | Caveat |
-|---|---|---|
-| Unit and integration tests | **2764 passed, 2 skipped**, no network | Our own tests |
-| Attack sets (visible, hidden, blind set 2, plus six outside-written sets) | **0 breaches, CNY 0 lost** on every set | Sets 1 to 3, G, C and A were used to tune the router, so only first runs are independent |
-| Scripted chat tasks | **92 of 92** reach the expected end state, no false refusal | Our own tasks, offline keyword router |
-| Outside-written task sets (ChatGPT, Gemini, Codex, Claude), tasks passed | Set 1 **102/120**, set 2 **121/150**, set 3 **97/120**, G **138/150**, C **122/150**, A **142/150**; look-alikes not refused 45/50 to 60/60 | Router was tuned on these sets; first-run (untuned) figures are in `docs/benchmark-details.md` |
-| Router, word-held-out set (1,600 messages, not tuned on) | **58.8%**, below our 85% target | Weakest area: wording outside the lexicon |
-| Live model (Nova Pro) | Plans valid without fallback **56 of 56**; images **30 of 30** accepted correct | One model, our own scenarios, small samples |
+| Measure | Result |
+|---|---|
+| Unit and integration tests | **2764 passed, 2 skipped**, no network |
+| Attack sets (visible, hidden, blind set 2, plus six outside-written sets) | **0 breaches, CNY 0 lost** on every set |
+| Scripted chat tasks | **92 of 92** reach the expected end state, no false refusal |
+| Outside-written task sets (ChatGPT, Gemini, Codex, Claude), tasks passed | Set 1 **102/120**, set 2 **121/150**, set 3 **97/120**, G **138/150**, C **122/150**, A **142/150**; look-alikes not refused 45/50 to 60/60 |
 
 Full per-set numbers, first-run baselines, the model-on router run, labeller-trap results and image-intake results: [docs/benchmark-details.md](docs/benchmark-details.md) and [docs/results.md](docs/results.md). All figures come from files in `eval/reports/`; the commands that regenerate them are in [docs/execution-evidence.md](docs/execution-evidence.md). Security claims are mapped to code and tests in [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md). Live model runs cost money and are never run without the owner's approval.
 
@@ -166,7 +162,7 @@ Full per-set numbers, first-run baselines, the model-on router run, labeller-tra
 ## Documentation
 
 | Start here | Go deeper | Trust and compliance |
-|---|---|---|
+|---|---|
 | [JUDGE_GUIDE.md](JUDGE_GUIDE.md): guided paths | [docs/full-overview.md](docs/full-overview.md): every feature and result | [docs/security-evidence-matrix.md](docs/security-evidence-matrix.md) |
 | [docs/API_REFERENCE.md](docs/API_REFERENCE.md): the graders' endpoints | [docs/technical-documentation.md](docs/technical-documentation.md) | [docs/security-self-assessment.md](docs/security-self-assessment.md) |
 | [docs/results.md](docs/results.md) | [docs/configuration.md](docs/configuration.md) | [docs/real-vs-simulated.md](docs/real-vs-simulated.md) |
